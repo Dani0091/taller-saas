@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import Link from 'next/link'
 import { Plus, Search, Filter, Menu, Loader2, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -42,6 +43,7 @@ const ESTADO_CONFIG = {
 const FILTROS = ['todos', 'recibido', 'diagnostico', 'en_reparacion', 'completado', 'entregado', 'cancelado']
 
 export default function OrdenesPage() {
+  const supabase = createClientComponentClient()
   const [ordenes, setOrdenes] = useState<Orden[]>([])
   const [loading, setLoading] = useState(true)
   const [filtroActivo, setFiltroActivo] = useState('todos')
@@ -57,10 +59,53 @@ export default function OrdenesPage() {
   const cargarOrdenes = async () => {
     try {
       setLoading(true)
-      const res = await fetch('/api/ordenes')
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
-      setOrdenes(data.ordenes || [])
+      
+      // 1. Obtener sesión y taller_id
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) {
+        toast.error('No autenticado')
+        return
+      }
+
+      const { data: usuario, error: usuarioError } = await supabase
+        .from('usuarios')
+        .select('taller_id')
+        .eq('email', session.user.email)
+        .single()
+
+      if (usuarioError || !usuario) {
+        toast.error('Usuario no encontrado')
+        return
+      }
+
+      // 2. Obtener órdenes del taller
+      const { data, error } = await supabase
+        .from('ordenes_reparacion')
+        .select(`
+          id,
+          numero_orden,
+          estado,
+          cliente_id,
+          clientes(nombre),
+          vehiculo_id,
+          vehiculos(marca, modelo, matricula),
+          descripcion_problema,
+          diagnostico,
+          tiempo_estimado_horas,
+          tiempo_real_horas,
+          subtotal_mano_obra,
+          subtotal_piezas,
+          total_con_iva,
+          iva_amount,
+          fecha_entrada,
+          presupuesto_aprobado_por_cliente
+        `)
+        .eq('taller_id', usuario.taller_id)
+        .order('fecha_entrada', { ascending: false })
+
+      if (error) throw error
+      setOrdenes(data || [])
+      console.log('✅ Órdenes cargadas:', data?.length)
     } catch (error: any) {
       toast.error(error.message)
     } finally {

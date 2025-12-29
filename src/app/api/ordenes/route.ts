@@ -3,9 +3,56 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    console.log('📥 GET /api/ordenes - Iniciando...')
     
-    const { data: ordenes, error } = await supabase
+    const supabase = await createClient()
+    console.log('✅ Cliente Supabase creado')
+    
+    // 1. Obtener usuario logueado
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    console.log('🔐 Sesión:', session?.user?.email)
+    
+    if (sessionError) {
+      console.error('❌ Error sesión:', sessionError)
+      throw sessionError
+    }
+    
+    if (!session?.user) {
+      console.error('❌ No hay usuario logueado')
+      return NextResponse.json(
+        { success: false, error: 'No hay sesión activa' },
+        { status: 401 }
+      )
+    }
+
+    // 2. Obtener taller_id del usuario
+    console.log('🔍 Buscando usuario con email:', session.user.email)
+    
+    const { data: usuario, error: usuarioError } = await supabase
+      .from('usuarios')
+      .select('taller_id')
+      .eq('email', session.user.email)
+      .single()
+
+    if (usuarioError) {
+      console.error('❌ Error usuario:', usuarioError)
+      throw usuarioError
+    }
+
+    if (!usuario) {
+      console.error('❌ Usuario no encontrado')
+      return NextResponse.json(
+        { success: false, error: 'Usuario no encontrado' },
+        { status: 404 }
+      )
+    }
+
+    console.log('👤 Usuario encontrado con taller_id:', usuario.taller_id)
+
+    // 3. Obtener SOLO órdenes de ESTE TALLER
+    console.log('📋 Consultando órdenes para taller:', usuario.taller_id)
+    
+    const { data: ordenes, error: ordenesError } = await supabase
       .from('ordenes_reparacion')
       .select(`
         id,
@@ -18,16 +65,23 @@ export async function GET(request: NextRequest) {
         fecha_entrada,
         total_con_iva
       `)
+      .eq('taller_id', usuario.taller_id)
       .order('fecha_entrada', { ascending: false })
       .limit(50)
 
-    if (error) throw error
+    if (ordenesError) {
+      console.error('❌ Error órdenes:', ordenesError)
+      throw ordenesError
+    }
+
+    console.log('✅ Órdenes encontradas:', ordenes?.length)
 
     return NextResponse.json({ 
       success: true,
       ordenes: ordenes || [] 
     })
   } catch (error: any) {
+    console.error('❌ Error general GET /api/ordenes:', error)
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 }
@@ -40,9 +94,19 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
     const body = await request.json()
 
+    const { data: { session } } = await supabase.auth.getSession()
+    const { data: usuario } = await supabase
+      .from('usuarios')
+      .select('taller_id')
+      .eq('email', session?.user?.email)
+      .single()
+
     const { data: orden, error } = await supabase
       .from('ordenes_reparacion')
-      .insert([body])
+      .insert([{
+        ...body,
+        taller_id: usuario?.taller_id
+      }])
       .select()
       .single()
 
@@ -53,6 +117,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     )
   } catch (error: any) {
+    console.error('❌ Error POST ordenes:', error)
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 }
@@ -85,6 +150,7 @@ export async function PATCH(request: NextRequest) {
       orden 
     })
   } catch (error: any) {
+    console.error('❌ Error PATCH ordenes:', error)
     return NextResponse.json(
       { success: false, error: error.message },
       { status: 500 }
