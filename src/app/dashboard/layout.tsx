@@ -1,18 +1,66 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { Sidebar } from '@/components/dashboard/sidebar'
+import { Header } from '@/components/dashboard/header'
+import { Loader2 } from 'lucide-react'
+
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const router = useRouter()
+  const supabase = createClientComponentClient()
+  const [mounted, setMounted] = useState(false)
+  const [user, setUser] = useState<any>(null)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  useEffect(() => {
+    if (!mounted) return
+
+    const checkAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (!session) {
+          router.push('/auth/login')
+          return
+        }
+
+        setUser(session.user)
+      } catch (error) {
+        console.error('Auth error:', error)
+        router.push('/auth/login')
+      }
+    }
+
+    checkAuth()
+  }, [mounted, router, supabase])
+
+  if (!mounted) {
+    return null
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-screen bg-gray-50">
-      <div className="w-64 bg-gray-900 text-white p-6">
-        <h1 className="text-2xl font-bold mb-8">TallerAgil</h1>
-      </div>
+      <Sidebar user={user} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
-          <h2 className="text-xl font-semibold">Dashboard</h2>
-        </header>
-        <main className="flex-1 overflow-y-auto p-6">
+        <Header user={user} />
+        <main className="flex-1 overflow-auto">
           {children}
         </main>
       </div>

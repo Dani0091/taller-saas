@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test OCR</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+    h1 { color: #333; margin-top: 0; }
+    input[type="file"] {
+      padding: 10px;
+      margin: 10px 0;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    button {
+      background: #667eea;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      width: 100%;
+      margin-top: 10px;
+    }
+    button:hover { background: #764ba2; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .result {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f0f0f0;
+      border-radius: 6px;
+      border-left: 4px solid #667eea;
+      font-family: monospace;
+      white-space: pre-wrap;
+      word-break: break-all;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .success { 
+      background: #d4edda; 
+      color: #155724;
+      border-left-color: #28a745;
+    }
+    .error { 
+      background: #f8d7da; 
+      color: #721c24;
+      border-left-color: #dc3545;
+    }
+    img { 
+      max-width: 100%; 
+      margin: 15px 0; 
+      border-radius: 6px;
+      border: 2px solid #ddd;
+    }
+    .status {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 4px;
+      text-align: center;
+      font-weight: 600;
+    }
+    .status.loading { background: #fff3cd; color: #856404; }
+    .status.done { background: #d4edda; color: #155724; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📸 Test OCR</h1>
+    <p style="color: #666; margin-top: 0;">Sube una foto de auto o matrícula para extraer datos con OCR</p>
+    
+    <input type="file" id="file" accept="image/*" placeholder="Selecciona imagen">
+    
+    <button id="btn" onclick="testOCR()" disabled>🔍 Procesar OCR</button>
+    
+    <div id="preview"></div>
+    <div id="status"></div>
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('file')
+    const btn = document.getElementById('btn')
+    
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files?.[0]
+      btn.disabled = !file
+      
+      if (file) {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          document.getElementById('preview').innerHTML = 
+            `<img src="${event.target.result}" alt="preview">`
+        }
+        reader.readAsDataURL(file)
+      }
+    })
+
+    async function testOCR() {
+      const file = fileInput.files?.[0]
+      if (!file) {
+        showResult('❌ Selecciona una imagen', true)
+        return
+      }
+
+      btn.disabled = true
+      showStatus('⏳ Subiendo a Telegram...', 'loading')
+      document.getElementById('result').innerHTML = ''
+
+      try {
+        // 1. Subir a Telegram
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('ordenId', 'test-ocr')
+        formData.append('tipo', 'test')
+
+        const uploadRes = await fetch('/api/telegram/upload-photo', {
+          method: 'POST',
+          body: formData
+        })
+        const uploadData = await uploadRes.json()
+        
+        if (!uploadData.success) throw new Error(uploadData.error)
+        
+        const imageUrl = uploadData.imageUrl
+        console.log('✅ Imagen en Telegram:', imageUrl)
+
+        // 2. Procesar OCR (desde servidor)
+        showStatus('🔍 Procesando OCR...', 'loading')
+        
+        const ocrRes = await fetch('/api/ocr/procesar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageUrl })
+        })
+        const ocrData = await ocrRes.json()
+
+        if (!ocrData.success) {
+          throw new Error(ocrData.error || 'Error en OCR')
+        }
+
+        // 3. Mostrar resultados
+        const resultado = `
+✅ OCR COMPLETADO
+
+📝 Texto extraído:
+${ocrData.texto}
+
+🚗 DATOS EXTRAÍDOS:
+  • Matrícula: ${ocrData.matricula || 'No encontrada'}
+  • KM: ${ocrData.km ? ocrData.km.toLocaleString('es-ES') : 'No encontrado'}
+  • Confianza: ${ocrData.confianza}%
+
+🔗 URL imagen (Telegram):
+${imageUrl}
+        `
+        showResult(resultado, false)
+        showStatus('✅ Procesado correctamente', 'done')
+      } catch (error) {
+        showResult(`❌ Error: ${error.message}`, true)
+        showStatus('❌ Error', 'loading')
+      } finally {
+        btn.disabled = false
+      }
+    }
+
+    function showResult(text, isError) {
+      const resultDiv = document.getElementById('result')
+      resultDiv.className = `result ${isError ? 'error' : 'success'}`
+      resultDiv.textContent = text
+    }
+
+    function showStatus(text, className) {
+      const statusDiv = document.getElementById('status')
+      statusDiv.className = `status ${className}`
+      statusDiv.textContent = text
+    }
+  </script>
+</body>
+</html>
