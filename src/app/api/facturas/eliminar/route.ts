@@ -1,13 +1,9 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 export async function DELETE(request: NextRequest) {
   try {
+    const supabase = await createClient()
     const id = request.nextUrl.searchParams.get('id')
 
     if (!id) {

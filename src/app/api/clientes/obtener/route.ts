@@ -1,14 +1,27 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 export async function GET(request: NextRequest) {
   try {
+    const supabase = await createClient()
+    const id = request.nextUrl.searchParams.get('id')
     const tallerId = request.nextUrl.searchParams.get('taller_id')
+
+    if (id) {
+      // Obtener cliente específico por ID
+      const { data, error } = await supabase
+        .from('clientes')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+      if (error) {
+        console.error('Supabase error:', error)
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+      }
+
+      return NextResponse.json({ success: true, cliente: data })
+    }
 
     if (!tallerId) {
       return NextResponse.json([], { status: 200 })
@@ -16,8 +29,10 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabase
       .from('clientes')
-      .select('id, nombre, nif')
+      .select('*')
       .eq('taller_id', tallerId)
+      .eq('estado', 'activo')
+      .order('nombre')
 
     if (error) {
       console.error('Supabase error:', error)

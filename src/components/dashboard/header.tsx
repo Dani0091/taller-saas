@@ -2,12 +2,12 @@
 
 import { Bell, User, LogOut } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 
 export function Header({ user }: { user?: any }) {
   const router = useRouter()
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
 
   const handleLogout = async () => {
     await supabase.auth.signOut()

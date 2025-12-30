@@ -1,10 +1,11 @@
 /**
  * HOOK: Descargar PDF de Factura
- * 
+ *
  * Maneja la descarga de PDFs con React-PDF
  */
 
-import { PDFDownloadLink } from '@react-pdf/renderer'
+import React from 'react'
+import { pdf } from '@react-pdf/renderer'
 import { PDFFactura } from '@/lib/facturas/pdf-generator'
 import { toast } from 'sonner'
 
@@ -20,20 +21,21 @@ export function useDescargarPDF() {
         return
       }
 
-      // Crear el PDF
-      const pdfDoc = (
-        <PDFFactura {...data.datos} />
-      )
+      // Crear el documento PDF
+      const pdfDoc = <PDFFactura {...data.datos} />
 
-      // Generar y descargar
+      // Generar el blob del PDF
+      const blob = await pdf(pdfDoc).toBlob()
+
+      // Crear URL y descargar
+      const url = URL.createObjectURL(blob)
       const link = document.createElement('a')
-      link.href = URL.createObjectURL(
-        new Blob([pdfDoc as any], { type: 'application/pdf' })
-      )
+      link.href = url
       link.download = `Factura_${numeroFactura}.pdf`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
+      URL.revokeObjectURL(url)
 
       toast.success('PDF descargado correctamente')
     } catch (error) {

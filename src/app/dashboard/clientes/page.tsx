@@ -1,14 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Cliente } from '@/types/cliente'
 import { ListadoClientes } from '@/components/dashboard/clientes/listado-clientes'
 
 export default function ClientesPage() {
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [loading, setLoading] = useState(true)
   const [mounted, setMounted] = useState(false)

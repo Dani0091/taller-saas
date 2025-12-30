@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import { X, Save, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -34,7 +34,7 @@ const FORMAS_PAGO = [
 ]
 
 export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProps) {
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
   const [guardando, setGuardando] = useState(false)
   const [tallerId, setTallerId] = useState<string>('')
   const [formData, setFormData] = useState<ClienteFormData>({

@@ -205,7 +205,13 @@ export function LineasTable({
                       size="sm"
                       variant="ghost"
                       onClick={() => {
-                        setFormData({ ...linea, tipo: linea.tipo as any })
+                        setFormData({
+                          tipo: linea.tipo as typeof formData.tipo,
+                          descripcion: linea.descripcion,
+                          cantidad: linea.cantidad,
+                          precio_unitario: linea.precio_unitario,
+                          horas: linea.horas || 0,
+                        })
                         setEditingId(linea.id)
                         setShowForm(true)
                       }}

@@ -1,13 +1,9 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient()
     const body = await request.json()
     const {
       taller_id,
@@ -17,11 +13,17 @@ export async function POST(request: NextRequest) {
       email,
       telefono,
       direccion,
+      ciudad,
+      provincia,
+      codigo_postal,
+      pais = 'ES',
       tipo_cliente = 'particular',
       contacto_principal,
       contacto_email,
       contacto_telefono,
       notas,
+      iban,
+      forma_pago,
     } = body
 
     if (!taller_id || !nombre) {
@@ -42,11 +44,17 @@ export async function POST(request: NextRequest) {
           email,
           telefono,
           direccion,
+          ciudad,
+          provincia,
+          codigo_postal,
+          pais,
           tipo_cliente,
           contacto_principal,
           contacto_email,
           contacto_telefono,
           notas,
+          iban,
+          forma_pago,
           estado: 'activo',
         },
       ])

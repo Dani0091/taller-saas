@@ -81,7 +81,7 @@ export function EditarOrdenSheet({ orden, campo, onClose, onGuardar }: EditarOrd
       setGuardando(true)
       
       const payload: Record<string, any> = {}
-      config.campos.forEach(f => {
+      config.campos.forEach((f: string) => {
         if (f.startsWith('horas_') || f.startsWith('costo_')) {
           payload[f] = valores[f as keyof typeof valores] ? parseFloat(valores[f as keyof typeof valores]) : null
         } else {
@@ -121,7 +121,7 @@ export function EditarOrdenSheet({ orden, campo, onClose, onGuardar }: EditarOrd
         </div>
 
         <div className="p-4 space-y-4">
-          {config.campos.map(field => (
+          {config.campos.map((field: string) => (
             <div key={field} className="space-y-2">
               <Label>
                 {field === 'descripcion_problema' && 'Descripción del Problema'}

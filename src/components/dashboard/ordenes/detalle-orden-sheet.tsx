@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import { X, Save, Plus, Trash2, Loader2, Camera, MessageCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -69,7 +69,7 @@ export function DetalleOrdenSheet({
   onActualizar,
   modoCrear = false 
 }: DetalleOrdenSheetProps) {
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
   const [guardando, setGuardando] = useState(false)
   const [tab, setTab] = useState<'info' | 'diagnostico' | 'items'>('info')
   const [lineas, setLineas] = useState<Linea[]>([])

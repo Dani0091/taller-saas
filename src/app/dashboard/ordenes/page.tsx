@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { Plus, Search, Filter, Menu, Loader2, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -43,7 +43,7 @@ const ESTADO_CONFIG = {
 const FILTROS = ['todos', 'recibido', 'diagnostico', 'en_reparacion', 'completado', 'entregado', 'cancelado']
 
 export default function OrdenesPage() {
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
   const [ordenes, setOrdenes] = useState<Orden[]>([])
   const [loading, setLoading] = useState(true)
   const [filtroActivo, setFiltroActivo] = useState('todos')
@@ -104,7 +104,8 @@ export default function OrdenesPage() {
         .order('fecha_entrada', { ascending: false })
 
       if (error) throw error
-      setOrdenes(data || [])
+      // Cast necesario porque Supabase infiere tipos de relaciones como arrays
+      setOrdenes((data as unknown as Orden[]) || [])
       console.log('✅ Órdenes cargadas:', data?.length)
     } catch (error: any) {
       toast.error(error.message)
