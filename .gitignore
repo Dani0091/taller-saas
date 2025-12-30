@@ -40,3 +40,4 @@ tallerAgil/
 
 # Supabase
 .supabase/
+tsconfig.tsbuildinfo
