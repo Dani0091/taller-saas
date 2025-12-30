@@ -6,11 +6,12 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Download, Printer, FileText, Loader2, CheckCircle, AlertCircle, Zap } from 'lucide-react'
+import { ArrowLeft, Download, Printer, Loader2, CheckCircle, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import { QRVerifactu } from '@/components/facturas/qr-verifactu'
 import { InformacionLegal } from '@/components/facturas/informacion-legal'
 import { CambiarEstado } from '@/components/facturas/cambiar-estado'
+import { useDescargarPDF } from '@/hooks/useDescargarPDF'
 
 interface Factura {
   id: string
@@ -69,6 +70,7 @@ const estadoColors: Record<string, string> = {
 export default function VerFacturaPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const { descargarFactura } = useDescargarPDF()
   const [factura, setFactura] = useState<Factura | null>(null)
   const [loading, setLoading] = useState(true)
   const [datosEmpresa, setDatosEmpresa] = useState<DatosEmpresa | null>(null)
@@ -174,22 +176,7 @@ export default function VerFacturaPage() {
 
     setDescargandoPDF(true)
     try {
-      const response = await fetch(`/api/facturas/generar-pdf?id=${factura.id}`)
-      const data = await response.json()
-
-      if (data.error) {
-        toast.error(data.error)
-        return
-      }
-
-      // Aquí se integraría la generación real del PDF con react-pdf
-      toast.success('Función de descarga de PDF en desarrollo')
-      
-      // De momento, mostrar que es funcional
-      console.log('Datos para PDF:', data.datos)
-    } catch (error) {
-      console.error(error)
-      toast.error('Error al descargar PDF')
+      await descargarFactura(factura.id, factura.numero_factura)
     } finally {
       setDescargandoPDF(false)
     }

@@ -34,6 +34,7 @@ export async function GET(request: Request) {
         direccion: null,
         telefono: null,
         email: null,
+        logo_url: null,
       })
     }
 

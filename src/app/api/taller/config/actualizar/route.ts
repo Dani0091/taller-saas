@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server'
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { taller_id, tarifa_hora, incluye_iva, porcentaje_iva, tarifa_con_iva, nombre_empresa, cif, direccion, telefono, email } = body
+    const { taller_id, tarifa_hora, incluye_iva, porcentaje_iva, tarifa_con_iva, nombre_empresa, cif, direccion, telefono, email, logo_url } = body
 
     if (!taller_id) {
       return NextResponse.json(
@@ -35,6 +35,7 @@ export async function POST(request: Request) {
           direccion,
           telefono,
           email,
+          logo_url,
           updated_at: new Date().toISOString(),
         })
         .eq('taller_id', taller_id)
@@ -54,6 +55,7 @@ export async function POST(request: Request) {
           direccion,
           telefono,
           email,
+          logo_url,
         }])
         .select()
         .single()

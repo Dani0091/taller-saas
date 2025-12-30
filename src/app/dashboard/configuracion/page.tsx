@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { Loader2, Settings } from 'lucide-react'
+import { Loader2, Settings, Upload, X, Image as ImageIcon } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface Config {
@@ -20,6 +20,7 @@ interface Config {
   direccion: string | null
   telefono: string | null
   email: string | null
+  logo_url: string | null
 }
 
 export default function ConfiguracionPage() {
@@ -27,10 +28,46 @@ export default function ConfiguracionPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState<Config | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     fetchConfig()
   }, [])
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validar tipo de archivo
+    if (!file.type.startsWith('image/')) {
+      toast.error('Solo se permiten imágenes')
+      return
+    }
+
+    // Validar tamaño (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('El archivo es demasiado grande (máx. 2MB)')
+      return
+    }
+
+    // Convertir a base64
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string
+      setLogoPreview(base64)
+      setFormData(prev => prev ? { ...prev, logo_url: base64 } : null)
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleRemoveLogo = () => {
+    setLogoPreview(null)
+    setFormData(prev => prev ? { ...prev, logo_url: null } : null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
 
   const fetchConfig = async () => {
     try {
@@ -52,10 +89,14 @@ export default function ConfiguracionPage() {
         tarifa_hora: data.tarifa_hora || 45.00,
         incluye_iva: data.incluye_iva !== undefined ? data.incluye_iva : true,
         porcentaje_iva: data.porcentaje_iva || 21.00,
+        logo_url: data.logo_url || null,
       }
 
       setConfig(configData)
       setFormData(configData)
+      if (data.logo_url) {
+        setLogoPreview(data.logo_url)
+      }
     } catch (error) {
       toast.error('Error al cargar configuración')
     } finally {
@@ -99,6 +140,7 @@ export default function ConfiguracionPage() {
           direccion: formData.direccion,
           telefono: formData.telefono,
           email: formData.email,
+          logo_url: formData.logo_url,
         }),
       })
 
@@ -233,6 +275,67 @@ export default function ConfiguracionPage() {
                   onChange={handleChange}
                   className="w-full"
                 />
+              </div>
+
+              {/* Logo Upload */}
+              <div className="md:col-span-2">
+                <Label className="block text-sm font-semibold mb-2">
+                  Logo de la Empresa
+                </Label>
+                <div className="flex items-start gap-4">
+                  {/* Preview */}
+                  <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center bg-gray-50 overflow-hidden">
+                    {logoPreview ? (
+                      <img
+                        src={logoPreview}
+                        alt="Logo preview"
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <ImageIcon className="w-12 h-12 text-gray-300" />
+                    )}
+                  </div>
+
+                  {/* Upload Controls */}
+                  <div className="flex-1 space-y-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoUpload}
+                      className="hidden"
+                      id="logo-upload"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="gap-2"
+                      >
+                        <Upload className="w-4 h-4" />
+                        Subir Logo
+                      </Button>
+                      {logoPreview && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleRemoveLogo}
+                          className="gap-2 text-red-600 hover:bg-red-50"
+                        >
+                          <X className="w-4 h-4" />
+                          Eliminar
+                        </Button>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      Formatos: JPG, PNG, GIF. Máximo 2MB.
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      El logo aparecerá en las facturas PDF.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </Card>
