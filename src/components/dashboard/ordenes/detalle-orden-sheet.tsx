@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { X, Save, Plus, Trash2, Loader2, Camera, MessageCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -68,11 +69,13 @@ export function DetalleOrdenSheet({
   onActualizar,
   modoCrear = false 
 }: DetalleOrdenSheetProps) {
+  const supabase = createClientComponentClient()
   const [guardando, setGuardando] = useState(false)
   const [tab, setTab] = useState<'info' | 'diagnostico' | 'items'>('info')
   const [lineas, setLineas] = useState<Linea[]>([])
   const [clientes, setClientes] = useState<any[]>([])
   const [modoCliente, setModoCliente] = useState<'seleccionar' | 'crear'>('seleccionar')
+  const [tallerId, setTallerId] = useState<string>('')
   
   const [nuevaLinea, setNuevaLinea] = useState({
     tipo: 'mano_obra' as const,
@@ -115,9 +118,37 @@ export function DetalleOrdenSheet({
     telefono: '',
   })
 
+  // 🔧 NUEVO: Obtener taller_id del usuario
   useEffect(() => {
+    obtenerTallerId()
     cargarClientes()
   }, [])
+
+  const obtenerTallerId = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) {
+        toast.error('No autenticado')
+        return
+      }
+
+      const { data: usuario, error } = await supabase
+        .from('usuarios')
+        .select('taller_id')
+        .eq('email', session.user.email)
+        .single()
+
+      if (error || !usuario) {
+        toast.error('No se pudo obtener taller_id')
+        return
+      }
+
+      console.log('✅ Taller ID obtenido:', usuario.taller_id)
+      setTallerId(usuario.taller_id)
+    } catch (error: any) {
+      console.error('❌ Error obtener taller:', error)
+    }
+  }
 
   const cargarClientes = async () => {
     try {
@@ -137,6 +168,11 @@ export function DetalleOrdenSheet({
       return
     }
 
+    if (!tallerId) {
+      toast.error('Taller no cargado')
+      return
+    }
+
     try {
       setGuardando(true)
       const res = await fetch('/api/clientes/crear', {
@@ -144,7 +180,7 @@ export function DetalleOrdenSheet({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...clienteNuevo,
-          taller_id: 'f919c111-341d-4c43-a37a-66656ec3cb4d'
+          taller_id: tallerId  // ✅ Usar taller_id dinámico
         })
       })
 
@@ -196,12 +232,17 @@ export function DetalleOrdenSheet({
     try {
       setGuardando(true)
 
+      if (!tallerId) {
+        toast.error('Taller no cargado')
+        return
+      }
+
       if (modoCrear) {
         const res = await fetch('/api/ordenes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            taller_id: 'f919c111-341d-4c43-a37a-66656ec3cb4d',
+            taller_id: tallerId,  // ✅ Usar taller_id dinámico
             numero_orden: `ORD-${Date.now()}`,
             cliente_id: formData.cliente_id,
             vehiculo_id: formData.vehiculo_id,
@@ -687,7 +728,7 @@ export function DetalleOrdenSheet({
 
           <Button
             onClick={handleGuardar}
-            disabled={guardando || !formData.cliente_id}
+            disabled={guardando || !formData.cliente_id || !tallerId}
             className="w-full py-6 text-lg font-bold gap-2 sticky bottom-4 bg-blue-600 hover:bg-blue-700 shadow-lg"
           >
             {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
