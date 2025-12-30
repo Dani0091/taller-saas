@@ -22,7 +22,7 @@ export function ListadoClientes({ clientes, onActualizar }: ListadoClientesProps
   const [cargando, setCargando] = useState(false)
 
   const clientesFiltrados = clientes
-    .filter(c => c.estado === 'activo')
+    .filter(c => !c.estado || c.estado !== 'archivado')  // ✅ MOSTRAR TODOS EXCEPTO ARCHIVADOS
     .filter(c =>
       !searchTerm ||
       c.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||

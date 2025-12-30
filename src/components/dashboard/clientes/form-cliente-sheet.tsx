@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { X, Save, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -33,7 +34,9 @@ const FORMAS_PAGO = [
 ]
 
 export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProps) {
+  const supabase = createClientComponentClient()
   const [guardando, setGuardando] = useState(false)
+  const [tallerId, setTallerId] = useState<string>('')
   const [formData, setFormData] = useState<ClienteFormData>({
     nombre: '',
     nif: '',
@@ -49,9 +52,45 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
     forma_pago: 'transferencia'
   })
 
+  useEffect(() => {
+    obtenerTallerId()
+  }, [])
+
+  const obtenerTallerId = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user) {
+        toast.error('No autenticado')
+        return
+      }
+
+      const { data: usuario, error } = await supabase
+        .from('usuarios')
+        .select('taller_id')
+        .eq('email', session.user.email)
+        .single()
+
+      if (error || !usuario) {
+        toast.error('No se pudo obtener taller')
+        return
+      }
+
+      console.log('✅ Taller ID obtenido:', usuario.taller_id)
+      setTallerId(usuario.taller_id)
+    } catch (error: any) {
+      console.error('❌ Error obtener taller:', error)
+      toast.error('Error obtener taller')
+    }
+  }
+
   const handleGuardar = async () => {
     if (!formData.nombre || !formData.nif) {
       toast.error('Nombre y NIF son requeridos')
+      return
+    }
+
+    if (!tallerId) {
+      toast.error('Taller no cargado')
       return
     }
 
@@ -60,7 +99,10 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
       const res = await fetch('/api/clientes/crear', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          taller_id: tallerId  // ✅ AGREGAMOS taller_id
+        })
       })
 
       const data = await res.json()
@@ -68,7 +110,9 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
 
       toast.success('✅ Cliente creado')
       onActualizar()
+      onClose()
     } catch (error: any) {
+      console.error('Error:', error)
       toast.error(error.message)
     } finally {
       setGuardando(false)
@@ -231,7 +275,7 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
           {/* BOTÓN GUARDAR */}
           <Button
             onClick={handleGuardar}
-            disabled={guardando}
+            disabled={guardando || !tallerId}
             className="w-full py-6 text-lg font-bold gap-2 bg-blue-600 hover:bg-blue-700"
           >
             {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
