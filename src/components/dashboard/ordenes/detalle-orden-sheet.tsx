@@ -118,11 +118,15 @@ export function DetalleOrdenSheet({
     telefono: '',
   })
 
-  // 🔧 NUEVO: Obtener taller_id del usuario
   useEffect(() => {
     obtenerTallerId()
-    cargarClientes()
   }, [])
+
+  useEffect(() => {
+    if (tallerId) {
+      cargarClientes()
+    }
+  }, [tallerId])
 
   const obtenerTallerId = async () => {
     try {
@@ -152,11 +156,11 @@ export function DetalleOrdenSheet({
 
   const cargarClientes = async () => {
     try {
-      const res = await fetch('/api/clientes')
+      // ✅ FIX 1: PASAR taller_id EN QUERY
+      const res = await fetch(`/api/clientes?taller_id=${tallerId}`)
       const data = await res.json()
-      if (data.success) {
-        setClientes(data.clientes)
-      }
+      console.log('📋 Clientes cargados:', data.length)
+      setClientes(data)
     } catch (error) {
       console.error('Error cargando clientes:', error)
     }
@@ -180,7 +184,7 @@ export function DetalleOrdenSheet({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...clienteNuevo,
-          taller_id: tallerId  // ✅ Usar taller_id dinámico
+          taller_id: tallerId
         })
       })
 
@@ -242,7 +246,7 @@ export function DetalleOrdenSheet({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            taller_id: tallerId,  // ✅ Usar taller_id dinámico
+            taller_id: tallerId,
             numero_orden: `ORD-${Date.now()}`,
             cliente_id: formData.cliente_id,
             vehiculo_id: formData.vehiculo_id,
