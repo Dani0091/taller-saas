@@ -101,12 +101,17 @@ export async function POST(request: NextRequest) {
       .eq('email', session?.user?.email)
       .single()
 
+    // Fix: Convertir strings vacíos a null para UUIDs
+    const cleanBody = {
+      ...body,
+      cliente_id: body.cliente_id || null,
+      vehiculo_id: body.vehiculo_id || null,
+      taller_id: usuario?.taller_id
+    }
+
     const { data: orden, error } = await supabase
       .from('ordenes_reparacion')
-      .insert([{
-        ...body,
-        taller_id: usuario?.taller_id
-      }])
+      .insert([cleanBody])
       .select()
       .single()
 
@@ -133,21 +138,31 @@ export async function PATCH(request: NextRequest) {
 
     if (!id) throw new Error('ID requerido')
 
+    // Fix: Convertir strings vacíos a null para UUIDs
+    const cleanUpdates = {
+      ...updates,
+      updated_at: new Date().toISOString()
+    }
+
+    if ('cliente_id' in cleanUpdates) {
+      cleanUpdates.cliente_id = cleanUpdates.cliente_id || null
+    }
+    if ('vehiculo_id' in cleanUpdates) {
+      cleanUpdates.vehiculo_id = cleanUpdates.vehiculo_id || null
+    }
+
     const { data: orden, error } = await supabase
       .from('ordenes_reparacion')
-      .update({
-        ...updates,
-        updated_at: new Date().toISOString()
-      })
+      .update(cleanUpdates)
       .eq('id', id)
       .select()
       .single()
 
     if (error) throw error
 
-    return NextResponse.json({ 
-      success: true, 
-      orden 
+    return NextResponse.json({
+      success: true,
+      orden
     })
   } catch (error: any) {
     console.error('❌ Error PATCH ordenes:', error)
