@@ -66,20 +66,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generar número de factura secuencial
-    const { data: ultimaFactura } = await supabase
+    // Generar número de factura secuencial (buscar el número más alto)
+    const { data: todasFacturas } = await supabase
       .from('facturas')
       .select('numero_factura')
       .eq('taller_id', taller_id)
-      .order('created_at', { ascending: false })
-      .limit(1)
+      .like('numero_factura', 'FA%')
 
-    let numeroFactura = 'FA001'
-    if (ultimaFactura && ultimaFactura.length > 0) {
-      const ultimoNumero = ultimaFactura[0].numero_factura
-      const numero = parseInt(ultimoNumero.replace('FA', '')) + 1
-      numeroFactura = `FA${numero.toString().padStart(3, '0')}`
+    let maxNumero = 0
+    if (todasFacturas && todasFacturas.length > 0) {
+      todasFacturas.forEach((f: { numero_factura: string }) => {
+        const match = f.numero_factura.match(/FA(\d+)/)
+        if (match) {
+          const num = parseInt(match[1], 10)
+          if (num > maxNumero) maxNumero = num
+        }
+      })
     }
+
+    const siguienteNumero = maxNumero + 1
+    const numeroFactura = `FA${siguienteNumero.toString().padStart(3, '0')}`
 
     // Crear factura
     const { data: factura, error: facturaError } = await supabase

@@ -48,6 +48,13 @@ export async function GET(request: NextRequest) {
       .eq('id', factura.taller_id)
       .single()
 
+    // Obtener configuración del taller (incluye logo)
+    const { data: tallerConfig } = await supabase
+      .from('taller_config')
+      .select('*')
+      .eq('taller_id', factura.taller_id)
+      .single()
+
     // Obtener líneas
     const { data: lineas } = await supabase
       .from('lineas_factura')
@@ -73,22 +80,23 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Preparar datos para PDF
+    // Preparar datos para PDF (priorizar taller_config sobre talleres)
     const datosFactura = {
       numeroFactura: factura.numero_factura,
       serie: factura.numero_serie || 'FA',
       fechaEmision: factura.fecha_emision,
       fechaVencimiento: factura.fecha_vencimiento,
+      logoUrl: tallerConfig?.logo_url || null,
       emisor: {
-        nombre: taller?.nombre || 'Taller',
-        nif: taller?.nif || '',
-        direccion: taller?.direccion || '',
+        nombre: tallerConfig?.nombre_empresa || taller?.nombre || 'Taller',
+        nif: tallerConfig?.cif || taller?.nif || '',
+        direccion: tallerConfig?.direccion || taller?.direccion || '',
         codigoPostal: taller?.codigo_postal || '',
         ciudad: taller?.ciudad || '',
         provincia: taller?.provincia || '',
         pais: 'ESPAÑA',
-        telefono: taller?.telefono,
-        email: taller?.email,
+        telefono: tallerConfig?.telefono || taller?.telefono,
+        email: tallerConfig?.email || taller?.email,
         web: taller?.web,
       },
       receptor: {

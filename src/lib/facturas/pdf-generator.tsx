@@ -195,6 +195,7 @@ export const PDFFactura = ({
   serie,
   fechaEmision,
   fechaVencimiento,
+  logoUrl,
   emisor,
   receptor,
   vehiculo,
@@ -217,6 +218,12 @@ export const PDFFactura = ({
       <View style={styles.header}>
         {/* LEFT: Logo y datos emisor */}
         <View style={styles.leftHeader}>
+          {logoUrl && (
+            <Image
+              src={logoUrl}
+              style={{ width: 80, height: 80, marginBottom: 10, objectFit: 'contain' }}
+            />
+          )}
           <Text style={styles.title}>{emisor.nombre}</Text>
           <Text style={styles.subtitle}>
             {emisor.direccion}, {emisor.codigoPostal} {emisor.ciudad}

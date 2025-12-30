@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { X, Save, Plus, Trash2, Loader2, Camera, MessageCircle } from 'lucide-react'
+import { X, Save, Plus, Trash2, Loader2, Camera, MessageCircle, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -62,15 +63,17 @@ interface Linea {
   precio_unitario: number
 }
 
-export function DetalleOrdenSheet({ 
-  ordenSeleccionada, 
-  ordenes = [], 
-  onClose, 
+export function DetalleOrdenSheet({
+  ordenSeleccionada,
+  ordenes = [],
+  onClose,
   onActualizar,
-  modoCrear = false 
+  modoCrear = false
 }: DetalleOrdenSheetProps) {
+  const router = useRouter()
   const supabase = createClient()
   const [guardando, setGuardando] = useState(false)
+  const [generandoFactura, setGenerandoFactura] = useState(false)
   const [tab, setTab] = useState<'info' | 'diagnostico' | 'items'>('info')
   const [lineas, setLineas] = useState<Linea[]>([])
   const [clientes, setClientes] = useState<any[]>([])
@@ -291,6 +294,47 @@ export function DetalleOrdenSheet({
       toast.error(error.message)
     } finally {
       setGuardando(false)
+    }
+  }
+
+  const handleGenerarFactura = async () => {
+    if (!orden?.id || !tallerId) {
+      toast.error('Datos incompletos para generar factura')
+      return
+    }
+
+    // Verificar estado
+    if (!['completado', 'entregado', 'en_reparacion'].includes(formData.estado)) {
+      toast.error('La orden debe estar en reparación o completada para generar factura')
+      return
+    }
+
+    setGenerandoFactura(true)
+    try {
+      const res = await fetch('/api/facturas/desde-orden', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orden_id: orden.id,
+          taller_id: tallerId
+        })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Error al generar factura')
+      }
+
+      toast.success(`Factura ${data.numero_factura} creada correctamente`)
+
+      // Navegar a ver la factura
+      router.push(`/dashboard/facturas/ver?id=${data.id}`)
+      onClose()
+    } catch (error: any) {
+      toast.error(error.message)
+    } finally {
+      setGenerandoFactura(false)
     }
   }
 
@@ -727,6 +771,36 @@ export function DetalleOrdenSheet({
                   </div>
                 </div>
               </Card>
+
+              {/* Botón Generar Factura - Solo si no es modo crear y la orden está en estado válido */}
+              {!modoCrear && orden?.id && ['completado', 'entregado', 'en_reparacion'].includes(formData.estado) && (
+                <Card className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200">
+                  <div className="flex items-center gap-2 mb-3">
+                    <FileText className="w-5 h-5 text-green-600" />
+                    <h3 className="font-bold text-lg text-green-800">Generar Factura</h3>
+                  </div>
+                  <p className="text-sm text-green-700 mb-4">
+                    Crea una factura a partir de esta orden con todos los datos y líneas de trabajo.
+                  </p>
+                  <Button
+                    onClick={handleGenerarFactura}
+                    disabled={generandoFactura}
+                    className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white py-6 text-lg font-bold"
+                  >
+                    {generandoFactura ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        Generando factura...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="w-5 h-5" />
+                        Crear Factura desde Orden
+                      </>
+                    )}
+                  </Button>
+                </Card>
+              )}
             </div>
           )}
 
