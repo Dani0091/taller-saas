@@ -1,18 +1,21 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { createClient } from '@/lib/supabase/client'
 
 export default function NuevoVehiculoPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [tallerId, setTallerId] = useState<string | null>(null)
+  const [loadingAuth, setLoadingAuth] = useState(true)
   const [formData, setFormData] = useState({
     cliente_id: '',
     matricula: '',
@@ -28,6 +31,42 @@ export default function NuevoVehiculoPage() {
     cilindrada: '',
   })
 
+  // Obtener taller_id del usuario autenticado
+  useEffect(() => {
+    const obtenerTallerId = async () => {
+      try {
+        const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+
+        if (!session?.user?.email) {
+          toast.error('No hay sesión activa')
+          setLoadingAuth(false)
+          return
+        }
+
+        const { data: usuario, error } = await supabase
+          .from('usuarios')
+          .select('taller_id')
+          .eq('email', session.user.email)
+          .single()
+
+        if (error || !usuario) {
+          toast.error('No se pudo obtener datos del usuario')
+          setLoadingAuth(false)
+          return
+        }
+
+        setTallerId(usuario.taller_id)
+      } catch (error) {
+        console.error('Error obteniendo taller_id:', error)
+        toast.error('Error de autenticación')
+      } finally {
+        setLoadingAuth(false)
+      }
+    }
+    obtenerTallerId()
+  }, [])
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
@@ -35,16 +74,15 @@ export default function NuevoVehiculoPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!tallerId) {
+      toast.error('No se encontró taller_id')
+      return
+    }
+
     setLoading(true)
 
     try {
-      const tallerId = localStorage.getItem('taller_id')
-      if (!tallerId) {
-        toast.error('No se encontró taller_id')
-        setLoading(false)
-        return
-      }
-
       if (!formData.matricula) {
         toast.error('La matrícula es obligatoria')
         setLoading(false)

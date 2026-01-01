@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { FileText, Plus, Download, Eye, Trash2, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { createClient } from '@/lib/supabase/client'
 
 interface Factura {
   id: string
@@ -32,16 +33,56 @@ export default function FacturasPage() {
   const [filtroEstado, setFiltroEstado] = useState<string>('')
   const [busqueda, setBusqueda] = useState<string>('')
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [tallerId, setTallerId] = useState<string | null>(null)
 
+  // Obtener taller_id del usuario autenticado
   useEffect(() => {
-    fetchFacturas()
-  }, [filtroEstado])
+    const obtenerTallerId = async () => {
+      try {
+        const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+
+        if (!session?.user?.email) {
+          toast.error('No hay sesión activa')
+          setLoading(false)
+          return
+        }
+
+        const { data: usuario, error } = await supabase
+          .from('usuarios')
+          .select('taller_id')
+          .eq('email', session.user.email)
+          .single()
+
+        if (error || !usuario) {
+          toast.error('No se pudo obtener datos del usuario')
+          setLoading(false)
+          return
+        }
+
+        setTallerId(usuario.taller_id)
+      } catch (error) {
+        console.error('Error obteniendo taller_id:', error)
+        toast.error('Error de autenticación')
+        setLoading(false)
+      }
+    }
+    obtenerTallerId()
+  }, [])
+
+  // Cargar facturas cuando tengamos el taller_id
+  useEffect(() => {
+    if (tallerId) {
+      fetchFacturas()
+    }
+  }, [tallerId, filtroEstado])
 
   const fetchFacturas = async () => {
+    if (!tallerId) return
+
     try {
       setLoading(true)
-      const tallerId = localStorage.getItem('taller_id')
-      
+
       let url = `/api/facturas/obtener?taller_id=${tallerId}`
       if (filtroEstado) {
         url += `&estado=${filtroEstado}`
@@ -49,7 +90,7 @@ export default function FacturasPage() {
 
       const response = await fetch(url)
       const data = await response.json()
-      
+
       if (data.error) {
         toast.error(data.error)
       } else {

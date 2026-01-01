@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Loader2, Settings, Upload, X, Image as ImageIcon } from 'lucide-react'
 import { toast } from 'sonner'
+import { createClient } from '@/lib/supabase/client'
 
 interface Config {
   id: string | null
@@ -29,11 +30,50 @@ export default function ConfiguracionPage() {
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState<Config | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [tallerId, setTallerId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Obtener taller_id del usuario autenticado
   useEffect(() => {
-    fetchConfig()
+    const obtenerTallerId = async () => {
+      try {
+        const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+
+        if (!session?.user?.email) {
+          toast.error('No hay sesión activa')
+          setLoading(false)
+          return
+        }
+
+        const { data: usuario, error } = await supabase
+          .from('usuarios')
+          .select('taller_id')
+          .eq('email', session.user.email)
+          .single()
+
+        if (error || !usuario) {
+          toast.error('No se pudo obtener datos del usuario')
+          setLoading(false)
+          return
+        }
+
+        setTallerId(usuario.taller_id)
+      } catch (error) {
+        console.error('Error obteniendo taller_id:', error)
+        toast.error('Error de autenticación')
+        setLoading(false)
+      }
+    }
+    obtenerTallerId()
   }, [])
+
+  // Cargar config cuando tengamos taller_id
+  useEffect(() => {
+    if (tallerId) {
+      fetchConfig()
+    }
+  }, [tallerId])
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -70,16 +110,10 @@ export default function ConfiguracionPage() {
   }
 
   const fetchConfig = async () => {
+    if (!tallerId) return
+
     try {
       setLoading(true)
-      const tallerId = localStorage.getItem('taller_id')
-
-      if (!tallerId) {
-        toast.error('No se encontró taller')
-        setLoading(false)
-        return
-      }
-
       const response = await fetch(`/api/taller/config/obtener?taller_id=${tallerId}`)
       const data = await response.json()
 
@@ -119,13 +153,11 @@ export default function ConfiguracionPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    if (!formData) return
+
+    if (!formData || !tallerId) return
 
     setSaving(true)
     try {
-      const tallerId = localStorage.getItem('taller_id')
-
       const response = await fetch(`/api/taller/config/actualizar`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

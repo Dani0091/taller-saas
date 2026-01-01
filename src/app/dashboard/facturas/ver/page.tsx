@@ -12,6 +12,7 @@ import { QRVerifactu } from '@/components/facturas/qr-verifactu'
 import { InformacionLegal } from '@/components/facturas/informacion-legal'
 import { CambiarEstado } from '@/components/facturas/cambiar-estado'
 import { useDescargarPDF } from '@/hooks/useDescargarPDF'
+import { createClient } from '@/lib/supabase/client'
 
 interface Factura {
   id: string
@@ -76,14 +77,48 @@ export default function VerFacturaPage() {
   const [datosEmpresa, setDatosEmpresa] = useState<DatosEmpresa | null>(null)
   const [generandoVerifactu, setGenerandoVerifactu] = useState(false)
   const [descargandoPDF, setDescargandoPDF] = useState(false)
+  const [tallerId, setTallerId] = useState<string | null>(null)
+
+  // Obtener taller_id del usuario autenticado
+  useEffect(() => {
+    const obtenerTallerId = async () => {
+      try {
+        const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+
+        if (!session?.user?.email) {
+          return
+        }
+
+        const { data: usuario, error } = await supabase
+          .from('usuarios')
+          .select('taller_id')
+          .eq('email', session.user.email)
+          .single()
+
+        if (!error && usuario) {
+          setTallerId(usuario.taller_id)
+        }
+      } catch (error) {
+        console.error('Error obteniendo taller_id:', error)
+      }
+    }
+    obtenerTallerId()
+  }, [])
 
   useEffect(() => {
     const id = searchParams.get('id')
     if (id) {
       fetchFactura(id)
-      fetchDatosEmpresa()
     }
   }, [searchParams])
+
+  // Cargar datos empresa cuando tengamos taller_id
+  useEffect(() => {
+    if (tallerId) {
+      fetchDatosEmpresa()
+    }
+  }, [tallerId])
 
   const fetchFactura = async (id: string) => {
     try {
@@ -107,8 +142,9 @@ export default function VerFacturaPage() {
   }
 
   const fetchDatosEmpresa = async () => {
+    if (!tallerId) return
+
     try {
-      const tallerId = localStorage.getItem('taller_id')
       const response = await fetch(`/api/taller/config/obtener?taller_id=${tallerId}`)
       const data = await response.json()
       if (data) {
@@ -130,7 +166,7 @@ export default function VerFacturaPage() {
   }
 
   const handleGenerarVerifactu = async () => {
-    if (!factura) return
+    if (!factura || !tallerId) return
 
     setGenerandoVerifactu(true)
     try {
@@ -139,7 +175,7 @@ export default function VerFacturaPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           facturaId: factura.id,
-          tallerId: localStorage.getItem('taller_id'),
+          tallerId: tallerId,
           numeroFactura: factura.numero_factura,
           serieFactura: 'FA',
           fechaEmision: factura.fecha_emision,

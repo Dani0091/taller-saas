@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { ArrowLeft, Loader2, Plus, X, Check } from 'lucide-react'
 import { toast } from 'sonner'
+import { createClient } from '@/lib/supabase/client'
 
 interface Cliente {
   id: string
@@ -30,6 +31,7 @@ export default function NuevaFacturaPage() {
   const [cargandoClientes, setCargandoClientes] = useState(true)
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [lineas, setLineas] = useState<LineaFactura[]>([])
+  const [tallerId, setTallerId] = useState<string | null>(null)
 
   // Datos de la factura
   const [formData, setFormData] = useState({
@@ -50,28 +52,62 @@ export default function NuevaFacturaPage() {
     precioUnitario: '',
   })
 
+  // Obtener taller_id del usuario autenticado
   useEffect(() => {
-    fetchClientes()
+    const obtenerTallerId = async () => {
+      try {
+        const supabase = createClient()
+        const { data: { session } } = await supabase.auth.getSession()
+
+        if (!session?.user?.email) {
+          toast.error('No hay sesión activa')
+          setCargandoClientes(false)
+          return
+        }
+
+        const { data: usuario, error } = await supabase
+          .from('usuarios')
+          .select('taller_id')
+          .eq('email', session.user.email)
+          .single()
+
+        if (error || !usuario) {
+          toast.error('No se pudo obtener datos del usuario')
+          setCargandoClientes(false)
+          return
+        }
+
+        setTallerId(usuario.taller_id)
+      } catch (error) {
+        console.error('Error obteniendo taller_id:', error)
+        toast.error('Error de autenticación')
+        setCargandoClientes(false)
+      }
+    }
+    obtenerTallerId()
   }, [])
 
+  // Cargar clientes cuando tengamos taller_id
+  useEffect(() => {
+    if (tallerId) {
+      fetchClientes()
+    }
+  }, [tallerId])
+
   const fetchClientes = async () => {
+    if (!tallerId) return
+
     try {
       setCargandoClientes(true)
-      const tallerId = localStorage.getItem('taller_id')
-      
-      if (!tallerId) {
-        toast.error('No se encontró el taller')
-        return
-      }
 
       const response = await fetch(`/api/clientes/obtener?taller_id=${tallerId}`)
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
       const data = await response.json()
-      
+
       if (data.error) {
         toast.error(data.error)
       } else {
@@ -120,10 +156,13 @@ export default function NuevaFacturaPage() {
       return
     }
 
+    if (!tallerId) {
+      toast.error('No se encontró el taller')
+      return
+    }
+
     setLoading(true)
     try {
-      const tallerId = localStorage.getItem('taller_id')
-
       // Calcular totales
       const baseImponible = lineas.reduce(
         (sum, l) => sum + l.cantidad * l.precioUnitario,
