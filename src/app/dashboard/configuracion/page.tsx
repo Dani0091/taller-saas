@@ -221,20 +221,19 @@ export default function ConfiguracionPage() {
     : formData.tarifa_hora * (1 + formData.porcentaje_iva / 100)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Settings className="w-8 h-8 text-blue-600" />
-            <h1 className="text-3xl md:text-4xl font-bold">Configuración del Taller</h1>
-          </div>
-          <p className="text-gray-600">Gestiona la tarifa, IVA y datos de tu taller</p>
+    <div className="space-y-6 max-w-4xl">
+      {/* Header */}
+      <div>
+        <div className="flex items-center gap-3 mb-2">
+          <Settings className="w-6 h-6 md:w-8 md:h-8 text-blue-600" />
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Configuración</h1>
         </div>
+        <p className="text-gray-600">Gestiona la tarifa, IVA y datos de tu taller</p>
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Datos de la Empresa */}
-          <Card className="p-6 md:p-8 shadow-sm">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Datos de la Empresa */}
+        <Card className="p-4 md:p-6 shadow-sm">
             <h2 className="text-xl font-bold mb-6 pb-4 border-b">Datos de la Empresa</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -532,27 +531,26 @@ export default function ConfiguracionPage() {
             </div>
           </Card>
 
-          {/* Botones */}
-          <div className="flex gap-3 justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={fetchConfig}
-              className="px-6"
-            >
-              Descartar
-            </Button>
-            <Button
-              type="submit"
-              disabled={saving}
-              className="px-8 gap-2 bg-blue-600 hover:bg-blue-700"
-            >
-              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-              {saving ? 'Guardando...' : 'Guardar Configuración'}
-            </Button>
-          </div>
-        </form>
+      {/* Botones */}
+      <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={fetchConfig}
+          className="px-6 order-2 sm:order-1"
+        >
+          Descartar
+        </Button>
+        <Button
+          type="submit"
+          disabled={saving}
+          className="px-8 gap-2 bg-blue-600 hover:bg-blue-700 order-1 sm:order-2"
+        >
+          {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+          {saving ? 'Guardando...' : 'Guardar'}
+        </Button>
       </div>
+      </form>
     </div>
   )
 }
