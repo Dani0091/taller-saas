@@ -231,7 +231,7 @@ export default function NuevaFacturaPage() {
         {/* FORMULARIO */}
         <div className="space-y-6">
           {/* DATOS BÁSICOS */}
-          <Card className="p-6 border-l-4 border-l-blue-600">
+          <Card className="p-6 border-l-4 border-l-sky-600">
             <h2 className="font-bold text-lg mb-4 text-gray-900">Datos de la Factura</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -250,7 +250,7 @@ export default function NuevaFacturaPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, cliente_id: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
                   >
                     <option value="">Selecciona cliente</option>
                     {clientes.map((c) => (
@@ -272,7 +272,7 @@ export default function NuevaFacturaPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, metodo_pago: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
                 >
                   <option value="T">Transferencia Bancaria</option>
                   <option value="E">Efectivo</option>
@@ -460,7 +460,7 @@ export default function NuevaFacturaPage() {
           </Card>
 
           {/* RESUMEN */}
-          <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-l-blue-600">
+          <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-l-sky-600">
             <h2 className="font-bold text-lg mb-4 text-gray-900">Resumen de Totales</h2>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
@@ -473,7 +473,7 @@ export default function NuevaFacturaPage() {
               </div>
               <div className="flex justify-between text-lg border-t-2 border-blue-200 pt-2 mt-2">
                 <span className="font-bold text-gray-900">Total a Pagar:</span>
-                <span className="font-bold text-blue-600 text-xl">€{total.toFixed(2)}</span>
+                <span className="font-bold text-sky-600 text-xl">€{total.toFixed(2)}</span>
               </div>
             </div>
           </Card>
@@ -486,7 +486,7 @@ export default function NuevaFacturaPage() {
             <Button
               onClick={handleGuardar}
               disabled={loading || lineas.length === 0 || cargandoClientes}
-              className="gap-2 bg-blue-600 hover:bg-blue-700"
+              className="gap-2 bg-sky-600 hover:bg-sky-700"
             >
               {loading ? (
                 <>

@@ -225,7 +225,7 @@ export default function VerFacturaPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-sky-600" />
       </div>
     )
   }
@@ -346,7 +346,7 @@ export default function VerFacturaPage() {
         <Card className="p-6 md:p-8 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
             {/* Cliente */}
-            <div className="border-l-4 border-blue-600 pl-4">
+            <div className="border-l-4 border-sky-600 pl-4">
               <h3 className="font-semibold text-gray-700 mb-2 text-sm uppercase">Facturado a:</h3>
               <p className="font-semibold text-gray-900 text-lg">{factura.cliente?.nombre}</p>
               <p className="text-gray-600 font-mono">{factura.cliente?.nif}</p>
@@ -417,7 +417,7 @@ export default function VerFacturaPage() {
                 <span className="text-gray-600">IVA (21%):</span>
                 <span className="font-semibold">€{factura.iva?.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between py-3 text-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white p-2 rounded font-bold mt-2">
+              <div className="flex justify-between py-3 text-lg bg-gradient-to-r from-sky-600 to-sky-700 text-white p-2 rounded font-bold mt-2">
                 <span>Total:</span>
                 <span>€{factura.total?.toFixed(2)}</span>
               </div>

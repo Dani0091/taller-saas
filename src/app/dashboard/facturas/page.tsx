@@ -139,7 +139,7 @@ export default function FacturasPage() {
           <p className="text-gray-600 mt-1">Gestiona todas tus facturas</p>
         </div>
         <Link href="/dashboard/facturas/nueva">
-          <Button className="gap-2 bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
+          <Button className="gap-2 bg-sky-600 hover:bg-sky-700 w-full sm:w-auto">
             <Plus className="w-5 h-5" />
             Nueva Factura
           </Button>
@@ -162,7 +162,7 @@ export default function FacturasPage() {
             <select
               value={filtroEstado}
               onChange={(e) => setFiltroEstado(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
             >
               <option value="">Todos los estados</option>
               <option value="borrador">Borrador</option>
@@ -177,7 +177,7 @@ export default function FacturasPage() {
       {/* LISTADO */}
       {loading ? (
         <div className="flex justify-center items-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+          <Loader2 className="w-8 h-8 animate-spin text-sky-600" />
         </div>
       ) : facturasFiltradas.length === 0 ? (
         <Card className="p-12 text-center">
@@ -215,7 +215,7 @@ export default function FacturasPage() {
                     <td className="px-4 md:px-6 py-4">
                       <div className="flex justify-center gap-1 md:gap-2">
                         <Link href={`/dashboard/facturas/ver?id=${factura.id}`}>
-                          <Button variant="ghost" size="sm" className="text-blue-600 p-2">
+                          <Button variant="ghost" size="sm" className="text-sky-600 p-2">
                             <Eye className="w-4 h-4" />
                           </Button>
                         </Link>

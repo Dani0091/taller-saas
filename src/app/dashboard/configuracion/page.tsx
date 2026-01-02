@@ -225,7 +225,7 @@ export default function ConfiguracionPage() {
       {/* Header */}
       <div>
         <div className="flex items-center gap-3 mb-2">
-          <Settings className="w-6 h-6 md:w-8 md:h-8 text-blue-600" />
+          <Settings className="w-6 h-6 md:w-8 md:h-8 text-sky-600" />
           <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Configuración</h1>
         </div>
         <p className="text-gray-600">Gestiona la tarifa, IVA y datos de tu taller</p>
@@ -430,7 +430,7 @@ export default function ConfiguracionPage() {
                   Tarifa por Hora ({formData.tarifa_con_iva ? 'Con IVA' : 'Sin IVA'}) (€)
                 </Label>
                 <div className="flex items-center gap-2">
-                  <span className="text-xl font-bold text-blue-600">€</span>
+                  <span className="text-xl font-bold text-sky-600">€</span>
                   <Input
                     id="tarifa_hora"
                     name="tarifa_hora"
@@ -495,7 +495,7 @@ export default function ConfiguracionPage() {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-sm">
                 <div className="bg-white p-4 rounded-lg border border-blue-100">
                   <p className="text-gray-600 text-xs uppercase">Base Imponible</p>
-                  <p className="text-2xl font-bold text-blue-600 mt-2">€{(tarifaBase * 2).toFixed(2)}</p>
+                  <p className="text-2xl font-bold text-sky-600 mt-2">€{(tarifaBase * 2).toFixed(2)}</p>
                 </div>
 
                 {formData.incluye_iva && (
@@ -544,7 +544,7 @@ export default function ConfiguracionPage() {
         <Button
           type="submit"
           disabled={saving}
-          className="px-8 gap-2 bg-blue-600 hover:bg-blue-700 order-1 sm:order-2"
+          className="px-8 gap-2 bg-sky-600 hover:bg-sky-700 order-1 sm:order-2"
         >
           {saving && <Loader2 className="w-4 h-4 animate-spin" />}
           {saving ? 'Guardando...' : 'Guardar'}

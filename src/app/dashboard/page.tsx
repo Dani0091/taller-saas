@@ -184,7 +184,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* Clientes */}
-        <Card className="p-4 md:p-5 bg-gradient-to-br from-blue-600 to-blue-700 text-white border-0 shadow-lg shadow-blue-500/20 hover:shadow-xl hover:shadow-blue-500/30 transition-all duration-300 hover:scale-[1.02] col-span-2 lg:col-span-1">
+        <Card className="p-4 md:p-5 bg-gradient-to-br from-sky-600 to-sky-700 text-white border-0 shadow-lg shadow-sky-500/20 hover:shadow-xl hover:shadow-sky-500/30 transition-all duration-300 hover:scale-[1.02] col-span-2 lg:col-span-1">
           <div className="flex justify-between items-start mb-3">
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
               <Users className="w-5 h-5" />
