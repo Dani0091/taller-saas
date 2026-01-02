@@ -51,36 +51,36 @@
   --card-foreground: #0f172a;
   --popover: #ffffff;
   --popover-foreground: #0f172a;
-  /* Motorsport Orange Primary */
-  --primary: #ea580c;
+  /* Primary - Professional Blue */
+  --primary: #0ea5e9;
   --primary-foreground: #ffffff;
-  /* Racing Blue Secondary */
-  --secondary: #1e3a5f;
+  /* Secondary - Deep Navy */
+  --secondary: #0f172a;
   --secondary-foreground: #ffffff;
   --muted: #f1f5f9;
   --muted-foreground: #64748b;
-  /* Racing Yellow Accent */
-  --accent: #fbbf24;
-  --accent-foreground: #0f172a;
+  /* Accent - Teal/Cyan */
+  --accent: #14b8a6;
+  --accent-foreground: #ffffff;
   --destructive: #dc2626;
   --border: #e2e8f0;
   --input: #e2e8f0;
-  --ring: #ea580c;
-  /* Motorsport chart colors */
-  --chart-1: #ea580c;
-  --chart-2: #1e3a5f;
-  --chart-3: #fbbf24;
-  --chart-4: #10b981;
-  --chart-5: #8b5cf6;
-  /* Dark sidebar - Racing Dark */
-  --sidebar: #111827;
+  --ring: #0ea5e9;
+  /* Chart colors - Cool tones */
+  --chart-1: #0ea5e9;
+  --chart-2: #14b8a6;
+  --chart-3: #8b5cf6;
+  --chart-4: #f59e0b;
+  --chart-5: #ec4899;
+  /* Dark sidebar */
+  --sidebar: #0f172a;
   --sidebar-foreground: #f8fafc;
-  --sidebar-primary: #ea580c;
+  --sidebar-primary: #0ea5e9;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1f2937;
+  --sidebar-accent: #1e293b;
   --sidebar-accent-foreground: #f8fafc;
-  --sidebar-border: #374151;
-  --sidebar-ring: #ea580c;
+  --sidebar-border: #334155;
+  --sidebar-ring: #0ea5e9;
 }
 
 .dark {

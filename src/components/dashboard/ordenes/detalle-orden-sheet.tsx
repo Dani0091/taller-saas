@@ -1,17 +1,27 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { X, Save, Plus, Trash2, Loader2, Camera, MessageCircle, FileText } from 'lucide-react'
+import { X, Save, Plus, Trash2, Loader2, FileText, ChevronDown, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { WhatsAppLink } from './whatsapp-link'
-import { FotoUploader } from './foto-uploader'
+
+// Estados disponibles para órdenes
+const ESTADOS = [
+  { value: 'recibido', label: 'Recibido', color: 'bg-blue-500', icon: '📋' },
+  { value: 'diagnostico', label: 'En Diagnóstico', color: 'bg-purple-500', icon: '🔍' },
+  { value: 'presupuestado', label: 'Presupuestado', color: 'bg-yellow-500', icon: '💰' },
+  { value: 'aprobado', label: 'Aprobado', color: 'bg-cyan-500', icon: '✓' },
+  { value: 'en_reparacion', label: 'En Reparación', color: 'bg-orange-500', icon: '🔧' },
+  { value: 'completado', label: 'Completado', color: 'bg-green-500', icon: '✅' },
+  { value: 'entregado', label: 'Entregado', color: 'bg-emerald-600', icon: '🚗' },
+  { value: 'cancelado', label: 'Cancelado', color: 'bg-red-500', icon: '❌' },
+]
 
 interface Orden {
   id?: string
@@ -19,37 +29,22 @@ interface Orden {
   estado: string
   cliente_id: string
   vehiculo_id: string
-  clientes?: { nombre: string; nif?: string; telefono?: string; email?: string; direccion?: string }
-  vehiculos?: { marca: string; modelo: string; matricula: string }
   descripcion_problema?: string
   diagnostico?: string
   trabajos_realizados?: string
-  fotos_entrada?: string
-  fotos_lado_izquierdo?: string
-  fotos_lado_derecho?: string
-  fotos_trasera?: string
-  fotos_salida?: string
-  km_entrada_extraido?: number
-  matricula_extraida?: string
+  notas?: string
   presupuesto_aprobado_por_cliente?: boolean
-  telefono_cliente?: string
-  nif_cliente?: string
-  fecha_prevista_entrega?: string
-  coste_diario_estancia?: number
-  dias_estimados?: number
-  autorizacion_cliente_confirmada?: boolean
   tiempo_estimado_horas?: number
   tiempo_real_horas?: number
   subtotal_mano_obra?: number
   subtotal_piezas?: number
   iva_amount?: number
   total_con_iva?: number
-  tiempo_estancia_contable?: boolean
 }
 
 interface DetalleOrdenSheetProps {
   ordenSeleccionada?: string | null
-  ordenes?: Orden[]
+  ordenes?: any[]
   onClose: () => void
   onActualizar: () => void
   modoCrear?: boolean
@@ -61,25 +56,40 @@ interface Linea {
   descripcion: string
   cantidad: number
   precio_unitario: number
+  isNew?: boolean
 }
 
 export function DetalleOrdenSheet({
   ordenSeleccionada,
-  ordenes = [],
   onClose,
   onActualizar,
   modoCrear = false
 }: DetalleOrdenSheetProps) {
   const router = useRouter()
   const supabase = createClient()
+  const [cargando, setCargando] = useState(!modoCrear)
   const [guardando, setGuardando] = useState(false)
   const [generandoFactura, setGenerandoFactura] = useState(false)
-  const [tab, setTab] = useState<'info' | 'diagnostico' | 'items'>('info')
+  const [tab, setTab] = useState<'info' | 'trabajo' | 'items'>('info')
   const [lineas, setLineas] = useState<Linea[]>([])
   const [clientes, setClientes] = useState<any[]>([])
-  const [modoCliente, setModoCliente] = useState<'seleccionar' | 'crear'>('seleccionar')
   const [tallerId, setTallerId] = useState<string>('')
-  
+  const [ordenNumero, setOrdenNumero] = useState<string>('')
+  const [mostrarEstados, setMostrarEstados] = useState(false)
+
+  const [formData, setFormData] = useState<Orden>({
+    estado: 'recibido',
+    cliente_id: '',
+    vehiculo_id: '',
+    descripcion_problema: '',
+    diagnostico: '',
+    trabajos_realizados: '',
+    notas: '',
+    presupuesto_aprobado_por_cliente: false,
+    tiempo_estimado_horas: 0,
+    tiempo_real_horas: 0,
+  })
+
   const [nuevaLinea, setNuevaLinea] = useState({
     tipo: 'mano_obra' as const,
     descripcion: '',
@@ -87,138 +97,119 @@ export function DetalleOrdenSheet({
     precio_unitario: 0
   })
 
-  const orden = !modoCrear && ordenSeleccionada ? ordenes.find(o => o.id === ordenSeleccionada) : null
-
-  const [formData, setFormData] = useState<Orden>({
-    estado: orden?.estado || 'recibido',
-    cliente_id: orden?.cliente_id || '',
-    vehiculo_id: orden?.vehiculo_id || '',
-    descripcion_problema: orden?.descripcion_problema || '',
-    diagnostico: orden?.diagnostico || '',
-    trabajos_realizados: orden?.trabajos_realizados || '',
-    fotos_entrada: orden?.fotos_entrada || '',
-    fotos_lado_izquierdo: orden?.fotos_lado_izquierdo || '',
-    fotos_lado_derecho: orden?.fotos_lado_derecho || '',
-    fotos_trasera: orden?.fotos_trasera || '',
-    fotos_salida: orden?.fotos_salida || '',
-    km_entrada_extraido: orden?.km_entrada_extraido || 0,
-    matricula_extraida: orden?.matricula_extraida || '',
-    presupuesto_aprobado_por_cliente: orden?.presupuesto_aprobado_por_cliente || false,
-    telefono_cliente: orden?.telefono_cliente || '',
-    nif_cliente: orden?.nif_cliente || '',
-    fecha_prevista_entrega: orden?.fecha_prevista_entrega || '',
-    coste_diario_estancia: orden?.coste_diario_estancia || 0,
-    dias_estimados: orden?.dias_estimados || 1,
-    autorizacion_cliente_confirmada: orden?.autorizacion_cliente_confirmada || false,
-    tiempo_estimado_horas: orden?.tiempo_estimado_horas || 0,
-    tiempo_real_horas: orden?.tiempo_real_horas || 0,
-    tiempo_estancia_contable: orden?.tiempo_estancia_contable ?? true,
-  })
-
-  const [clienteNuevo, setClienteNuevo] = useState({
-    nombre: '',
-    nif: '',
-    telefono: '',
-  })
-
+  // Cargar datos iniciales
   useEffect(() => {
-    obtenerTallerId()
+    inicializar()
   }, [])
 
-  useEffect(() => {
-    if (tallerId) {
-      cargarClientes()
-    }
-  }, [tallerId])
-
-  const obtenerTallerId = async () => {
+  const inicializar = async () => {
     try {
+      // 1. Obtener taller_id
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) {
         toast.error('No autenticado')
         return
       }
 
-      const { data: usuario, error } = await supabase
+      const { data: usuario } = await supabase
         .from('usuarios')
         .select('taller_id')
         .eq('email', session.user.email)
         .single()
 
-      if (error || !usuario) {
-        toast.error('No se pudo obtener taller_id')
+      if (!usuario) {
+        toast.error('Usuario no encontrado')
         return
       }
 
-      console.log('✅ Taller ID obtenido:', usuario.taller_id)
       setTallerId(usuario.taller_id)
-    } catch (error: any) {
-      console.error('❌ Error obtener taller:', error)
-    }
-  }
 
-  const cargarClientes = async () => {
-    try {
-      // ✅ FIX 1: PASAR taller_id EN QUERY
-      const res = await fetch(`/api/clientes?taller_id=${tallerId}`)
-      const data = await res.json()
-      console.log('📋 Clientes cargados:', data.length)
-      setClientes(data)
-    } catch (error) {
-      console.error('Error cargando clientes:', error)
-    }
-  }
+      // 2. Cargar clientes
+      const { data: clientesData } = await supabase
+        .from('clientes')
+        .select('id, nombre, nif, telefono')
+        .eq('taller_id', usuario.taller_id)
+        .order('nombre')
 
-  const crearCliente = async () => {
-    if (!clienteNuevo.nombre || !clienteNuevo.nif) {
-      toast.error('Nombre y NIF requeridos')
-      return
-    }
+      setClientes(clientesData || [])
 
-    if (!tallerId) {
-      toast.error('Taller no cargado')
-      return
-    }
+      // 3. Si estamos editando, cargar orden completa
+      if (!modoCrear && ordenSeleccionada) {
+        const { data: ordenData, error } = await supabase
+          .from('ordenes_reparacion')
+          .select('*')
+          .eq('id', ordenSeleccionada)
+          .single()
 
-    try {
-      setGuardando(true)
-      const res = await fetch('/api/clientes/crear', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...clienteNuevo,
-          taller_id: tallerId
+        if (error || !ordenData) {
+          toast.error('Orden no encontrada')
+          onClose()
+          return
+        }
+
+        setOrdenNumero(ordenData.numero_orden)
+        setFormData({
+          estado: ordenData.estado || 'recibido',
+          cliente_id: ordenData.cliente_id || '',
+          vehiculo_id: ordenData.vehiculo_id || '',
+          descripcion_problema: ordenData.descripcion_problema || '',
+          diagnostico: ordenData.diagnostico || '',
+          trabajos_realizados: ordenData.trabajos_realizados || '',
+          notas: ordenData.notas || '',
+          presupuesto_aprobado_por_cliente: ordenData.presupuesto_aprobado_por_cliente || false,
+          tiempo_estimado_horas: ordenData.tiempo_estimado_horas || 0,
+          tiempo_real_horas: ordenData.tiempo_real_horas || 0,
+          subtotal_mano_obra: ordenData.subtotal_mano_obra || 0,
+          subtotal_piezas: ordenData.subtotal_piezas || 0,
+          iva_amount: ordenData.iva_amount || 0,
+          total_con_iva: ordenData.total_con_iva || 0,
         })
-      })
 
-      const data = await res.json()
-      if (!data.success) throw new Error(data.error)
+        // 4. Cargar líneas de la orden
+        const { data: lineasData } = await supabase
+          .from('lineas_orden')
+          .select('*')
+          .eq('orden_id', ordenSeleccionada)
+          .order('created_at')
 
-      toast.success('Cliente creado')
-      setFormData(prev => ({ ...prev, cliente_id: data.cliente.id }))
-      setClienteNuevo({ nombre: '', nif: '', telefono: '' })
-      setModoCliente('seleccionar')
-      await cargarClientes()
+        if (lineasData) {
+          setLineas(lineasData.map(l => ({
+            id: l.id,
+            tipo: l.tipo as any,
+            descripcion: l.descripcion,
+            cantidad: l.cantidad,
+            precio_unitario: l.precio_unitario,
+            isNew: false
+          })))
+        }
+      } else {
+        // Generar número de orden para nueva
+        const { data: ultimaOrden } = await supabase
+          .from('ordenes_reparacion')
+          .select('numero_orden')
+          .eq('taller_id', usuario.taller_id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
+
+        let siguienteNumero = 1
+        if (ultimaOrden?.numero_orden) {
+          const match = ultimaOrden.numero_orden.match(/OR-(\d+)/)
+          if (match) {
+            siguienteNumero = parseInt(match[1]) + 1
+          }
+        }
+        setOrdenNumero(`OR-${siguienteNumero.toString().padStart(4, '0')}`)
+      }
     } catch (error: any) {
-      toast.error(error.message)
+      console.error('Error inicializando:', error)
+      toast.error('Error al cargar datos')
     } finally {
-      setGuardando(false)
+      setCargando(false)
     }
   }
 
-  const agregarLinea = () => {
-    const linea: Linea = {
-      id: Date.now().toString(),
-      ...nuevaLinea
-    }
-    setLineas([...lineas, linea])
-    setNuevaLinea({ tipo: 'mano_obra', descripcion: '', cantidad: 1, precio_unitario: 0 })
-  }
-
-  const eliminarLinea = (id: string) => {
-    setLineas(lineas.filter(l => l.id !== id))
-  }
-
+  // Calcular totales
   const totales = lineas.reduce(
     (acc, linea) => {
       const subtotal = linea.cantidad * linea.precio_unitario
@@ -235,79 +226,130 @@ export function DetalleOrdenSheet({
     { manoObra: 0, piezas: 0, servicios: 0, subtotal: 0, iva: 0, total: 0 }
   )
 
-  const handleGuardar = async () => {
-    try {
-      setGuardando(true)
+  const agregarLinea = () => {
+    if (!nuevaLinea.descripcion) {
+      toast.error('Añade una descripción')
+      return
+    }
+    if (nuevaLinea.precio_unitario <= 0) {
+      toast.error('Añade un precio válido')
+      return
+    }
 
-      if (!tallerId) {
-        toast.error('Taller no cargado')
-        return
+    setLineas([...lineas, {
+      id: `new-${Date.now()}`,
+      ...nuevaLinea,
+      isNew: true
+    }])
+    setNuevaLinea({ tipo: 'mano_obra', descripcion: '', cantidad: 1, precio_unitario: 0 })
+    toast.success('Línea añadida')
+  }
+
+  const eliminarLinea = async (id: string) => {
+    // Si es una línea existente, eliminar de BD
+    if (!id.startsWith('new-')) {
+      await supabase.from('lineas_orden').delete().eq('id', id)
+    }
+    setLineas(lineas.filter(l => l.id !== id))
+    toast.success('Línea eliminada')
+  }
+
+  const handleGuardar = async () => {
+    if (!tallerId) {
+      toast.error('Error: Taller no identificado')
+      return
+    }
+
+    if (!formData.cliente_id) {
+      toast.error('Selecciona un cliente')
+      return
+    }
+
+    setGuardando(true)
+    try {
+      const ordenData = {
+        taller_id: tallerId,
+        numero_orden: ordenNumero,
+        estado: formData.estado,
+        cliente_id: formData.cliente_id || null,
+        vehiculo_id: formData.vehiculo_id || null,
+        descripcion_problema: formData.descripcion_problema,
+        diagnostico: formData.diagnostico,
+        trabajos_realizados: formData.trabajos_realizados,
+        notas: formData.notas,
+        presupuesto_aprobado_por_cliente: formData.presupuesto_aprobado_por_cliente,
+        tiempo_estimado_horas: formData.tiempo_estimado_horas,
+        tiempo_real_horas: formData.tiempo_real_horas,
+        subtotal_mano_obra: totales.manoObra,
+        subtotal_piezas: totales.piezas,
+        iva_amount: totales.iva,
+        total_con_iva: totales.total,
       }
 
+      let ordenId = ordenSeleccionada
+
       if (modoCrear) {
-        const res = await fetch('/api/ordenes', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            taller_id: tallerId,
-            numero_orden: `ORD-${Date.now()}`,
-            cliente_id: formData.cliente_id,
-            vehiculo_id: formData.vehiculo_id,
-            descripcion_problema: formData.descripcion_problema,
-            kilometros_entrada: formData.km_entrada_extraido,
-            fotos_entrada: formData.fotos_entrada,
-            estado: 'recibido',
-            subtotal_mano_obra: totales.manoObra,
-            subtotal_piezas: totales.piezas,
-            subtotal: totales.subtotal,
-            iva_amount: totales.iva,
-            total_con_iva: totales.total,
-          })
-        })
+        // Crear nueva orden
+        const { data, error } = await supabase
+          .from('ordenes_reparacion')
+          .insert([ordenData])
+          .select('id')
+          .single()
 
-        if (!res.ok) throw new Error('Error creando orden')
-        toast.success('✅ Orden creada')
+        if (error) throw error
+        ordenId = data.id
+        toast.success('Orden creada correctamente')
       } else {
-        if (!orden?.id) return
-
-        const res = await fetch('/api/ordenes', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            id: orden.id,
-            ...formData,
-            subtotal_mano_obra: totales.manoObra,
-            subtotal_piezas: totales.piezas,
-            subtotal: totales.subtotal,
-            iva_amount: totales.iva,
-            total_con_iva: totales.total,
+        // Actualizar orden existente
+        const { error } = await supabase
+          .from('ordenes_reparacion')
+          .update({
+            ...ordenData,
+            updated_at: new Date().toISOString()
           })
-        })
+          .eq('id', ordenSeleccionada)
 
-        if (!res.ok) throw new Error('Error actualizando orden')
-        toast.success('✅ Orden actualizada')
+        if (error) throw error
+        toast.success('Orden actualizada')
+      }
+
+      // Guardar líneas nuevas
+      const lineasNuevas = lineas.filter(l => l.isNew)
+      if (lineasNuevas.length > 0 && ordenId) {
+        const { error: lineasError } = await supabase
+          .from('lineas_orden')
+          .insert(lineasNuevas.map(l => ({
+            orden_id: ordenId,
+            tipo: l.tipo,
+            descripcion: l.descripcion,
+            cantidad: l.cantidad,
+            precio_unitario: l.precio_unitario,
+            importe_total: l.cantidad * l.precio_unitario
+          })))
+
+        if (lineasError) {
+          console.error('Error guardando líneas:', lineasError)
+        }
       }
 
       onActualizar()
       onClose()
     } catch (error: any) {
-      toast.error(error.message)
+      console.error('Error guardando:', error)
+      toast.error(error.message || 'Error al guardar')
     } finally {
       setGuardando(false)
     }
   }
 
   const handleGenerarFactura = async () => {
-    if (!orden?.id || !tallerId) {
-      toast.error('Datos incompletos para generar factura')
+    if (!ordenSeleccionada || !tallerId) {
+      toast.error('Datos incompletos')
       return
     }
 
-    // Verificar estado
-    if (!['completado', 'entregado', 'en_reparacion'].includes(formData.estado)) {
-      toast.error('La orden debe estar en reparación o completada para generar factura')
-      return
-    }
+    // Primero guardar cambios
+    await handleGuardar()
 
     setGenerandoFactura(true)
     try {
@@ -315,7 +357,7 @@ export function DetalleOrdenSheet({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          orden_id: orden.id,
+          orden_id: ordenSeleccionada,
           taller_id: tallerId
         })
       })
@@ -326,11 +368,8 @@ export function DetalleOrdenSheet({
         throw new Error(data.error || 'Error al generar factura')
       }
 
-      toast.success(`Factura ${data.numero_factura} creada correctamente`)
-
-      // Navegar a ver la factura
+      toast.success(`Factura ${data.numero_factura} creada`)
       router.push(`/dashboard/facturas/ver?id=${data.id}`)
-      onClose()
     } catch (error: any) {
       toast.error(error.message)
     } finally {
@@ -338,412 +377,341 @@ export function DetalleOrdenSheet({
     }
   }
 
-  const clienteSeleccionado = clientes.find(c => c.id === formData.cliente_id)
+  const cambiarEstado = (nuevoEstado: string) => {
+    setFormData(prev => ({ ...prev, estado: nuevoEstado }))
+    setMostrarEstados(false)
+  }
+
+  const estadoActual = ESTADOS.find(e => e.value === formData.estado) || ESTADOS[0]
+
+  if (cargando) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
+        <div className="bg-white rounded-2xl p-8 text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-blue-600" />
+          <p className="text-gray-600">Cargando orden...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="fixed inset-0 z-40 bg-black bg-opacity-50">
-      <div className="fixed inset-y-0 right-0 w-full max-w-2xl bg-white shadow-xl overflow-y-auto">
-        <div className="sticky top-0 bg-white border-b px-4 py-4 flex items-center justify-between">
-          <h2 className="text-xl font-bold">
-            {modoCrear ? 'Nueva Orden' : orden?.numero_orden}
-          </h2>
-          <button onClick={onClose} className="p-1">
-            <X className="w-6 h-6" />
+    <div className="fixed inset-0 z-50 bg-black/50">
+      <div className="fixed inset-y-0 right-0 w-full max-w-lg bg-gray-50 shadow-xl flex flex-col">
+        {/* Header fijo */}
+        <div className="bg-white border-b px-4 py-3 flex items-center justify-between shrink-0">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">
+              {modoCrear ? 'Nueva Orden' : ordenNumero}
+            </h2>
+            <p className="text-xs text-gray-500">
+              {modoCrear ? 'Crear nueva orden de trabajo' : 'Editar orden'}
+            </p>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-4 space-y-4">
-          <div className="flex gap-2 border-b">
-            {['info', 'diagnostico', 'items'].map(t => (
-              <button
-                key={t}
-                onClick={() => setTab(t as any)}
-                className={`px-4 py-2 font-medium border-b-2 text-sm ${
-                  tab === t
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-600'
-                }`}
-              >
-                {t === 'info' ? 'ℹ️ Info' : t === 'diagnostico' ? '🔍 Diag' : '📋 Items'}
-              </button>
-            ))}
-          </div>
+        {/* Selector de estado */}
+        <div className="bg-white border-b px-4 py-3 shrink-0">
+          <Label className="text-xs text-gray-500 mb-2 block">Estado de la orden</Label>
+          <div className="relative">
+            <button
+              onClick={() => setMostrarEstados(!mostrarEstados)}
+              className={`w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl border-2 transition-all ${estadoActual.color} text-white`}
+            >
+              <span className="flex items-center gap-2 font-medium">
+                <span>{estadoActual.icon}</span>
+                {estadoActual.label}
+              </span>
+              <ChevronDown className={`w-5 h-5 transition-transform ${mostrarEstados ? 'rotate-180' : ''}`} />
+            </button>
 
-          {tab === 'info' && (
-            <div className="space-y-4">
-              <Card className="p-4 border-l-4 border-l-blue-600">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-2xl">👤</span>
-                  <h3 className="font-bold text-lg">Cliente</h3>
-                </div>
-
-                {modoCliente === 'seleccionar' ? (
-                  <>
-                    <select
-                      value={formData.cliente_id}
-                      onChange={(e) => setFormData(prev => ({ ...prev, cliente_id: e.target.value }))}
-                      className="w-full px-3 py-2 border rounded-lg mb-3 focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">-- Selecciona cliente --</option>
-                      {clientes.map(c => (
-                        <option key={c.id} value={c.id}>{c.nombre} ({c.nif})</option>
-                      ))}
-                    </select>
-
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full gap-2"
-                      onClick={() => setModoCliente('crear')}
-                    >
-                      <Plus className="w-4 h-4" />
-                      Crear nuevo cliente
-                    </Button>
-
-                    {clienteSeleccionado && (
-                      <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm space-y-2 border border-blue-200">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Nombre:</span>
-                          <span className="font-bold">{clienteSeleccionado.nombre}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">NIF:</span>
-                          <span className="font-bold">{clienteSeleccionado.nif}</span>
-                        </div>
-                        {clienteSeleccionado.telefono && (
-                          <div className="flex justify-between">
-                            <span className="text-gray-600">Teléfono:</span>
-                            <span className="font-bold">{clienteSeleccionado.telefono}</span>
-                          </div>
-                        )}
-                      </div>
+            {mostrarEstados && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border z-10 overflow-hidden">
+                {ESTADOS.map(estado => (
+                  <button
+                    key={estado.value}
+                    onClick={() => cambiarEstado(estado.value)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${
+                      formData.estado === estado.value ? 'bg-gray-100' : ''
+                    }`}
+                  >
+                    <span className={`w-3 h-3 rounded-full ${estado.color}`} />
+                    <span className="flex-1 text-left font-medium">{estado.label}</span>
+                    {formData.estado === estado.value && (
+                      <Check className="w-4 h-4 text-green-600" />
                     )}
-                  </>
-                ) : (
-                  <div className="space-y-3">
-                    <Input
-                      placeholder="Nombre completo"
-                      value={clienteNuevo.nombre}
-                      onChange={(e) => setClienteNuevo(prev => ({ ...prev, nombre: e.target.value }))}
-                    />
-                    <Input
-                      placeholder="NIF/CIF"
-                      value={clienteNuevo.nif}
-                      onChange={(e) => setClienteNuevo(prev => ({ ...prev, nif: e.target.value }))}
-                    />
-                    <Input
-                      placeholder="Teléfono (opcional)"
-                      value={clienteNuevo.telefono}
-                      onChange={(e) => setClienteNuevo(prev => ({ ...prev, telefono: e.target.value }))}
-                    />
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        onClick={crearCliente}
-                        disabled={guardando}
-                        className="flex-1"
-                      >
-                        {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                        Guardar cliente
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setModoCliente('seleccionar')}
-                      >
-                        Cancelar
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </Card>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
 
-              {/* FOTOS */}
-              <Card className="p-4 border-l-4 border-l-green-600">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-2xl">📸</span>
-                  <h3 className="font-bold text-lg">Fotografías</h3>
-                </div>
-                <p className="text-xs text-gray-600 mb-4">Click para tomar foto (OCR automático en entrada)</p>
-                
-                <div className="space-y-4">
-                  <FotoUploader
-                    tipo="entrada"
-                    fotoUrl={formData.fotos_entrada}
-                    ordenId={orden?.id || 'nueva'}
-                    onFotoSubida={(url) => setFormData(prev => ({ ...prev, fotos_entrada: url }))}
-                    onOCRData={(data) => {
-                      if (data.km) setFormData(prev => ({ ...prev, km_entrada_extraido: data.km }))
-                      if (data.matricula) setFormData(prev => ({ ...prev, matricula_extraida: data.matricula }))
-                    }}
-                  />
+        {/* Tabs */}
+        <div className="bg-white border-b flex shrink-0">
+          {[
+            { id: 'info', label: 'Información', icon: '📋' },
+            { id: 'trabajo', label: 'Trabajo', icon: '🔧' },
+            { id: 'items', label: 'Líneas', icon: '💰' },
+          ].map(t => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id as any)}
+              className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${
+                tab === t.id
+                  ? 'border-blue-600 text-blue-600 bg-blue-50'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <span className="mr-1">{t.icon}</span>
+              {t.label}
+            </button>
+          ))}
+        </div>
 
-                  <FotoUploader
-                    tipo="izquierda"
-                    fotoUrl={formData.fotos_lado_izquierdo}
-                    ordenId={orden?.id || 'nueva'}
-                    onFotoSubida={(url) => setFormData(prev => ({ ...prev, fotos_lado_izquierdo: url }))}
-                  />
-
-                  <FotoUploader
-                    tipo="derecha"
-                    fotoUrl={formData.fotos_lado_derecho}
-                    ordenId={orden?.id || 'nueva'}
-                    onFotoSubida={(url) => setFormData(prev => ({ ...prev, fotos_lado_derecho: url }))}
-                  />
-
-                  <FotoUploader
-                    tipo="trasera"
-                    fotoUrl={formData.fotos_trasera}
-                    ordenId={orden?.id || 'nueva'}
-                    onFotoSubida={(url) => setFormData(prev => ({ ...prev, fotos_trasera: url }))}
-                  />
-
-                  <FotoUploader
-                    tipo="salida"
-                    fotoUrl={formData.fotos_salida}
-                    ordenId={orden?.id || 'nueva'}
-                    onFotoSubida={(url) => setFormData(prev => ({ ...prev, fotos_salida: url }))}
-                  />
-                </div>
-              </Card>
-
-              {/* DATOS ENTRADA */}
-              <Card className="p-4 border-l-4 border-l-orange-600">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-2xl">🚗</span>
-                  <h3 className="font-bold text-lg">Datos a la entrada</h3>
-                </div>
-                
-                <div className="space-y-3">
-                  <div>
-                    <Label className="text-xs font-semibold text-gray-700 mb-1 block">KM a la entrada</Label>
-                    <Input
-                      type="number"
-                      placeholder="Ej: 245000"
-                      value={formData.km_entrada_extraido || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, km_entrada_extraido: parseInt(e.target.value) }))}
-                      className="font-bold text-lg"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label className="text-xs font-semibold text-gray-700 mb-1 block">Matrícula</Label>
-                    <Input
-                      placeholder="Ej: AB-1234-CD"
-                      value={formData.matricula_extraida || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, matricula_extraida: e.target.value }))}
-                      className="font-bold text-lg uppercase"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label className="text-xs font-semibold text-gray-700 mb-1 block">Teléfono cliente</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="+34 666 123 456"
-                        value={formData.telefono_cliente || ''}
-                        onChange={(e) => setFormData(prev => ({ ...prev, telefono_cliente: e.target.value }))}
-                      />
-                      <WhatsAppLink telefono={formData.telefono_cliente || ''} />
-                    </div>
-                  </div>
-                </div>
-              </Card>
-
-              {/* TIEMPO ESTANCIA */}
-              <Card className="p-4 border-l-4 border-l-purple-600">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-2xl">⏰</span>
-                  <h3 className="font-bold text-lg">Tiempo de estancia</h3>
-                </div>
-                
-                <p className="text-xs text-gray-600 mb-3">Si el coche se queda varios días</p>
-                
-                <label className="flex items-center gap-2 p-3 border border-purple-300 rounded-lg cursor-pointer hover:bg-purple-50 transition-all mb-4">
-                  <input
-                    type="checkbox"
-                    checked={formData.tiempo_estancia_contable ?? true}
-                    onChange={(e) => setFormData(prev => ({ ...prev, tiempo_estancia_contable: e.target.checked }))}
-                    className="w-5 h-5 rounded text-purple-600"
-                  />
-                  <span className="font-medium">✓ Tiempo contable (se cobra)</span>
-                </label>
-
-                {formData.tiempo_estancia_contable ? (
-                  <>
-                    <div className="grid grid-cols-2 gap-3 mb-3">
-                      <div>
-                        <Label className="text-xs font-semibold text-gray-700 mb-1 block">Días estimados</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          placeholder="1"
-                          value={formData.dias_estimados || 1}
-                          onChange={(e) => setFormData(prev => ({ ...prev, dias_estimados: parseInt(e.target.value) || 1 }))}
-                          className="font-bold text-center text-lg"
-                        />
-                      </div>
-                      
-                      <div>
-                        <Label className="text-xs font-semibold text-gray-700 mb-1 block">Coste/día (€)</Label>
-                        <Input
-                          type="number"
-                          placeholder="0.00"
-                          value={formData.coste_diario_estancia || ''}
-                          onChange={(e) => setFormData(prev => ({ ...prev, coste_diario_estancia: parseFloat(e.target.value) }))}
-                          className="font-bold text-center text-lg"
-                        />
-                      </div>
-                    </div>
-
-                    {formData.dias_estimados && formData.coste_diario_estancia ? (
-                      <div className="p-3 bg-purple-50 rounded-lg text-sm font-bold text-purple-700 text-center border border-purple-200">
-                        💰 Coste total: €{(formData.dias_estimados * formData.coste_diario_estancia).toFixed(2)}
-                      </div>
-                    ) : null}
-                  </>
-                ) : (
-                  <div className="p-3 bg-gray-100 rounded-lg text-sm font-bold text-gray-700 text-center border border-gray-300">
-                    ✗ Sin cargo - Tiempo no contable
-                  </div>
-                )}
-              </Card>
-
-              {/* AUTORIZACIÓN */}
-              <Card className="p-4 border-l-4 border-l-green-600">
-                <div className="flex items-center gap-2 mb-4">
-                  <span className="text-2xl">✅</span>
-                  <h3 className="font-bold text-lg">Autorización</h3>
-                </div>
-                
-                <label className="flex items-center gap-3 p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-all">
-                  <input
-                    type="checkbox"
-                    checked={formData.autorizacion_cliente_confirmada || false}
-                    onChange={(e) => setFormData(prev => ({ ...prev, autorizacion_cliente_confirmada: e.target.checked }))}
-                    className="w-5 h-5 rounded text-green-600"
-                  />
-                  <span className="font-medium">Cliente autoriza la reparación</span>
-                </label>
-              </Card>
-            </div>
-          )}
-
-          {tab === 'diagnostico' && (
-            <div className="space-y-4">
+        {/* Contenido scrollable */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {tab === 'info' && (
+            <>
+              {/* Cliente */}
               <Card className="p-4">
-                <Label className="font-bold mb-2 block">📝 Descripción del problema</Label>
+                <Label className="text-sm font-semibold mb-2 block">Cliente *</Label>
+                <select
+                  value={formData.cliente_id}
+                  onChange={(e) => setFormData(prev => ({ ...prev, cliente_id: e.target.value }))}
+                  className="w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="">Seleccionar cliente...</option>
+                  {clientes.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.nombre} {c.nif ? `(${c.nif})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </Card>
+
+              {/* Descripción del problema */}
+              <Card className="p-4">
+                <Label className="text-sm font-semibold mb-2 block">
+                  Descripción del problema / Motivo de entrada
+                </Label>
                 <Textarea
                   value={formData.descripcion_problema || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, descripcion_problema: e.target.value }))}
-                  placeholder="¿Cuál es el problema del vehículo?"
-                  rows={4}
+                  placeholder="Describe el problema que presenta el vehículo..."
+                  rows={3}
+                  className="resize-none"
                 />
               </Card>
 
+              {/* Autorización */}
               <Card className="p-4">
-                <Label className="font-bold mb-2 block">🔍 Diagnóstico</Label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.presupuesto_aprobado_por_cliente || false}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      presupuesto_aprobado_por_cliente: e.target.checked
+                    }))}
+                    className="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  />
+                  <div>
+                    <span className="font-medium text-gray-900">Cliente autoriza reparación</span>
+                    <p className="text-xs text-gray-500">El cliente ha dado su aprobación para realizar los trabajos</p>
+                  </div>
+                </label>
+              </Card>
+
+              {/* Notas */}
+              <Card className="p-4">
+                <Label className="text-sm font-semibold mb-2 block">Notas internas</Label>
+                <Textarea
+                  value={formData.notas || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, notas: e.target.value }))}
+                  placeholder="Notas para el equipo del taller..."
+                  rows={2}
+                  className="resize-none"
+                />
+              </Card>
+            </>
+          )}
+
+          {tab === 'trabajo' && (
+            <>
+              {/* Diagnóstico */}
+              <Card className="p-4">
+                <Label className="text-sm font-semibold mb-2 block">Diagnóstico técnico</Label>
                 <Textarea
                   value={formData.diagnostico || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, diagnostico: e.target.value }))}
-                  placeholder="¿Cuál es el diagnóstico?"
-                  rows={4}
+                  placeholder="Resultado del diagnóstico del vehículo..."
+                  rows={3}
+                  className="resize-none"
                 />
               </Card>
 
+              {/* Trabajos realizados */}
               <Card className="p-4">
-                <Label className="font-bold mb-2 block">🔧 Trabajos realizados</Label>
+                <Label className="text-sm font-semibold mb-2 block">Trabajos realizados</Label>
                 <Textarea
                   value={formData.trabajos_realizados || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, trabajos_realizados: e.target.value }))}
-                  placeholder="¿Qué trabajos se realizaron?"
-                  rows={4}
+                  placeholder="Describe los trabajos que se han realizado..."
+                  rows={3}
+                  className="resize-none"
                 />
               </Card>
-            </div>
+
+              {/* Tiempos */}
+              <Card className="p-4">
+                <Label className="text-sm font-semibold mb-3 block">Tiempo de trabajo</Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-gray-500 mb-1 block">Horas estimadas</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      value={formData.tiempo_estimado_horas || ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        tiempo_estimado_horas: parseFloat(e.target.value) || 0
+                      }))}
+                      placeholder="0"
+                      className="text-center"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-500 mb-1 block">Horas reales</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.5"
+                      value={formData.tiempo_real_horas || ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        tiempo_real_horas: parseFloat(e.target.value) || 0
+                      }))}
+                      placeholder="0"
+                      className="text-center"
+                    />
+                  </div>
+                </div>
+              </Card>
+            </>
           )}
 
           {tab === 'items' && (
-            <div className="space-y-4">
-              <Card className="p-4">
-                <h3 className="font-bold mb-3 flex items-center gap-2">
-                  <Plus className="w-5 h-5" />
-                  Agregar línea de trabajo
+            <>
+              {/* Añadir línea */}
+              <Card className="p-4 border-2 border-dashed border-blue-200 bg-blue-50/50">
+                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <Plus className="w-4 h-4" />
+                  Añadir línea de trabajo
                 </h3>
+
                 <div className="space-y-3">
-                  <select
-                    value={nuevaLinea.tipo}
-                    onChange={(e) => setNuevaLinea(prev => ({ ...prev, tipo: e.target.value as any }))}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="mano_obra">🔨 Mano de obra</option>
-                    <option value="pieza">⚙️ Pieza</option>
-                    <option value="servicio">🛠️ Servicio</option>
-                  </select>
-                  
                   <div>
-                    <Label className="text-xs font-semibold text-gray-600 mb-1 block">Descripción del trabajo</Label>
+                    <Label className="text-xs text-gray-600 mb-1 block">Tipo de trabajo</Label>
+                    <select
+                      value={nuevaLinea.tipo}
+                      onChange={(e) => setNuevaLinea(prev => ({ ...prev, tipo: e.target.value as any }))}
+                      className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-white"
+                    >
+                      <option value="mano_obra">🔧 Mano de obra</option>
+                      <option value="pieza">⚙️ Recambio / Pieza</option>
+                      <option value="servicio">🛠️ Servicio externo</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <Label className="text-xs text-gray-600 mb-1 block">Descripción del trabajo</Label>
                     <Input
-                      placeholder="Ej: Cambio de aceite y filtro"
                       value={nuevaLinea.descripcion}
                       onChange={(e) => setNuevaLinea(prev => ({ ...prev, descripcion: e.target.value }))}
+                      placeholder="Ej: Cambio de aceite y filtro"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label className="text-xs font-semibold text-gray-600 mb-1 block">Cantidad (Uds/Horas)</Label>
+                      <Label className="text-xs text-gray-600 mb-1 block">Cantidad / Horas</Label>
                       <Input
                         type="number"
-                        placeholder="1"
                         min="0.01"
                         step="0.01"
                         value={nuevaLinea.cantidad}
-                        onChange={(e) => setNuevaLinea(prev => ({ ...prev, cantidad: parseFloat(e.target.value) || 0 }))}
+                        onChange={(e) => setNuevaLinea(prev => ({
+                          ...prev,
+                          cantidad: parseFloat(e.target.value) || 0
+                        }))}
+                        placeholder="1"
+                        className="text-center"
                       />
                     </div>
                     <div>
-                      <Label className="text-xs font-semibold text-gray-600 mb-1 block">Precio Unitario (€)</Label>
+                      <Label className="text-xs text-gray-600 mb-1 block">Precio unitario (€)</Label>
                       <Input
                         type="number"
-                        placeholder="0.00"
                         min="0"
                         step="0.01"
-                        value={nuevaLinea.precio_unitario}
-                        onChange={(e) => setNuevaLinea(prev => ({ ...prev, precio_unitario: parseFloat(e.target.value) || 0 }))}
+                        value={nuevaLinea.precio_unitario || ''}
+                        onChange={(e) => setNuevaLinea(prev => ({
+                          ...prev,
+                          precio_unitario: parseFloat(e.target.value) || 0
+                        }))}
+                        placeholder="0.00"
+                        className="text-right"
                       />
                     </div>
                   </div>
 
-                  {/* Preview del total de la línea */}
                   {nuevaLinea.cantidad > 0 && nuevaLinea.precio_unitario > 0 && (
-                    <div className="p-2 bg-blue-50 rounded-lg text-sm text-center border border-blue-200">
-                      <span className="text-gray-600">Subtotal línea: </span>
-                      <span className="font-bold text-blue-600">€{(nuevaLinea.cantidad * nuevaLinea.precio_unitario).toFixed(2)}</span>
+                    <div className="p-2 bg-green-100 rounded-lg text-center">
+                      <span className="text-sm text-gray-600">Subtotal: </span>
+                      <span className="font-bold text-green-700">
+                        €{(nuevaLinea.cantidad * nuevaLinea.precio_unitario).toFixed(2)}
+                      </span>
                     </div>
                   )}
-                  
-                  <Button onClick={agregarLinea} className="w-full gap-2 bg-blue-600 hover:bg-blue-700">
+
+                  <Button onClick={agregarLinea} className="w-full gap-2">
                     <Plus className="w-4 h-4" />
-                    Agregar línea
+                    Añadir línea
                   </Button>
                 </div>
               </Card>
 
+              {/* Lista de líneas */}
               {lineas.length > 0 && (
                 <Card className="p-4">
-                  <h3 className="font-bold mb-3">📋 Líneas agregadas ({lineas.length})</h3>
+                  <h3 className="font-semibold text-gray-900 mb-3">
+                    Líneas añadidas ({lineas.length})
+                  </h3>
                   <div className="space-y-2">
                     {lineas.map(linea => (
-                      <div key={linea.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-900">{linea.descripcion}</p>
-                          <p className="text-sm text-gray-600">{linea.cantidad} x €{linea.precio_unitario.toFixed(2)} = €{(linea.cantidad * linea.precio_unitario).toFixed(2)}</p>
+                      <div
+                        key={linea.id}
+                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 truncate">{linea.descripcion}</p>
+                          <p className="text-sm text-gray-500">
+                            {linea.cantidad} x €{linea.precio_unitario.toFixed(2)}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-gray-900">
+                            €{(linea.cantidad * linea.precio_unitario).toFixed(2)}
+                          </p>
                         </div>
                         <button
                           onClick={() => eliminarLinea(linea.id)}
-                          className="ml-2 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -753,83 +721,69 @@ export function DetalleOrdenSheet({
                 </Card>
               )}
 
-              <Card className="p-4 bg-gradient-to-br from-blue-50 via-blue-50 to-indigo-50 border border-blue-200">
-                <h3 className="font-bold mb-4 text-lg">💰 Resumen de costos</h3>
-                
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700">Mano de obra:</span>
-                    <span className="font-bold text-lg">€{totales.manoObra.toFixed(2)}</span>
+              {/* Resumen de totales */}
+              <Card className="p-4 bg-gradient-to-br from-gray-800 to-gray-900 text-white">
+                <h3 className="font-semibold mb-3">Resumen</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Mano de obra:</span>
+                    <span>€{totales.manoObra.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700">Piezas:</span>
-                    <span className="font-bold text-lg">€{totales.piezas.toFixed(2)}</span>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Recambios:</span>
+                    <span>€{totales.piezas.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700">Servicios:</span>
-                    <span className="font-bold text-lg">€{totales.servicios.toFixed(2)}</span>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Servicios:</span>
+                    <span>€{totales.servicios.toFixed(2)}</span>
                   </div>
-                  
-                  <div className="border-t-2 border-blue-200 pt-3 mt-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-700">Subtotal:</span>
-                      <span className="font-bold">€{totales.subtotal.toFixed(2)}</span>
-                    </div>
+                  <div className="border-t border-gray-700 pt-2 flex justify-between">
+                    <span className="text-gray-400">Subtotal:</span>
+                    <span>€{totales.subtotal.toFixed(2)}</span>
                   </div>
-
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-700">IVA (21%):</span>
-                    <span className="font-bold">€{totales.iva.toFixed(2)}</span>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">IVA (21%):</span>
+                    <span>€{totales.iva.toFixed(2)}</span>
                   </div>
-
-                  <div className="border-t-2 border-blue-300 pt-3 mt-3 bg-white rounded-lg p-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-lg font-bold text-gray-900">Total:</span>
-                      <span className="text-2xl font-bold text-blue-600">€{totales.total.toFixed(2)}</span>
-                    </div>
+                  <div className="border-t border-gray-600 pt-2 flex justify-between text-lg font-bold">
+                    <span>Total:</span>
+                    <span className="text-green-400">€{totales.total.toFixed(2)}</span>
                   </div>
                 </div>
               </Card>
+            </>
+          )}
+        </div>
 
-              {/* Botón Generar Factura - Solo si no es modo crear y la orden está en estado válido */}
-              {!modoCrear && orden?.id && ['completado', 'entregado', 'en_reparacion'].includes(formData.estado) && (
-                <Card className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200">
-                  <div className="flex items-center gap-2 mb-3">
-                    <FileText className="w-5 h-5 text-green-600" />
-                    <h3 className="font-bold text-lg text-green-800">Generar Factura</h3>
-                  </div>
-                  <p className="text-sm text-green-700 mb-4">
-                    Crea una factura a partir de esta orden con todos los datos y líneas de trabajo.
-                  </p>
-                  <Button
-                    onClick={handleGenerarFactura}
-                    disabled={generandoFactura}
-                    className="w-full gap-2 bg-green-600 hover:bg-green-700 text-white py-6 text-lg font-bold"
-                  >
-                    {generandoFactura ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        Generando factura...
-                      </>
-                    ) : (
-                      <>
-                        <FileText className="w-5 h-5" />
-                        Crear Factura desde Orden
-                      </>
-                    )}
-                  </Button>
-                </Card>
+        {/* Footer con botones */}
+        <div className="bg-white border-t p-4 space-y-2 shrink-0">
+          {/* Botón de factura solo si la orden está completada y no es nueva */}
+          {!modoCrear && ['completado', 'entregado', 'en_reparacion'].includes(formData.estado) && (
+            <Button
+              onClick={handleGenerarFactura}
+              disabled={generandoFactura}
+              className="w-full gap-2 bg-green-600 hover:bg-green-700 py-3"
+            >
+              {generandoFactura ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <FileText className="w-4 h-4" />
               )}
-            </div>
+              {generandoFactura ? 'Generando...' : 'Generar Factura'}
+            </Button>
           )}
 
           <Button
             onClick={handleGuardar}
-            disabled={guardando || !formData.cliente_id || !tallerId}
-            className="w-full py-6 text-lg font-bold gap-2 sticky bottom-4 bg-blue-600 hover:bg-blue-700 shadow-lg"
+            disabled={guardando || !formData.cliente_id}
+            className="w-full gap-2 py-3"
           >
-            {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            {guardando ? 'Guardando...' : (modoCrear ? '✅ Crear Orden' : '💾 Guardar Cambios')}
+            {guardando ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            {guardando ? 'Guardando...' : (modoCrear ? 'Crear Orden' : 'Guardar Cambios')}
           </Button>
         </div>
       </div>

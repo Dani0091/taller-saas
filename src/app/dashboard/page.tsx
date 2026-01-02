@@ -102,7 +102,7 @@ export default function DashboardPage() {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-orange-500/30 animate-pulse">
+          <div className="w-16 h-16 bg-gradient-to-br from-sky-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-sky-500/30 animate-pulse">
             <Gauge className="w-8 h-8 text-white" />
           </div>
           <p className="text-gray-500 font-medium">Cargando dashboard...</p>
@@ -113,16 +113,16 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6 md:space-y-8">
-      {/* Header con estilo motorsport */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 rounded-2xl p-6 md:p-8 text-white">
-        {/* Racing stripes decoration */}
-        <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-orange-500/20 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 via-yellow-400 to-orange-500" />
+      {/* Header */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-6 md:p-8 text-white">
+        {/* Decoration */}
+        <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-sky-500/20 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-sky-500 via-cyan-400 to-teal-500" />
 
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-2">
-            <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
-            <span className="text-orange-400 text-sm font-medium uppercase tracking-wider">En vivo</span>
+            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
+            <span className="text-cyan-400 text-sm font-medium uppercase tracking-wider">En vivo</span>
           </div>
           <h1 className="text-2xl md:text-3xl font-bold">
             {usuario?.nombre ? `Bienvenido, ${usuario.nombre}` : 'Panel de Control'}
@@ -136,7 +136,7 @@ export default function DashboardPage() {
       {/* Métricas con estilo motorsport */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
         {/* Órdenes Hoy */}
-        <Card className="p-4 md:p-5 bg-gradient-to-br from-orange-500 to-orange-600 text-white border-0 shadow-lg shadow-orange-500/20 hover:shadow-xl hover:shadow-orange-500/30 transition-all duration-300 hover:scale-[1.02]">
+        <Card className="p-4 md:p-5 bg-gradient-to-br from-sky-500 to-cyan-500 text-white border-0 shadow-lg shadow-sky-500/20 hover:shadow-xl hover:shadow-sky-500/30 transition-all duration-300 hover:scale-[1.02]">
           <div className="flex justify-between items-start mb-3">
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
               <TrendingUp className="w-5 h-5" />
@@ -148,19 +148,19 @@ export default function DashboardPage() {
         </Card>
 
         {/* Órdenes Total */}
-        <Card className="p-4 md:p-5 bg-gradient-to-br from-gray-800 to-gray-900 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
+        <Card className="p-4 md:p-5 bg-gradient-to-br from-slate-800 to-slate-900 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
           <div className="flex justify-between items-start mb-3">
-            <div className="w-10 h-10 bg-orange-500/20 rounded-xl flex items-center justify-center">
-              <Wrench className="w-5 h-5 text-orange-400" />
+            <div className="w-10 h-10 bg-sky-500/20 rounded-xl flex items-center justify-center">
+              <Wrench className="w-5 h-5 text-sky-400" />
             </div>
-            <span className="text-[10px] font-bold bg-orange-500/20 text-orange-400 px-2 py-1 rounded-full uppercase">Total</span>
+            <span className="text-[10px] font-bold bg-sky-500/20 text-sky-400 px-2 py-1 rounded-full uppercase">Total</span>
           </div>
           <p className="text-gray-400 text-xs font-medium mb-1">Órdenes Total</p>
           <p className="text-2xl md:text-3xl font-bold">{metricas.ordenesTotal}</p>
         </Card>
 
         {/* En Progreso */}
-        <Card className="p-4 md:p-5 bg-gradient-to-br from-yellow-500 to-amber-600 text-white border-0 shadow-lg shadow-yellow-500/20 hover:shadow-xl hover:shadow-yellow-500/30 transition-all duration-300 hover:scale-[1.02]">
+        <Card className="p-4 md:p-5 bg-gradient-to-br from-violet-500 to-purple-600 text-white border-0 shadow-lg shadow-violet-500/20 hover:shadow-xl hover:shadow-violet-500/30 transition-all duration-300 hover:scale-[1.02]">
           <div className="flex justify-between items-start mb-3">
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
               <Clock className="w-5 h-5" />
@@ -199,10 +199,10 @@ export default function DashboardPage() {
       {/* Acciones rápidas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <Link href="/dashboard/ordenes" className="group">
-          <Card className="p-4 md:p-5 border-2 border-orange-200 bg-orange-50 hover:bg-orange-100 hover:border-orange-300 transition-all duration-300 cursor-pointer">
+          <Card className="p-4 md:p-5 border-2 border-sky-200 bg-sky-50 hover:bg-sky-100 hover:border-sky-300 transition-all duration-300 cursor-pointer">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-md shadow-orange-500/30">
+                <div className="w-10 h-10 bg-gradient-to-br from-sky-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-md shadow-sky-500/30">
                   <Plus className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -210,7 +210,7 @@ export default function DashboardPage() {
                   <p className="text-xs text-gray-500">Crear reparación</p>
                 </div>
               </div>
-              <ArrowRight className="w-5 h-5 text-orange-500 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-5 h-5 text-sky-500 group-hover:translate-x-1 transition-transform" />
             </div>
           </Card>
         </Link>

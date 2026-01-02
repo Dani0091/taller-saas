@@ -38,14 +38,14 @@ export function Header({ user, onMenuClick }: HeaderProps) {
           {/* Botón hamburguesa para móvil */}
           <button
             onClick={onMenuClick}
-            className="lg:hidden p-2.5 -ml-2 text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition-all duration-200"
+            className="lg:hidden p-2.5 -ml-2 text-gray-600 hover:text-sky-600 hover:bg-sky-50 rounded-xl transition-all duration-200"
           >
             <Menu className="w-6 h-6" />
           </button>
 
           {/* Título con icono en móvil */}
           <div className="flex items-center gap-3">
-            <div className="lg:hidden w-9 h-9 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center shadow-md shadow-orange-500/20">
+            <div className="lg:hidden w-9 h-9 bg-gradient-to-br from-sky-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-md shadow-sky-500/20">
               <Gauge className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -57,9 +57,9 @@ export function Header({ user, onMenuClick }: HeaderProps) {
 
         <div className="flex items-center gap-2 md:gap-3">
           {/* Notificaciones (placeholder) */}
-          <button className="relative p-2 text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded-xl transition-all duration-200">
+          <button className="relative p-2 text-gray-500 hover:text-sky-600 hover:bg-sky-50 rounded-xl transition-all duration-200">
             <Bell className="w-5 h-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-orange-500 rounded-full" />
+            <span className="absolute top-1 right-1 w-2 h-2 bg-sky-500 rounded-full" />
           </button>
 
           {/* Separador */}
@@ -71,9 +71,9 @@ export function Header({ user, onMenuClick }: HeaderProps) {
               <p className="text-sm font-medium text-gray-900 truncate max-w-[150px]">
                 {user?.email?.split('@')[0] || 'Usuario'}
               </p>
-              <p className="text-[10px] text-orange-500 font-medium">Plan PRO</p>
+              <p className="text-[10px] text-sky-500 font-medium">Plan PRO</p>
             </div>
-            <div className="w-9 h-9 bg-gradient-to-br from-orange-400 to-orange-600 rounded-xl flex items-center justify-center shadow-md shadow-orange-500/20">
+            <div className="w-9 h-9 bg-gradient-to-br from-sky-400 to-cyan-500 rounded-xl flex items-center justify-center shadow-md shadow-sky-500/20">
               <span className="text-white font-bold text-sm">
                 {user?.email?.charAt(0).toUpperCase() || 'U'}
               </span>
