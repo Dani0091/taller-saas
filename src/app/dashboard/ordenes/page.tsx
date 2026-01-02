@@ -34,13 +34,15 @@ interface Orden {
 const ESTADO_CONFIG = {
   recibido: { label: 'Recibido', color: 'bg-blue-100 text-blue-800', icon: '📋', badge: 'bg-blue-500' },
   diagnostico: { label: 'Diagnóstico', color: 'bg-purple-100 text-purple-800', icon: '🔍', badge: 'bg-purple-500' },
-  en_reparacion: { label: 'En Reparación', color: 'bg-orange-100 text-orange-800', icon: '🔧', badge: 'bg-orange-500' },
+  presupuestado: { label: 'Presupuestado', color: 'bg-yellow-100 text-yellow-800', icon: '💰', badge: 'bg-yellow-500' },
+  aprobado: { label: 'Aprobado', color: 'bg-cyan-100 text-cyan-800', icon: '✓', badge: 'bg-cyan-500' },
+  en_reparacion: { label: 'En Reparación', color: 'bg-amber-100 text-amber-800', icon: '🔧', badge: 'bg-amber-500' },
   completado: { label: 'Completado', color: 'bg-green-100 text-green-800', icon: '✅', badge: 'bg-green-500' },
-  entregado: { label: 'Entregado', color: 'bg-emerald-100 text-emerald-800', icon: '🚗', badge: 'bg-emerald-500' },
+  entregado: { label: 'Entregado', color: 'bg-emerald-100 text-emerald-800', icon: '🚗', badge: 'bg-emerald-600' },
   cancelado: { label: 'Cancelado', color: 'bg-red-100 text-red-800', icon: '❌', badge: 'bg-red-500' }
 } as Record<string, any>
 
-const FILTROS = ['todos', 'recibido', 'diagnostico', 'en_reparacion', 'completado', 'entregado', 'cancelado']
+const FILTROS = ['todos', 'recibido', 'diagnostico', 'presupuestado', 'aprobado', 'en_reparacion', 'completado', 'entregado', 'cancelado']
 
 export default function OrdenesPage() {
   const supabase = createClient()
@@ -136,9 +138,9 @@ export default function OrdenesPage() {
         <div className="flex items-center justify-between mb-4">
           <h1 className="text-2xl font-bold text-gray-900">Órdenes</h1>
           <div className="flex gap-2">
-            <Button 
-              size="sm" 
-              className="gap-2 bg-blue-600 hover:bg-blue-700"
+            <Button
+              size="sm"
+              className="gap-2 bg-sky-600 hover:bg-sky-700"
               onClick={() => setModoCrear(true)}
             >
               <Plus className="w-4 h-4" />
@@ -179,7 +181,7 @@ export default function OrdenesPage() {
                   }}
                   className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
                     filtroActivo === filtro
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-sky-600 text-white'
                       : 'bg-white text-gray-700 border border-gray-300'
                   }`}
                 >
@@ -195,7 +197,7 @@ export default function OrdenesPage() {
       <div className="px-4 py-4 space-y-3">
         {loading ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+            <Loader2 className="w-8 h-8 animate-spin text-sky-600" />
           </div>
         ) : ordenesFiltradas.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
