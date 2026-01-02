@@ -49,19 +49,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verificar que no exista ya una factura para esta orden
-    const { data: facturaExistente } = await supabase
-      .from('facturas')
-      .select('id, numero_factura')
-      .eq('orden_id', orden_id)
-      .single()
-
-    if (facturaExistente) {
-      return NextResponse.json(
-        { error: `Ya existe la factura ${facturaExistente.numero_factura} para esta orden` },
-        { status: 400 }
-      )
-    }
+    // Nota: No verificamos duplicados porque orden_id no existe en la tabla facturas
 
     // Obtener líneas de la orden
     const { data: lineasOrden } = await supabase
@@ -96,13 +84,12 @@ export async function POST(request: NextRequest) {
     const iva = orden.iva_amount || baseImponible * (ivaPorcentaje / 100)
     const total = orden.total_con_iva || baseImponible + iva
 
-    // Crear la factura vinculada a la orden
+    // Crear la factura (solo campos que existen en la BD real)
     const { data: factura, error: facturaError } = await supabase
       .from('facturas')
       .insert([{
         taller_id,
         cliente_id: orden.cliente_id,
-        orden_id: orden_id,
         numero_factura: numeroFactura,
         numero_serie: 'FA',
         fecha_emision: new Date().toISOString().split('T')[0],
@@ -113,7 +100,6 @@ export async function POST(request: NextRequest) {
         total: total,
         metodo_pago: 'Transferencia bancaria',
         estado: 'borrador',
-        notas: `Generada desde orden ${orden.numero_orden}`,
       }])
       .select()
       .single()
