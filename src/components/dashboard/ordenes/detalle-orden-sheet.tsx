@@ -23,7 +23,7 @@ const ESTADOS = [
   { value: 'cancelado', label: 'Cancelado', color: 'bg-red-500', icon: '❌' },
 ]
 
-// Fracciones de hora disponibles
+// Fracciones de hora disponibles (para mano de obra)
 const FRACCIONES_HORA = [
   { value: 0.25, label: '15 min' },
   { value: 0.5, label: '30 min' },
@@ -37,6 +37,19 @@ const FRACCIONES_HORA = [
   { value: 5, label: '5 horas' },
   { value: 6, label: '6 horas' },
   { value: 8, label: '8 horas' },
+]
+
+// Cantidades disponibles (para piezas/servicios)
+const CANTIDADES = [
+  { value: 1, label: '1 ud' },
+  { value: 2, label: '2 uds' },
+  { value: 3, label: '3 uds' },
+  { value: 4, label: '4 uds' },
+  { value: 5, label: '5 uds' },
+  { value: 6, label: '6 uds' },
+  { value: 8, label: '8 uds' },
+  { value: 10, label: '10 uds' },
+  { value: 12, label: '12 uds' },
 ]
 
 interface Orden {
@@ -848,22 +861,41 @@ export function DetalleOrdenSheet({
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label className="text-xs text-gray-600 mb-1 block">Cantidad / Horas</Label>
-                      <select
-                        value={nuevaLinea.cantidad}
-                        onChange={(e) => setNuevaLinea(prev => ({
-                          ...prev,
-                          cantidad: parseFloat(e.target.value)
-                        }))}
-                        className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white text-center"
-                      >
-                        {FRACCIONES_HORA.map(f => (
-                          <option key={f.value} value={f.value}>{f.label}</option>
-                        ))}
-                      </select>
+                      <Label className="text-xs text-gray-600 mb-1 block">
+                        {nuevaLinea.tipo === 'mano_obra' ? '⏱️ Horas de trabajo' : '📦 Cantidad (uds)'}
+                      </Label>
+                      {nuevaLinea.tipo === 'mano_obra' ? (
+                        <select
+                          value={nuevaLinea.cantidad}
+                          onChange={(e) => setNuevaLinea(prev => ({
+                            ...prev,
+                            cantidad: parseFloat(e.target.value)
+                          }))}
+                          className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white text-center"
+                        >
+                          {FRACCIONES_HORA.map(f => (
+                            <option key={f.value} value={f.value}>{f.label}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <select
+                          value={nuevaLinea.cantidad}
+                          onChange={(e) => setNuevaLinea(prev => ({
+                            ...prev,
+                            cantidad: parseFloat(e.target.value)
+                          }))}
+                          className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white text-center"
+                        >
+                          {CANTIDADES.map(c => (
+                            <option key={c.value} value={c.value}>{c.label}</option>
+                          ))}
+                        </select>
+                      )}
                     </div>
                     <div>
-                      <Label className="text-xs text-gray-600 mb-1 block">Precio unitario (€)</Label>
+                      <Label className="text-xs text-gray-600 mb-1 block">
+                        {nuevaLinea.tipo === 'mano_obra' ? '💶 Precio/hora (€)' : '💶 Precio/unidad (€)'}
+                      </Label>
                       <Input
                         type="number"
                         min="0"

@@ -40,10 +40,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verificar que la orden esté completada o en estado válido
-    if (!['completado', 'entregado', 'en_reparacion'].includes(orden.estado)) {
+    // Verificar que la orden esté completada o en estado válido para facturar
+    const estadosValidos = ['aprobado', 'en_reparacion', 'completado', 'entregado']
+    if (!estadosValidos.includes(orden.estado)) {
       return NextResponse.json(
-        { error: 'La orden debe estar completada para generar factura' },
+        { error: 'La orden debe estar aprobada o completada para generar factura' },
         { status: 400 }
       )
     }
@@ -95,12 +96,13 @@ export async function POST(request: NextRequest) {
     const iva = orden.iva_amount || baseImponible * (ivaPorcentaje / 100)
     const total = orden.total_con_iva || baseImponible + iva
 
-    // Crear la factura (solo campos que existen en la base de datos)
+    // Crear la factura vinculada a la orden
     const { data: factura, error: facturaError } = await supabase
       .from('facturas')
       .insert([{
         taller_id,
         cliente_id: orden.cliente_id,
+        orden_id: orden_id,
         numero_factura: numeroFactura,
         numero_serie: 'FA',
         fecha_emision: new Date().toISOString().split('T')[0],
