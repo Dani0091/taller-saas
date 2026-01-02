@@ -138,12 +138,28 @@ export async function PATCH(request: NextRequest) {
 
     if (!id) throw new Error('ID requerido')
 
-    // Fix: Convertir strings vacíos a null para UUIDs
-    const cleanUpdates = {
-      ...updates,
+    // Campos válidos que existen en la base de datos
+    const camposValidos = [
+      'estado', 'cliente_id', 'vehiculo_id', 'operario_id',
+      'descripcion_problema', 'diagnostico', 'trabajos_realizados',
+      'fecha_entrada', 'fecha_salida_estimada', 'fecha_salida_real',
+      'tiempo_estimado_horas', 'tiempo_real_horas',
+      'subtotal_mano_obra', 'subtotal_piezas', 'iva_amount', 'total_con_iva',
+      'presupuesto_aprobado_por_cliente', 'notas', 'fotos_entrada', 'fotos_salida'
+    ]
+
+    // Filtrar solo campos válidos
+    const cleanUpdates: Record<string, any> = {
       updated_at: new Date().toISOString()
     }
 
+    for (const campo of camposValidos) {
+      if (campo in updates) {
+        cleanUpdates[campo] = updates[campo]
+      }
+    }
+
+    // Fix: Convertir strings vacíos a null para UUIDs
     if ('cliente_id' in cleanUpdates) {
       cleanUpdates.cliente_id = cleanUpdates.cliente_id || null
     }

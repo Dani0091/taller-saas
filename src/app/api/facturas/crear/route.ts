@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
     const siguienteNumero = maxNumero + 1
     const numeroFactura = `FA${siguienteNumero.toString().padStart(3, '0')}`
 
-    // Crear factura
+    // Crear factura (solo campos que existen en la base de datos)
     const { data: factura, error: facturaError } = await supabase
       .from('facturas')
       .insert([
@@ -103,7 +103,6 @@ export async function POST(request: NextRequest) {
           total,
           metodo_pago,
           notas,
-          condiciones_pago,
           estado: estado || 'borrador',
           iva_porcentaje: 21,
         },

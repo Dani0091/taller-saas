@@ -682,28 +682,47 @@ export function DetalleOrdenSheet({
                     <option value="servicio">🛠️ Servicio</option>
                   </select>
                   
-                  <Input
-                    placeholder="Descripción (Ej: Cambio aceite)"
-                    value={nuevaLinea.descripcion}
-                    onChange={(e) => setNuevaLinea(prev => ({ ...prev, descripcion: e.target.value }))}
-                  />
-                  
-                  <div className="flex gap-2">
+                  <div>
+                    <Label className="text-xs font-semibold text-gray-600 mb-1 block">Descripción del trabajo</Label>
                     <Input
-                      type="number"
-                      placeholder="Cantidad"
-                      value={nuevaLinea.cantidad}
-                      onChange={(e) => setNuevaLinea(prev => ({ ...prev, cantidad: parseFloat(e.target.value) }))}
-                      className="flex-1"
-                    />
-                    <Input
-                      type="number"
-                      placeholder="Precio €"
-                      value={nuevaLinea.precio_unitario}
-                      onChange={(e) => setNuevaLinea(prev => ({ ...prev, precio_unitario: parseFloat(e.target.value) }))}
-                      className="flex-1"
+                      placeholder="Ej: Cambio de aceite y filtro"
+                      value={nuevaLinea.descripcion}
+                      onChange={(e) => setNuevaLinea(prev => ({ ...prev, descripcion: e.target.value }))}
                     />
                   </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs font-semibold text-gray-600 mb-1 block">Cantidad (Uds/Horas)</Label>
+                      <Input
+                        type="number"
+                        placeholder="1"
+                        min="0.01"
+                        step="0.01"
+                        value={nuevaLinea.cantidad}
+                        onChange={(e) => setNuevaLinea(prev => ({ ...prev, cantidad: parseFloat(e.target.value) || 0 }))}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-semibold text-gray-600 mb-1 block">Precio Unitario (€)</Label>
+                      <Input
+                        type="number"
+                        placeholder="0.00"
+                        min="0"
+                        step="0.01"
+                        value={nuevaLinea.precio_unitario}
+                        onChange={(e) => setNuevaLinea(prev => ({ ...prev, precio_unitario: parseFloat(e.target.value) || 0 }))}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Preview del total de la línea */}
+                  {nuevaLinea.cantidad > 0 && nuevaLinea.precio_unitario > 0 && (
+                    <div className="p-2 bg-blue-50 rounded-lg text-sm text-center border border-blue-200">
+                      <span className="text-gray-600">Subtotal línea: </span>
+                      <span className="font-bold text-blue-600">€{(nuevaLinea.cantidad * nuevaLinea.precio_unitario).toFixed(2)}</span>
+                    </div>
+                  )}
                   
                   <Button onClick={agregarLinea} className="w-full gap-2 bg-blue-600 hover:bg-blue-700">
                     <Plus className="w-4 h-4" />

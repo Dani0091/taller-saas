@@ -398,31 +398,34 @@ export default function NuevaFacturaPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <Label htmlFor="cantidad" className="block text-sm font-semibold mb-2">
-                    Cantidad
+                    Cantidad (Uds/Horas)
                   </Label>
                   <Input
                     id="cantidad"
                     type="number"
                     min="0.01"
                     step="0.01"
+                    placeholder="1"
                     value={nuevaLinea.cantidad}
                     onChange={(e) =>
                       setNuevaLinea({ ...nuevaLinea, cantidad: e.target.value })
                     }
+                    className="text-center font-medium"
                   />
                 </div>
                 <div>
                   <Label htmlFor="precio" className="block text-sm font-semibold mb-2">
-                    Precio (€)
+                    Precio Unitario (€)
                   </Label>
                   <Input
                     id="precio"
                     type="number"
                     min="0"
                     step="0.01"
+                    placeholder="0.00"
                     value={nuevaLinea.precioUnitario}
                     onChange={(e) =>
                       setNuevaLinea({
@@ -430,15 +433,15 @@ export default function NuevaFacturaPage() {
                         precioUnitario: e.target.value,
                       })
                     }
+                    className="text-right font-medium"
                   />
                 </div>
                 <div>
                   <Label className="block text-sm font-semibold mb-2">
-                    Total
+                    Total Línea
                   </Label>
-                  <div className="py-2 px-3 bg-white border rounded-lg font-semibold text-right">
-                    €
-                    {(
+                  <div className="py-2 px-3 bg-green-50 border border-green-200 rounded-lg font-bold text-right text-green-700">
+                    €{(
                       parseFloat(nuevaLinea.cantidad || '0') *
                       parseFloat(nuevaLinea.precioUnitario || '0')
                     ).toFixed(2)}

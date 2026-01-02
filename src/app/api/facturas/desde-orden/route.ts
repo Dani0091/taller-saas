@@ -95,13 +95,12 @@ export async function POST(request: NextRequest) {
     const iva = orden.iva_amount || baseImponible * (ivaPorcentaje / 100)
     const total = orden.total_con_iva || baseImponible + iva
 
-    // Crear la factura
+    // Crear la factura (solo campos que existen en la base de datos)
     const { data: factura, error: facturaError } = await supabase
       .from('facturas')
       .insert([{
         taller_id,
         cliente_id: orden.cliente_id,
-        orden_id: orden_id,
         numero_factura: numeroFactura,
         numero_serie: 'FA',
         fecha_emision: new Date().toISOString().split('T')[0],
@@ -111,9 +110,8 @@ export async function POST(request: NextRequest) {
         iva: iva,
         total: total,
         metodo_pago: 'Transferencia bancaria',
-        condiciones_pago: 'Pago a 30 días',
         estado: 'borrador',
-        notas_internas: `Generada desde orden ${orden.numero_orden}`,
+        notas: `Generada desde orden ${orden.numero_orden}`,
       }])
       .select()
       .single()
@@ -150,11 +148,10 @@ export async function POST(request: NextRequest) {
         }])
     }
 
-    // Actualizar la orden para marcarla como facturada
+    // Actualizar la orden (solo campos que existen en la base de datos)
     await supabase
       .from('ordenes_reparacion')
       .update({
-        factura_generada: true,
         updated_at: new Date().toISOString()
       })
       .eq('id', orden_id)

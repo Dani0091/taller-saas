@@ -24,23 +24,14 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // Preparar datos para actualizar (solo los campos que se envíen)
+    // Campos válidos que existen en la base de datos
+    const camposValidos = ['estado', 'metodo_pago', 'notas', 'fecha_vencimiento']
     const datosActualizar: any = {}
-    
-    if (body.estado !== undefined) {
-      datosActualizar.estado = body.estado
-    }
-    if (body.metodo_pago !== undefined) {
-      datosActualizar.metodo_pago = body.metodo_pago
-    }
-    if (body.notas !== undefined) {
-      datosActualizar.notas_internas = body.notas
-    }
-    if (body.condiciones_pago !== undefined) {
-      datosActualizar.condiciones_pago = body.condiciones_pago
-    }
-    if (body.estado_pago !== undefined) {
-      datosActualizar.estado_pago = body.estado_pago
+
+    for (const campo of camposValidos) {
+      if (body[campo] !== undefined) {
+        datosActualizar[campo] = body[campo]
+      }
     }
 
     datosActualizar.updated_at = new Date().toISOString()
