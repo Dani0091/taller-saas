@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { X, Save, Plus, Trash2, Loader2, FileText, ChevronDown, Check } from 'lucide-react'
+import { X, Save, Plus, Trash2, Loader2, FileText, ChevronDown, Check, Camera, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -17,10 +17,26 @@ const ESTADOS = [
   { value: 'diagnostico', label: 'En Diagnóstico', color: 'bg-purple-500', icon: '🔍' },
   { value: 'presupuestado', label: 'Presupuestado', color: 'bg-yellow-500', icon: '💰' },
   { value: 'aprobado', label: 'Aprobado', color: 'bg-cyan-500', icon: '✓' },
-  { value: 'en_reparacion', label: 'En Reparación', color: 'bg-orange-500', icon: '🔧' },
+  { value: 'en_reparacion', label: 'En Reparación', color: 'bg-amber-500', icon: '🔧' },
   { value: 'completado', label: 'Completado', color: 'bg-green-500', icon: '✅' },
   { value: 'entregado', label: 'Entregado', color: 'bg-emerald-600', icon: '🚗' },
   { value: 'cancelado', label: 'Cancelado', color: 'bg-red-500', icon: '❌' },
+]
+
+// Fracciones de hora disponibles
+const FRACCIONES_HORA = [
+  { value: 0.25, label: '15 min' },
+  { value: 0.5, label: '30 min' },
+  { value: 0.75, label: '45 min' },
+  { value: 1, label: '1 hora' },
+  { value: 1.5, label: '1h 30min' },
+  { value: 2, label: '2 horas' },
+  { value: 2.5, label: '2h 30min' },
+  { value: 3, label: '3 horas' },
+  { value: 4, label: '4 horas' },
+  { value: 5, label: '5 horas' },
+  { value: 6, label: '6 horas' },
+  { value: 8, label: '8 horas' },
 ]
 
 interface Orden {
@@ -40,6 +56,8 @@ interface Orden {
   subtotal_piezas?: number
   iva_amount?: number
   total_con_iva?: number
+  fotos_entrada?: string
+  fotos_salida?: string
 }
 
 interface DetalleOrdenSheetProps {
@@ -70,9 +88,10 @@ export function DetalleOrdenSheet({
   const [cargando, setCargando] = useState(!modoCrear)
   const [guardando, setGuardando] = useState(false)
   const [generandoFactura, setGenerandoFactura] = useState(false)
-  const [tab, setTab] = useState<'info' | 'trabajo' | 'items'>('info')
+  const [tab, setTab] = useState<'info' | 'fotos' | 'trabajo' | 'items'>('info')
   const [lineas, setLineas] = useState<Linea[]>([])
   const [clientes, setClientes] = useState<any[]>([])
+  const [vehiculos, setVehiculos] = useState<any[]>([])
   const [tallerId, setTallerId] = useState<string>('')
   const [ordenNumero, setOrdenNumero] = useState<string>('')
   const [mostrarEstados, setMostrarEstados] = useState(false)
@@ -88,6 +107,8 @@ export function DetalleOrdenSheet({
     presupuesto_aprobado_por_cliente: false,
     tiempo_estimado_horas: 0,
     tiempo_real_horas: 0,
+    fotos_entrada: '',
+    fotos_salida: '',
   })
 
   const [nuevaLinea, setNuevaLinea] = useState({
@@ -102,9 +123,15 @@ export function DetalleOrdenSheet({
     inicializar()
   }, [])
 
+  // Cargar vehículos cuando cambia el cliente
+  useEffect(() => {
+    if (formData.cliente_id && tallerId) {
+      cargarVehiculos(formData.cliente_id)
+    }
+  }, [formData.cliente_id, tallerId])
+
   const inicializar = async () => {
     try {
-      // 1. Obtener taller_id
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) {
         toast.error('No autenticado')
@@ -124,7 +151,7 @@ export function DetalleOrdenSheet({
 
       setTallerId(usuario.taller_id)
 
-      // 2. Cargar clientes
+      // Cargar clientes
       const { data: clientesData } = await supabase
         .from('clientes')
         .select('id, nombre, nif, telefono')
@@ -133,7 +160,7 @@ export function DetalleOrdenSheet({
 
       setClientes(clientesData || [])
 
-      // 3. Si estamos editando, cargar orden completa
+      // Si estamos editando, cargar orden completa
       if (!modoCrear && ordenSeleccionada) {
         const { data: ordenData, error } = await supabase
           .from('ordenes_reparacion')
@@ -163,9 +190,16 @@ export function DetalleOrdenSheet({
           subtotal_piezas: ordenData.subtotal_piezas || 0,
           iva_amount: ordenData.iva_amount || 0,
           total_con_iva: ordenData.total_con_iva || 0,
+          fotos_entrada: ordenData.fotos_entrada || '',
+          fotos_salida: ordenData.fotos_salida || '',
         })
 
-        // 4. Cargar líneas de la orden
+        // Cargar vehículos del cliente
+        if (ordenData.cliente_id) {
+          cargarVehiculos(ordenData.cliente_id)
+        }
+
+        // Cargar líneas de la orden
         const { data: lineasData } = await supabase
           .from('lineas_orden')
           .select('*')
@@ -209,6 +243,16 @@ export function DetalleOrdenSheet({
     }
   }
 
+  const cargarVehiculos = async (clienteId: string) => {
+    const { data } = await supabase
+      .from('vehiculos')
+      .select('id, marca, modelo, matricula, km_actual')
+      .eq('cliente_id', clienteId)
+      .order('matricula')
+
+    setVehiculos(data || [])
+  }
+
   // Calcular totales
   const totales = lineas.reduce(
     (acc, linea) => {
@@ -246,7 +290,6 @@ export function DetalleOrdenSheet({
   }
 
   const eliminarLinea = async (id: string) => {
-    // Si es una línea existente, eliminar de BD
     if (!id.startsWith('new-')) {
       await supabase.from('lineas_orden').delete().eq('id', id)
     }
@@ -284,12 +327,13 @@ export function DetalleOrdenSheet({
         subtotal_piezas: totales.piezas,
         iva_amount: totales.iva,
         total_con_iva: totales.total,
+        fotos_entrada: formData.fotos_entrada,
+        fotos_salida: formData.fotos_salida,
       }
 
       let ordenId = ordenSeleccionada
 
       if (modoCrear) {
-        // Crear nueva orden
         const { data, error } = await supabase
           .from('ordenes_reparacion')
           .insert([ordenData])
@@ -300,7 +344,6 @@ export function DetalleOrdenSheet({
         ordenId = data.id
         toast.success('Orden creada correctamente')
       } else {
-        // Actualizar orden existente
         const { error } = await supabase
           .from('ordenes_reparacion')
           .update({
@@ -349,7 +392,38 @@ export function DetalleOrdenSheet({
     }
 
     // Primero guardar cambios
-    await handleGuardar()
+    setGuardando(true)
+    try {
+      const ordenData = {
+        estado: formData.estado,
+        cliente_id: formData.cliente_id || null,
+        vehiculo_id: formData.vehiculo_id || null,
+        descripcion_problema: formData.descripcion_problema,
+        diagnostico: formData.diagnostico,
+        trabajos_realizados: formData.trabajos_realizados,
+        notas: formData.notas,
+        presupuesto_aprobado_por_cliente: formData.presupuesto_aprobado_por_cliente,
+        tiempo_estimado_horas: formData.tiempo_estimado_horas,
+        tiempo_real_horas: formData.tiempo_real_horas,
+        subtotal_mano_obra: totales.manoObra,
+        subtotal_piezas: totales.piezas,
+        iva_amount: totales.iva,
+        total_con_iva: totales.total,
+        fotos_entrada: formData.fotos_entrada,
+        fotos_salida: formData.fotos_salida,
+        updated_at: new Date().toISOString()
+      }
+
+      await supabase
+        .from('ordenes_reparacion')
+        .update(ordenData)
+        .eq('id', ordenSeleccionada)
+
+    } catch (error) {
+      console.error('Error guardando antes de facturar:', error)
+    } finally {
+      setGuardando(false)
+    }
 
     setGenerandoFactura(true)
     try {
@@ -369,6 +443,7 @@ export function DetalleOrdenSheet({
       }
 
       toast.success(`Factura ${data.numero_factura} creada`)
+      onActualizar()
       router.push(`/dashboard/facturas/ver?id=${data.id}`)
     } catch (error: any) {
       toast.error(error.message)
@@ -383,12 +458,13 @@ export function DetalleOrdenSheet({
   }
 
   const estadoActual = ESTADOS.find(e => e.value === formData.estado) || ESTADOS[0]
+  const vehiculoSeleccionado = vehiculos.find(v => v.id === formData.vehiculo_id)
 
   if (cargando) {
     return (
       <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
         <div className="bg-white rounded-2xl p-8 text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-blue-600" />
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-sky-600" />
           <p className="text-gray-600">Cargando orden...</p>
         </div>
       </div>
@@ -398,7 +474,7 @@ export function DetalleOrdenSheet({
   return (
     <div className="fixed inset-0 z-50 bg-black/50">
       <div className="fixed inset-y-0 right-0 w-full max-w-lg bg-gray-50 shadow-xl flex flex-col">
-        {/* Header fijo */}
+        {/* Header */}
         <div className="bg-white border-b px-4 py-3 flex items-center justify-between shrink-0">
           <div>
             <h2 className="text-lg font-bold text-gray-900">
@@ -429,7 +505,7 @@ export function DetalleOrdenSheet({
             </button>
 
             {mostrarEstados && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border z-10 overflow-hidden">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border z-10 overflow-hidden max-h-64 overflow-y-auto">
                 {ESTADOS.map(estado => (
                   <button
                     key={estado.value}
@@ -451,18 +527,19 @@ export function DetalleOrdenSheet({
         </div>
 
         {/* Tabs */}
-        <div className="bg-white border-b flex shrink-0">
+        <div className="bg-white border-b flex shrink-0 overflow-x-auto">
           {[
-            { id: 'info', label: 'Información', icon: '📋' },
+            { id: 'info', label: 'Info', icon: '📋' },
+            { id: 'fotos', label: 'Fotos', icon: '📸' },
             { id: 'trabajo', label: 'Trabajo', icon: '🔧' },
             { id: 'items', label: 'Líneas', icon: '💰' },
           ].map(t => (
             <button
               key={t.id}
               onClick={() => setTab(t.id as any)}
-              className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${
+              className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap px-2 ${
                 tab === t.id
-                  ? 'border-blue-600 text-blue-600 bg-blue-50'
+                  ? 'border-sky-600 text-sky-600 bg-sky-50'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -472,7 +549,7 @@ export function DetalleOrdenSheet({
           ))}
         </div>
 
-        {/* Contenido scrollable */}
+        {/* Contenido */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {tab === 'info' && (
             <>
@@ -481,8 +558,8 @@ export function DetalleOrdenSheet({
                 <Label className="text-sm font-semibold mb-2 block">Cliente *</Label>
                 <select
                   value={formData.cliente_id}
-                  onChange={(e) => setFormData(prev => ({ ...prev, cliente_id: e.target.value }))}
-                  className="w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-white"
+                  onChange={(e) => setFormData(prev => ({ ...prev, cliente_id: e.target.value, vehiculo_id: '' }))}
+                  className="w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white"
                 >
                   <option value="">Seleccionar cliente...</option>
                   {clientes.map(c => (
@@ -492,6 +569,40 @@ export function DetalleOrdenSheet({
                   ))}
                 </select>
               </Card>
+
+              {/* Vehículo */}
+              {formData.cliente_id && (
+                <Card className="p-4">
+                  <Label className="text-sm font-semibold mb-2 block">Vehículo</Label>
+                  <select
+                    value={formData.vehiculo_id}
+                    onChange={(e) => setFormData(prev => ({ ...prev, vehiculo_id: e.target.value }))}
+                    className="w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white"
+                  >
+                    <option value="">Seleccionar vehículo...</option>
+                    {vehiculos.map(v => (
+                      <option key={v.id} value={v.id}>
+                        {v.matricula} - {v.marca} {v.modelo}
+                      </option>
+                    ))}
+                  </select>
+
+                  {vehiculoSeleccionado && (
+                    <div className="mt-3 p-3 bg-sky-50 rounded-lg border border-sky-200 text-sm">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <span className="text-gray-500">Matrícula:</span>
+                          <span className="ml-2 font-bold">{vehiculoSeleccionado.matricula}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">KM:</span>
+                          <span className="ml-2 font-bold">{vehiculoSeleccionado.km_actual?.toLocaleString() || '—'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </Card>
+              )}
 
               {/* Descripción del problema */}
               <Card className="p-4">
@@ -540,6 +651,64 @@ export function DetalleOrdenSheet({
             </>
           )}
 
+          {tab === 'fotos' && (
+            <>
+              {/* Fotos de entrada */}
+              <Card className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Camera className="w-5 h-5 text-sky-600" />
+                  <Label className="text-sm font-semibold">Fotos de entrada</Label>
+                </div>
+                <p className="text-xs text-gray-500 mb-3">
+                  URL de las fotos del vehículo al entrar al taller
+                </p>
+                <Textarea
+                  value={formData.fotos_entrada || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, fotos_entrada: e.target.value }))}
+                  placeholder="URLs de las fotos separadas por comas..."
+                  rows={2}
+                  className="resize-none text-sm"
+                />
+                {formData.fotos_entrada && (
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    {formData.fotos_entrada.split(',').slice(0, 6).map((url, i) => (
+                      <div key={i} className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                        <img src={url.trim()} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+
+              {/* Fotos de salida */}
+              <Card className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Camera className="w-5 h-5 text-green-600" />
+                  <Label className="text-sm font-semibold">Fotos de salida</Label>
+                </div>
+                <p className="text-xs text-gray-500 mb-3">
+                  URL de las fotos del vehículo al salir del taller
+                </p>
+                <Textarea
+                  value={formData.fotos_salida || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, fotos_salida: e.target.value }))}
+                  placeholder="URLs de las fotos separadas por comas..."
+                  rows={2}
+                  className="resize-none text-sm"
+                />
+                {formData.fotos_salida && (
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    {formData.fotos_salida.split(',').slice(0, 6).map((url, i) => (
+                      <div key={i} className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                        <img src={url.trim()} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </Card>
+            </>
+          )}
+
           {tab === 'trabajo' && (
             <>
               {/* Diagnóstico */}
@@ -566,37 +735,77 @@ export function DetalleOrdenSheet({
                 />
               </Card>
 
-              {/* Tiempos */}
+              {/* Tiempos con selector de fracciones */}
               <Card className="p-4">
-                <Label className="text-sm font-semibold mb-3 block">Tiempo de trabajo</Label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <Clock className="w-5 h-5 text-sky-600" />
+                  <Label className="text-sm font-semibold">Tiempo de trabajo</Label>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Horas estimadas */}
                   <div>
-                    <Label className="text-xs text-gray-500 mb-1 block">Horas estimadas</Label>
+                    <Label className="text-xs text-gray-500 mb-2 block">Horas estimadas</Label>
+                    <select
+                      value={formData.tiempo_estimado_horas || 0}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        tiempo_estimado_horas: parseFloat(e.target.value)
+                      }))}
+                      className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white text-center"
+                    >
+                      <option value="0">Sin estimar</option>
+                      {FRACCIONES_HORA.map(f => (
+                        <option key={f.value} value={f.value}>{f.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Horas reales */}
+                  <div>
+                    <Label className="text-xs text-gray-500 mb-2 block">Horas reales</Label>
+                    <select
+                      value={formData.tiempo_real_horas || 0}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        tiempo_real_horas: parseFloat(e.target.value)
+                      }))}
+                      className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white text-center"
+                    >
+                      <option value="0">Sin registrar</option>
+                      {FRACCIONES_HORA.map(f => (
+                        <option key={f.value} value={f.value}>{f.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Input manual para valores personalizados */}
+                <div className="mt-3 pt-3 border-t">
+                  <Label className="text-xs text-gray-500 mb-2 block">O introduce un valor personalizado:</Label>
+                  <div className="grid grid-cols-2 gap-4">
                     <Input
                       type="number"
                       min="0"
-                      step="0.5"
+                      step="0.25"
                       value={formData.tiempo_estimado_horas || ''}
                       onChange={(e) => setFormData(prev => ({
                         ...prev,
                         tiempo_estimado_horas: parseFloat(e.target.value) || 0
                       }))}
-                      placeholder="0"
+                      placeholder="Estimadas"
                       className="text-center"
                     />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-gray-500 mb-1 block">Horas reales</Label>
                     <Input
                       type="number"
                       min="0"
-                      step="0.5"
+                      step="0.25"
                       value={formData.tiempo_real_horas || ''}
                       onChange={(e) => setFormData(prev => ({
                         ...prev,
                         tiempo_real_horas: parseFloat(e.target.value) || 0
                       }))}
-                      placeholder="0"
+                      placeholder="Reales"
                       className="text-center"
                     />
                   </div>
@@ -608,7 +817,7 @@ export function DetalleOrdenSheet({
           {tab === 'items' && (
             <>
               {/* Añadir línea */}
-              <Card className="p-4 border-2 border-dashed border-blue-200 bg-blue-50/50">
+              <Card className="p-4 border-2 border-dashed border-sky-200 bg-sky-50/50">
                 <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
                   <Plus className="w-4 h-4" />
                   Añadir línea de trabajo
@@ -620,7 +829,7 @@ export function DetalleOrdenSheet({
                     <select
                       value={nuevaLinea.tipo}
                       onChange={(e) => setNuevaLinea(prev => ({ ...prev, tipo: e.target.value as any }))}
-                      className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-blue-500 bg-white"
+                      className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white"
                     >
                       <option value="mano_obra">🔧 Mano de obra</option>
                       <option value="pieza">⚙️ Recambio / Pieza</option>
@@ -640,18 +849,18 @@ export function DetalleOrdenSheet({
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <Label className="text-xs text-gray-600 mb-1 block">Cantidad / Horas</Label>
-                      <Input
-                        type="number"
-                        min="0.01"
-                        step="0.01"
+                      <select
                         value={nuevaLinea.cantidad}
                         onChange={(e) => setNuevaLinea(prev => ({
                           ...prev,
-                          cantidad: parseFloat(e.target.value) || 0
+                          cantidad: parseFloat(e.target.value)
                         }))}
-                        placeholder="1"
-                        className="text-center"
-                      />
+                        className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white text-center"
+                      >
+                        {FRACCIONES_HORA.map(f => (
+                          <option key={f.value} value={f.value}>{f.label}</option>
+                        ))}
+                      </select>
                     </div>
                     <div>
                       <Label className="text-xs text-gray-600 mb-1 block">Precio unitario (€)</Label>
@@ -679,7 +888,7 @@ export function DetalleOrdenSheet({
                     </div>
                   )}
 
-                  <Button onClick={agregarLinea} className="w-full gap-2">
+                  <Button onClick={agregarLinea} className="w-full gap-2 bg-sky-600 hover:bg-sky-700">
                     <Plus className="w-4 h-4" />
                     Añadir línea
                   </Button>
@@ -721,8 +930,8 @@ export function DetalleOrdenSheet({
                 </Card>
               )}
 
-              {/* Resumen de totales */}
-              <Card className="p-4 bg-gradient-to-br from-gray-800 to-gray-900 text-white">
+              {/* Resumen */}
+              <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900 text-white">
                 <h3 className="font-semibold mb-3">Resumen</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
@@ -755,13 +964,12 @@ export function DetalleOrdenSheet({
           )}
         </div>
 
-        {/* Footer con botones */}
+        {/* Footer */}
         <div className="bg-white border-t p-4 space-y-2 shrink-0">
-          {/* Botón de factura solo si la orden está completada y no es nueva */}
-          {!modoCrear && ['completado', 'entregado', 'en_reparacion'].includes(formData.estado) && (
+          {!modoCrear && ['completado', 'entregado', 'en_reparacion', 'aprobado'].includes(formData.estado) && (
             <Button
               onClick={handleGenerarFactura}
-              disabled={generandoFactura}
+              disabled={generandoFactura || guardando}
               className="w-full gap-2 bg-green-600 hover:bg-green-700 py-3"
             >
               {generandoFactura ? (
@@ -776,7 +984,7 @@ export function DetalleOrdenSheet({
           <Button
             onClick={handleGuardar}
             disabled={guardando || !formData.cliente_id}
-            className="w-full gap-2 py-3"
+            className="w-full gap-2 py-3 bg-sky-600 hover:bg-sky-700"
           >
             {guardando ? (
               <Loader2 className="w-4 h-4 animate-spin" />
