@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { X, Save, Plus, Trash2, Loader2, FileText, ChevronDown, Check, Camera, Clock } from 'lucide-react'
+import { X, Save, Plus, Trash2, Loader2, FileText, ChevronDown, Check, Clock } from 'lucide-react'
+import { FotoUploader } from './foto-uploader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -666,59 +667,103 @@ export function DetalleOrdenSheet({
 
           {tab === 'fotos' && (
             <>
-              {/* Fotos de entrada */}
-              <Card className="p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Camera className="w-5 h-5 text-sky-600" />
-                  <Label className="text-sm font-semibold">Fotos de entrada</Label>
-                </div>
-                <p className="text-xs text-gray-500 mb-3">
-                  URL de las fotos del vehículo al entrar al taller
-                </p>
-                <Textarea
-                  value={formData.fotos_entrada || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, fotos_entrada: e.target.value }))}
-                  placeholder="URLs de las fotos separadas por comas..."
-                  rows={2}
-                  className="resize-none text-sm"
-                />
-                {formData.fotos_entrada && (
-                  <div className="mt-3 grid grid-cols-3 gap-2">
-                    {formData.fotos_entrada.split(',').slice(0, 6).map((url, i) => (
-                      <div key={i} className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                        <img src={url.trim()} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </Card>
+              {modoCrear ? (
+                <Card className="p-4 bg-amber-50 border-amber-200">
+                  <p className="text-sm text-amber-800">
+                    💡 Guarda la orden primero para poder subir fotos
+                  </p>
+                </Card>
+              ) : (
+                <>
+                  {/* Fotos de entrada */}
+                  <Card className="p-4">
+                    <Label className="text-sm font-semibold mb-3 block">📸 Fotos de Entrada</Label>
+                    <p className="text-xs text-gray-500 mb-4">
+                      Documenta el estado del vehículo al llegar al taller
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <FotoUploader
+                        tipo="entrada"
+                        ordenId={ordenSeleccionada || ''}
+                        fotoUrl={formData.fotos_entrada?.split(',')[0]?.trim()}
+                        onFotoSubida={(url) => {
+                          const fotos = formData.fotos_entrada?.split(',').filter(u => u.trim()) || []
+                          fotos[0] = url
+                          setFormData(prev => ({ ...prev, fotos_entrada: fotos.filter(Boolean).join(',') }))
+                        }}
+                        onOCRData={(data) => {
+                          if (data.matricula) {
+                            toast.success(`Matrícula detectada: ${data.matricula}`)
+                          }
+                          if (data.km) {
+                            toast.success(`KM detectados: ${data.km}`)
+                          }
+                        }}
+                      />
+                      <FotoUploader
+                        tipo="frontal"
+                        ordenId={ordenSeleccionada || ''}
+                        fotoUrl={formData.fotos_entrada?.split(',')[1]?.trim()}
+                        onFotoSubida={(url) => {
+                          const fotos = formData.fotos_entrada?.split(',').filter(u => u.trim()) || []
+                          fotos[1] = url
+                          setFormData(prev => ({ ...prev, fotos_entrada: fotos.filter(Boolean).join(',') }))
+                        }}
+                      />
+                      <FotoUploader
+                        tipo="izquierda"
+                        ordenId={ordenSeleccionada || ''}
+                        fotoUrl={formData.fotos_entrada?.split(',')[2]?.trim()}
+                        onFotoSubida={(url) => {
+                          const fotos = formData.fotos_entrada?.split(',').filter(u => u.trim()) || []
+                          fotos[2] = url
+                          setFormData(prev => ({ ...prev, fotos_entrada: fotos.filter(Boolean).join(',') }))
+                        }}
+                      />
+                      <FotoUploader
+                        tipo="derecha"
+                        ordenId={ordenSeleccionada || ''}
+                        fotoUrl={formData.fotos_entrada?.split(',')[3]?.trim()}
+                        onFotoSubida={(url) => {
+                          const fotos = formData.fotos_entrada?.split(',').filter(u => u.trim()) || []
+                          fotos[3] = url
+                          setFormData(prev => ({ ...prev, fotos_entrada: fotos.filter(Boolean).join(',') }))
+                        }}
+                      />
+                    </div>
+                  </Card>
 
-              {/* Fotos de salida */}
-              <Card className="p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Camera className="w-5 h-5 text-green-600" />
-                  <Label className="text-sm font-semibold">Fotos de salida</Label>
-                </div>
-                <p className="text-xs text-gray-500 mb-3">
-                  URL de las fotos del vehículo al salir del taller
-                </p>
-                <Textarea
-                  value={formData.fotos_salida || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, fotos_salida: e.target.value }))}
-                  placeholder="URLs de las fotos separadas por comas..."
-                  rows={2}
-                  className="resize-none text-sm"
-                />
-                {formData.fotos_salida && (
-                  <div className="mt-3 grid grid-cols-3 gap-2">
-                    {formData.fotos_salida.split(',').slice(0, 6).map((url, i) => (
-                      <div key={i} className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
-                        <img src={url.trim()} alt={`Foto ${i + 1}`} className="w-full h-full object-cover" />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </Card>
+                  {/* Fotos de salida */}
+                  <Card className="p-4">
+                    <Label className="text-sm font-semibold mb-3 block">✅ Fotos de Salida</Label>
+                    <p className="text-xs text-gray-500 mb-4">
+                      Documenta el estado del vehículo al entregar
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <FotoUploader
+                        tipo="salida"
+                        ordenId={ordenSeleccionada || ''}
+                        fotoUrl={formData.fotos_salida?.split(',')[0]?.trim()}
+                        onFotoSubida={(url) => {
+                          const fotos = formData.fotos_salida?.split(',').filter(u => u.trim()) || []
+                          fotos[0] = url
+                          setFormData(prev => ({ ...prev, fotos_salida: fotos.filter(Boolean).join(',') }))
+                        }}
+                      />
+                      <FotoUploader
+                        tipo="trasera"
+                        ordenId={ordenSeleccionada || ''}
+                        fotoUrl={formData.fotos_salida?.split(',')[1]?.trim()}
+                        onFotoSubida={(url) => {
+                          const fotos = formData.fotos_salida?.split(',').filter(u => u.trim()) || []
+                          fotos[1] = url
+                          setFormData(prev => ({ ...prev, fotos_salida: fotos.filter(Boolean).join(',') }))
+                        }}
+                      />
+                    </div>
+                  </Card>
+                </>
+              )}
             </>
           )}
 
