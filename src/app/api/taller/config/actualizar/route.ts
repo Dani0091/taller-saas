@@ -4,7 +4,25 @@ import { NextResponse } from 'next/server'
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { taller_id, tarifa_hora, incluye_iva, porcentaje_iva, tarifa_con_iva, nombre_empresa, cif, direccion, telefono, email, logo_url } = body
+    const {
+      taller_id,
+      tarifa_hora,
+      incluye_iva,
+      porcentaje_iva,
+      tarifa_con_iva,
+      nombre_empresa,
+      cif,
+      direccion,
+      telefono,
+      email,
+      logo_url,
+      // Nuevos campos de facturación
+      serie_factura,
+      numero_factura_inicial,
+      iban,
+      condiciones_pago,
+      notas_factura,
+    } = body
 
     if (!taller_id) {
       return NextResponse.json(
@@ -21,21 +39,31 @@ export async function POST(request: Request) {
       .eq('taller_id', taller_id)
       .single()
 
+    const configData = {
+      tarifa_hora,
+      incluye_iva,
+      porcentaje_iva,
+      tarifa_con_iva,
+      nombre_empresa,
+      cif,
+      direccion,
+      telefono,
+      email,
+      logo_url,
+      // Nuevos campos de facturación
+      serie_factura,
+      numero_factura_inicial,
+      iban,
+      condiciones_pago,
+      notas_factura,
+    }
+
     let response
     if (existing) {
       response = await supabase
         .from('taller_config')
         .update({
-          tarifa_hora,
-          incluye_iva,
-          porcentaje_iva,
-          tarifa_con_iva,
-          nombre_empresa,
-          cif,
-          direccion,
-          telefono,
-          email,
-          logo_url,
+          ...configData,
           updated_at: new Date().toISOString(),
         })
         .eq('taller_id', taller_id)
@@ -46,16 +74,7 @@ export async function POST(request: Request) {
         .from('taller_config')
         .insert([{
           taller_id,
-          tarifa_hora,
-          incluye_iva,
-          porcentaje_iva,
-          tarifa_con_iva,
-          nombre_empresa,
-          cif,
-          direccion,
-          telefono,
-          email,
-          logo_url,
+          ...configData,
         }])
         .select()
         .single()

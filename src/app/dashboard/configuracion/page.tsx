@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { Loader2, Settings, Upload, X, Image as ImageIcon } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
+import { Loader2, Settings, Upload, X, Image as ImageIcon, FileText, CreditCard } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 
@@ -22,6 +23,12 @@ interface Config {
   telefono: string | null
   email: string | null
   logo_url: string | null
+  // Configuración de facturación
+  serie_factura: string | null
+  numero_factura_inicial: number | null
+  iban: string | null
+  condiciones_pago: string | null
+  notas_factura: string | null
 }
 
 export default function ConfiguracionPage() {
@@ -124,6 +131,12 @@ export default function ConfiguracionPage() {
         incluye_iva: data.incluye_iva !== undefined ? data.incluye_iva : true,
         porcentaje_iva: data.porcentaje_iva || 21.00,
         logo_url: data.logo_url || null,
+        // Nuevos campos de facturación
+        serie_factura: data.serie_factura || 'FA',
+        numero_factura_inicial: data.numero_factura_inicial || 1,
+        iban: data.iban || null,
+        condiciones_pago: data.condiciones_pago || 'Pago a 30 días',
+        notas_factura: data.notas_factura || null,
       }
 
       setConfig(configData)
@@ -138,12 +151,18 @@ export default function ConfiguracionPage() {
     }
   }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    const isCheckbox = (e.target as HTMLInputElement).type === 'checkbox'
+    const checked = isCheckbox ? (e.target as HTMLInputElement).checked : undefined
 
     setFormData(prev => prev ? {
       ...prev,
-      [name]: type === 'checkbox' ? checked : (name === 'tarifa_hora' || name === 'porcentaje_iva' ? parseFloat(value) : value)
+      [name]: isCheckbox
+        ? checked
+        : (name === 'tarifa_hora' || name === 'porcentaje_iva' || name === 'numero_factura_inicial'
+          ? parseFloat(value) || 0
+          : value)
     } : null)
   }
 
@@ -173,6 +192,12 @@ export default function ConfiguracionPage() {
           telefono: formData.telefono,
           email: formData.email,
           logo_url: formData.logo_url,
+          // Nuevos campos de facturación
+          serie_factura: formData.serie_factura,
+          numero_factura_inicial: formData.numero_factura_inicial,
+          iban: formData.iban,
+          condiciones_pago: formData.condiciones_pago,
+          notas_factura: formData.notas_factura,
         }),
       })
 
@@ -527,6 +552,126 @@ export default function ConfiguracionPage() {
                     <p className="font-bold">€{tarifaConIva.toFixed(2)}/h</p>
                   </div>
                 </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Configuración de Facturación */}
+          <Card className="p-6 md:p-8 shadow-sm">
+            <div className="flex items-center gap-2 mb-6 pb-4 border-b">
+              <FileText className="w-6 h-6 text-sky-600" />
+              <h2 className="text-xl font-bold">Configuración de Facturación</h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Serie de factura */}
+              <div>
+                <Label htmlFor="serie_factura" className="block text-sm font-semibold mb-2">
+                  Serie de Factura
+                </Label>
+                <Input
+                  id="serie_factura"
+                  name="serie_factura"
+                  placeholder="FA"
+                  value={formData.serie_factura || ''}
+                  onChange={handleChange}
+                  className="w-full"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Prefijo para tus facturas (ej: FA, 2024/, F-)
+                </p>
+              </div>
+
+              {/* Número inicial */}
+              <div>
+                <Label htmlFor="numero_factura_inicial" className="block text-sm font-semibold mb-2">
+                  Número Inicial de Factura
+                </Label>
+                <Input
+                  id="numero_factura_inicial"
+                  name="numero_factura_inicial"
+                  type="number"
+                  min="1"
+                  placeholder="1"
+                  value={formData.numero_factura_inicial || ''}
+                  onChange={handleChange}
+                  className="w-full"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Para continuar tu numeración actual
+                </p>
+              </div>
+
+              {/* Preview de numeración */}
+              <div className="md:col-span-2 p-4 bg-sky-50 rounded-lg border border-sky-200">
+                <p className="text-sm text-sky-800">
+                  <strong>Ejemplo:</strong> Tu próxima factura será{' '}
+                  <span className="font-mono bg-white px-2 py-1 rounded border">
+                    {formData.serie_factura || 'FA'}{String(formData.numero_factura_inicial || 1).padStart(3, '0')}
+                  </span>
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Datos Bancarios */}
+          <Card className="p-6 md:p-8 shadow-sm">
+            <div className="flex items-center gap-2 mb-6 pb-4 border-b">
+              <CreditCard className="w-6 h-6 text-sky-600" />
+              <h2 className="text-xl font-bold">Datos Bancarios y Condiciones</h2>
+            </div>
+
+            <div className="space-y-6">
+              {/* IBAN */}
+              <div>
+                <Label htmlFor="iban" className="block text-sm font-semibold mb-2">
+                  IBAN (Cuenta bancaria)
+                </Label>
+                <Input
+                  id="iban"
+                  name="iban"
+                  placeholder="ES00 0000 0000 0000 0000 0000"
+                  value={formData.iban || ''}
+                  onChange={handleChange}
+                  className="w-full font-mono"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Aparecerá en las facturas para pagos por transferencia
+                </p>
+              </div>
+
+              {/* Condiciones de pago */}
+              <div>
+                <Label htmlFor="condiciones_pago" className="block text-sm font-semibold mb-2">
+                  Condiciones de Pago por Defecto
+                </Label>
+                <Input
+                  id="condiciones_pago"
+                  name="condiciones_pago"
+                  placeholder="Pago a 30 días"
+                  value={formData.condiciones_pago || ''}
+                  onChange={handleChange}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Notas por defecto en facturas */}
+              <div>
+                <Label htmlFor="notas_factura" className="block text-sm font-semibold mb-2">
+                  Notas Legales / Pie de Factura
+                </Label>
+                <Textarea
+                  id="notas_factura"
+                  name="notas_factura"
+                  placeholder="Ej: Inscrito en el Registro Mercantil de... / Garantía de 2 años en reparaciones..."
+                  value={formData.notas_factura || ''}
+                  onChange={handleChange}
+                  rows={3}
+                  className="w-full resize-none"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Este texto aparecerá en todas tus facturas
+                </p>
               </div>
             </div>
           </Card>

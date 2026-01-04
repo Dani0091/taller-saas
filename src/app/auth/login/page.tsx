@@ -101,12 +101,21 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-          <p className="text-xs text-blue-700 font-semibold mb-2">Usuarios de prueba:</p>
-          <ul className="text-xs space-y-1 text-blue-700">
-            <li><strong>dani@yopmail.com</strong> / Test1234!</li>
-            <li><strong>testd@yopmail.com</strong> / (tu pass)</li>
-          </ul>
+        {/* Link a registro */}
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-600">
+            ¿No tienes cuenta?{' '}
+            <a href="/auth/registro" className="text-blue-600 hover:underline font-medium">
+              Registra tu taller
+            </a>
+          </p>
+        </div>
+
+        {/* Link a recuperar contraseña */}
+        <div className="mt-2 text-center">
+          <a href="/auth/recuperar" className="text-sm text-gray-500 hover:text-blue-600 hover:underline">
+            ¿Olvidaste tu contraseña?
+          </a>
         </div>
       </Card>
     </div>
