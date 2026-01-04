@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, TrendingUp, Wrench, Clock, FileText, Loader2, Users, ArrowRight, Gauge } from 'lucide-react'
+import { Plus, TrendingUp, Wrench, Clock, FileText, Loader2, Users, ArrowRight, Gauge, Receipt, Banknote, Calculator } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 
@@ -12,6 +12,9 @@ interface Metricas {
   ordenesHoy: number
   ordenesTotal: number
   facturadoMes: number
+  baseImponibleMes: number
+  ivaRecaudadoMes: number
+  ivaTrimestre: number
   enProgreso: number
   clientesActivos: number
 }
@@ -22,6 +25,9 @@ export default function DashboardPage() {
     ordenesHoy: 0,
     ordenesTotal: 0,
     facturadoMes: 0,
+    baseImponibleMes: 0,
+    ivaRecaudadoMes: 0,
+    ivaTrimestre: 0,
     enProgreso: 0,
     clientesActivos: 0,
   })
@@ -73,19 +79,39 @@ export default function DashboardPage() {
           o.estado === 'en_reparacion'
         ).length || 0
 
-        const inicioMes = new Date()
-        inicioMes.setDate(1)
+        // Calcular fechas para filtros
+        const ahora = new Date()
+        const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1)
+
+        // Calcular inicio del trimestre actual
+        const trimestre = Math.floor(ahora.getMonth() / 3)
+        const inicioTrimestre = new Date(ahora.getFullYear(), trimestre * 3, 1)
+
+        // Facturas del mes
         const facturasMes = facturas?.filter(f =>
           new Date(f.fecha_emision) >= inicioMes
         ) || []
-        const facturadoMes = facturasMes.reduce((sum, f) =>
-          sum + (f.total || 0), 0
-        )
+
+        // Facturas del trimestre
+        const facturasTrimestre = facturas?.filter(f =>
+          new Date(f.fecha_emision) >= inicioTrimestre
+        ) || []
+
+        // Calcular totales del mes
+        const facturadoMes = facturasMes.reduce((sum, f) => sum + (f.total || 0), 0)
+        const baseImponibleMes = facturasMes.reduce((sum, f) => sum + (f.base_imponible || 0), 0)
+        const ivaRecaudadoMes = facturasMes.reduce((sum, f) => sum + (f.iva || 0), 0)
+
+        // IVA del trimestre (a pagar a Hacienda)
+        const ivaTrimestre = facturasTrimestre.reduce((sum, f) => sum + (f.iva || 0), 0)
 
         setMetricas({
           ordenesHoy,
           ordenesTotal: ordenes?.length || 0,
           facturadoMes,
+          baseImponibleMes,
+          ivaRecaudadoMes,
+          ivaTrimestre,
           enProgreso,
           clientesActivos: clientes?.length || 0,
         })
@@ -133,8 +159,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Métricas con estilo motorsport */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
+      {/* Métricas operativas */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         {/* Órdenes Hoy */}
         <Card className="p-4 md:p-5 bg-gradient-to-br from-sky-500 to-cyan-500 text-white border-0 shadow-lg shadow-sky-500/20 hover:shadow-xl hover:shadow-sky-500/30 transition-all duration-300 hover:scale-[1.02]">
           <div className="flex justify-between items-start mb-3">
@@ -171,20 +197,8 @@ export default function DashboardPage() {
           <p className="text-2xl md:text-3xl font-bold">{metricas.enProgreso}</p>
         </Card>
 
-        {/* Facturado */}
-        <Card className="p-4 md:p-5 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0 shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-300 hover:scale-[1.02]">
-          <div className="flex justify-between items-start mb-3">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-              <FileText className="w-5 h-5" />
-            </div>
-            <span className="text-[10px] font-bold bg-white/20 px-2 py-1 rounded-full uppercase">Mes</span>
-          </div>
-          <p className="text-white/80 text-xs font-medium mb-1">Facturado</p>
-          <p className="text-xl md:text-2xl font-bold">€{metricas.facturadoMes.toLocaleString()}</p>
-        </Card>
-
         {/* Clientes */}
-        <Card className="p-4 md:p-5 bg-gradient-to-br from-sky-600 to-sky-700 text-white border-0 shadow-lg shadow-sky-500/20 hover:shadow-xl hover:shadow-sky-500/30 transition-all duration-300 hover:scale-[1.02] col-span-2 lg:col-span-1">
+        <Card className="p-4 md:p-5 bg-gradient-to-br from-sky-600 to-sky-700 text-white border-0 shadow-lg shadow-sky-500/20 hover:shadow-xl hover:shadow-sky-500/30 transition-all duration-300 hover:scale-[1.02]">
           <div className="flex justify-between items-start mb-3">
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
               <Users className="w-5 h-5" />
@@ -193,6 +207,57 @@ export default function DashboardPage() {
           </div>
           <p className="text-white/80 text-xs font-medium mb-1">Clientes</p>
           <p className="text-2xl md:text-3xl font-bold">{metricas.clientesActivos}</p>
+        </Card>
+      </div>
+
+      {/* Métricas financieras */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+        {/* Total Facturado */}
+        <Card className="p-4 md:p-5 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0 shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-300 hover:scale-[1.02]">
+          <div className="flex justify-between items-start mb-3">
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+              <Banknote className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-bold bg-white/20 px-2 py-1 rounded-full uppercase">Mes</span>
+          </div>
+          <p className="text-white/80 text-xs font-medium mb-1">Total Facturado</p>
+          <p className="text-xl md:text-2xl font-bold">€{metricas.facturadoMes.toLocaleString('es-ES', { minimumFractionDigits: 2 })}</p>
+        </Card>
+
+        {/* Base Imponible */}
+        <Card className="p-4 md:p-5 bg-gradient-to-br from-teal-500 to-teal-600 text-white border-0 shadow-lg shadow-teal-500/20 hover:shadow-xl hover:shadow-teal-500/30 transition-all duration-300 hover:scale-[1.02]">
+          <div className="flex justify-between items-start mb-3">
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+              <Receipt className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-bold bg-white/20 px-2 py-1 rounded-full uppercase">Neto</span>
+          </div>
+          <p className="text-white/80 text-xs font-medium mb-1">Base Imponible</p>
+          <p className="text-xl md:text-2xl font-bold">€{metricas.baseImponibleMes.toLocaleString('es-ES', { minimumFractionDigits: 2 })}</p>
+        </Card>
+
+        {/* IVA Recaudado Mes */}
+        <Card className="p-4 md:p-5 bg-gradient-to-br from-amber-500 to-orange-500 text-white border-0 shadow-lg shadow-amber-500/20 hover:shadow-xl hover:shadow-amber-500/30 transition-all duration-300 hover:scale-[1.02]">
+          <div className="flex justify-between items-start mb-3">
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+              <FileText className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-bold bg-white/20 px-2 py-1 rounded-full uppercase">Mes</span>
+          </div>
+          <p className="text-white/80 text-xs font-medium mb-1">IVA Recaudado</p>
+          <p className="text-xl md:text-2xl font-bold">€{metricas.ivaRecaudadoMes.toLocaleString('es-ES', { minimumFractionDigits: 2 })}</p>
+        </Card>
+
+        {/* IVA Trimestre (a pagar) */}
+        <Card className="p-4 md:p-5 bg-gradient-to-br from-red-500 to-rose-600 text-white border-0 shadow-lg shadow-red-500/20 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 hover:scale-[1.02]">
+          <div className="flex justify-between items-start mb-3">
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+              <Calculator className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-bold bg-white/20 px-2 py-1 rounded-full uppercase">T{Math.floor(new Date().getMonth() / 3) + 1}</span>
+          </div>
+          <p className="text-white/80 text-xs font-medium mb-1">IVA a Pagar</p>
+          <p className="text-xl md:text-2xl font-bold">€{metricas.ivaTrimestre.toLocaleString('es-ES', { minimumFractionDigits: 2 })}</p>
         </Card>
       </div>
 
