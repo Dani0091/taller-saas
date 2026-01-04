@@ -1,27 +1,32 @@
+/**
+ * @fileoverview Componente para subir fotos de vehículos a órdenes de reparación
+ * @description Permite subir fotos vía Telegram API con capacidad de OCR para
+ * detectar automáticamente matrícula y kilómetros del cuadro de mandos
+ */
 'use client'
 
 import { useState, useRef } from 'react'
 import { Camera, Trash2, Loader2, Eye } from 'lucide-react'
 import { toast } from 'sonner'
 import { extraerDatosDeImagen } from '@/lib/ocr/tesseract-service'
+import { FOTO_LABELS, type TipoFoto } from '@/lib/constants'
 
+/**
+ * Props del componente FotoUploader
+ * @property tipo - Tipo de foto (entrada, frontal, etc.)
+ * @property fotoUrl - URL de foto existente
+ * @property ordenId - ID de la orden para asociar la foto
+ * @property onFotoSubida - Callback cuando se sube una foto
+ * @property onOCRData - Callback con datos extraídos por OCR
+ * @property disabled - Deshabilitar el uploader
+ */
 interface FotoUploaderProps {
-  tipo: 'entrada' | 'frontal' | 'izquierda' | 'derecha' | 'trasera' | 'salida' | 'proceso'
+  tipo: TipoFoto
   fotoUrl?: string
   ordenId: string
   onFotoSubida: (url: string) => void
   onOCRData?: (data: { km?: number; matricula?: string }) => void
   disabled?: boolean
-}
-
-const LABELS = {
-  entrada: '📸 Entrada Frontal',
-  frontal: '🚗 Frontal',
-  izquierda: '⬅️ Lado Izquierdo',
-  derecha: '➡️ Lado Derecho',
-  trasera: '🔙 Trasera',
-  salida: '✅ Salida',
-  proceso: '🔧 Proceso'
 }
 
 export function FotoUploader(props: FotoUploaderProps) {
@@ -109,7 +114,7 @@ export function FotoUploader(props: FotoUploaderProps) {
 
   return (
     <div className="space-y-2">
-      <label className="text-xs font-semibold text-gray-700 block">{LABELS[tipo]}</label>
+      <label className="text-xs font-semibold text-gray-700 block">{FOTO_LABELS[tipo]}</label>
 
       {mostrarPreview ? (
         <div className="space-y-2">

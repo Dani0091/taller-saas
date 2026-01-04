@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Componente Sheet para detalle de órdenes de reparación
+ * @description Panel lateral deslizante para crear/editar órdenes de trabajo
+ * Incluye: info del cliente/vehículo, fotos con OCR, trabajo realizado, líneas de facturación
+ */
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -11,71 +16,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { toast } from 'sonner'
-
-// Helper para convertir fotos a string de forma segura
-const fotosToString = (fotos: unknown): string => {
-  if (!fotos) return ''
-  if (typeof fotos === 'string') return fotos
-  if (Array.isArray(fotos)) return fotos.filter(Boolean).join(',')
-  return ''
-}
-
-// Helper para obtener foto en posición específica
-const getFotoUrl = (fotos: string, index: number): string => {
-  if (!fotos) return ''
-  const arr = fotos.split(',').map(s => s.trim()).filter(Boolean)
-  return arr[index] || ''
-}
-
-// Helper para actualizar foto en posición específica
-const setFotoUrl = (fotos: string, index: number, url: string): string => {
-  const arr = fotos ? fotos.split(',').map(s => s.trim()) : []
-  // Rellenar con vacíos si es necesario
-  while (arr.length <= index) arr.push('')
-  arr[index] = url
-  return arr.filter(Boolean).join(',')
-}
-
-// Estados disponibles para órdenes
-const ESTADOS = [
-  { value: 'recibido', label: 'Recibido', color: 'bg-blue-500', icon: '📋' },
-  { value: 'diagnostico', label: 'En Diagnóstico', color: 'bg-purple-500', icon: '🔍' },
-  { value: 'presupuestado', label: 'Presupuestado', color: 'bg-yellow-500', icon: '💰' },
-  { value: 'aprobado', label: 'Aprobado', color: 'bg-cyan-500', icon: '✓' },
-  { value: 'en_reparacion', label: 'En Reparación', color: 'bg-amber-500', icon: '🔧' },
-  { value: 'completado', label: 'Completado', color: 'bg-green-500', icon: '✅' },
-  { value: 'entregado', label: 'Entregado', color: 'bg-emerald-600', icon: '🚗' },
-  { value: 'cancelado', label: 'Cancelado', color: 'bg-red-500', icon: '❌' },
-]
-
-// Fracciones de hora disponibles (para mano de obra)
-const FRACCIONES_HORA = [
-  { value: 0.25, label: '15 min' },
-  { value: 0.5, label: '30 min' },
-  { value: 0.75, label: '45 min' },
-  { value: 1, label: '1 hora' },
-  { value: 1.5, label: '1h 30min' },
-  { value: 2, label: '2 horas' },
-  { value: 2.5, label: '2h 30min' },
-  { value: 3, label: '3 horas' },
-  { value: 4, label: '4 horas' },
-  { value: 5, label: '5 horas' },
-  { value: 6, label: '6 horas' },
-  { value: 8, label: '8 horas' },
-]
-
-// Cantidades disponibles (para piezas/servicios)
-const CANTIDADES = [
-  { value: 1, label: '1 ud' },
-  { value: 2, label: '2 uds' },
-  { value: 3, label: '3 uds' },
-  { value: 4, label: '4 uds' },
-  { value: 5, label: '5 uds' },
-  { value: 6, label: '6 uds' },
-  { value: 8, label: '8 uds' },
-  { value: 10, label: '10 uds' },
-  { value: 12, label: '12 uds' },
-]
+import { fotosToString, getFotoUrl, setFotoUrl } from '@/lib/utils'
+import { ESTADOS_ORDEN, FRACCIONES_HORA, CANTIDADES, ESTADOS_FACTURABLES } from '@/lib/constants'
 
 interface Orden {
   id?: string
@@ -284,11 +226,47 @@ export function DetalleOrdenSheet({
   const cargarVehiculos = async (clienteId: string) => {
     const { data } = await supabase
       .from('vehiculos')
-      .select('id, marca, modelo, matricula, km_actual')
+      .select('id, marca, modelo, matricula, bastidor, anio, color, km_actual')
       .eq('cliente_id', clienteId)
       .order('matricula')
 
     setVehiculos(data || [])
+  }
+
+  // Actualizar KM del vehículo desde OCR
+  const actualizarKMVehiculo = async (nuevoKM: number) => {
+    if (!formData.vehiculo_id) {
+      toast.error('Selecciona un vehículo primero')
+      return
+    }
+
+    const vehiculo = vehiculos.find(v => v.id === formData.vehiculo_id)
+    if (!vehiculo) return
+
+    // Solo actualizar si el nuevo KM es mayor que el actual
+    if (vehiculo.km_actual && nuevoKM <= vehiculo.km_actual) {
+      toast.info(`KM detectados (${nuevoKM.toLocaleString()}) no son mayores que los actuales (${vehiculo.km_actual.toLocaleString()})`)
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('vehiculos')
+        .update({ km_actual: nuevoKM, updated_at: new Date().toISOString() })
+        .eq('id', formData.vehiculo_id)
+
+      if (error) throw error
+
+      // Actualizar el estado local
+      setVehiculos(prev => prev.map(v =>
+        v.id === formData.vehiculo_id ? { ...v, km_actual: nuevoKM } : v
+      ))
+
+      toast.success(`✅ KM actualizados: ${nuevoKM.toLocaleString()}`)
+    } catch (error: any) {
+      console.error('Error actualizando KM:', error)
+      toast.error('Error al actualizar KM')
+    }
   }
 
   // Calcular totales
@@ -495,7 +473,7 @@ export function DetalleOrdenSheet({
     setMostrarEstados(false)
   }
 
-  const estadoActual = ESTADOS.find(e => e.value === formData.estado) || ESTADOS[0]
+  const estadoActual = ESTADOS_ORDEN.find(e => e.value === formData.estado) || ESTADOS_ORDEN[0]
   const vehiculoSeleccionado = vehiculos.find(v => v.id === formData.vehiculo_id)
 
   if (cargando) {
@@ -544,7 +522,7 @@ export function DetalleOrdenSheet({
 
             {mostrarEstados && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border z-10 overflow-hidden max-h-64 overflow-y-auto">
-                {ESTADOS.map(estado => (
+                {ESTADOS_ORDEN.map(estado => (
                   <button
                     key={estado.value}
                     onClick={() => cambiarEstado(estado.value)}
@@ -626,16 +604,57 @@ export function DetalleOrdenSheet({
                   </select>
 
                   {vehiculoSeleccionado && (
-                    <div className="mt-3 p-3 bg-sky-50 rounded-lg border border-sky-200 text-sm">
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <span className="text-gray-500">Matrícula:</span>
-                          <span className="ml-2 font-bold">{vehiculoSeleccionado.matricula}</span>
+                    <div className="mt-3 p-4 bg-gradient-to-br from-sky-50 to-cyan-50 rounded-xl border border-sky-200">
+                      {/* Cabecera del vehículo */}
+                      <div className="flex items-center gap-3 mb-3 pb-3 border-b border-sky-200">
+                        <div className="w-10 h-10 bg-sky-600 rounded-lg flex items-center justify-center text-white text-lg">
+                          🚗
                         </div>
-                        <div>
-                          <span className="text-gray-500">KM:</span>
-                          <span className="ml-2 font-bold">{vehiculoSeleccionado.km_actual?.toLocaleString() || '—'}</span>
+                        <div className="flex-1">
+                          <p className="font-bold text-gray-900">
+                            {vehiculoSeleccionado.marca} {vehiculoSeleccionado.modelo}
+                          </p>
+                          <p className="text-lg font-mono font-bold text-sky-700">
+                            {vehiculoSeleccionado.matricula}
+                          </p>
                         </div>
+                        {vehiculoSeleccionado.anio && (
+                          <div className="bg-white px-2 py-1 rounded-lg border border-sky-200 text-sm font-medium text-gray-600">
+                            {vehiculoSeleccionado.anio}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Detalles del vehículo */}
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="bg-white p-2 rounded-lg border border-sky-100">
+                          <span className="text-xs text-gray-500 block">Kilómetros</span>
+                          <span className="font-bold text-gray-900">
+                            {vehiculoSeleccionado.km_actual?.toLocaleString() || '—'} km
+                          </span>
+                        </div>
+                        <div className="bg-white p-2 rounded-lg border border-sky-100">
+                          <span className="text-xs text-gray-500 block">Color</span>
+                          <span className="font-bold text-gray-900">
+                            {vehiculoSeleccionado.color || '—'}
+                          </span>
+                        </div>
+                        {vehiculoSeleccionado.bastidor && (
+                          <div className="col-span-2 bg-white p-2 rounded-lg border border-sky-100">
+                            <span className="text-xs text-gray-500 block">Bastidor (VIN)</span>
+                            <span className="font-mono text-xs font-medium text-gray-700">
+                              {vehiculoSeleccionado.bastidor}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Indicador de OCR */}
+                      <div className="mt-3 pt-3 border-t border-sky-200">
+                        <p className="text-xs text-sky-600 flex items-center gap-1">
+                          <span>📸</span>
+                          Sube foto del cuadro para actualizar KM automáticamente
+                        </p>
                       </div>
                     </div>
                   )}
@@ -717,11 +736,24 @@ export function DetalleOrdenSheet({
                           }))
                         }}
                         onOCRData={(data) => {
-                          if (data.matricula) {
-                            toast.success(`Matrícula detectada: ${data.matricula}`)
+                          // Verificar matrícula si hay vehículo seleccionado
+                          if (data.matricula && vehiculoSeleccionado) {
+                            const matriculaLimpia = data.matricula.replace(/[\s-]/g, '').toUpperCase()
+                            const matriculaVehiculo = vehiculoSeleccionado.matricula.replace(/[\s-]/g, '').toUpperCase()
+                            if (matriculaLimpia === matriculaVehiculo) {
+                              toast.success(`✅ Matrícula coincide: ${data.matricula}`)
+                            } else {
+                              toast.warning(`⚠️ Matrícula detectada (${data.matricula}) no coincide con el vehículo (${vehiculoSeleccionado.matricula})`)
+                            }
+                          } else if (data.matricula) {
+                            toast.info(`Matrícula detectada: ${data.matricula}`)
                           }
-                          if (data.km) {
-                            toast.success(`KM detectados: ${data.km}`)
+
+                          // Actualizar KM del vehículo
+                          if (data.km && formData.vehiculo_id) {
+                            actualizarKMVehiculo(data.km)
+                          } else if (data.km) {
+                            toast.info(`KM detectados: ${data.km.toLocaleString()} (selecciona un vehículo para guardar)`)
                           }
                         }}
                       />
@@ -1073,7 +1105,7 @@ export function DetalleOrdenSheet({
 
         {/* Footer */}
         <div className="bg-white border-t p-4 space-y-2 shrink-0">
-          {!modoCrear && ['completado', 'entregado', 'en_reparacion', 'aprobado'].includes(formData.estado) && (
+          {!modoCrear && ESTADOS_FACTURABLES.includes(formData.estado as any) && (
             <Button
               onClick={handleGenerarFactura}
               disabled={generandoFactura || guardando}
