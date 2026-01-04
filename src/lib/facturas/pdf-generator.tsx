@@ -1,14 +1,17 @@
 /**
  * GENERADOR DE PDF PARA FACTURAS
- * 
+ *
  * Utiliza @react-pdf/renderer para crear PDFs profesionales
  * Cumplimiento normativa española y europea
+ * Personalización de colores por taller
  */
 
-import { Document, Page, Text, View, StyleSheet, Image, PDFDownloadLink } from '@react-pdf/renderer'
+import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer'
 
-// Estilos para el PDF
-const styles = StyleSheet.create({
+/**
+ * Crea estilos dinámicos basados en colores personalizados
+ */
+const createStyles = (colorPrimario: string, colorSecundario: string) => StyleSheet.create({
   page: {
     flexDirection: 'column',
     backgroundColor: '#FFFFFF',
@@ -20,7 +23,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 30,
     borderTopWidth: 4,
-    borderTopColor: '#2563eb',
+    borderTopColor: colorPrimario,
     paddingTop: 20,
   },
   leftHeader: {
@@ -31,21 +34,21 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 8,
     color: '#111827',
   },
   subtitle: {
-    fontSize: 10,
+    fontSize: 9,
     color: '#666666',
     marginBottom: 2,
   },
   facturaNumber: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: 'bold',
     color: '#cccccc',
-    marginBottom: 15,
+    marginBottom: 12,
   },
   facturaBox: {
     border: '1px solid #e5e7eb',
@@ -56,12 +59,12 @@ const styles = StyleSheet.create({
   infoDatos: {
     flexDirection: 'row',
     marginBottom: 20,
-    gap: 40,
+    gap: 30,
   },
   dataBlock: {
     flex: 1,
     borderLeftWidth: 3,
-    borderLeftColor: '#2563eb',
+    borderLeftColor: colorPrimario,
     paddingLeft: 12,
   },
   dataBlockVehicle: {
@@ -92,9 +95,9 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#eff6ff',
+    backgroundColor: colorPrimario + '15', // Color con opacidad
     borderBottomWidth: 2,
-    borderBottomColor: '#2563eb',
+    borderBottomColor: colorPrimario,
     paddingVertical: 8,
   },
   tableRow: {
@@ -116,7 +119,7 @@ const styles = StyleSheet.create({
   },
   totalsBox: {
     marginLeft: 'auto',
-    width: '40%',
+    width: '45%',
     marginBottom: 20,
   },
   totalRow: {
@@ -144,7 +147,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 10,
     paddingHorizontal: 12,
-    backgroundColor: '#2563eb',
+    backgroundColor: colorSecundario,
     color: '#ffffff',
     fontSize: 12,
     fontWeight: 'bold',
@@ -161,34 +164,101 @@ const styles = StyleSheet.create({
   },
   notasBox: {
     backgroundColor: '#f3f4f6',
-    padding: 10,
+    padding: 12,
     marginBottom: 15,
     fontSize: 9,
     borderRadius: 4,
   },
+  ibanBox: {
+    backgroundColor: colorPrimario + '10',
+    borderWidth: 1,
+    borderColor: colorPrimario,
+    padding: 12,
+    marginBottom: 15,
+    borderRadius: 4,
+  },
   footer: {
-    marginTop: 20,
+    marginTop: 'auto',
     paddingTop: 15,
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
-    fontSize: 8,
+    fontSize: 7,
     color: '#666666',
-    textAlign: 'center',
   },
   footerGrid: {
     flexDirection: 'row',
     marginBottom: 10,
-    gap: 20,
+    gap: 15,
   },
   footerColumn: {
     flex: 1,
-    fontSize: 8,
+    fontSize: 7,
   },
 })
 
 /**
+ * Props del componente PDF de Factura
+ */
+interface PDFFacturaProps {
+  numeroFactura: string
+  serie: string
+  fechaEmision: string
+  fechaVencimiento: string
+  logoUrl?: string
+  emisor: {
+    nombre: string
+    nif: string
+    direccion: string
+    codigoPostal?: string
+    ciudad?: string
+    provincia?: string
+    pais?: string
+    telefono?: string
+    email?: string
+    web?: string
+  }
+  receptor: {
+    nombre: string
+    nif?: string
+    direccion?: string
+    codigoPostal?: string
+    ciudad?: string
+    provincia?: string
+  }
+  vehiculo?: {
+    marca?: string
+    modelo?: string
+    matricula?: string
+    km?: number
+    bastidor?: string
+  }
+  lineas: Array<{
+    descripcion: string
+    cantidad: number
+    precioUnitario: number
+    total: number
+  }>
+  baseImponible: number
+  ivaPercentaje: number
+  cuotaIVA: number
+  descuento?: number
+  envio?: number
+  total: number
+  metodoPago?: string
+  condicionesPago?: string
+  notas?: string
+  notasLegales?: string
+  iban?: string
+  verifactuNumero?: string
+  verifactuURL?: string
+  // Colores personalizados
+  colorPrimario?: string
+  colorSecundario?: string
+}
+
+/**
  * Componente PDF de Factura
- * Renderiza una factura completa en PDF
+ * Renderiza una factura completa en PDF con colores personalizables
  */
 export const PDFFactura = ({
   numeroFactura,
@@ -209,230 +279,277 @@ export const PDFFactura = ({
   metodoPago = 'Transferencia bancaria',
   condicionesPago = 'Pago a la vista',
   notas,
+  notasLegales,
+  iban,
   verifactuNumero,
   verifactuURL,
-}: any) => (
-  <Document>
-    <Page size="A4" style={styles.page}>
-      {/* HEADER */}
-      <View style={styles.header}>
-        {/* LEFT: Logo y datos emisor */}
-        <View style={styles.leftHeader}>
-          {logoUrl && (
-            <Image
-              src={logoUrl}
-              style={{ width: 80, height: 80, marginBottom: 10, objectFit: 'contain' }}
-            />
-          )}
-          <Text style={styles.title}>{emisor.nombre}</Text>
-          <Text style={styles.subtitle}>
-            {emisor.direccion}, {emisor.codigoPostal} {emisor.ciudad}
-          </Text>
-          <Text style={styles.subtitle}>
-            {emisor.provincia}, {emisor.pais}
-          </Text>
-          <Text style={styles.subtitle}>CIF: {emisor.nif}</Text>
-          {emisor.telefono && (
-            <Text style={styles.subtitle}>Teléfono: {emisor.telefono}</Text>
-          )}
-          {emisor.email && (
-            <Text style={styles.subtitle}>Email: {emisor.email}</Text>
-          )}
-        </View>
+  colorPrimario = '#0284c7',
+  colorSecundario = '#0369a1',
+}: PDFFacturaProps) => {
+  const styles = createStyles(colorPrimario, colorSecundario)
 
-        {/* RIGHT: Número de factura */}
-        <View style={styles.rightHeader}>
-          <Text style={styles.facturaNumber}>FACTURA</Text>
-          <View style={styles.facturaBox}>
-            <Text style={styles.dataLabel}>Número de Factura</Text>
-            <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#2563eb', marginBottom: 10 }}>
-              {serie}-{numeroFactura}
-            </Text>
-            <Text style={styles.dataLabel}>Fecha de Emisión</Text>
-            <Text style={{ fontSize: 12, fontWeight: 'bold' }}>
-              {new Date(fechaEmision).toLocaleDateString('es-ES')}
-            </Text>
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        {/* HEADER */}
+        <View style={styles.header}>
+          {/* LEFT: Logo y datos emisor */}
+          <View style={styles.leftHeader}>
+            {logoUrl && (
+              <Image
+                src={logoUrl}
+                style={{ width: 70, height: 70, marginBottom: 8, objectFit: 'contain' }}
+              />
+            )}
+            <Text style={styles.title}>{emisor.nombre}</Text>
+            <Text style={styles.subtitle}>CIF: {emisor.nif}</Text>
+            <Text style={styles.subtitle}>{emisor.direccion}</Text>
+            {emisor.codigoPostal && (
+              <Text style={styles.subtitle}>
+                {emisor.codigoPostal} {emisor.ciudad}
+                {emisor.provincia && `, ${emisor.provincia}`}
+              </Text>
+            )}
+            {emisor.telefono && (
+              <Text style={styles.subtitle}>Tel: {emisor.telefono}</Text>
+            )}
+            {emisor.email && (
+              <Text style={styles.subtitle}>{emisor.email}</Text>
+            )}
+          </View>
+
+          {/* RIGHT: Número de factura */}
+          <View style={styles.rightHeader}>
+            <Text style={styles.facturaNumber}>FACTURA</Text>
+            <View style={styles.facturaBox}>
+              <Text style={styles.dataLabel}>Número de Factura</Text>
+              <Text style={{ fontSize: 16, fontWeight: 'bold', color: colorPrimario, marginBottom: 8 }}>
+                {serie}{numeroFactura}
+              </Text>
+              <Text style={styles.dataLabel}>Fecha de Emisión</Text>
+              <Text style={{ fontSize: 11, fontWeight: 'bold', marginBottom: 4 }}>
+                {new Date(fechaEmision).toLocaleDateString('es-ES')}
+              </Text>
+              <Text style={styles.dataLabel}>Fecha de Vencimiento</Text>
+              <Text style={{ fontSize: 11, fontWeight: 'bold' }}>
+                {new Date(fechaVencimiento).toLocaleDateString('es-ES')}
+              </Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* DATOS: Cliente y Vehículo */}
-      <View style={styles.infoDatos}>
-        {/* RECEPTOR */}
-        <View style={styles.dataBlock}>
-          <Text style={styles.dataLabel}>Facturado a:</Text>
-          <Text style={styles.dataValue}>{receptor.nombre}</Text>
-          <Text style={styles.dataValueSmall}>{receptor.nif}</Text>
-          {receptor.direccion && (
-            <Text style={styles.dataValueSmall}>{receptor.direccion}</Text>
-          )}
-          {receptor.codigoPostal && (
-            <Text style={styles.dataValueSmall}>
-              {receptor.codigoPostal} {receptor.ciudad}, {receptor.provincia}
-            </Text>
-          )}
-        </View>
-
-        {/* VEHÍCULO */}
-        {vehiculo && (
-          <View style={styles.dataBlockVehicle}>
-            <Text style={styles.dataLabel}>Vehículo:</Text>
-            {vehiculo.modelo && (
-              <Text style={styles.dataValueSmall}>
-                Modelo: {vehiculo.modelo}
-              </Text>
+        {/* DATOS: Cliente y Vehículo */}
+        <View style={styles.infoDatos}>
+          {/* RECEPTOR */}
+          <View style={styles.dataBlock}>
+            <Text style={styles.dataLabel}>Facturado a:</Text>
+            <Text style={styles.dataValue}>{receptor.nombre}</Text>
+            {receptor.nif && <Text style={styles.dataValueSmall}>NIF: {receptor.nif}</Text>}
+            {receptor.direccion && (
+              <Text style={styles.dataValueSmall}>{receptor.direccion}</Text>
             )}
-            {vehiculo.matricula && (
+            {receptor.codigoPostal && (
               <Text style={styles.dataValueSmall}>
-                Matrícula: {vehiculo.matricula}
-              </Text>
-            )}
-            {vehiculo.km && (
-              <Text style={styles.dataValueSmall}>
-                Km: {vehiculo.km.toLocaleString('es-ES')}
+                {receptor.codigoPostal} {receptor.ciudad}
+                {receptor.provincia && `, ${receptor.provincia}`}
               </Text>
             )}
           </View>
-        )}
-      </View>
 
-      {/* TABLA DE LÍNEAS */}
-      <View style={styles.table}>
-        {/* Header */}
-        <View style={styles.tableHeader}>
-          <Text style={{ ...styles.tableCell, fontWeight: 'bold', flex: 2 }}>
-            DESCRIPCIÓN
-          </Text>
-          <Text style={{ ...styles.tableCellRight, fontWeight: 'bold' }}>
-            CANTIDAD
-          </Text>
-          <Text style={{ ...styles.tableCellRight, fontWeight: 'bold' }}>
-            PRECIO UNIT.
-          </Text>
-          <Text style={{ ...styles.tableCellRight, fontWeight: 'bold' }}>
-            TOTAL
-          </Text>
+          {/* VEHÍCULO */}
+          {vehiculo && (vehiculo.matricula || vehiculo.modelo) && (
+            <View style={styles.dataBlockVehicle}>
+              <Text style={styles.dataLabel}>Vehículo:</Text>
+              {vehiculo.marca && vehiculo.modelo && (
+                <Text style={styles.dataValue}>
+                  {vehiculo.marca} {vehiculo.modelo}
+                </Text>
+              )}
+              {vehiculo.matricula && (
+                <Text style={styles.dataValueSmall}>
+                  Matrícula: {vehiculo.matricula}
+                </Text>
+              )}
+              {vehiculo.km && (
+                <Text style={styles.dataValueSmall}>
+                  Km: {vehiculo.km.toLocaleString('es-ES')}
+                </Text>
+              )}
+              {vehiculo.bastidor && (
+                <Text style={styles.dataValueSmall}>
+                  VIN: {vehiculo.bastidor}
+                </Text>
+              )}
+            </View>
+          )}
         </View>
 
-        {/* Rows */}
-        {lineas.map((linea: any, idx: number) => (
-          <View key={idx} style={styles.tableRow}>
-            <Text style={{ ...styles.tableCell, flex: 2 }}>
-              {linea.descripcion}
+        {/* TABLA DE LÍNEAS */}
+        <View style={styles.table}>
+          {/* Header */}
+          <View style={styles.tableHeader}>
+            <Text style={{ ...styles.tableCell, fontWeight: 'bold', flex: 3, color: colorSecundario }}>
+              DESCRIPCIÓN
             </Text>
-            <Text style={styles.tableCellRight}>
-              {linea.cantidad}
+            <Text style={{ ...styles.tableCellRight, fontWeight: 'bold', color: colorSecundario }}>
+              CANT.
             </Text>
-            <Text style={styles.tableCellRight}>
-              €{linea.precioUnitario.toFixed(2)}
+            <Text style={{ ...styles.tableCellRight, fontWeight: 'bold', color: colorSecundario }}>
+              P. UNIT.
             </Text>
-            <Text style={{ ...styles.tableCellRight, fontWeight: 'bold' }}>
-              €{linea.total.toFixed(2)}
+            <Text style={{ ...styles.tableCellRight, fontWeight: 'bold', color: colorSecundario }}>
+              TOTAL
             </Text>
           </View>
-        ))}
-      </View>
 
-      {/* TOTALES */}
-      <View style={styles.totalsBox}>
-        <View style={styles.totalRow}>
-          <Text>Subtotal:</Text>
-          <Text>€{baseImponible.toFixed(2)}</Text>
+          {/* Rows */}
+          {lineas.map((linea, idx) => (
+            <View key={idx} style={styles.tableRow}>
+              <Text style={{ ...styles.tableCell, flex: 3 }}>
+                {linea.descripcion}
+              </Text>
+              <Text style={styles.tableCellRight}>
+                {linea.cantidad}
+              </Text>
+              <Text style={styles.tableCellRight}>
+                €{linea.precioUnitario.toFixed(2)}
+              </Text>
+              <Text style={{ ...styles.tableCellRight, fontWeight: 'bold' }}>
+                €{linea.total.toFixed(2)}
+              </Text>
+            </View>
+          ))}
         </View>
 
-        {descuento > 0 && (
+        {/* TOTALES */}
+        <View style={styles.totalsBox}>
           <View style={styles.totalRow}>
-            <Text>Descuento:</Text>
-            <Text>-€{descuento.toFixed(2)}</Text>
+            <Text>Subtotal:</Text>
+            <Text>€{baseImponible.toFixed(2)}</Text>
           </View>
-        )}
 
-        {envio > 0 && (
-          <View style={styles.totalRow}>
-            <Text>Envío/Manipulación:</Text>
-            <Text>€{envio.toFixed(2)}</Text>
-          </View>
-        )}
-
-        <View style={styles.totalRowBold}>
-          <Text>Base Imponible:</Text>
-          <Text>€{baseImponible.toFixed(2)}</Text>
-        </View>
-
-        <View style={styles.totalRowBold}>
-          <Text>IVA ({ivaPercentaje}%):</Text>
-          <Text>€{cuotaIVA.toFixed(2)}</Text>
-        </View>
-
-        <View style={styles.totalFinal}>
-          <Text>TOTAL A PAGAR:</Text>
-          <Text>€{total.toFixed(2)}</Text>
-        </View>
-      </View>
-
-      {/* VERIFACTU */}
-      {verifactuNumero && (
-        <View style={styles.verifactuBox}>
-          <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>
-            Verificación AEAT - Verifactu
-          </Text>
-          <Text>
-            Número de verificación: {verifactuNumero}
-          </Text>
-          {verifactuURL && (
-            <Text>Verificar en: {verifactuURL}</Text>
+          {descuento > 0 && (
+            <View style={styles.totalRow}>
+              <Text>Descuento:</Text>
+              <Text>-€{descuento.toFixed(2)}</Text>
+            </View>
           )}
-        </View>
-      )}
 
-      {/* NOTAS */}
-      {notas && (
-        <View style={styles.notasBox}>
-          <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>Notas:</Text>
-          <Text>{notas}</Text>
-        </View>
-      )}
+          {envio > 0 && (
+            <View style={styles.totalRow}>
+              <Text>Envío/Manipulación:</Text>
+              <Text>€{envio.toFixed(2)}</Text>
+            </View>
+          )}
 
-      {/* FOOTER */}
-      <View style={styles.footer}>
-        <View style={styles.footerGrid}>
-          <View style={styles.footerColumn}>
-            <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>
-              Información Legal
-            </Text>
-            <Text>Factura emitida según RD 1619/2012</Text>
-            <Text>Cumplimiento Orden HAP/492/2017</Text>
-            <Text>Directiva UE 2006/112/CE</Text>
+          <View style={styles.totalRowBold}>
+            <Text>Base Imponible:</Text>
+            <Text>€{baseImponible.toFixed(2)}</Text>
           </View>
-          <View style={styles.footerColumn}>
-            <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>
-              Conservación
-            </Text>
-            <Text>Período: 4 años</Text>
-            <Text>Formato: Electrónico/Digital</Text>
-            <Text>Accesibilidad según normativa</Text>
+
+          <View style={styles.totalRowBold}>
+            <Text>IVA ({ivaPercentaje}%):</Text>
+            <Text>€{cuotaIVA.toFixed(2)}</Text>
           </View>
-          <View style={styles.footerColumn}>
-            <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>
-              Derechos del Cliente
-            </Text>
-            <Text>Puede verificar en portal AEAT</Text>
-            <Text>Derecho a info adicional</Text>
-            <Text>Conservar para sus registros</Text>
+
+          <View style={styles.totalFinal}>
+            <Text style={{ color: '#ffffff' }}>TOTAL A PAGAR:</Text>
+            <Text style={{ color: '#ffffff' }}>€{total.toFixed(2)}</Text>
           </View>
         </View>
-        <Text style={{ marginTop: 10 }}>
-          {emisor.email} | {emisor.telefono} | {emisor.web}
-        </Text>
-      </View>
-    </Page>
-  </Document>
-)
+
+        {/* INFORMACIÓN DE PAGO */}
+        {iban && (
+          <View style={styles.ibanBox}>
+            <Text style={{ fontWeight: 'bold', marginBottom: 6, fontSize: 10, color: colorSecundario }}>
+              Datos para el pago
+            </Text>
+            <View style={{ flexDirection: 'row', marginBottom: 4 }}>
+              <Text style={{ fontSize: 9, width: 100 }}>Método de pago:</Text>
+              <Text style={{ fontSize: 9, fontWeight: 'bold' }}>{metodoPago}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', marginBottom: 4 }}>
+              <Text style={{ fontSize: 9, width: 100 }}>IBAN:</Text>
+              <Text style={{ fontSize: 9, fontWeight: 'bold', fontFamily: 'Courier' }}>{iban}</Text>
+            </View>
+            <View style={{ flexDirection: 'row' }}>
+              <Text style={{ fontSize: 9, width: 100 }}>Condiciones:</Text>
+              <Text style={{ fontSize: 9, fontWeight: 'bold' }}>{condicionesPago}</Text>
+            </View>
+          </View>
+        )}
+
+        {/* VERIFACTU */}
+        {verifactuNumero && (
+          <View style={styles.verifactuBox}>
+            <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>
+              Verificación AEAT - Verifactu
+            </Text>
+            <Text>
+              Número de verificación: {verifactuNumero}
+            </Text>
+            {verifactuURL && (
+              <Text>Verificar en: {verifactuURL}</Text>
+            )}
+          </View>
+        )}
+
+        {/* NOTAS */}
+        {notas && (
+          <View style={styles.notasBox}>
+            <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>Observaciones:</Text>
+            <Text>{notas}</Text>
+          </View>
+        )}
+
+        {/* NOTAS LEGALES DEL TALLER */}
+        {notasLegales && (
+          <View style={{ ...styles.notasBox, backgroundColor: '#f9fafb' }}>
+            <Text style={{ fontSize: 8, color: '#666666' }}>{notasLegales}</Text>
+          </View>
+        )}
+
+        {/* FOOTER */}
+        <View style={styles.footer}>
+          <View style={styles.footerGrid}>
+            <View style={styles.footerColumn}>
+              <Text style={{ fontWeight: 'bold', marginBottom: 3, color: colorSecundario }}>
+                Información Legal
+              </Text>
+              <Text>Factura emitida según RD 1619/2012</Text>
+              <Text>Cumplimiento Orden HAP/492/2017</Text>
+              <Text>Directiva UE 2006/112/CE</Text>
+            </View>
+            <View style={styles.footerColumn}>
+              <Text style={{ fontWeight: 'bold', marginBottom: 3, color: colorSecundario }}>
+                Conservación
+              </Text>
+              <Text>Período: 4 años</Text>
+              <Text>Formato: Electrónico/Digital</Text>
+              <Text>Accesibilidad según normativa</Text>
+            </View>
+            <View style={styles.footerColumn}>
+              <Text style={{ fontWeight: 'bold', marginBottom: 3, color: colorSecundario }}>
+                Derechos del Cliente
+              </Text>
+              <Text>Puede verificar en portal AEAT</Text>
+              <Text>Derecho a información adicional</Text>
+              <Text>Conservar para sus registros</Text>
+            </View>
+          </View>
+          <Text style={{ marginTop: 8, textAlign: 'center' }}>
+            {emisor.nombre} | {emisor.email} | {emisor.telefono}
+          </Text>
+        </View>
+      </Page>
+    </Document>
+  )
+}
 
 /**
  * Función helper para generar PDF
  * Retorna el documento listo para descargar
  */
-export function generarPDFFactura(datos: any) {
+export function generarPDFFactura(datos: PDFFacturaProps) {
   return PDFFactura(datos)
 }

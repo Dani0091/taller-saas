@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Loader2, Settings, Upload, X, Image as ImageIcon, FileText, CreditCard } from 'lucide-react'
+import { Loader2, Settings, Upload, X, Image as ImageIcon, FileText, CreditCard, Palette } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 
@@ -29,6 +29,9 @@ interface Config {
   iban: string | null
   condiciones_pago: string | null
   notas_factura: string | null
+  // Colores de marca
+  color_primario: string | null
+  color_secundario: string | null
 }
 
 export default function ConfiguracionPage() {
@@ -137,6 +140,9 @@ export default function ConfiguracionPage() {
         iban: data.iban || null,
         condiciones_pago: data.condiciones_pago || 'Pago a 30 días',
         notas_factura: data.notas_factura || null,
+        // Colores de marca
+        color_primario: data.color_primario || '#0284c7',
+        color_secundario: data.color_secundario || '#0369a1',
       }
 
       setConfig(configData)
@@ -198,6 +204,9 @@ export default function ConfiguracionPage() {
           iban: formData.iban,
           condiciones_pago: formData.condiciones_pago,
           notas_factura: formData.notas_factura,
+          // Colores de marca
+          color_primario: formData.color_primario,
+          color_secundario: formData.color_secundario,
         }),
       })
 
@@ -672,6 +681,133 @@ export default function ConfiguracionPage() {
                 <p className="text-xs text-gray-500 mt-1">
                   Este texto aparecerá en todas tus facturas
                 </p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Colores de Marca */}
+          <Card className="p-6 md:p-8 shadow-sm">
+            <div className="flex items-center gap-2 mb-6 pb-4 border-b">
+              <Palette className="w-6 h-6 text-sky-600" />
+              <h2 className="text-xl font-bold">Colores de Marca</h2>
+            </div>
+
+            <p className="text-sm text-gray-600 mb-6">
+              Personaliza los colores de tus facturas PDF para que coincidan con tu identidad de marca.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Color primario */}
+              <div>
+                <Label htmlFor="color_primario" className="block text-sm font-semibold mb-2">
+                  Color Primario (Cabecera)
+                </Label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    id="color_primario"
+                    name="color_primario"
+                    value={formData.color_primario || '#0284c7'}
+                    onChange={handleChange}
+                    className="w-12 h-12 rounded-lg border-2 border-gray-200 cursor-pointer"
+                  />
+                  <Input
+                    name="color_primario"
+                    value={formData.color_primario || '#0284c7'}
+                    onChange={handleChange}
+                    placeholder="#0284c7"
+                    className="flex-1 font-mono"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Se usa en la cabecera de la factura
+                </p>
+              </div>
+
+              {/* Color secundario */}
+              <div>
+                <Label htmlFor="color_secundario" className="block text-sm font-semibold mb-2">
+                  Color Secundario (Acentos)
+                </Label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    id="color_secundario"
+                    name="color_secundario"
+                    value={formData.color_secundario || '#0369a1'}
+                    onChange={handleChange}
+                    className="w-12 h-12 rounded-lg border-2 border-gray-200 cursor-pointer"
+                  />
+                  <Input
+                    name="color_secundario"
+                    value={formData.color_secundario || '#0369a1'}
+                    onChange={handleChange}
+                    placeholder="#0369a1"
+                    className="flex-1 font-mono"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Se usa en títulos y totales
+                </p>
+              </div>
+
+              {/* Preview de colores */}
+              <div className="md:col-span-2 p-4 rounded-lg border border-gray-200">
+                <p className="text-sm font-semibold mb-3">Vista previa:</p>
+                <div className="flex items-center gap-4">
+                  <div
+                    className="w-full h-12 rounded-lg flex items-center justify-center text-white font-bold"
+                    style={{ backgroundColor: formData.color_primario || '#0284c7' }}
+                  >
+                    Cabecera de Factura
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 mt-3">
+                  <div
+                    className="px-4 py-2 rounded text-white font-semibold"
+                    style={{ backgroundColor: formData.color_secundario || '#0369a1' }}
+                  >
+                    Total: €1.234,56
+                  </div>
+                  <p
+                    className="font-semibold"
+                    style={{ color: formData.color_secundario || '#0369a1' }}
+                  >
+                    Texto de acento
+                  </p>
+                </div>
+              </div>
+
+              {/* Presets de colores */}
+              <div className="md:col-span-2">
+                <p className="text-sm font-semibold mb-2">Presets rápidos:</p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { name: 'Azul', primary: '#0284c7', secondary: '#0369a1' },
+                    { name: 'Verde', primary: '#059669', secondary: '#047857' },
+                    { name: 'Rojo', primary: '#dc2626', secondary: '#b91c1c' },
+                    { name: 'Naranja', primary: '#ea580c', secondary: '#c2410c' },
+                    { name: 'Morado', primary: '#7c3aed', secondary: '#6d28d9' },
+                    { name: 'Gris', primary: '#475569', secondary: '#334155' },
+                  ].map((preset) => (
+                    <button
+                      key={preset.name}
+                      type="button"
+                      onClick={() => setFormData(prev => prev ? {
+                        ...prev,
+                        color_primario: preset.primary,
+                        color_secundario: preset.secondary
+                      } : null)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-lg border hover:bg-gray-50 transition-colors"
+                    >
+                      <div
+                        className="w-4 h-4 rounded-full"
+                        style={{ backgroundColor: preset.primary }}
+                      />
+                      <span className="text-sm">{preset.name}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </Card>

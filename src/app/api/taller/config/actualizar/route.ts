@@ -22,6 +22,9 @@ export async function POST(request: Request) {
       iban,
       condiciones_pago,
       notas_factura,
+      // Colores de marca
+      color_primario,
+      color_secundario,
     } = body
 
     if (!taller_id) {
@@ -56,6 +59,9 @@ export async function POST(request: Request) {
       iban,
       condiciones_pago,
       notas_factura,
+      // Colores de marca
+      color_primario,
+      color_secundario,
     }
 
     let response
