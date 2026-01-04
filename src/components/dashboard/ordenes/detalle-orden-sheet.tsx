@@ -12,6 +12,30 @@ import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { toast } from 'sonner'
 
+// Helper para convertir fotos a string de forma segura
+const fotosToString = (fotos: unknown): string => {
+  if (!fotos) return ''
+  if (typeof fotos === 'string') return fotos
+  if (Array.isArray(fotos)) return fotos.filter(Boolean).join(',')
+  return ''
+}
+
+// Helper para obtener foto en posición específica
+const getFotoUrl = (fotos: string, index: number): string => {
+  if (!fotos) return ''
+  const arr = fotos.split(',').map(s => s.trim()).filter(Boolean)
+  return arr[index] || ''
+}
+
+// Helper para actualizar foto en posición específica
+const setFotoUrl = (fotos: string, index: number, url: string): string => {
+  const arr = fotos ? fotos.split(',').map(s => s.trim()) : []
+  // Rellenar con vacíos si es necesario
+  while (arr.length <= index) arr.push('')
+  arr[index] = url
+  return arr.filter(Boolean).join(',')
+}
+
 // Estados disponibles para órdenes
 const ESTADOS = [
   { value: 'recibido', label: 'Recibido', color: 'bg-blue-500', icon: '📋' },
@@ -204,8 +228,8 @@ export function DetalleOrdenSheet({
           subtotal_piezas: ordenData.subtotal_piezas || 0,
           iva_amount: ordenData.iva_amount || 0,
           total_con_iva: ordenData.total_con_iva || 0,
-          fotos_entrada: ordenData.fotos_entrada || '',
-          fotos_salida: ordenData.fotos_salida || '',
+          fotos_entrada: fotosToString(ordenData.fotos_entrada),
+          fotos_salida: fotosToString(ordenData.fotos_salida),
         })
 
         // Cargar vehículos del cliente
@@ -685,11 +709,12 @@ export function DetalleOrdenSheet({
                       <FotoUploader
                         tipo="entrada"
                         ordenId={ordenSeleccionada || ''}
-                        fotoUrl={formData.fotos_entrada?.split(',')[0]?.trim()}
+                        fotoUrl={getFotoUrl(formData.fotos_entrada || '', 0)}
                         onFotoSubida={(url) => {
-                          const fotos = formData.fotos_entrada?.split(',').filter(u => u.trim()) || []
-                          fotos[0] = url
-                          setFormData(prev => ({ ...prev, fotos_entrada: fotos.filter(Boolean).join(',') }))
+                          setFormData(prev => ({
+                            ...prev,
+                            fotos_entrada: setFotoUrl(prev.fotos_entrada || '', 0, url)
+                          }))
                         }}
                         onOCRData={(data) => {
                           if (data.matricula) {
@@ -703,31 +728,34 @@ export function DetalleOrdenSheet({
                       <FotoUploader
                         tipo="frontal"
                         ordenId={ordenSeleccionada || ''}
-                        fotoUrl={formData.fotos_entrada?.split(',')[1]?.trim()}
+                        fotoUrl={getFotoUrl(formData.fotos_entrada || '', 1)}
                         onFotoSubida={(url) => {
-                          const fotos = formData.fotos_entrada?.split(',').filter(u => u.trim()) || []
-                          fotos[1] = url
-                          setFormData(prev => ({ ...prev, fotos_entrada: fotos.filter(Boolean).join(',') }))
+                          setFormData(prev => ({
+                            ...prev,
+                            fotos_entrada: setFotoUrl(prev.fotos_entrada || '', 1, url)
+                          }))
                         }}
                       />
                       <FotoUploader
                         tipo="izquierda"
                         ordenId={ordenSeleccionada || ''}
-                        fotoUrl={formData.fotos_entrada?.split(',')[2]?.trim()}
+                        fotoUrl={getFotoUrl(formData.fotos_entrada || '', 2)}
                         onFotoSubida={(url) => {
-                          const fotos = formData.fotos_entrada?.split(',').filter(u => u.trim()) || []
-                          fotos[2] = url
-                          setFormData(prev => ({ ...prev, fotos_entrada: fotos.filter(Boolean).join(',') }))
+                          setFormData(prev => ({
+                            ...prev,
+                            fotos_entrada: setFotoUrl(prev.fotos_entrada || '', 2, url)
+                          }))
                         }}
                       />
                       <FotoUploader
                         tipo="derecha"
                         ordenId={ordenSeleccionada || ''}
-                        fotoUrl={formData.fotos_entrada?.split(',')[3]?.trim()}
+                        fotoUrl={getFotoUrl(formData.fotos_entrada || '', 3)}
                         onFotoSubida={(url) => {
-                          const fotos = formData.fotos_entrada?.split(',').filter(u => u.trim()) || []
-                          fotos[3] = url
-                          setFormData(prev => ({ ...prev, fotos_entrada: fotos.filter(Boolean).join(',') }))
+                          setFormData(prev => ({
+                            ...prev,
+                            fotos_entrada: setFotoUrl(prev.fotos_entrada || '', 3, url)
+                          }))
                         }}
                       />
                     </div>
@@ -743,21 +771,23 @@ export function DetalleOrdenSheet({
                       <FotoUploader
                         tipo="salida"
                         ordenId={ordenSeleccionada || ''}
-                        fotoUrl={formData.fotos_salida?.split(',')[0]?.trim()}
+                        fotoUrl={getFotoUrl(formData.fotos_salida || '', 0)}
                         onFotoSubida={(url) => {
-                          const fotos = formData.fotos_salida?.split(',').filter(u => u.trim()) || []
-                          fotos[0] = url
-                          setFormData(prev => ({ ...prev, fotos_salida: fotos.filter(Boolean).join(',') }))
+                          setFormData(prev => ({
+                            ...prev,
+                            fotos_salida: setFotoUrl(prev.fotos_salida || '', 0, url)
+                          }))
                         }}
                       />
                       <FotoUploader
                         tipo="trasera"
                         ordenId={ordenSeleccionada || ''}
-                        fotoUrl={formData.fotos_salida?.split(',')[1]?.trim()}
+                        fotoUrl={getFotoUrl(formData.fotos_salida || '', 1)}
                         onFotoSubida={(url) => {
-                          const fotos = formData.fotos_salida?.split(',').filter(u => u.trim()) || []
-                          fotos[1] = url
-                          setFormData(prev => ({ ...prev, fotos_salida: fotos.filter(Boolean).join(',') }))
+                          setFormData(prev => ({
+                            ...prev,
+                            fotos_salida: setFotoUrl(prev.fotos_salida || '', 1, url)
+                          }))
                         }}
                       />
                     </div>
