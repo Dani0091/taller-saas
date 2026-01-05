@@ -151,13 +151,25 @@ export interface Database {
           id: string
           taller_id: string
           cliente_id: string | null
-          marca: string
-          modelo: string
           matricula: string
-          bastidor: string | null
-          anio: number | null
+          marca: string | null
+          modelo: string | null
+          año: number | null
           color: string | null
-          km_actual: number | null
+          kilometros: number | null
+          vin: string | null
+          bastidor_vin: string | null
+          numero_motor: string | null
+          tipo_combustible: string | null
+          carroceria: string | null
+          potencia_cv: number | null
+          cilindrada: number | null
+          emisiones: string | null
+          fecha_matriculacion: string | null
+          fotos: any | null
+          documentos: any | null
+          historial_reparaciones: any | null
+          notas: string | null
           created_at: string
           updated_at: string
         }
@@ -165,13 +177,25 @@ export interface Database {
           id?: string
           taller_id: string
           cliente_id?: string | null
-          marca: string
-          modelo: string
           matricula: string
-          bastidor?: string | null
-          anio?: number | null
+          marca?: string | null
+          modelo?: string | null
+          año?: number | null
           color?: string | null
-          km_actual?: number | null
+          kilometros?: number | null
+          vin?: string | null
+          bastidor_vin?: string | null
+          numero_motor?: string | null
+          tipo_combustible?: string | null
+          carroceria?: string | null
+          potencia_cv?: number | null
+          cilindrada?: number | null
+          emisiones?: string | null
+          fecha_matriculacion?: string | null
+          fotos?: any | null
+          documentos?: any | null
+          historial_reparaciones?: any | null
+          notas?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -179,13 +203,25 @@ export interface Database {
           id?: string
           taller_id?: string
           cliente_id?: string | null
-          marca?: string
-          modelo?: string
           matricula?: string
-          bastidor?: string | null
-          anio?: number | null
+          marca?: string | null
+          modelo?: string | null
+          año?: number | null
           color?: string | null
-          km_actual?: number | null
+          kilometros?: number | null
+          vin?: string | null
+          bastidor_vin?: string | null
+          numero_motor?: string | null
+          tipo_combustible?: string | null
+          carroceria?: string | null
+          potencia_cv?: number | null
+          cilindrada?: number | null
+          emisiones?: string | null
+          fecha_matriculacion?: string | null
+          fotos?: any | null
+          documentos?: any | null
+          historial_reparaciones?: any | null
+          notas?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -215,6 +251,13 @@ export interface Database {
           notas: string | null
           fotos_entrada: string | null
           fotos_salida: string | null
+          nivel_combustible: string | null
+          renuncia_presupuesto: boolean | null
+          accion_imprevisto: string | null
+          recoger_piezas: boolean | null
+          danos_carroceria: string | null
+          coste_diario_estancia: number | null
+          kilometros_entrada: number | null
           created_at: string
           updated_at: string
         }
@@ -242,6 +285,13 @@ export interface Database {
           notas?: string | null
           fotos_entrada?: string | null
           fotos_salida?: string | null
+          nivel_combustible?: string | null
+          renuncia_presupuesto?: boolean | null
+          accion_imprevisto?: string | null
+          recoger_piezas?: boolean | null
+          danos_carroceria?: string | null
+          coste_diario_estancia?: number | null
+          kilometros_entrada?: number | null
           created_at?: string
           updated_at?: string
         }
@@ -269,6 +319,13 @@ export interface Database {
           notas?: string | null
           fotos_entrada?: string | null
           fotos_salida?: string | null
+          nivel_combustible?: string | null
+          renuncia_presupuesto?: boolean | null
+          accion_imprevisto?: string | null
+          recoger_piezas?: boolean | null
+          danos_carroceria?: string | null
+          coste_diario_estancia?: number | null
+          kilometros_entrada?: number | null
           created_at?: string
           updated_at?: string
         }

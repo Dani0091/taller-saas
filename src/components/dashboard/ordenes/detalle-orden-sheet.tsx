@@ -8,7 +8,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { X, Save, Plus, Trash2, Loader2, FileText, ChevronDown, Check, Clock } from 'lucide-react'
+import { X, Save, Plus, Trash2, Loader2, FileText, ChevronDown, Check, Clock, Car, Printer } from 'lucide-react'
+import { OrdenPDFViewer } from './orden-pdf-viewer'
 import { FotoUploader } from './foto-uploader'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -38,6 +39,13 @@ interface Orden {
   total_con_iva?: number
   fotos_entrada?: string
   fotos_salida?: string
+  nivel_combustible?: string
+  renuncia_presupuesto?: boolean
+  accion_imprevisto?: string
+  recoger_piezas?: boolean
+  danos_carroceria?: string
+  coste_diario_estancia?: number
+  kilometros_entrada?: number
 }
 
 interface DetalleOrdenSheetProps {
@@ -75,6 +83,7 @@ export function DetalleOrdenSheet({
   const [tallerId, setTallerId] = useState<string>('')
   const [ordenNumero, setOrdenNumero] = useState<string>('')
   const [mostrarEstados, setMostrarEstados] = useState(false)
+  const [mostrarPDF, setMostrarPDF] = useState(false)
 
   const [formData, setFormData] = useState<Orden>({
     estado: 'recibido',
@@ -89,6 +98,13 @@ export function DetalleOrdenSheet({
     tiempo_real_horas: 0,
     fotos_entrada: '',
     fotos_salida: '',
+    nivel_combustible: '',
+    renuncia_presupuesto: false,
+    accion_imprevisto: 'avisar',
+    recoger_piezas: false,
+    danos_carroceria: '',
+    coste_diario_estancia: undefined,
+    kilometros_entrada: undefined,
   })
 
   const [nuevaLinea, setNuevaLinea] = useState({
@@ -96,6 +112,20 @@ export function DetalleOrdenSheet({
     descripcion: '',
     cantidad: 1,
     precio_unitario: 0
+  })
+
+  // Estado para crear vehículo nuevo
+  const [mostrarFormVehiculo, setMostrarFormVehiculo] = useState(false)
+  const [creandoVehiculo, setCreandoVehiculo] = useState(false)
+  const [nuevoVehiculo, setNuevoVehiculo] = useState({
+    matricula: '',
+    marca: '',
+    modelo: '',
+    año: '',
+    color: '',
+    kilometros: '',
+    tipo_combustible: '',
+    vin: ''
   })
 
   // Cargar datos iniciales
@@ -172,6 +202,13 @@ export function DetalleOrdenSheet({
           total_con_iva: ordenData.total_con_iva || 0,
           fotos_entrada: fotosToString(ordenData.fotos_entrada),
           fotos_salida: fotosToString(ordenData.fotos_salida),
+          nivel_combustible: ordenData.nivel_combustible || '',
+          renuncia_presupuesto: ordenData.renuncia_presupuesto || false,
+          accion_imprevisto: ordenData.accion_imprevisto || 'avisar',
+          recoger_piezas: ordenData.recoger_piezas || false,
+          danos_carroceria: ordenData.danos_carroceria || '',
+          coste_diario_estancia: ordenData.coste_diario_estancia || undefined,
+          kilometros_entrada: ordenData.kilometros_entrada || undefined,
         })
 
         // Cargar vehículos del cliente
@@ -226,11 +263,69 @@ export function DetalleOrdenSheet({
   const cargarVehiculos = async (clienteId: string) => {
     const { data } = await supabase
       .from('vehiculos')
-      .select('id, marca, modelo, matricula, bastidor, anio, color, km_actual')
+      .select('id, marca, modelo, matricula, vin, bastidor_vin, año, color, kilometros, tipo_combustible')
       .eq('cliente_id', clienteId)
       .order('matricula')
 
     setVehiculos(data || [])
+  }
+
+  // Crear vehículo nuevo
+  const crearVehiculo = async () => {
+    if (!nuevoVehiculo.matricula.trim()) {
+      toast.error('La matrícula es obligatoria')
+      return
+    }
+
+    if (!formData.cliente_id || !tallerId) {
+      toast.error('Selecciona un cliente primero')
+      return
+    }
+
+    setCreandoVehiculo(true)
+    try {
+      const { data, error } = await supabase
+        .from('vehiculos')
+        .insert({
+          taller_id: tallerId,
+          cliente_id: formData.cliente_id,
+          matricula: nuevoVehiculo.matricula.toUpperCase().replace(/[\s-]/g, ''),
+          marca: nuevoVehiculo.marca || null,
+          modelo: nuevoVehiculo.modelo || null,
+          año: nuevoVehiculo.año ? parseInt(nuevoVehiculo.año) : null,
+          color: nuevoVehiculo.color || null,
+          kilometros: nuevoVehiculo.kilometros ? parseInt(nuevoVehiculo.kilometros) : null,
+          tipo_combustible: nuevoVehiculo.tipo_combustible || null,
+          vin: nuevoVehiculo.vin || null,
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      // Añadir a la lista y seleccionar
+      setVehiculos(prev => [...prev, data])
+      setFormData(prev => ({ ...prev, vehiculo_id: data.id }))
+
+      // Limpiar formulario
+      setNuevoVehiculo({
+        matricula: '',
+        marca: '',
+        modelo: '',
+        año: '',
+        color: '',
+        kilometros: '',
+        tipo_combustible: '',
+        vin: ''
+      })
+      setMostrarFormVehiculo(false)
+      toast.success('Vehículo creado correctamente')
+    } catch (error: any) {
+      console.error('Error creando vehículo:', error)
+      toast.error(error.message || 'Error al crear vehículo')
+    } finally {
+      setCreandoVehiculo(false)
+    }
   }
 
   // Actualizar KM del vehículo desde OCR
@@ -244,22 +339,22 @@ export function DetalleOrdenSheet({
     if (!vehiculo) return
 
     // Solo actualizar si el nuevo KM es mayor que el actual
-    if (vehiculo.km_actual && nuevoKM <= vehiculo.km_actual) {
-      toast.info(`KM detectados (${nuevoKM.toLocaleString()}) no son mayores que los actuales (${vehiculo.km_actual.toLocaleString()})`)
+    if (vehiculo.kilometros && nuevoKM <= vehiculo.kilometros) {
+      toast.info(`KM detectados (${nuevoKM.toLocaleString()}) no son mayores que los actuales (${vehiculo.kilometros.toLocaleString()})`)
       return
     }
 
     try {
       const { error } = await supabase
         .from('vehiculos')
-        .update({ km_actual: nuevoKM, updated_at: new Date().toISOString() })
+        .update({ kilometros: nuevoKM, updated_at: new Date().toISOString() })
         .eq('id', formData.vehiculo_id)
 
       if (error) throw error
 
       // Actualizar el estado local
       setVehiculos(prev => prev.map(v =>
-        v.id === formData.vehiculo_id ? { ...v, km_actual: nuevoKM } : v
+        v.id === formData.vehiculo_id ? { ...v, kilometros: nuevoKM } : v
       ))
 
       toast.success(`✅ KM actualizados: ${nuevoKM.toLocaleString()}`)
@@ -345,6 +440,13 @@ export function DetalleOrdenSheet({
         total_con_iva: totales.total,
         fotos_entrada: formData.fotos_entrada,
         fotos_salida: formData.fotos_salida,
+        nivel_combustible: formData.nivel_combustible || null,
+        renuncia_presupuesto: formData.renuncia_presupuesto,
+        accion_imprevisto: formData.accion_imprevisto || 'avisar',
+        recoger_piezas: formData.recoger_piezas,
+        danos_carroceria: formData.danos_carroceria || null,
+        coste_diario_estancia: formData.coste_diario_estancia || null,
+        kilometros_entrada: formData.kilometros_entrada || null,
       }
 
       let ordenId = ordenSeleccionada
@@ -427,6 +529,13 @@ export function DetalleOrdenSheet({
         total_con_iva: totales.total,
         fotos_entrada: formData.fotos_entrada,
         fotos_salida: formData.fotos_salida,
+        nivel_combustible: formData.nivel_combustible || null,
+        renuncia_presupuesto: formData.renuncia_presupuesto,
+        accion_imprevisto: formData.accion_imprevisto || 'avisar',
+        recoger_piezas: formData.recoger_piezas,
+        danos_carroceria: formData.danos_carroceria || null,
+        coste_diario_estancia: formData.coste_diario_estancia || null,
+        kilometros_entrada: formData.kilometros_entrada || null,
         updated_at: new Date().toISOString()
       }
 
@@ -589,19 +698,155 @@ export function DetalleOrdenSheet({
               {/* Vehículo */}
               {formData.cliente_id && (
                 <Card className="p-4">
-                  <Label className="text-sm font-semibold mb-2 block">Vehículo</Label>
-                  <select
-                    value={formData.vehiculo_id}
-                    onChange={(e) => setFormData(prev => ({ ...prev, vehiculo_id: e.target.value }))}
-                    className="w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white"
-                  >
-                    <option value="">Seleccionar vehículo...</option>
-                    {vehiculos.map(v => (
-                      <option key={v.id} value={v.id}>
-                        {v.matricula} - {v.marca} {v.modelo}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-sm font-semibold">Vehículo</Label>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setMostrarFormVehiculo(!mostrarFormVehiculo)}
+                      className="gap-1 text-xs"
+                    >
+                      <Car className="w-3 h-3" />
+                      {mostrarFormVehiculo ? 'Cancelar' : 'Nuevo'}
+                    </Button>
+                  </div>
+
+                  {!mostrarFormVehiculo ? (
+                    <>
+                      <select
+                        value={formData.vehiculo_id}
+                        onChange={(e) => setFormData(prev => ({ ...prev, vehiculo_id: e.target.value }))}
+                        className="w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white"
+                      >
+                        <option value="">Seleccionar vehículo...</option>
+                        {vehiculos.map(v => (
+                          <option key={v.id} value={v.id}>
+                            {v.matricula} - {v.marca} {v.modelo}
+                          </option>
+                        ))}
+                      </select>
+                      {vehiculos.length === 0 && (
+                        <p className="text-xs text-amber-600 mt-2">
+                          Este cliente no tiene vehículos registrados. Crea uno nuevo.
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <div className="space-y-3 p-3 bg-green-50 rounded-xl border border-green-200">
+                      <h4 className="font-semibold text-green-800 text-sm flex items-center gap-2">
+                        <Car className="w-4 h-4" />
+                        Nuevo Vehículo
+                      </h4>
+
+                      {/* Matrícula - obligatorio */}
+                      <div>
+                        <Label className="text-xs text-gray-600 mb-1 block">Matrícula *</Label>
+                        <Input
+                          value={nuevoVehiculo.matricula}
+                          onChange={(e) => setNuevoVehiculo(prev => ({ ...prev, matricula: e.target.value.toUpperCase() }))}
+                          placeholder="1234ABC"
+                          className="font-mono uppercase"
+                        />
+                      </div>
+
+                      {/* Marca y Modelo */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-xs text-gray-600 mb-1 block">Marca</Label>
+                          <Input
+                            value={nuevoVehiculo.marca}
+                            onChange={(e) => setNuevoVehiculo(prev => ({ ...prev, marca: e.target.value }))}
+                            placeholder="Ford, BMW..."
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-gray-600 mb-1 block">Modelo</Label>
+                          <Input
+                            value={nuevoVehiculo.modelo}
+                            onChange={(e) => setNuevoVehiculo(prev => ({ ...prev, modelo: e.target.value }))}
+                            placeholder="Focus, 320i..."
+                          />
+                        </div>
+                      </div>
+
+                      {/* Año y Color */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-xs text-gray-600 mb-1 block">Año</Label>
+                          <Input
+                            type="number"
+                            value={nuevoVehiculo.año}
+                            onChange={(e) => setNuevoVehiculo(prev => ({ ...prev, año: e.target.value }))}
+                            placeholder="2020"
+                            min="1950"
+                            max={new Date().getFullYear() + 1}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-gray-600 mb-1 block">Color</Label>
+                          <Input
+                            value={nuevoVehiculo.color}
+                            onChange={(e) => setNuevoVehiculo(prev => ({ ...prev, color: e.target.value }))}
+                            placeholder="Blanco, Negro..."
+                          />
+                        </div>
+                      </div>
+
+                      {/* KM y Combustible */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-xs text-gray-600 mb-1 block">Kilómetros</Label>
+                          <Input
+                            type="number"
+                            value={nuevoVehiculo.kilometros}
+                            onChange={(e) => setNuevoVehiculo(prev => ({ ...prev, kilometros: e.target.value }))}
+                            placeholder="125000"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-gray-600 mb-1 block">Combustible</Label>
+                          <select
+                            value={nuevoVehiculo.tipo_combustible}
+                            onChange={(e) => setNuevoVehiculo(prev => ({ ...prev, tipo_combustible: e.target.value }))}
+                            className="w-full px-3 py-2 border rounded-lg text-sm"
+                          >
+                            <option value="">Seleccionar...</option>
+                            <option value="Gasolina">Gasolina</option>
+                            <option value="Diésel">Diésel</option>
+                            <option value="Híbrido">Híbrido</option>
+                            <option value="Eléctrico">Eléctrico</option>
+                            <option value="GLP">GLP</option>
+                            <option value="GNC">GNC</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* VIN */}
+                      <div>
+                        <Label className="text-xs text-gray-600 mb-1 block">Bastidor (VIN)</Label>
+                        <Input
+                          value={nuevoVehiculo.vin}
+                          onChange={(e) => setNuevoVehiculo(prev => ({ ...prev, vin: e.target.value.toUpperCase() }))}
+                          placeholder="WVWZZZ3CZWE123456"
+                          className="font-mono uppercase text-xs"
+                        />
+                      </div>
+
+                      <Button
+                        onClick={crearVehiculo}
+                        disabled={creandoVehiculo || !nuevoVehiculo.matricula.trim()}
+                        className="w-full gap-2 bg-green-600 hover:bg-green-700"
+                      >
+                        {creandoVehiculo ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Plus className="w-4 h-4" />
+                        )}
+                        {creandoVehiculo ? 'Creando...' : 'Crear Vehículo'}
+                      </Button>
+                    </div>
+                  )}
 
                   {vehiculoSeleccionado && (
                     <div className="mt-3 p-4 bg-gradient-to-br from-sky-50 to-cyan-50 rounded-xl border border-sky-200">
@@ -618,9 +863,9 @@ export function DetalleOrdenSheet({
                             {vehiculoSeleccionado.matricula}
                           </p>
                         </div>
-                        {vehiculoSeleccionado.anio && (
+                        {vehiculoSeleccionado.año && (
                           <div className="bg-white px-2 py-1 rounded-lg border border-sky-200 text-sm font-medium text-gray-600">
-                            {vehiculoSeleccionado.anio}
+                            {vehiculoSeleccionado.año}
                           </div>
                         )}
                       </div>
@@ -630,7 +875,7 @@ export function DetalleOrdenSheet({
                         <div className="bg-white p-2 rounded-lg border border-sky-100">
                           <span className="text-xs text-gray-500 block">Kilómetros</span>
                           <span className="font-bold text-gray-900">
-                            {vehiculoSeleccionado.km_actual?.toLocaleString() || '—'} km
+                            {vehiculoSeleccionado.kilometros?.toLocaleString() || '—'} km
                           </span>
                         </div>
                         <div className="bg-white p-2 rounded-lg border border-sky-100">
@@ -639,11 +884,19 @@ export function DetalleOrdenSheet({
                             {vehiculoSeleccionado.color || '—'}
                           </span>
                         </div>
-                        {vehiculoSeleccionado.bastidor && (
+                        {vehiculoSeleccionado.tipo_combustible && (
+                          <div className="bg-white p-2 rounded-lg border border-sky-100">
+                            <span className="text-xs text-gray-500 block">Combustible</span>
+                            <span className="font-bold text-gray-900">
+                              {vehiculoSeleccionado.tipo_combustible}
+                            </span>
+                          </div>
+                        )}
+                        {(vehiculoSeleccionado.vin || vehiculoSeleccionado.bastidor_vin) && (
                           <div className="col-span-2 bg-white p-2 rounded-lg border border-sky-100">
                             <span className="text-xs text-gray-500 block">Bastidor (VIN)</span>
                             <span className="font-mono text-xs font-medium text-gray-700">
-                              {vehiculoSeleccionado.bastidor}
+                              {vehiculoSeleccionado.vin || vehiculoSeleccionado.bastidor_vin}
                             </span>
                           </div>
                         )}
@@ -675,9 +928,68 @@ export function DetalleOrdenSheet({
                 />
               </Card>
 
-              {/* Autorización */}
+              {/* Datos de recepción */}
               <Card className="p-4">
-                <label className="flex items-center gap-3 cursor-pointer">
+                <Label className="text-sm font-semibold mb-3 block">⛽ Recepción del vehículo</Label>
+
+                {/* Nivel de combustible */}
+                <div className="mb-4">
+                  <Label className="text-xs text-gray-500 mb-2 block">Nivel de combustible</Label>
+                  <div className="flex gap-2">
+                    {['E', '1/4', '1/2', '3/4', 'F'].map(nivel => (
+                      <button
+                        key={nivel}
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, nivel_combustible: nivel }))}
+                        className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg border-2 transition-all ${
+                          formData.nivel_combustible === nivel
+                            ? 'bg-amber-500 border-amber-500 text-white'
+                            : 'bg-white border-gray-200 text-gray-600 hover:border-amber-300'
+                        }`}
+                      >
+                        {nivel}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* KM de entrada */}
+                <div className="mb-4">
+                  <Label className="text-xs text-gray-500 mb-1 block">Kilómetros de entrada</Label>
+                  <Input
+                    type="number"
+                    value={formData.kilometros_entrada || ''}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      kilometros_entrada: e.target.value ? parseInt(e.target.value) : undefined
+                    }))}
+                    placeholder="Ej: 145000"
+                    className="font-mono"
+                  />
+                </div>
+
+                {/* Coste diario de estancia */}
+                <div>
+                  <Label className="text-xs text-gray-500 mb-1 block">Coste diario de estancia (€)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={formData.coste_diario_estancia || ''}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      coste_diario_estancia: e.target.value ? parseFloat(e.target.value) : undefined
+                    }))}
+                    placeholder="Ej: 15.00"
+                  />
+                </div>
+              </Card>
+
+              {/* Autorizaciones legales */}
+              <Card className="p-4">
+                <Label className="text-sm font-semibold mb-3 block">✍️ Autorizaciones del cliente</Label>
+
+                {/* Cliente autoriza reparación */}
+                <label className="flex items-center gap-3 cursor-pointer mb-3 p-2 rounded-lg hover:bg-gray-50">
                   <input
                     type="checkbox"
                     checked={formData.presupuesto_aprobado_por_cliente || false}
@@ -692,6 +1004,81 @@ export function DetalleOrdenSheet({
                     <p className="text-xs text-gray-500">El cliente ha dado su aprobación para realizar los trabajos</p>
                   </div>
                 </label>
+
+                {/* Renuncia a presupuesto */}
+                <label className="flex items-center gap-3 cursor-pointer mb-3 p-2 rounded-lg hover:bg-gray-50">
+                  <input
+                    type="checkbox"
+                    checked={formData.renuncia_presupuesto || false}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      renuncia_presupuesto: e.target.checked
+                    }))}
+                    className="w-5 h-5 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                  />
+                  <div>
+                    <span className="font-medium text-gray-900">Renuncia a presupuesto previo</span>
+                    <p className="text-xs text-gray-500">El cliente no desea recibir presupuesto antes de la reparación</p>
+                  </div>
+                </label>
+
+                {/* Recoger piezas */}
+                <label className="flex items-center gap-3 cursor-pointer mb-4 p-2 rounded-lg hover:bg-gray-50">
+                  <input
+                    type="checkbox"
+                    checked={formData.recoger_piezas || false}
+                    onChange={(e) => setFormData(prev => ({
+                      ...prev,
+                      recoger_piezas: e.target.checked
+                    }))}
+                    className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <div>
+                    <span className="font-medium text-gray-900">Desea recoger piezas sustituidas</span>
+                    <p className="text-xs text-gray-500">El cliente quiere llevarse las piezas que se reemplacen</p>
+                  </div>
+                </label>
+
+                {/* Acción en caso de imprevistos */}
+                <div className="border-t pt-3">
+                  <Label className="text-xs text-gray-500 mb-2 block">En caso de imprevistos:</Label>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, accion_imprevisto: 'avisar' }))}
+                      className={`flex-1 py-2 px-4 text-sm font-medium rounded-lg border-2 transition-all ${
+                        formData.accion_imprevisto === 'avisar'
+                          ? 'bg-blue-500 border-blue-500 text-white'
+                          : 'bg-white border-gray-200 text-gray-600 hover:border-blue-300'
+                      }`}
+                    >
+                      📞 Avisar antes
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, accion_imprevisto: 'actuar' }))}
+                      className={`flex-1 py-2 px-4 text-sm font-medium rounded-lg border-2 transition-all ${
+                        formData.accion_imprevisto === 'actuar'
+                          ? 'bg-green-500 border-green-500 text-white'
+                          : 'bg-white border-gray-200 text-gray-600 hover:border-green-300'
+                      }`}
+                    >
+                      🔧 Actuar directamente
+                    </button>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Daños en carrocería */}
+              <Card className="p-4">
+                <Label className="text-sm font-semibold mb-2 block">🚗 Daños preexistentes en carrocería</Label>
+                <Textarea
+                  value={formData.danos_carroceria || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, danos_carroceria: e.target.value }))}
+                  placeholder="Describe los daños preexistentes en la carrocería del vehículo (golpes, arañazos, abolladuras...)"
+                  rows={3}
+                  className="resize-none"
+                />
               </Card>
 
               {/* Notas */}
@@ -1105,6 +1492,18 @@ export function DetalleOrdenSheet({
 
         {/* Footer */}
         <div className="bg-white border-t p-4 space-y-2 shrink-0">
+          {/* Botón para imprimir/compartir orden */}
+          {!modoCrear && ordenSeleccionada && (
+            <Button
+              onClick={() => setMostrarPDF(true)}
+              variant="outline"
+              className="w-full gap-2 py-3"
+            >
+              <Printer className="w-4 h-4" />
+              Imprimir / Compartir Orden
+            </Button>
+          )}
+
           {!modoCrear && ESTADOS_FACTURABLES.includes(formData.estado as any) && (
             <Button
               onClick={handleGenerarFactura}
@@ -1134,6 +1533,14 @@ export function DetalleOrdenSheet({
           </Button>
         </div>
       </div>
+
+      {/* Modal PDF de orden de trabajo */}
+      {mostrarPDF && ordenSeleccionada && (
+        <OrdenPDFViewer
+          ordenId={ordenSeleccionada}
+          onClose={() => setMostrarPDF(false)}
+        />
+      )}
     </div>
   )
 }
