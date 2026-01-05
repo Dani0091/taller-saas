@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/client'
 import { X, Save, Plus, Trash2, Loader2, FileText, ChevronDown, Check, Clock, Car, Printer, Share2, Link, Copy } from 'lucide-react'
 import { OrdenPDFViewer } from './orden-pdf-viewer'
 import { FotoUploader } from './foto-uploader'
+import { InputScanner } from '@/components/ui/input-scanner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -806,12 +807,18 @@ export function DetalleOrdenSheet({
                       {/* Matrícula - obligatorio */}
                       <div>
                         <Label className="text-xs text-gray-600 mb-1 block">Matrícula *</Label>
-                        <Input
-                          value={nuevoVehiculo.matricula}
-                          onChange={(e) => setNuevoVehiculo(prev => ({ ...prev, matricula: e.target.value.toUpperCase() }))}
-                          placeholder="1234ABC"
-                          className="font-mono uppercase"
-                        />
+                        <div className="flex gap-2">
+                          <Input
+                            value={nuevoVehiculo.matricula}
+                            onChange={(e) => setNuevoVehiculo(prev => ({ ...prev, matricula: e.target.value.toUpperCase() }))}
+                            placeholder="1234ABC"
+                            className="font-mono uppercase flex-1"
+                          />
+                          <InputScanner
+                            tipo="matricula"
+                            onResult={(val) => setNuevoVehiculo(prev => ({ ...prev, matricula: val }))}
+                          />
+                        </div>
                       </div>
 
                       {/* Marca y Modelo */}
@@ -861,12 +868,19 @@ export function DetalleOrdenSheet({
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <Label className="text-xs text-gray-600 mb-1 block">Kilómetros</Label>
-                          <Input
-                            type="number"
-                            value={nuevoVehiculo.kilometros}
-                            onChange={(e) => setNuevoVehiculo(prev => ({ ...prev, kilometros: e.target.value }))}
-                            placeholder="125000"
-                          />
+                          <div className="flex gap-2">
+                            <Input
+                              type="number"
+                              value={nuevoVehiculo.kilometros}
+                              onChange={(e) => setNuevoVehiculo(prev => ({ ...prev, kilometros: e.target.value }))}
+                              placeholder="125000"
+                              className="flex-1"
+                            />
+                            <InputScanner
+                              tipo="km"
+                              onResult={(val) => setNuevoVehiculo(prev => ({ ...prev, kilometros: val }))}
+                            />
+                          </div>
                         </div>
                         <div>
                           <Label className="text-xs text-gray-600 mb-1 block">Combustible</Label>
@@ -889,12 +903,18 @@ export function DetalleOrdenSheet({
                       {/* VIN */}
                       <div>
                         <Label className="text-xs text-gray-600 mb-1 block">Bastidor (VIN)</Label>
-                        <Input
-                          value={nuevoVehiculo.vin}
-                          onChange={(e) => setNuevoVehiculo(prev => ({ ...prev, vin: e.target.value.toUpperCase() }))}
-                          placeholder="WVWZZZ3CZWE123456"
-                          className="font-mono uppercase text-xs"
-                        />
+                        <div className="flex gap-2">
+                          <Input
+                            value={nuevoVehiculo.vin}
+                            onChange={(e) => setNuevoVehiculo(prev => ({ ...prev, vin: e.target.value.toUpperCase() }))}
+                            placeholder="WVWZZZ3CZWE123456"
+                            className="font-mono uppercase text-xs flex-1"
+                          />
+                          <InputScanner
+                            tipo="vin"
+                            onResult={(val) => setNuevoVehiculo(prev => ({ ...prev, vin: val }))}
+                          />
+                        </div>
                       </div>
 
                       <Button
