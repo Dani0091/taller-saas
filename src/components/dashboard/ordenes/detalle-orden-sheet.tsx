@@ -139,8 +139,18 @@ export function DetalleOrdenSheet({
   useEffect(() => {
     if (formData.cliente_id && tallerId) {
       cargarVehiculos(formData.cliente_id)
+    } else {
+      setVehiculos([])
+      setMostrarFormVehiculo(false)
     }
   }, [formData.cliente_id, tallerId])
+
+  // Auto-mostrar formulario de vehículo si el cliente no tiene ninguno
+  useEffect(() => {
+    if (formData.cliente_id && vehiculos.length === 0 && !formData.vehiculo_id) {
+      setMostrarFormVehiculo(true)
+    }
+  }, [vehiculos, formData.cliente_id])
 
   const inicializar = async () => {
     try {
@@ -761,22 +771,29 @@ export function DetalleOrdenSheet({
 
                   {!mostrarFormVehiculo ? (
                     <>
-                      <select
-                        value={formData.vehiculo_id}
-                        onChange={(e) => setFormData(prev => ({ ...prev, vehiculo_id: e.target.value }))}
-                        className="w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white"
-                      >
-                        <option value="">Seleccionar vehículo...</option>
-                        {vehiculos.map(v => (
-                          <option key={v.id} value={v.id}>
-                            {v.matricula} - {v.marca} {v.modelo}
-                          </option>
-                        ))}
-                      </select>
-                      {vehiculos.length === 0 && (
-                        <p className="text-xs text-amber-600 mt-2">
-                          Este cliente no tiene vehículos registrados. Crea uno nuevo.
-                        </p>
+                      {vehiculos.length > 0 ? (
+                        <select
+                          value={formData.vehiculo_id}
+                          onChange={(e) => setFormData(prev => ({ ...prev, vehiculo_id: e.target.value }))}
+                          className="w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white"
+                        >
+                          <option value="">Seleccionar vehículo...</option>
+                          {vehiculos.map(v => (
+                            <option key={v.id} value={v.id}>
+                              {v.matricula} - {v.marca} {v.modelo}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <div className="text-center py-4 bg-amber-50 rounded-xl border border-amber-200">
+                          <Car className="w-8 h-8 text-amber-500 mx-auto mb-2" />
+                          <p className="text-sm text-amber-700 font-medium">
+                            Este cliente no tiene vehículos
+                          </p>
+                          <p className="text-xs text-amber-600 mt-1">
+                            Pulsa "Nuevo" para añadir uno
+                          </p>
+                        </div>
                       )}
                     </>
                   ) : (
