@@ -42,7 +42,7 @@ export default function NuevaFacturaPage() {
       .split('T')[0],
     metodo_pago: 'T',
     notas: '',
-    condiciones_pago: 'Pago a la vista',
+    condiciones_pago: '',
   })
 
   // Nueva línea

@@ -65,7 +65,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="dani@yopmail.com"
+              placeholder="tu@email.com"
               disabled={loading}
               required
             />

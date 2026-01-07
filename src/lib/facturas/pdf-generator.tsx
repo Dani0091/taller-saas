@@ -277,7 +277,7 @@ export const PDFFactura = ({
   envio = 0,
   total,
   metodoPago = 'Transferencia bancaria',
-  condicionesPago = 'Pago a la vista',
+  condicionesPago = '',
   notas,
   notasLegales,
   iban,

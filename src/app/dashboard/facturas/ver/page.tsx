@@ -432,7 +432,7 @@ export default function VerFacturaPage() {
             </div>
             <div>
               <p className="text-xs text-gray-600 uppercase font-semibold mb-1">Condiciones:</p>
-              <p className="font-semibold text-gray-900">{factura.condiciones_pago || 'Pago a la vista'}</p>
+              <p className="font-semibold text-gray-900">{factura.condiciones_pago || '-'}</p>
             </div>
           </div>
 

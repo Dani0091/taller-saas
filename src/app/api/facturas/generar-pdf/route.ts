@@ -124,7 +124,7 @@ export async function GET(request: NextRequest) {
       envio: 0,
       total: factura.total,
       metodoPago: factura.metodo_pago,
-      condicionesPago: factura.condiciones_pago || 'Pago a la vista',
+      condicionesPago: factura.condiciones_pago || '',
       notas: factura.notas_internas,
       verifactuNumero: factura.numero_verifactu,
       verifactuURL: factura.verifactu_qr_url,

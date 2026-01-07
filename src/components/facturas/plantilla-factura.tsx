@@ -89,7 +89,7 @@ export function PlantillaFactura({
   envio = 0,
   total,
   metodoPago = 'Transferencia bancaria',
-  condicionesPago = 'Pago a la vista',
+  condicionesPago = '',
   notas,
   verifactuNumero,
   verifactuQR,
