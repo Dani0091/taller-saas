@@ -10,19 +10,20 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
-import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
 
 export async function POST(request: NextRequest) {
   try {
-    // Verificar autenticación
-    const auth = await getAuthenticatedUser()
-    if (isAuthError(auth)) {
-      return authErrorResponse(auth)
+    const supabase = await createClient()
+
+    // Verificar sesión
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user) {
+      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
     }
 
-    const supabase = await createClient()
     const body = await request.json()
     const {
+      taller_id,
       cliente_id,
       fecha_emision,
       fecha_vencimiento,
@@ -36,28 +37,24 @@ export async function POST(request: NextRequest) {
       lineas,
     } = body
 
-    // Usar el taller_id del usuario autenticado (no del body)
-    const taller_id = auth.tallerId
-
     // Validaciones
-    if (!cliente_id) {
+    if (!taller_id || !cliente_id) {
       return NextResponse.json(
-        { error: 'cliente_id es requerido' },
+        { error: 'taller_id y cliente_id son requeridos' },
         { status: 400 }
       )
     }
 
-    // Obtener datos del cliente (verificando que pertenece al taller)
+    // Obtener datos del cliente
     const { data: cliente, error: clienteError } = await supabase
       .from('clientes')
       .select('*')
       .eq('id', cliente_id)
-      .eq('taller_id', taller_id)
       .single()
 
     if (clienteError || !cliente) {
       return NextResponse.json(
-        { error: 'Cliente no encontrado o no pertenece a tu taller' },
+        { error: 'Cliente no encontrado' },
         { status: 404 }
       )
     }
