@@ -1,6 +1,6 @@
 /**
  * API ENDPOINT: Crear Factura
- * 
+ *
  * Crea una nueva factura con:
  * - Datos básicos
  * - Líneas de factura
@@ -10,13 +10,19 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
 
 export async function POST(request: NextRequest) {
   try {
+    // Verificar autenticación
+    const auth = await getAuthenticatedUser()
+    if (isAuthError(auth)) {
+      return authErrorResponse(auth)
+    }
+
     const supabase = await createClient()
     const body = await request.json()
     const {
-      taller_id,
       cliente_id,
       fecha_emision,
       fecha_vencimiento,
@@ -30,38 +36,28 @@ export async function POST(request: NextRequest) {
       lineas,
     } = body
 
+    // Usar el taller_id del usuario autenticado (no del body)
+    const taller_id = auth.tallerId
+
     // Validaciones
-    if (!taller_id || !cliente_id) {
+    if (!cliente_id) {
       return NextResponse.json(
-        { error: 'taller_id y cliente_id son requeridos' },
+        { error: 'cliente_id es requerido' },
         { status: 400 }
       )
     }
 
-    // Obtener datos del cliente
+    // Obtener datos del cliente (verificando que pertenece al taller)
     const { data: cliente, error: clienteError } = await supabase
       .from('clientes')
       .select('*')
       .eq('id', cliente_id)
+      .eq('taller_id', taller_id)
       .single()
 
     if (clienteError || !cliente) {
       return NextResponse.json(
-        { error: 'Cliente no encontrado' },
-        { status: 404 }
-      )
-    }
-
-    // Obtener datos del taller
-    const { data: taller, error: tallerError } = await supabase
-      .from('talleres')
-      .select('*')
-      .eq('id', taller_id)
-      .single()
-
-    if (tallerError || !taller) {
-      return NextResponse.json(
-        { error: 'Taller no encontrado' },
+        { error: 'Cliente no encontrado o no pertenece a tu taller' },
         { status: 404 }
       )
     }
@@ -87,7 +83,7 @@ export async function POST(request: NextRequest) {
     const siguienteNumero = maxNumero + 1
     const numeroFactura = `FA${siguienteNumero.toString().padStart(3, '0')}`
 
-    // Crear factura (solo campos que existen en la BD real)
+    // Crear factura
     const { data: factura, error: facturaError } = await supabase
       .from('facturas')
       .insert([
@@ -109,9 +105,8 @@ export async function POST(request: NextRequest) {
       .select()
 
     if (facturaError || !factura) {
-      console.error('Error al crear factura:', facturaError)
       return NextResponse.json(
-        { error: 'Error al crear factura' },
+        { error: 'Error al crear factura', details: facturaError?.message },
         { status: 500 }
       )
     }
@@ -132,9 +127,8 @@ export async function POST(request: NextRequest) {
         .insert(lineasData)
 
       if (lineasError) {
-        console.error('Error al crear líneas:', lineasError)
         return NextResponse.json(
-          { error: 'Error al crear líneas de factura' },
+          { error: 'Error al crear líneas de factura', details: lineasError?.message },
           { status: 500 }
         )
       }
@@ -147,7 +141,6 @@ export async function POST(request: NextRequest) {
       message: 'Factura creada correctamente',
     })
   } catch (error) {
-    console.error('Error:', error)
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }
