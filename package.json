@@ -1,15 +1,20 @@
 {
   "name": "taller-saas",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build --webpack",
+    "build:analyze": "ANALYZE=true next build --webpack",
     "start": "next start",
+    "start:prod": "NODE_ENV=production node .next/standalone/server.js",
     "lint": "eslint",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "type-check": "tsc --noEmit",
+    "docker:build": "docker build -t talleragil .",
+    "docker:run": "docker run -p 3000:3000 --env-file .env.local talleragil"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

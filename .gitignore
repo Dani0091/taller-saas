@@ -3,6 +3,7 @@ node_modules/
 npm-debug.log
 yarn-error.log
 pnpm-debug.log
+bun.lockb
 
 # Next.js
 .next/
@@ -10,11 +11,12 @@ out/
 build/
 dist/
 
-# Environment
+# Environment (mantener .env.example)
 .env
 .env.local
 .env.*.local
 .env.production.local
+!.env.example
 
 # IDE
 .vscode/
@@ -22,7 +24,6 @@ dist/
 *.swp
 *.swo
 *~
-.DS_Store
 
 # OS
 .DS_Store
@@ -30,6 +31,10 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Testing
+coverage/
+.vitest/
 
 # Temp
 server.log
@@ -41,3 +46,6 @@ tallerAgil/
 # Supabase
 .supabase/
 tsconfig.tsbuildinfo
+
+# Docker (no subir imágenes locales)
+.docker/
