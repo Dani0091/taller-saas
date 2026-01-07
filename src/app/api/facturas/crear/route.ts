@@ -1,11 +1,5 @@
 /**
  * API ENDPOINT: Crear Factura
- *
- * Crea una nueva factura con:
- * - Datos básicos
- * - Líneas de factura
- * - Número secuencial automático
- * - Estado inicial: borrador
  */
 
 import { createClient } from '@/lib/supabase/server'
@@ -16,7 +10,10 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
 
     // Verificar sesión
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    if (sessionError) {
+      return NextResponse.json({ error: 'Error de sesión', details: sessionError.message }, { status: 401 })
+    }
     if (!session?.user) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
     }
@@ -31,8 +28,6 @@ export async function POST(request: NextRequest) {
       iva,
       total,
       metodo_pago,
-      notas,
-      condiciones_pago,
       estado,
       lineas,
     } = body
@@ -40,7 +35,7 @@ export async function POST(request: NextRequest) {
     // Validaciones
     if (!taller_id || !cliente_id) {
       return NextResponse.json(
-        { error: 'taller_id y cliente_id son requeridos' },
+        { error: 'taller_id y cliente_id son requeridos', received: { taller_id, cliente_id } },
         { status: 400 }
       )
     }
@@ -48,23 +43,34 @@ export async function POST(request: NextRequest) {
     // Obtener datos del cliente
     const { data: cliente, error: clienteError } = await supabase
       .from('clientes')
-      .select('*')
+      .select('id, nombre')
       .eq('id', cliente_id)
       .single()
 
-    if (clienteError || !cliente) {
+    if (clienteError) {
       return NextResponse.json(
-        { error: 'Cliente no encontrado' },
-        { status: 404 }
+        { error: 'Error al buscar cliente', details: clienteError.message, code: clienteError.code },
+        { status: 500 }
       )
     }
 
-    // Generar número de factura secuencial (buscar el número más alto)
-    const { data: todasFacturas } = await supabase
+    if (!cliente) {
+      return NextResponse.json({ error: 'Cliente no encontrado' }, { status: 404 })
+    }
+
+    // Generar número de factura
+    const { data: todasFacturas, error: facturasError } = await supabase
       .from('facturas')
       .select('numero_factura')
       .eq('taller_id', taller_id)
       .like('numero_factura', 'FA%')
+
+    if (facturasError) {
+      return NextResponse.json(
+        { error: 'Error al buscar facturas existentes', details: facturasError.message },
+        { status: 500 }
+      )
+    }
 
     let maxNumero = 0
     if (todasFacturas && todasFacturas.length > 0) {
@@ -81,31 +87,35 @@ export async function POST(request: NextRequest) {
     const numeroFactura = `FA${siguienteNumero.toString().padStart(3, '0')}`
 
     // Crear factura
+    const facturaData = {
+      taller_id,
+      cliente_id,
+      numero_factura: numeroFactura,
+      numero_serie: 'FA',
+      fecha_emision: fecha_emision || new Date().toISOString().split('T')[0],
+      fecha_vencimiento,
+      base_imponible: base_imponible || 0,
+      iva: iva || 0,
+      total: total || 0,
+      metodo_pago,
+      estado: estado || 'borrador',
+      iva_porcentaje: 21,
+    }
+
     const { data: factura, error: facturaError } = await supabase
       .from('facturas')
-      .insert([
-        {
-          taller_id,
-          cliente_id,
-          numero_factura: numeroFactura,
-          numero_serie: 'FA',
-          fecha_emision,
-          fecha_vencimiento,
-          base_imponible,
-          iva,
-          total,
-          metodo_pago,
-          estado: estado || 'borrador',
-          iva_porcentaje: 21,
-        },
-      ])
+      .insert([facturaData])
       .select()
 
-    if (facturaError || !factura) {
+    if (facturaError) {
       return NextResponse.json(
-        { error: 'Error al crear factura', details: facturaError?.message },
+        { error: 'Error al crear factura', details: facturaError.message, code: facturaError.code, data: facturaData },
         { status: 500 }
       )
+    }
+
+    if (!factura || factura.length === 0) {
+      return NextResponse.json({ error: 'Factura no creada, sin error específico' }, { status: 500 })
     }
 
     const facturaId = factura[0].id
@@ -114,9 +124,11 @@ export async function POST(request: NextRequest) {
     if (lineas && lineas.length > 0) {
       const lineasData = lineas.map((linea: any) => ({
         factura_id: facturaId,
-        descripcion: linea.descripcion,
-        cantidad: linea.cantidad,
-        precio_unitario: linea.precioUnitario,
+        descripcion: linea.descripcion || 'Sin descripción',
+        cantidad: linea.cantidad || 1,
+        precio_unitario: linea.precioUnitario || linea.precio_unitario || 0,
+        iva_porcentaje: 21,
+        importe_total: (linea.cantidad || 1) * (linea.precioUnitario || linea.precio_unitario || 0),
       }))
 
       const { error: lineasError } = await supabase
@@ -125,7 +137,7 @@ export async function POST(request: NextRequest) {
 
       if (lineasError) {
         return NextResponse.json(
-          { error: 'Error al crear líneas de factura', details: lineasError?.message },
+          { error: 'Error al crear líneas', details: lineasError.message, facturaId },
           { status: 500 }
         )
       }
@@ -137,9 +149,9 @@ export async function POST(request: NextRequest) {
       numero_factura: numeroFactura,
       message: 'Factura creada correctamente',
     })
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json(
-      { error: 'Error interno del servidor' },
+      { error: 'Error interno', details: error?.message || 'Unknown error' },
       { status: 500 }
     )
   }
