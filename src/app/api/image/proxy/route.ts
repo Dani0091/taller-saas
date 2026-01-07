@@ -1,5 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// Dominios permitidos para el proxy de imágenes (whitelist de seguridad)
+const ALLOWED_DOMAINS = [
+  'api.telegram.org',
+  'supabase.co',
+  'supabase.in',
+]
+
+function isAllowedUrl(urlString: string): boolean {
+  try {
+    const url = new URL(urlString)
+    return ALLOWED_DOMAINS.some(domain => url.hostname.endsWith(domain))
+  } catch {
+    return false
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const imageUrl = request.nextUrl.searchParams.get('url')
@@ -8,13 +24,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'url required' }, { status: 400 })
     }
 
-    console.log('📥 [PROXY] Descargando:', imageUrl.substring(0, 60))
+    // Validar que la URL pertenece a un dominio permitido (previene SSRF)
+    if (!isAllowedUrl(imageUrl)) {
+      return NextResponse.json(
+        { error: 'URL no permitida' },
+        { status: 403 }
+      )
+    }
 
     // Descargar imagen
     const response = await fetch(imageUrl)
-    const buffer = await response.arrayBuffer()
 
-    console.log('✅ [PROXY] Descargado:', buffer.byteLength, 'bytes')
+    if (!response.ok) {
+      return NextResponse.json(
+        { error: 'No se pudo obtener la imagen' },
+        { status: response.status }
+      )
+    }
+
+    const buffer = await response.arrayBuffer()
 
     // Devolver como blob
     return new NextResponse(buffer, {
@@ -24,9 +52,8 @@ export async function GET(request: NextRequest) {
       }
     })
   } catch (error: any) {
-    console.error('❌ [PROXY] Error:', error.message)
     return NextResponse.json(
-      { error: error.message },
+      { error: 'Error al procesar imagen' },
       { status: 500 }
     )
   }

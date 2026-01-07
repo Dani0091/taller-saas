@@ -5,7 +5,7 @@ export interface Orden {
   cliente_id: string | null
   vehiculo_id: string | null
   operario_id: string | null
-  estado: 'recibido' | 'diagnostico' | 'en_progreso' | 'pendiente_cliente' | 'completado' | 'cancelado'
+  estado: 'recibido' | 'diagnostico' | 'presupuestado' | 'aprobado' | 'en_reparacion' | 'completado' | 'entregado' | 'cancelado'
   fecha_entrada: string
   fecha_salida_estimada: string | null
   fecha_salida_real: string | null

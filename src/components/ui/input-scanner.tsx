@@ -5,7 +5,7 @@
  */
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Camera, Loader2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { extraerDatosDeImagen } from '@/lib/ocr/tesseract-service'
@@ -15,6 +15,12 @@ interface InputScannerProps {
   onResult: (value: string) => void
   disabled?: boolean
 }
+
+// Límite de tamaño de archivo (10MB)
+const MAX_FILE_SIZE = 10 * 1024 * 1024
+
+// Tipos MIME permitidos
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic']
 
 // Patrones específicos para VIN (17 caracteres alfanuméricos, sin I, O, Q)
 const VIN_PATTERN = /\b[A-HJ-NPR-Z0-9]{17}\b/gi
@@ -45,68 +51,111 @@ export function InputScanner({ tipo, onResult, disabled }: InputScannerProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Limpiar URL cuando cambia (previene memory leak)
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
+    }
+  }, [previewUrl])
+
   const handleScan = async (file: File) => {
+    // Validar tamaño de archivo
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error('Archivo muy grande (máximo 10MB)')
+      return
+    }
+
+    // Validar tipo de archivo
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      toast.error('Formato no soportado. Usa JPG, PNG o WebP')
+      return
+    }
+
     try {
       setScanning(true)
+
+      // Revocar URL anterior si existe
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
 
       // Crear preview
       const url = URL.createObjectURL(file)
       setPreviewUrl(url)
       setShowPreview(true)
 
-      toast.loading('🔍 Escaneando...', { id: 'scan' })
+      toast.loading('Escaneando...', { id: 'scan' })
 
       // Convertir a base64 para OCR
       const reader = new FileReader()
+
+      reader.onerror = () => {
+        toast.dismiss('scan')
+        toast.error('Error al leer el archivo')
+        setScanning(false)
+      }
+
       reader.onload = async (e) => {
         const base64 = e.target?.result as string
 
-        // Procesar con OCR
-        const resultado = await extraerDatosDeImagen(base64, {
-          preprocess: true,
-          adaptivePreprocess: true,
-          retryOnLowConfidence: true
-        })
+        try {
+          // Procesar con OCR
+          const resultado = await extraerDatosDeImagen(base64, {
+            preprocess: true,
+            adaptivePreprocess: true,
+            retryOnLowConfidence: true
+          })
 
-        toast.dismiss('scan')
+          toast.dismiss('scan')
 
-        let valorDetectado: string | null = null
+          let valorDetectado: string | null = null
 
-        switch (tipo) {
-          case 'matricula':
-            valorDetectado = resultado.matricula
-            break
-          case 'vin':
-            valorDetectado = extraerVIN(resultado.texto)
-            break
-          case 'km':
-            valorDetectado = resultado.km?.toString() || null
-            break
-        }
+          switch (tipo) {
+            case 'matricula':
+              valorDetectado = resultado.matricula
+              break
+            case 'vin':
+              valorDetectado = extraerVIN(resultado.texto)
+              break
+            case 'km':
+              valorDetectado = resultado.km?.toString() || null
+              break
+          }
 
-        if (valorDetectado) {
-          onResult(valorDetectado)
-          toast.success(`✅ ${tipo === 'matricula' ? 'Matrícula' : tipo === 'vin' ? 'VIN' : 'KM'}: ${valorDetectado}`)
-          setShowPreview(false)
-          setPreviewUrl(null)
-        } else {
-          toast.error(`No se detectó ${tipo === 'matricula' ? 'la matrícula' : tipo === 'vin' ? 'el VIN' : 'los KM'}`)
+          if (valorDetectado) {
+            onResult(valorDetectado)
+            toast.success(`${tipo === 'matricula' ? 'Matrícula' : tipo === 'vin' ? 'VIN' : 'KM'}: ${valorDetectado}`)
+            // Limpiar y cerrar
+            if (previewUrl) URL.revokeObjectURL(previewUrl)
+            setShowPreview(false)
+            setPreviewUrl(null)
+          } else {
+            toast.error(`No se detectó ${tipo === 'matricula' ? 'la matrícula' : tipo === 'vin' ? 'el VIN' : 'los KM'}`)
+          }
+        } catch (ocrError) {
+          toast.dismiss('scan')
+          toast.error('Error al procesar imagen')
         }
 
         setScanning(false)
       }
 
       reader.readAsDataURL(file)
-    } catch (error: any) {
+    } catch (error) {
       toast.dismiss('scan')
       toast.error('Error al escanear')
-      console.error(error)
       setScanning(false)
       setShowPreview(false)
     }
   }
 
   const cancelScan = () => {
+    // Limpiar URL para prevenir memory leak
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl)
+    }
     setShowPreview(false)
     setPreviewUrl(null)
     setScanning(false)
