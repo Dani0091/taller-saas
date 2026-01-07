@@ -122,8 +122,9 @@ export async function POST(request: NextRequest) {
 
     // Crear líneas de factura
     if (lineas && lineas.length > 0) {
-      const lineasData = lineas.map((linea: any) => ({
+      const lineasData = lineas.map((linea: any, index: number) => ({
         factura_id: facturaId,
+        numero_linea: index + 1,
         descripcion: linea.descripcion || 'Sin descripción',
         cantidad: linea.cantidad || 1,
         precio_unitario: linea.precioUnitario || linea.precio_unitario || 0,
