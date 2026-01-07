@@ -127,8 +127,6 @@ export async function POST(request: NextRequest) {
         descripcion: linea.descripcion || 'Sin descripción',
         cantidad: linea.cantidad || 1,
         precio_unitario: linea.precioUnitario || linea.precio_unitario || 0,
-        iva_porcentaje: 21,
-        importe_total: (linea.cantidad || 1) * (linea.precioUnitario || linea.precio_unitario || 0),
       }))
 
       const { error: lineasError } = await supabase
