@@ -180,17 +180,17 @@ export function InformacionLegal({
         </Card>
       )}
 
-      {/* CUMPLIMIENTO NORMATIVO */}
+      {/* INFORMACIÓN LEGAL */}
       <Card className="p-6">
-        <h3 className="font-bold text-lg mb-4 text-gray-900">Cumplimiento Normativo</h3>
+        <h3 className="font-bold text-lg mb-4 text-gray-900">Información Legal</h3>
         <div className="space-y-3 text-sm">
-          {/* Factura electrónica */}
+          {/* Factura válida */}
           <div className="flex gap-3 items-start">
             <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold text-gray-900">Factura Electrónica</p>
+              <p className="font-semibold text-gray-900">Factura válida</p>
               <p className="text-gray-600">
-                Cumple con RD 1619/2012 - Emisión de factura electrónica
+                Emitida conforme al RD 1619/2012 sobre facturación
               </p>
             </div>
           </div>
@@ -199,39 +199,33 @@ export function InformacionLegal({
           <div className="flex gap-3 items-start">
             <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold text-gray-900">IVA Registrado</p>
+              <p className="font-semibold text-gray-900">IVA incluido</p>
               <p className="text-gray-600">
-                IVA {porcentajeIVA}% incluido en la cuota repercutida
+                IVA {porcentajeIVA}% aplicado según normativa vigente
               </p>
             </div>
           </div>
 
-          {/* Verifactu */}
+          {/* Conservación */}
           <div className="flex gap-3 items-start">
-            {verifactuAceptada ? (
-              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-            ) : (
-              <AlertCircle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
-            )}
+            <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold text-gray-900">Verifactu</p>
+              <p className="font-semibold text-gray-900">Conservación</p>
               <p className="text-gray-600">
-                {verifactuAceptada
-                  ? `Registro aceptado por AEAT - Verificación: ${numeroverificacion}`
-                  : 'Pendiente de registro en AEAT'}
+                Conserve esta factura durante 4 años a efectos fiscales
               </p>
             </div>
           </div>
 
-          {/* Derechos del receptor */}
+          {/* Garantía */}
           <div className="flex gap-3 items-start pt-3 border-t">
-            <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-semibold text-gray-900">Información al Receptor</p>
+              <p className="font-semibold text-gray-900">Garantía de reparaciones</p>
               <p className="text-gray-600 text-xs">
-                En cumplimiento de la Orden HAP/492/2017, el receptor tiene derecho a 
-                solicitar datos adicionales sobre esta factura y verificarla en el 
-                portal de AEAT.
+                Las reparaciones tienen garantía de 3 meses en mano de obra.
+                Piezas nuevas: garantía del fabricante (mínimo 2 años).
+                Piezas de segunda mano: garantía de 1 año según normativa.
               </p>
             </div>
           </div>
@@ -241,14 +235,13 @@ export function InformacionLegal({
       {/* NOTAS LEGALES */}
       <Card className="p-6 bg-gray-900 text-white text-xs">
         <p className="mb-2">
-          <span className="font-bold">Aviso Legal:</span> Esta factura ha sido emitida 
-          de acuerdo con la legislación fiscal española vigente. El emisor es responsable 
-          del contenido y veracidad de los datos consignados. En caso de discrepancias, 
-          se estará a lo dispuesto en la normativa tributaria aplicable.
+          <span className="font-bold">Aviso Legal:</span> Factura emitida conforme a la
+          legislación fiscal española (RD 1619/2012). El cliente dispone de hojas de
+          reclamaciones a su disposición.
         </p>
         <p>
-          Normativa aplicable: Real Decreto 1619/2012, Orden HAP/492/2017, 
-          Instrucciones AEAT sobre Facturación Electrónica y Verifactu.
+          Para cualquier consulta o reclamación sobre esta factura o los servicios
+          prestados, contacte con el taller en la dirección o teléfono indicados.
         </p>
       </Card>
     </div>

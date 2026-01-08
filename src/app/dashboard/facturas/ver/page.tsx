@@ -149,15 +149,15 @@ export default function VerFacturaPage() {
       const data = await response.json()
       if (data) {
         setDatosEmpresa({
-          nombre: data.nombre_taller || 'TallerAgil',
-          nif: data.nif_taller || '',
-          direccion: data.direccion_taller || '',
-          codigo_postal: data.codigo_postal_taller || '',
-          ciudad: data.ciudad_taller || '',
-          provincia: data.provincia_taller || '',
-          telefono: data.telefono_taller,
-          email: data.email_taller,
-          web: data.web_taller,
+          nombre: data.nombre_empresa || 'Mi Taller',
+          nif: data.cif || '',
+          direccion: data.direccion || '',
+          codigo_postal: data.codigo_postal || '',
+          ciudad: data.ciudad || '',
+          provincia: data.provincia || '',
+          telefono: data.telefono || '',
+          email: data.email || '',
+          web: data.web || '',
         })
       }
     } catch (error) {
@@ -290,6 +290,7 @@ export default function VerFacturaPage() {
             )}
           </Button>
 
+          {/* VERIFACTU - Pendiente de activar
           {!factura.numero_verifactu && (
             <Button
               onClick={handleGenerarVerifactu}
@@ -309,16 +310,16 @@ export default function VerFacturaPage() {
               )}
             </Button>
           )}
-
           {factura.numero_verifactu && (
             <Button disabled className="gap-2 bg-green-600">
               <CheckCircle className="w-4 h-4" />
               Verifactu Listo
             </Button>
           )}
+          */}
         </div>
 
-        {/* VERIFACTU QR */}
+        {/* VERIFACTU QR - Pendiente de activar
         {factura.numero_verifactu && factura.verifactu_qr && (
           <QRVerifactu
             nifEmisor={datosEmpresa?.nif || ''}
@@ -328,6 +329,7 @@ export default function VerFacturaPage() {
             qrData={factura.verifactu_qr}
           />
         )}
+        */}
 
         {/* CAMBIAR ESTADO */}
         {factura.estado !== 'anulada' && (
