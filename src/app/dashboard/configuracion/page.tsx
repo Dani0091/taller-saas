@@ -211,16 +211,23 @@ export default function ConfiguracionPage() {
       })
 
       if (response.ok) {
-        const data = await response.json()
+        const result = await response.json()
+        // La API devuelve { success: true, data: {...} }
+        const configData = result.data || result
         const updatedConfig = {
-          ...data,
-          tarifa_con_iva: data.tarifa_con_iva !== undefined ? data.tarifa_con_iva : true,
+          ...formData, // Mantener valores actuales como base
+          ...configData, // Sobrescribir con valores de la API
+          // Asegurar valores por defecto para campos numéricos
+          tarifa_hora: configData.tarifa_hora ?? formData.tarifa_hora ?? 45.00,
+          porcentaje_iva: configData.porcentaje_iva ?? formData.porcentaje_iva ?? 21.00,
+          tarifa_con_iva: configData.tarifa_con_iva !== undefined ? configData.tarifa_con_iva : true,
         }
         setConfig(updatedConfig)
         setFormData(updatedConfig)
         toast.success('Configuración guardada correctamente')
       } else {
-        toast.error('Error al guardar')
+        const errorData = await response.json()
+        toast.error(errorData.error || 'Error al guardar')
       }
     } catch (error) {
       toast.error('Error')
