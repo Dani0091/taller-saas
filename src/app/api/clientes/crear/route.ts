@@ -8,7 +8,9 @@ export async function POST(request: NextRequest) {
     const {
       taller_id,
       nombre,
-      apellidos,
+      apellidos, // Campo legacy
+      primer_apellido,
+      segundo_apellido,
       nif,
       email,
       telefono,
@@ -33,13 +35,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Construir apellidos: priorizar campos separados, luego campo legacy
+    let apellidosFinal = apellidos
+    if (primer_apellido || segundo_apellido) {
+      apellidosFinal = [primer_apellido, segundo_apellido].filter(Boolean).join(' ').trim()
+    }
+
     const { data, error } = await supabase
       .from('clientes')
       .insert([
         {
           taller_id,
           nombre,
-          apellidos,
+          apellidos: apellidosFinal || null,
           nif,
           email,
           telefono,

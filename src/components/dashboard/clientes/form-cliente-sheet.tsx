@@ -39,6 +39,8 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
   const [tallerId, setTallerId] = useState<string>('')
   const [formData, setFormData] = useState<ClienteFormData>({
     nombre: '',
+    primer_apellido: '',
+    segundo_apellido: '',
     nif: '',
     email: '',
     telefono: '',
@@ -137,10 +139,28 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
               <div>
                 <Label className="text-xs font-semibold">Nombre *</Label>
                 <Input
-                  placeholder="Nombre completo"
+                  placeholder="Nombre"
                   value={formData.nombre}
                   onChange={(e) => setFormData(prev => ({ ...prev, nombre: e.target.value }))}
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs font-semibold">Primer Apellido</Label>
+                  <Input
+                    placeholder="Primer apellido"
+                    value={formData.primer_apellido || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, primer_apellido: e.target.value }))}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold">Segundo Apellido</Label>
+                  <Input
+                    placeholder="Segundo apellido"
+                    value={formData.segundo_apellido || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, segundo_apellido: e.target.value }))}
+                  />
+                </div>
               </div>
               <div>
                 <Label className="text-xs font-semibold">NIF/CIF *</Label>

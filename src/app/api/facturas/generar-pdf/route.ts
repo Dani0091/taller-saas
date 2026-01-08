@@ -80,10 +80,15 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Construir nombre completo del cliente (incluyendo apellidos si existen)
+    const nombreCompletoCliente = cliente?.apellidos
+      ? `${cliente.nombre} ${cliente.apellidos}`.trim()
+      : cliente?.nombre || 'Cliente'
+
     // Preparar datos para PDF (priorizar taller_config sobre talleres)
     const datosFactura = {
       numeroFactura: factura.numero_factura,
-      serie: factura.numero_serie || 'FA',
+      serie: factura.numero_serie || '',
       fechaEmision: factura.fecha_emision,
       fechaVencimiento: factura.fecha_vencimiento,
       logoUrl: tallerConfig?.logo_url || null,
@@ -100,7 +105,7 @@ export async function GET(request: NextRequest) {
         web: taller?.web,
       },
       receptor: {
-        nombre: cliente?.nombre || 'Cliente',
+        nombre: nombreCompletoCliente,
         nif: cliente?.nif || '',
         direccion: cliente?.direccion || '',
         codigoPostal: cliente?.codigo_postal || '',
@@ -112,7 +117,7 @@ export async function GET(request: NextRequest) {
       },
       vehiculo,
       lineas: (lineas || []).map((l: any) => ({
-        descripcion: l.descripcion,
+        descripcion: l.concepto || l.descripcion || 'Servicio',
         cantidad: l.cantidad,
         precioUnitario: l.precio_unitario,
         total: l.cantidad * l.precio_unitario,
@@ -124,10 +129,15 @@ export async function GET(request: NextRequest) {
       envio: 0,
       total: factura.total,
       metodoPago: factura.metodo_pago,
-      condicionesPago: factura.condiciones_pago || '',
+      condicionesPago: factura.condiciones_pago || tallerConfig?.condiciones_pago || '',
       notas: factura.notas_internas,
+      notasLegales: tallerConfig?.notas_factura || null,
+      iban: tallerConfig?.iban || null,
       verifactuNumero: factura.numero_verifactu,
       verifactuURL: factura.verifactu_qr_url,
+      // Colores personalizados del taller
+      colorPrimario: tallerConfig?.color_primario || '#0284c7',
+      colorSecundario: tallerConfig?.color_secundario || '#0369a1',
     }
 
     // Retornar datos como JSON para que el cliente genere el PDF

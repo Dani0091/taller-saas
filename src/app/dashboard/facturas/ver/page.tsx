@@ -71,12 +71,11 @@ const estadoColors: Record<string, string> = {
 export default function VerFacturaPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const { descargarFactura } = useDescargarPDF()
+  const { descargarFactura, imprimirFactura, cargando: cargandoPDF } = useDescargarPDF()
   const [factura, setFactura] = useState<Factura | null>(null)
   const [loading, setLoading] = useState(true)
   const [datosEmpresa, setDatosEmpresa] = useState<DatosEmpresa | null>(null)
   const [generandoVerifactu, setGenerandoVerifactu] = useState(false)
-  const [descargandoPDF, setDescargandoPDF] = useState(false)
   const [tallerId, setTallerId] = useState<string | null>(null)
 
   // Obtener taller_id del usuario autenticado
@@ -209,17 +208,12 @@ export default function VerFacturaPage() {
 
   const handleDescargarPDF = async () => {
     if (!factura) return
-
-    setDescargandoPDF(true)
-    try {
-      await descargarFactura(factura.id, factura.numero_factura)
-    } finally {
-      setDescargandoPDF(false)
-    }
+    await descargarFactura(factura.id, factura.numero_factura)
   }
 
-  const handlePrint = () => {
-    window.print()
+  const handlePrint = async () => {
+    if (!factura) return
+    await imprimirFactura(factura.id, factura.numero_factura)
   }
 
   if (loading) {
@@ -265,19 +259,24 @@ export default function VerFacturaPage() {
         <div className="flex gap-2 mb-6 flex-wrap">
           <Button
             onClick={handlePrint}
+            disabled={cargandoPDF}
             className="gap-2"
             variant="outline"
           >
-            <Printer className="w-4 h-4" />
-            Imprimir
+            {cargandoPDF ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Printer className="w-4 h-4" />
+            )}
+            Imprimir PDF
           </Button>
 
           <Button
             onClick={handleDescargarPDF}
-            disabled={descargandoPDF}
+            disabled={cargandoPDF}
             className="gap-2 bg-green-600 hover:bg-green-700"
           >
-            {descargandoPDF ? (
+            {cargandoPDF ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Generando...

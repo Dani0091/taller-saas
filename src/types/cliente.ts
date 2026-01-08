@@ -2,7 +2,9 @@ export interface Cliente {
   id: string
   taller_id: string
   nombre: string
-  apellidos?: string
+  apellidos?: string // Campo legacy - mantener por compatibilidad
+  primer_apellido?: string
+  segundo_apellido?: string
   nif: string
   email?: string
   telefono?: string
@@ -25,7 +27,8 @@ export interface Cliente {
 
 export interface ClienteFormData {
   nombre: string
-  apellidos?: string
+  primer_apellido?: string
+  segundo_apellido?: string
   nif: string
   email?: string
   telefono?: string
@@ -41,4 +44,20 @@ export interface ClienteFormData {
   contacto_principal?: string
   contacto_email?: string
   contacto_telefono?: string
+}
+
+// Helper para obtener nombre completo
+export function getNombreCompleto(cliente: Cliente | ClienteFormData): string {
+  const partes = [cliente.nombre]
+  if ('primer_apellido' in cliente && cliente.primer_apellido) {
+    partes.push(cliente.primer_apellido)
+  }
+  if ('segundo_apellido' in cliente && cliente.segundo_apellido) {
+    partes.push(cliente.segundo_apellido)
+  }
+  // Fallback al campo apellidos legacy
+  if (partes.length === 1 && 'apellidos' in cliente && cliente.apellidos) {
+    partes.push(cliente.apellidos)
+  }
+  return partes.join(' ')
 }

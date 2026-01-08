@@ -8,7 +8,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { X, Save, Plus, Trash2, Loader2, FileText, ChevronDown, Check, Clock, Car, Printer, Share2, Link, Copy } from 'lucide-react'
+import { X, Save, Plus, Trash2, Loader2, FileText, ChevronDown, Check, Clock, Car, Printer, Share2, Link, Copy, UserPlus } from 'lucide-react'
 import { OrdenPDFViewer } from './orden-pdf-viewer'
 import { FotoUploader } from './foto-uploader'
 import { InputScanner } from '@/components/ui/input-scanner'
@@ -115,6 +115,18 @@ export function DetalleOrdenSheet({
     descripcion: '',
     cantidad: 1,
     precio_unitario: 0
+  })
+
+  // Estado para crear cliente nuevo
+  const [mostrarFormCliente, setMostrarFormCliente] = useState(false)
+  const [creandoCliente, setCreandoCliente] = useState(false)
+  const [nuevoCliente, setNuevoCliente] = useState({
+    nombre: '',
+    primer_apellido: '',
+    segundo_apellido: '',
+    nif: '',
+    telefono: '',
+    email: ''
   })
 
   // Estado para crear vehículo nuevo
@@ -281,6 +293,66 @@ export function DetalleOrdenSheet({
       .order('matricula')
 
     setVehiculos(data || [])
+  }
+
+  // Crear cliente nuevo
+  const crearCliente = async () => {
+    if (!nuevoCliente.nombre.trim()) {
+      toast.error('El nombre es obligatorio')
+      return
+    }
+
+    if (!tallerId) {
+      toast.error('Error: taller no identificado')
+      return
+    }
+
+    setCreandoCliente(true)
+    try {
+      // Unir apellidos para compatibilidad con BD actual
+      const apellidosCompletos = [nuevoCliente.primer_apellido, nuevoCliente.segundo_apellido]
+        .filter(Boolean)
+        .join(' ')
+        .trim()
+
+      const { data, error } = await supabase
+        .from('clientes')
+        .insert({
+          taller_id: tallerId,
+          nombre: nuevoCliente.nombre.trim(),
+          apellidos: apellidosCompletos || null,
+          nif: nuevoCliente.nif?.toUpperCase() || null,
+          telefono: nuevoCliente.telefono || null,
+          email: nuevoCliente.email || null,
+          estado: 'activo',
+          tipo_cliente: 'personal'
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      // Añadir a la lista y seleccionar
+      setClientes(prev => [...prev, data])
+      setFormData(prev => ({ ...prev, cliente_id: data.id, vehiculo_id: '' }))
+
+      // Limpiar formulario
+      setNuevoCliente({
+        nombre: '',
+        primer_apellido: '',
+        segundo_apellido: '',
+        nif: '',
+        telefono: '',
+        email: ''
+      })
+      setMostrarFormCliente(false)
+      toast.success('Cliente creado correctamente')
+    } catch (error: any) {
+      console.error('Error creando cliente:', error)
+      toast.error(error.message || 'Error al crear cliente')
+    } finally {
+      setCreandoCliente(false)
+    }
   }
 
   // Crear vehículo nuevo
@@ -738,19 +810,123 @@ export function DetalleOrdenSheet({
             <>
               {/* Cliente */}
               <Card className="p-4">
-                <Label className="text-sm font-semibold mb-2 block">Cliente *</Label>
-                <select
-                  value={formData.cliente_id}
-                  onChange={(e) => setFormData(prev => ({ ...prev, cliente_id: e.target.value, vehiculo_id: '' }))}
-                  className="w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white"
-                >
-                  <option value="">Seleccionar cliente...</option>
-                  {clientes.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.nombre} {c.nif ? `(${c.nif})` : ''}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center justify-between mb-2">
+                  <Label className="text-sm font-semibold">Cliente *</Label>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setMostrarFormCliente(!mostrarFormCliente)}
+                    className="gap-1 text-xs"
+                  >
+                    <UserPlus className="w-3 h-3" />
+                    {mostrarFormCliente ? 'Cancelar' : 'Nuevo'}
+                  </Button>
+                </div>
+
+                {!mostrarFormCliente ? (
+                  <select
+                    value={formData.cliente_id}
+                    onChange={(e) => setFormData(prev => ({ ...prev, cliente_id: e.target.value, vehiculo_id: '' }))}
+                    className="w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white"
+                  >
+                    <option value="">Seleccionar cliente...</option>
+                    {clientes.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.nombre} {c.apellidos ? c.apellidos : ''} {c.nif ? `(${c.nif})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="space-y-3 p-3 bg-blue-50 rounded-xl border border-blue-200">
+                    <h4 className="font-semibold text-blue-800 text-sm flex items-center gap-2">
+                      <UserPlus className="w-4 h-4" />
+                      Nuevo Cliente
+                    </h4>
+
+                    {/* Nombre - obligatorio */}
+                    <div>
+                      <Label className="text-xs text-gray-600 mb-1 block">Nombre *</Label>
+                      <Input
+                        value={nuevoCliente.nombre}
+                        onChange={(e) => setNuevoCliente(prev => ({ ...prev, nombre: e.target.value }))}
+                        placeholder="Nombre"
+                        className="bg-white"
+                      />
+                    </div>
+
+                    {/* Apellidos */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-xs text-gray-600 mb-1 block">Primer Apellido</Label>
+                        <Input
+                          value={nuevoCliente.primer_apellido}
+                          onChange={(e) => setNuevoCliente(prev => ({ ...prev, primer_apellido: e.target.value }))}
+                          placeholder="Primer apellido"
+                          className="bg-white"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-600 mb-1 block">Segundo Apellido</Label>
+                        <Input
+                          value={nuevoCliente.segundo_apellido}
+                          onChange={(e) => setNuevoCliente(prev => ({ ...prev, segundo_apellido: e.target.value }))}
+                          placeholder="Segundo apellido"
+                          className="bg-white"
+                        />
+                      </div>
+                    </div>
+
+                    {/* NIF y Teléfono */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <Label className="text-xs text-gray-600 mb-1 block">NIF/CIF</Label>
+                        <Input
+                          value={nuevoCliente.nif}
+                          onChange={(e) => setNuevoCliente(prev => ({ ...prev, nif: e.target.value.toUpperCase() }))}
+                          placeholder="12345678A"
+                          className="bg-white font-mono"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-600 mb-1 block">Teléfono</Label>
+                        <Input
+                          value={nuevoCliente.telefono}
+                          onChange={(e) => setNuevoCliente(prev => ({ ...prev, telefono: e.target.value }))}
+                          placeholder="666 123 456"
+                          className="bg-white"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Email */}
+                    <div>
+                      <Label className="text-xs text-gray-600 mb-1 block">Email</Label>
+                      <Input
+                        type="email"
+                        value={nuevoCliente.email}
+                        onChange={(e) => setNuevoCliente(prev => ({ ...prev, email: e.target.value }))}
+                        placeholder="cliente@email.com"
+                        className="bg-white"
+                      />
+                    </div>
+
+                    {/* Botón crear */}
+                    <Button
+                      type="button"
+                      onClick={crearCliente}
+                      disabled={creandoCliente || !nuevoCliente.nombre.trim()}
+                      className="w-full gap-2 bg-blue-600 hover:bg-blue-700"
+                    >
+                      {creandoCliente ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <UserPlus className="w-4 h-4" />
+                      )}
+                      {creandoCliente ? 'Creando...' : 'Crear Cliente'}
+                    </Button>
+                  </div>
+                )}
               </Card>
 
               {/* Vehículo */}
