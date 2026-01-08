@@ -627,6 +627,19 @@ export default function ConfiguracionPage() {
                   </span>
                 </p>
               </div>
+
+              {/* Aviso importante */}
+              <div className="md:col-span-2 p-4 bg-amber-50 rounded-lg border border-amber-300">
+                <p className="text-sm text-amber-800 font-medium mb-1">
+                  ⚠️ Importante sobre la numeración
+                </p>
+                <p className="text-xs text-amber-700">
+                  Si ya tienes facturas emitidas, cambiar la serie o el número inicial podría causar
+                  conflictos en la numeración secuencial. La ley exige que las facturas sigan una
+                  numeración correlativa sin saltos ni duplicados. Solo modifica estos valores si
+                  estás empezando o si necesitas continuar una numeración existente.
+                </p>
+              </div>
             </div>
           </Card>
 
