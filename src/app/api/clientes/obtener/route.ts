@@ -1,11 +1,40 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
+/**
+ * Helper: Obtener taller_id del usuario autenticado
+ */
+async function getUsuarioTaller(supabase: any) {
+  const { data: { session } } = await supabase.auth.getSession()
+
+  if (!session?.user) {
+    return { error: 'No autorizado', status: 401 }
+  }
+
+  const { data: usuario } = await supabase
+    .from('usuarios')
+    .select('taller_id')
+    .eq('email', session.user.email)
+    .single()
+
+  if (!usuario?.taller_id) {
+    return { error: 'Usuario sin taller asignado', status: 403 }
+  }
+
+  return { tallerId: usuario.taller_id }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
+
+    // Verificar autenticación
+    const auth = await getUsuarioTaller(supabase)
+    if ('error' in auth) {
+      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status })
+    }
+
     const id = request.nextUrl.searchParams.get('id')
-    const tallerId = request.nextUrl.searchParams.get('taller_id')
 
     if (id) {
       // Obtener cliente específico por ID
@@ -13,35 +42,39 @@ export async function GET(request: NextRequest) {
         .from('clientes')
         .select('*')
         .eq('id', id)
+        .eq('taller_id', auth.tallerId) // Solo clientes de este taller
         .single()
 
-      if (error) {
-        console.error('Supabase error:', error)
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 })
+      if (error || !data) {
+        return NextResponse.json(
+          { success: false, error: 'Cliente no encontrado' },
+          { status: 404 }
+        )
       }
 
       return NextResponse.json({ success: true, cliente: data })
     }
 
-    if (!tallerId) {
-      return NextResponse.json([], { status: 200 })
-    }
-
+    // Obtener todos los clientes activos del taller
     const { data, error } = await supabase
       .from('clientes')
       .select('*')
-      .eq('taller_id', tallerId)
+      .eq('taller_id', auth.tallerId)
       .eq('estado', 'activo')
       .order('nombre')
 
     if (error) {
-      console.error('Supabase error:', error)
-      return NextResponse.json([], { status: 200 })
+      return NextResponse.json(
+        { success: false, error: 'Error al obtener clientes' },
+        { status: 500 }
+      )
     }
 
     return NextResponse.json(data || [], { status: 200 })
   } catch (error) {
-    console.error('Catch error:', error)
-    return NextResponse.json([], { status: 200 })
+    return NextResponse.json(
+      { success: false, error: 'Error en servidor' },
+      { status: 500 }
+    )
   }
 }

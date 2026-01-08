@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { X, Save, Loader2 } from 'lucide-react'
+import { X, Save, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { ClienteFormData } from '@/types/cliente'
+import { validarDocumentoIdentidad, validarEmail } from '@/lib/validaciones'
 
 interface FormClienteSheetProps {
   onClose: () => void
@@ -37,6 +38,7 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
   const supabase = createClient()
   const [guardando, setGuardando] = useState(false)
   const [tallerId, setTallerId] = useState<string>('')
+  const [errores, setErrores] = useState<Record<string, string>>({})
   const [formData, setFormData] = useState<ClienteFormData>({
     nombre: '',
     primer_apellido: '',
@@ -53,6 +55,33 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
     tipo_cliente: 'personal',
     forma_pago: 'transferencia'
   })
+
+  // Validar NIF en tiempo real
+  const validarCampoNIF = (valor: string) => {
+    if (!valor) {
+      setErrores(prev => ({ ...prev, nif: '' }))
+      return
+    }
+    const resultado = validarDocumentoIdentidad(valor)
+    if (!resultado.valido) {
+      setErrores(prev => ({ ...prev, nif: 'Formato de NIF/NIE/CIF inválido' }))
+    } else {
+      setErrores(prev => ({ ...prev, nif: '' }))
+    }
+  }
+
+  // Validar Email en tiempo real
+  const validarCampoEmail = (valor: string) => {
+    if (!valor) {
+      setErrores(prev => ({ ...prev, email: '' }))
+      return
+    }
+    if (!validarEmail(valor)) {
+      setErrores(prev => ({ ...prev, email: 'Formato de email inválido' }))
+    } else {
+      setErrores(prev => ({ ...prev, email: '' }))
+    }
+  }
 
   useEffect(() => {
     obtenerTallerId()
@@ -77,17 +106,36 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
         return
       }
 
-      console.log('✅ Taller ID obtenido:', usuario.taller_id)
       setTallerId(usuario.taller_id)
-    } catch (error: any) {
-      console.error('❌ Error obtener taller:', error)
+    } catch (error) {
       toast.error('Error obtener taller')
     }
   }
 
   const handleGuardar = async () => {
-    if (!formData.nombre || !formData.nif) {
-      toast.error('Nombre y NIF son requeridos')
+    // Validaciones básicas
+    if (!formData.nombre) {
+      toast.error('El nombre es requerido')
+      return
+    }
+
+    if (!formData.nif) {
+      toast.error('El NIF/CIF es requerido')
+      return
+    }
+
+    // Validar formato de NIF/CIF
+    const validacionNIF = validarDocumentoIdentidad(formData.nif)
+    if (!validacionNIF.valido) {
+      toast.error('El formato del NIF/NIE/CIF no es válido')
+      setErrores(prev => ({ ...prev, nif: 'Formato inválido' }))
+      return
+    }
+
+    // Validar email si se proporciona
+    if (formData.email && !validarEmail(formData.email)) {
+      toast.error('El formato del email no es válido')
+      setErrores(prev => ({ ...prev, email: 'Formato inválido' }))
       return
     }
 
@@ -103,7 +151,7 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
-          taller_id: tallerId  // ✅ AGREGAMOS taller_id
+          taller_id: tallerId
         })
       })
 
@@ -164,11 +212,30 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
               </div>
               <div>
                 <Label className="text-xs font-semibold">NIF/CIF *</Label>
-                <Input
-                  placeholder="Ej: 12345678A"
-                  value={formData.nif}
-                  onChange={(e) => setFormData(prev => ({ ...prev, nif: e.target.value.toUpperCase() }))}
-                />
+                <div className="relative">
+                  <Input
+                    placeholder="Ej: 12345678A"
+                    value={formData.nif}
+                    onChange={(e) => {
+                      const valor = e.target.value.toUpperCase()
+                      setFormData(prev => ({ ...prev, nif: valor }))
+                      validarCampoNIF(valor)
+                    }}
+                    className={errores.nif ? 'border-red-500 pr-10' : formData.nif && !errores.nif ? 'border-green-500 pr-10' : ''}
+                  />
+                  {formData.nif && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      {errores.nif ? (
+                        <AlertCircle className="w-4 h-4 text-red-500" />
+                      ) : (
+                        <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      )}
+                    </div>
+                  )}
+                </div>
+                {errores.nif && (
+                  <p className="text-xs text-red-500 mt-1">{errores.nif}</p>
+                )}
               </div>
               <div>
                 <Label className="text-xs font-semibold">Tipo de cliente</Label>

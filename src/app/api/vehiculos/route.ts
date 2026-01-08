@@ -1,24 +1,46 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
+/**
+ * Helper: Obtener taller_id del usuario autenticado
+ */
+async function getUsuarioTaller(supabase: any) {
+  const { data: { session } } = await supabase.auth.getSession()
+
+  if (!session?.user) {
+    return { error: 'No autorizado', status: 401 }
+  }
+
+  const { data: usuario } = await supabase
+    .from('usuarios')
+    .select('taller_id')
+    .eq('email', session.user.email)
+    .single()
+
+  if (!usuario?.taller_id) {
+    return { error: 'Usuario sin taller asignado', status: 403 }
+  }
+
+  return { tallerId: usuario.taller_id }
+}
+
 export async function GET(request: Request) {
   try {
     const supabase = await createClient()
-    const { searchParams } = new URL(request.url)
-    const tallerId = searchParams.get('taller_id')
-    const clienteId = searchParams.get('cliente_id')
 
-    if (!tallerId) {
-      return NextResponse.json(
-        { error: 'taller_id requerido' },
-        { status: 400 }
-      )
+    // Verificar autenticación
+    const auth = await getUsuarioTaller(supabase)
+    if ('error' in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
+
+    const { searchParams } = new URL(request.url)
+    const clienteId = searchParams.get('cliente_id')
 
     let query = supabase
       .from('vehiculos')
       .select('*')
-      .eq('taller_id', tallerId)
+      .eq('taller_id', auth.tallerId) // Solo vehículos del taller del usuario
 
     // Filtrar por cliente si se especifica
     if (clienteId) {
@@ -29,14 +51,13 @@ export async function GET(request: Request) {
 
     if (error) {
       return NextResponse.json(
-        { error: error.message },
+        { error: 'Error al obtener vehículos' },
         { status: 500 }
       )
     }
 
     return NextResponse.json(data, { status: 200 })
   } catch (error) {
-    console.error('Error en GET vehiculos:', error)
     return NextResponse.json(
       { error: 'Error en servidor' },
       { status: 500 }
@@ -47,9 +68,16 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
+
+    // Verificar autenticación
+    const auth = await getUsuarioTaller(supabase)
+    if ('error' in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
+    }
+
     const body = await request.json()
 
-    if (!body.taller_id || !body.matricula) {
+    if (!body.matricula) {
       return NextResponse.json(
         { error: 'Matrícula es obligatoria' },
         { status: 400 }
@@ -59,11 +87,11 @@ export async function POST(request: Request) {
     // Limpiar matrícula
     const matriculaLimpia = body.matricula.toUpperCase().replace(/[\s-]/g, '')
 
-    // Verificar si ya existe
+    // Verificar si ya existe en este taller
     const { data: existe } = await supabase
       .from('vehiculos')
       .select('id')
-      .eq('taller_id', body.taller_id)
+      .eq('taller_id', auth.tallerId)
       .eq('matricula', matriculaLimpia)
       .single()
 
@@ -77,7 +105,7 @@ export async function POST(request: Request) {
     const { data, error } = await supabase
       .from('vehiculos')
       .insert({
-        taller_id: body.taller_id,
+        taller_id: auth.tallerId, // Siempre usar el taller del usuario autenticado
         cliente_id: body.cliente_id || null,
         matricula: matriculaLimpia,
         marca: body.marca || null,
@@ -97,14 +125,13 @@ export async function POST(request: Request) {
 
     if (error) {
       return NextResponse.json(
-        { error: error.message },
+        { error: 'Error al crear vehículo' },
         { status: 500 }
       )
     }
 
     return NextResponse.json(data, { status: 201 })
   } catch (error) {
-    console.error('Error en POST vehiculos:', error)
     return NextResponse.json(
       { error: 'Error creando vehículo' },
       { status: 500 }
@@ -115,6 +142,13 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const supabase = await createClient()
+
+    // Verificar autenticación
+    const auth = await getUsuarioTaller(supabase)
+    if ('error' in auth) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
+    }
+
     const body = await request.json()
 
     if (!body.id) {
@@ -124,33 +158,52 @@ export async function PATCH(request: Request) {
       )
     }
 
-    const updateData: any = { updated_at: new Date().toISOString() }
+    // Verificar que el vehículo pertenece al taller del usuario
+    const { data: vehiculo } = await supabase
+      .from('vehiculos')
+      .select('taller_id')
+      .eq('id', body.id)
+      .single()
+
+    if (!vehiculo || vehiculo.taller_id !== auth.tallerId) {
+      return NextResponse.json(
+        { error: 'Vehículo no encontrado' },
+        { status: 404 }
+      )
+    }
+
+    const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() }
 
     // Solo incluir campos que se envían
-    if (body.kilometros !== undefined) updateData.kilometros = body.kilometros
-    if (body.marca !== undefined) updateData.marca = body.marca
-    if (body.modelo !== undefined) updateData.modelo = body.modelo
-    if (body.color !== undefined) updateData.color = body.color
-    if (body.tipo_combustible !== undefined) updateData.tipo_combustible = body.tipo_combustible
-    if (body.cliente_id !== undefined) updateData.cliente_id = body.cliente_id
+    const camposPermitidos = [
+      'kilometros', 'marca', 'modelo', 'color', 'tipo_combustible',
+      'cliente_id', 'año', 'vin', 'bastidor_vin', 'carroceria',
+      'potencia_cv', 'cilindrada'
+    ]
+
+    for (const campo of camposPermitidos) {
+      if (body[campo] !== undefined) {
+        updateData[campo] = body[campo]
+      }
+    }
 
     const { data, error } = await supabase
       .from('vehiculos')
       .update(updateData)
       .eq('id', body.id)
+      .eq('taller_id', auth.tallerId) // Doble verificación
       .select()
       .single()
 
     if (error) {
       return NextResponse.json(
-        { error: error.message },
+        { error: 'Error al actualizar vehículo' },
         { status: 500 }
       )
     }
 
     return NextResponse.json(data, { status: 200 })
   } catch (error) {
-    console.error('Error en PATCH vehiculos:', error)
     return NextResponse.json(
       { error: 'Error actualizando vehículo' },
       { status: 500 }

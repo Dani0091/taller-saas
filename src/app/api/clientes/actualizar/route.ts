@@ -1,12 +1,40 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
+/**
+ * Helper: Obtener taller_id del usuario autenticado
+ */
+async function getUsuarioTaller(supabase: any) {
+  const { data: { session } } = await supabase.auth.getSession()
+
+  if (!session?.user) {
+    return { error: 'No autorizado', status: 401 }
+  }
+
+  const { data: usuario } = await supabase
+    .from('usuarios')
+    .select('taller_id')
+    .eq('email', session.user.email)
+    .single()
+
+  if (!usuario?.taller_id) {
+    return { error: 'Usuario sin taller asignado', status: 403 }
+  }
+
+  return { tallerId: usuario.taller_id }
+}
+
 export async function PATCH(request: NextRequest) {
   try {
     const supabase = await createClient()
-    const body = await request.json()
 
-    // El id viene en el body, no en query params
+    // Verificar autenticación
+    const auth = await getUsuarioTaller(supabase)
+    if ('error' in auth) {
+      return NextResponse.json({ success: false, error: auth.error }, { status: auth.status })
+    }
+
+    const body = await request.json()
     const { id, ...datosActualizar } = body
 
     if (!id) {
@@ -16,23 +44,49 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    // Agregar timestamp de actualización
-    const updateData = {
-      ...datosActualizar,
+    // Verificar que el cliente pertenece al taller del usuario
+    const { data: cliente } = await supabase
+      .from('clientes')
+      .select('taller_id')
+      .eq('id', id)
+      .single()
+
+    if (!cliente || cliente.taller_id !== auth.tallerId) {
+      return NextResponse.json(
+        { success: false, error: 'Cliente no encontrado' },
+        { status: 404 }
+      )
+    }
+
+    // Campos permitidos para actualizar (evitar inyección de campos no deseados)
+    const camposPermitidos = [
+      'nombre', 'apellidos', 'primer_apellido', 'segundo_apellido',
+      'nif', 'email', 'telefono', 'direccion', 'ciudad', 'provincia',
+      'codigo_postal', 'pais', 'notas', 'estado', 'tipo_cliente',
+      'iban', 'forma_pago', 'contacto_principal', 'contacto_email', 'contacto_telefono'
+    ]
+
+    const updateData: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
+    }
+
+    for (const campo of camposPermitidos) {
+      if (datosActualizar[campo] !== undefined) {
+        updateData[campo] = datosActualizar[campo]
+      }
     }
 
     const { data, error } = await supabase
       .from('clientes')
       .update(updateData)
       .eq('id', id)
+      .eq('taller_id', auth.tallerId) // Doble verificación
       .select()
       .single()
 
     if (error) {
-      console.error('❌ Error actualizando cliente:', error)
       return NextResponse.json(
-        { success: false, error: error.message },
+        { success: false, error: 'Error al actualizar cliente' },
         { status: 500 }
       )
     }
@@ -48,8 +102,7 @@ export async function PATCH(request: NextRequest) {
       success: true,
       cliente: data,
     })
-  } catch (error: any) {
-    console.error('❌ Error interno:', error)
+  } catch (error) {
     return NextResponse.json(
       { success: false, error: 'Error interno del servidor' },
       { status: 500 }
