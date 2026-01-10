@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import { InputScanner } from '@/components/ui/input-scanner'
 
 export default function NuevoVehiculoPage() {
   const router = useRouter()
@@ -146,13 +147,20 @@ export default function NuevoVehiculoPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label>Matrícula *</Label>
-              <Input
-                name="matricula"
-                placeholder="ABC-1234"
-                value={formData.matricula}
-                onChange={handleChange}
-                required
-              />
+              <div className="flex gap-1">
+                <Input
+                  name="matricula"
+                  placeholder="ABC-1234"
+                  value={formData.matricula}
+                  onChange={handleChange}
+                  required
+                  className="flex-1"
+                />
+                <InputScanner
+                  tipo="matricula"
+                  onResult={(val) => setFormData(prev => ({ ...prev, matricula: val }))}
+                />
+              </div>
             </div>
             <div>
               <Label>Marca</Label>
@@ -212,14 +220,21 @@ export default function NuevoVehiculoPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label>Kilómetros</Label>
-              <Input
-                name="kilometros"
-                type="number"
-                placeholder="45000"
-                min="0"
-                value={formData.kilometros}
-                onChange={handleChange}
-              />
+              <div className="flex gap-1">
+                <Input
+                  name="kilometros"
+                  type="number"
+                  placeholder="45000"
+                  min="0"
+                  value={formData.kilometros}
+                  onChange={handleChange}
+                  className="flex-1"
+                />
+                <InputScanner
+                  tipo="km"
+                  onResult={(val) => setFormData(prev => ({ ...prev, kilometros: val }))}
+                />
+              </div>
             </div>
             <div>
               <Label>Combustible</Label>
