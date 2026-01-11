@@ -21,6 +21,13 @@ import crypto from 'crypto'
 // CONSTANTES Y CONFIGURACIÓN
 // ============================================================================
 
+/**
+ * ACTIVAR/DESACTIVAR VERI*FACTU
+ * Cambiar a true cuando sea obligatorio o se quiera activar
+ * Plazos: Personas jurídicas 1/1/2027, Personas físicas 1/7/2027
+ */
+export const VERIFACTU_ACTIVO = false
+
 /** URL oficial de cotejo QR de AEAT */
 export const AEAT_QR_URL = 'https://www2.agenciatributaria.gob.es/wlpl/TIKE-CONT/ValidarQR'
 

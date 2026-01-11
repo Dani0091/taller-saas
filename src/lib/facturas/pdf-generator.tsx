@@ -486,8 +486,11 @@ export const PDFFactura = ({
           </View>
         )}
 
-        {/* VERI*FACTU - Bloque obligatorio según normativa AEAT */}
-        {(esVerifactu || verifactuNumero) && (
+        {/* VERI*FACTU - Bloque obligatorio según normativa AEAT
+            NOTA: Desactivado temporalmente hasta que sea obligatorio (2027)
+            El código está preparado, solo activar cuando se configure el NIF del fabricante
+        */}
+        {esVerifactu && verifactuNumero && verifactuQRImage && (
           <View style={{
             backgroundColor: '#ecfdf5',
             borderWidth: 2,
