@@ -249,8 +249,12 @@ interface PDFFacturaProps {
   notas?: string
   notasLegales?: string
   iban?: string
+  // VERI*FACTU - Nuevos campos obligatorios
   verifactuNumero?: string
   verifactuURL?: string
+  verifactuQRImage?: string // Imagen QR en base64
+  verifactuHuella?: string // Huella SHA-256
+  esVerifactu?: boolean // Si es factura VERI*FACTU
   // Colores personalizados
   colorPrimario?: string
   colorSecundario?: string
@@ -283,6 +287,9 @@ export const PDFFactura = ({
   iban,
   verifactuNumero,
   verifactuURL,
+  verifactuQRImage,
+  verifactuHuella,
+  esVerifactu = false,
   colorPrimario = '#0284c7',
   colorSecundario = '#0369a1',
 }: PDFFacturaProps) => {
@@ -479,18 +486,81 @@ export const PDFFactura = ({
           </View>
         )}
 
-        {/* VERIFACTU */}
-        {verifactuNumero && (
-          <View style={styles.verifactuBox}>
-            <Text style={{ fontWeight: 'bold', marginBottom: 4 }}>
-              Verificación AEAT - Verifactu
-            </Text>
-            <Text>
-              Número de verificación: {verifactuNumero}
-            </Text>
-            {verifactuURL && (
-              <Text>Verificar en: {verifactuURL}</Text>
+        {/* VERI*FACTU - Bloque obligatorio según normativa AEAT */}
+        {(esVerifactu || verifactuNumero) && (
+          <View style={{
+            backgroundColor: '#ecfdf5',
+            borderWidth: 2,
+            borderColor: '#059669',
+            borderRadius: 4,
+            padding: 12,
+            marginBottom: 15,
+            flexDirection: 'row',
+          }}>
+            {/* Código QR - Tamaño 30-40mm según normativa */}
+            {verifactuQRImage && (
+              <View style={{ marginRight: 12 }}>
+                <Image
+                  src={verifactuQRImage}
+                  style={{
+                    width: 85, // ~30mm a 72dpi
+                    height: 85,
+                  }}
+                />
+              </View>
             )}
+
+            {/* Información VERI*FACTU */}
+            <View style={{ flex: 1 }}>
+              {/* Frase obligatoria */}
+              <Text style={{
+                fontSize: 10,
+                fontWeight: 'bold',
+                color: '#059669',
+                marginBottom: 6,
+              }}>
+                VERI*FACTU
+              </Text>
+              <Text style={{
+                fontSize: 8,
+                color: '#065f46',
+                marginBottom: 8,
+              }}>
+                Factura verificable en la sede electrónica de la AEAT
+              </Text>
+
+              {/* Datos de verificación */}
+              <View style={{ flexDirection: 'row', marginBottom: 4 }}>
+                <Text style={{ fontSize: 7, color: '#374151', width: 80 }}>
+                  Nº Verificación:
+                </Text>
+                <Text style={{ fontSize: 7, fontWeight: 'bold', fontFamily: 'Courier' }}>
+                  {verifactuNumero}
+                </Text>
+              </View>
+
+              {verifactuHuella && (
+                <View style={{ flexDirection: 'row', marginBottom: 4 }}>
+                  <Text style={{ fontSize: 7, color: '#374151', width: 80 }}>
+                    Huella SHA-256:
+                  </Text>
+                  <Text style={{ fontSize: 6, fontFamily: 'Courier' }}>
+                    {verifactuHuella.substring(0, 32)}...
+                  </Text>
+                </View>
+              )}
+
+              {verifactuURL && (
+                <View style={{ flexDirection: 'row' }}>
+                  <Text style={{ fontSize: 7, color: '#374151', width: 80 }}>
+                    Verificar en:
+                  </Text>
+                  <Text style={{ fontSize: 6, color: '#2563eb' }}>
+                    sede.agenciatributaria.gob.es
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
         )}
 

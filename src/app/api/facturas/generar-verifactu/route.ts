@@ -1,12 +1,15 @@
 /**
  * API ENDPOINT: Generar Verifactu
- * 
- * Genera todos los datos necesarios para cumplir con normativa AEAT
- * - Número de verificación
- * - Hash encadenado
- * - QR
- * - XML
- * - Firma HMAC
+ *
+ * Genera todos los datos necesarios para cumplir con normativa AEAT:
+ * - Huella SHA-256 con encadenamiento
+ * - URL QR para cotejo en AEAT
+ * - XML según esquema XSD oficial
+ * - Información del software SIF
+ *
+ * Basado en:
+ * - Real Decreto 1007/2023
+ * - Orden HAC/1177/2024
  */
 
 import { createClient } from '@/lib/supabase/server'
@@ -14,7 +17,20 @@ import { NextRequest, NextResponse } from 'next/server'
 import {
   generarRegistroVerifactuCompleto,
   DatosVerifactu,
+  FRASE_VERIFACTU,
 } from '@/lib/verifactu/service'
+
+// Mapeo de formas de pago a códigos AEAT
+const FORMAS_PAGO_MAP: Record<string, '01' | '02' | '03' | '04' | '05'> = {
+  E: '01', // Efectivo
+  efectivo: '01',
+  T: '03', // Transferencia
+  transferencia: '03',
+  A: '04', // Tarjeta
+  tarjeta: '04',
+  O: '05', // Domiciliación/Otra
+  domiciliacion: '05',
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,59 +46,79 @@ export async function POST(request: NextRequest) {
       nifReceptor,
       nombreReceptor,
       baseImponible,
+      tipoImpositivo = 21, // IVA por defecto 21%
       cuotaRepercutida,
-      cuotaSoportada,
+      importeTotal,
       descripcion,
-      formaPago = 'T', // T = Transferencia (por defecto)
+      formaPago = 'transferencia',
+      tallerId,
     } = body
 
     // Validaciones
-    if (!facturaId || !numeroFactura || !nifEmisor || !nifReceptor) {
+    if (!facturaId || !numeroFactura || !nifEmisor) {
       return NextResponse.json(
-        { error: 'Datos requeridos incompletos' },
+        { error: 'Datos requeridos incompletos: facturaId, numeroFactura, nifEmisor' },
         { status: 400 }
       )
     }
 
-    // Obtener el hash anterior (si existe) para encadenamiento
-    let hashAnterior: string | undefined
+    // Obtener la factura anterior para encadenamiento
+    let facturaAnterior: {
+      nifEmisor: string
+      numSerieFactura: string
+      fechaExpedicion: string
+      huella: string
+    } | undefined
+
     try {
-      const { data: facturaAnterior } = await supabase
+      const { data: facturaAnteriorData } = await supabase
         .from('facturas')
-        .select('verifactu_hash_encadenado')
-        .eq('taller_id', body.tallerId)
+        .select('verifactu_huella, numero, serie, fecha_emision')
+        .eq('taller_id', tallerId)
+        .not('verifactu_huella', 'is', null)
         .order('created_at', { ascending: false })
         .limit(1)
         .single()
 
-      if (facturaAnterior?.verifactu_hash_encadenado) {
-        hashAnterior = facturaAnterior.verifactu_hash_encadenado
+      if (facturaAnteriorData?.verifactu_huella) {
+        facturaAnterior = {
+          nifEmisor: nifEmisor,
+          numSerieFactura: `${facturaAnteriorData.serie || ''}${facturaAnteriorData.numero}`,
+          fechaExpedicion: facturaAnteriorData.fecha_emision,
+          huella: facturaAnteriorData.verifactu_huella,
+        }
       }
-    } catch (e) {
-      console.log('Primera factura o sin hash anterior')
+    } catch {
+      console.log('Primera factura VERI*FACTU o sin huella anterior')
     }
 
-    // Preparar datos para Verifactu
+    // Calcular importeTotal si no viene
+    const base = parseFloat(baseImponible)
+    const cuota = parseFloat(cuotaRepercutida)
+    const total = importeTotal ? parseFloat(importeTotal) : base + cuota
+
+    // Preparar datos para Verifactu según nueva estructura
     const datosVerifactu: DatosVerifactu = {
       numeroFactura,
-      serieFactura,
-      fechaEmision, // Debe estar en formato YYYY-MM-DD
+      serieFactura: serieFactura || '',
+      fechaEmision, // Formato YYYY-MM-DD
       nifEmisor,
       nombreEmisor,
-      nifReceptor,
-      nombreReceptor,
-      baseImponible: parseFloat(baseImponible),
-      cuotaRepercutida: parseFloat(cuotaRepercutida),
-      cuotaSoportada: cuotaSoportada ? parseFloat(cuotaSoportada) : undefined,
-      tipoFactura: 'F1', // F1 = Factura normal
-      descripcion,
-      formaPago: formaPago as any,
+      nifReceptor: nifReceptor || '',
+      nombreReceptor: nombreReceptor || 'Cliente general',
+      baseImponible: base,
+      tipoImpositivo: parseFloat(tipoImpositivo.toString()),
+      cuotaRepercutida: cuota,
+      importeTotal: total,
+      tipoFactura: nifReceptor ? 'F1' : 'F2', // F1=Normal, F2=Simplificada (sin NIF receptor)
+      descripcion: descripcion || 'Servicios de taller mecánico',
+      formaPago: FORMAS_PAGO_MAP[formaPago] || '03',
     }
 
     // Generar registro Verifactu completo
     const registroVerifactu = generarRegistroVerifactuCompleto(
       datosVerifactu,
-      hashAnterior
+      facturaAnterior
     )
 
     // Guardar en base de datos
@@ -90,14 +126,16 @@ export async function POST(request: NextRequest) {
       .from('facturas')
       .update({
         numero_verifactu: registroVerifactu.numeroVerificacion,
-        verifactu_hash: registroVerifactu.hash,
-        verifactu_hash_encadenado: registroVerifactu.hashEncadenado,
-        verifactu_qr: registroVerifactu.qr,
-        verifactu_qr_base64: registroVerifactu.qrBase64,
+        verifactu_huella: registroVerifactu.huella,
+        verifactu_tipo_huella: registroVerifactu.tipoHuella,
+        verifactu_huella_anterior: registroVerifactu.huellaAnterior || null,
+        verifactu_qr_url: registroVerifactu.qrURL,
         verifactu_xml: registroVerifactu.xmlCompleto,
-        verifactu_firma_hmac: registroVerifactu.firmaHMAC,
-        verifactu_qr_url: registroVerifactu.urlVerificacion,
+        verifactu_frase: FRASE_VERIFACTU,
+        verifactu_fecha_generacion: registroVerifactu.fechaHoraHuso,
         verifactu_estado: 'generado',
+        verifactu_software_nombre: registroVerifactu.software.nombre,
+        verifactu_software_version: registroVerifactu.software.version,
         updated_at: new Date().toISOString(),
       })
       .eq('id', facturaId)
@@ -114,13 +152,15 @@ export async function POST(request: NextRequest) {
       success: true,
       verifactu: {
         numeroVerificacion: registroVerifactu.numeroVerificacion,
-        hash: registroVerifactu.hash,
-        qr: registroVerifactu.qr,
-        qrBase64: registroVerifactu.qrBase64,
+        huella: registroVerifactu.huella,
+        tipoHuella: registroVerifactu.tipoHuella,
+        qrURL: registroVerifactu.qrURL,
         urlVerificacion: registroVerifactu.urlVerificacion,
+        fraseVerifactu: registroVerifactu.fraseVerifactu,
         xmlCompleto: registroVerifactu.xmlCompleto,
         estado: registroVerifactu.estado,
         fechaGeneracion: registroVerifactu.fechaGeneracion,
+        software: registroVerifactu.software,
       },
     })
   } catch (error) {
