@@ -113,84 +113,37 @@ export default function RegistroPage() {
     setLoading(true)
 
     try {
-      // 1. Crear usuario en Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: formData.email_usuario,
-        password: formData.password,
-        options: {
-          data: {
-            nombre: formData.nombre_usuario,
-          }
-        }
+      // Llamar a la API de registro que usa service role key
+      const response = await fetch('/api/auth/registro', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre_taller: formData.nombre_taller,
+          cif: formData.cif,
+          direccion: formData.direccion,
+          telefono: formData.telefono,
+          email_taller: formData.email_taller,
+          nombre_usuario: formData.nombre_usuario,
+          email_usuario: formData.email_usuario,
+          password: formData.password,
+        })
       })
 
-      if (authError) {
-        if (authError.message.includes('already registered')) {
-          throw new Error('Este email ya está registrado. ¿Quieres iniciar sesión?')
-        }
-        throw authError
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al registrar')
       }
 
-      if (!authData.user) {
-        throw new Error('Error al crear usuario')
-      }
+      // Iniciar sesión automáticamente después del registro
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: formData.email_usuario,
+        password: formData.password,
+      })
 
-      // 2. Crear el taller
-      const { data: taller, error: tallerError } = await supabase
-        .from('talleres')
-        .insert([{
-          nombre: formData.nombre_taller,
-          cif: formData.cif,
-          direccion: formData.direccion,
-          telefono: formData.telefono,
-          email: formData.email_taller || formData.email_usuario,
-        }])
-        .select('id')
-        .single()
-
-      if (tallerError) {
-        console.error('Error creando taller:', tallerError)
-        throw new Error('Error al crear el taller')
-      }
-
-      // 3. Crear el usuario vinculado al taller
-      const { error: usuarioError } = await supabase
-        .from('usuarios')
-        .insert([{
-          email: formData.email_usuario,
-          nombre: formData.nombre_usuario,
-          rol: 'admin',
-          taller_id: taller.id,
-          activo: true,
-        }])
-
-      if (usuarioError) {
-        console.error('Error creando usuario:', usuarioError)
-        throw new Error('Error al vincular usuario al taller')
-      }
-
-      // 4. Crear configuración por defecto del taller
-      const { error: configError } = await supabase
-        .from('taller_config')
-        .insert([{
-          taller_id: taller.id,
-          nombre_empresa: formData.nombre_taller,
-          cif: formData.cif,
-          direccion: formData.direccion,
-          telefono: formData.telefono,
-          email: formData.email_taller || formData.email_usuario,
-          tarifa_hora: 45,
-          porcentaje_iva: 21,
-          incluye_iva: true,
-          tarifa_con_iva: true,
-          // Configuración de facturación
-          serie_factura: 'FA',
-          numero_factura_inicial: 1,
-        }])
-
-      if (configError) {
-        console.error('Error creando config:', configError)
-        // No es crítico, continuamos
+      if (signInError) {
+        console.error('Error auto-login:', signInError)
+        // No es crítico, el usuario puede hacer login manualmente
       }
 
       setSuccess(true)
