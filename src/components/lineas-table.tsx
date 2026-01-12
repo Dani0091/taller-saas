@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Plus, Trash2, Edit2, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { DecimalInput } from '@/components/ui/decimal-input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 
@@ -111,11 +112,12 @@ export function LineasTable({
             </div>
             <div>
               <Label className="text-xs sm:text-sm">Cantidad</Label>
-              <Input
-                type="number"
-                min="1"
+              <DecimalInput
                 value={formData.cantidad}
-                onChange={(e) => setFormData({ ...formData, cantidad: parseFloat(e.target.value) })}
+                onChange={(value) => setFormData({ ...formData, cantidad: value })}
+                min={0.01}
+                step={1}
+                placeholder="1"
                 className="h-8 sm:h-9 text-xs sm:text-sm"
               />
             </div>
@@ -134,24 +136,24 @@ export function LineasTable({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
             <div>
               <Label className="text-xs sm:text-sm">Precio Unitario €</Label>
-              <Input
-                type="number"
-                min="0"
-                step="0.01"
+              <DecimalInput
                 value={formData.precio_unitario}
-                onChange={(e) => setFormData({ ...formData, precio_unitario: parseFloat(e.target.value) })}
+                onChange={(value) => setFormData({ ...formData, precio_unitario: value })}
+                min={0}
+                step={0.01}
+                placeholder="0.00"
                 className="h-8 sm:h-9 text-xs sm:text-sm"
               />
             </div>
             {formData.tipo === 'mano_obra' && (
               <div>
                 <Label className="text-xs sm:text-sm">Horas</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.5"
+                <DecimalInput
                   value={formData.horas}
-                  onChange={(e) => setFormData({ ...formData, horas: parseFloat(e.target.value) })}
+                  onChange={(value) => setFormData({ ...formData, horas: value })}
+                  min={0}
+                  step={0.25}
+                  placeholder="0.00"
                   className="h-8 sm:h-9 text-xs sm:text-sm"
                 />
               </div>

@@ -14,6 +14,7 @@ import { FotoUploader } from './foto-uploader'
 import { InputScanner } from '@/components/ui/input-scanner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DecimalInput } from '@/components/ui/decimal-input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
@@ -1231,15 +1232,16 @@ export function DetalleOrdenSheet({
                 {/* Coste diario de estancia */}
                 <div>
                   <Label className="text-xs text-gray-500 mb-1 block">Coste diario de estancia (€)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.coste_diario_estancia || ''}
-                    onChange={(e) => setFormData(prev => ({
+                  <DecimalInput
+                    value={formData.coste_diario_estancia ?? 0}
+                    onChange={(value) => setFormData(prev => ({
                       ...prev,
-                      coste_diario_estancia: e.target.value ? parseFloat(e.target.value) : undefined
+                      coste_diario_estancia: value || undefined
                     }))}
+                    min={0}
+                    step={0.01}
                     placeholder="Ej: 15.00"
+                    allowEmpty
                   />
                 </div>
               </Card>
@@ -1650,15 +1652,14 @@ export function DetalleOrdenSheet({
                       <Label className="text-xs text-gray-600 mb-1 block">
                         {nuevaLinea.tipo === 'mano_obra' ? '💶 Precio/hora (€)' : '💶 Precio/unidad (€)'}
                       </Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={nuevaLinea.precio_unitario || ''}
-                        onChange={(e) => setNuevaLinea(prev => ({
+                      <DecimalInput
+                        value={nuevaLinea.precio_unitario}
+                        onChange={(value) => setNuevaLinea(prev => ({
                           ...prev,
-                          precio_unitario: parseFloat(e.target.value) || 0
+                          precio_unitario: value
                         }))}
+                        min={0}
+                        step={0.01}
                         placeholder="0.00"
                         className="text-right"
                       />

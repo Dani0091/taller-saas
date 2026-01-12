@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { DecimalInput } from '@/components/ui/decimal-input'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -472,14 +473,14 @@ export default function ConfiguracionPage() {
                 </Label>
                 <div className="flex items-center gap-2">
                   <span className="text-xl font-bold text-sky-600">€</span>
-                  <Input
+                  <DecimalInput
                     id="tarifa_hora"
                     name="tarifa_hora"
-                    type="number"
-                    step="0.01"
-                    min="0"
                     value={formData.tarifa_hora}
-                    onChange={handleChange}
+                    onChange={(value) => setFormData(prev => prev ? { ...prev, tarifa_hora: value } : null)}
+                    min={0}
+                    step={0.01}
+                    placeholder="45.00"
                     className="flex-1 text-lg font-bold"
                   />
                   <span className="text-sm text-gray-600">/h</span>
@@ -492,15 +493,15 @@ export default function ConfiguracionPage() {
                   Porcentaje IVA (%)
                 </Label>
                 <div className="flex items-center gap-2">
-                  <Input
+                  <DecimalInput
                     id="porcentaje_iva"
                     name="porcentaje_iva"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="100"
                     value={formData.porcentaje_iva}
-                    onChange={handleChange}
+                    onChange={(value) => setFormData(prev => prev ? { ...prev, porcentaje_iva: value } : null)}
+                    min={0}
+                    max={100}
+                    step={0.01}
+                    placeholder="21.00"
                     className="flex-1 text-lg font-bold"
                   />
                   <span className="text-sm text-gray-600">%</span>
