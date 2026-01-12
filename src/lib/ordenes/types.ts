@@ -54,6 +54,11 @@ export interface LineaOrden {
   fecha?: string
   operario_id?: string
   operario_nombre?: string
+  // Campos de coste para piezas
+  precio_coste?: number
+  iva_coste_porcentaje?: number
+  proveedor?: string
+  referencia?: string
   created_at: string
   updated_at?: string
 }

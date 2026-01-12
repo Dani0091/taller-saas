@@ -34,6 +34,9 @@ export function LineasTable({
     cantidad: 1,
     precio_unitario: 0,
     horas: 0,
+    precio_coste: 0,
+    proveedor: '',
+    referencia: '',
   })
 
   const handleSubmit = async () => {
@@ -52,7 +55,7 @@ export function LineasTable({
         await onAgregar(formData)
         toast.success('✅ Línea agregada')
       }
-      setFormData({ tipo: 'mano_obra', descripcion: '', cantidad: 1, precio_unitario: 0, horas: 0 })
+      setFormData({ tipo: 'mano_obra', descripcion: '', cantidad: 1, precio_unitario: 0, horas: 0, precio_coste: 0, proveedor: '', referencia: '' })
       setShowForm(false)
     } catch (error: any) {
       toast.error('Error: ' + error.message)
@@ -77,6 +80,8 @@ export function LineasTable({
 
   const total = lineas.reduce((sum, l) => sum + l.importe_total, 0)
   const totalConIva = total * 1.21
+  const totalCoste = lineas.reduce((sum, l) => sum + (l.cantidad * (l.precio_coste || 0)), 0)
+  const beneficioBruto = total - totalCoste
 
   return (
     <Card className="p-3 sm:p-4">
@@ -135,7 +140,7 @@ export function LineasTable({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
             <div>
-              <Label className="text-xs sm:text-sm">Precio Unitario €</Label>
+              <Label className="text-xs sm:text-sm">Precio Venta €</Label>
               <DecimalInput
                 value={formData.precio_unitario}
                 onChange={(value) => setFormData({ ...formData, precio_unitario: value })}
@@ -158,7 +163,61 @@ export function LineasTable({
                 />
               </div>
             )}
+            {(formData.tipo === 'pieza' || formData.tipo === 'consumible') && (
+              <div>
+                <Label className="text-xs sm:text-sm">Precio Coste €</Label>
+                <DecimalInput
+                  value={formData.precio_coste}
+                  onChange={(value) => setFormData({ ...formData, precio_coste: value })}
+                  min={0}
+                  step={0.01}
+                  placeholder="0.00"
+                  className="h-8 sm:h-9 text-xs sm:text-sm"
+                />
+              </div>
+            )}
           </div>
+
+          {/* Campos adicionales para piezas */}
+          {(formData.tipo === 'pieza' || formData.tipo === 'consumible') && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+              <div>
+                <Label className="text-xs sm:text-sm">Proveedor</Label>
+                <Input
+                  value={formData.proveedor}
+                  onChange={(e) => setFormData({ ...formData, proveedor: e.target.value })}
+                  placeholder="Ej: Recambios García"
+                  className="h-8 sm:h-9 text-xs sm:text-sm"
+                />
+              </div>
+              <div>
+                <Label className="text-xs sm:text-sm">Referencia</Label>
+                <Input
+                  value={formData.referencia}
+                  onChange={(e) => setFormData({ ...formData, referencia: e.target.value })}
+                  placeholder="Ej: OE12345"
+                  className="h-8 sm:h-9 text-xs sm:text-sm"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Previsualización de margen para piezas */}
+          {(formData.tipo === 'pieza' || formData.tipo === 'consumible') && formData.precio_unitario > 0 && (
+            <div className="p-2 bg-green-50 border border-green-200 rounded-lg text-xs sm:text-sm">
+              <div className="flex justify-between text-gray-600">
+                <span>Margen por unidad:</span>
+                <span className={formData.precio_unitario - formData.precio_coste >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+                  €{(formData.precio_unitario - formData.precio_coste).toFixed(2)}
+                  {formData.precio_coste > 0 && (
+                    <span className="ml-1">
+                      ({((formData.precio_unitario - formData.precio_coste) / formData.precio_unitario * 100).toFixed(1)}%)
+                    </span>
+                  )}
+                </span>
+              </div>
+            </div>
+          )}
 
           <div className="flex gap-2 pt-2">
             <Button
@@ -188,52 +247,69 @@ export function LineasTable({
         {lineas.length === 0 ? (
           <p className="text-center text-gray-500 py-4 text-xs sm:text-sm">Sin líneas agregadas</p>
         ) : (
-          lineas.map((linea) => (
-            <div
-              key={linea.id}
-              className="p-3 bg-gray-50 rounded-lg border border-gray-200 text-xs sm:text-sm"
-            >
-              <div className="flex justify-between items-start gap-2 mb-2">
-                <div className="flex-1">
-                  <p className="font-semibold text-gray-900">{linea.descripcion}</p>
-                  <p className="text-gray-600">
-                    {linea.cantidad} x €{linea.precio_unitario.toFixed(2)} = €{linea.importe_total.toFixed(2)}
-                  </p>
-                  {linea.horas && <p className="text-gray-500">{linea.horas}h</p>}
-                </div>
-                {puedeEditar && (
-                  <div className="flex gap-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setFormData({
-                          tipo: linea.tipo as typeof formData.tipo,
-                          descripcion: linea.descripcion,
-                          cantidad: linea.cantidad,
-                          precio_unitario: linea.precio_unitario,
-                          horas: linea.horas || 0,
-                        })
-                        setEditingId(linea.id)
-                        setShowForm(true)
-                      }}
-                      className="h-7 w-7 p-0"
-                    >
-                      <Edit2 className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleEliminar(linea.id)}
-                      className="h-7 w-7 p-0 text-red-600 hover:text-red-700"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
+          lineas.map((linea) => {
+            const margen = linea.precio_unitario - (linea.precio_coste || 0)
+            const margenTotal = linea.cantidad * margen
+            const tieneCoste = (linea.tipo === 'pieza' || linea.tipo === 'consumible') && (linea.precio_coste || 0) > 0
+
+            return (
+              <div
+                key={linea.id}
+                className="p-3 bg-gray-50 rounded-lg border border-gray-200 text-xs sm:text-sm"
+              >
+                <div className="flex justify-between items-start gap-2 mb-2">
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-900">{linea.descripcion}</p>
+                    <p className="text-gray-600">
+                      {linea.cantidad} x €{linea.precio_unitario.toFixed(2)} = €{linea.importe_total.toFixed(2)}
+                    </p>
+                    {linea.horas && <p className="text-gray-500">{linea.horas}h</p>}
+                    {tieneCoste && (
+                      <p className="text-green-600">
+                        Coste: €{linea.precio_coste?.toFixed(2)} · Margen: €{margenTotal.toFixed(2)}
+                      </p>
+                    )}
+                    {linea.proveedor && (
+                      <p className="text-gray-400 text-xs">{linea.proveedor} {linea.referencia && `· ${linea.referencia}`}</p>
+                    )}
                   </div>
-                )}
+                  {puedeEditar && (
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setFormData({
+                            tipo: linea.tipo as typeof formData.tipo,
+                            descripcion: linea.descripcion,
+                            cantidad: linea.cantidad,
+                            precio_unitario: linea.precio_unitario,
+                            horas: linea.horas || 0,
+                            precio_coste: linea.precio_coste || 0,
+                            proveedor: linea.proveedor || '',
+                            referencia: linea.referencia || '',
+                          })
+                          setEditingId(linea.id)
+                          setShowForm(true)
+                        }}
+                        className="h-7 w-7 p-0"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleEliminar(linea.id)}
+                        className="h-7 w-7 p-0 text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          ))
+            )
+          })
         )}
       </div>
 
@@ -250,6 +326,18 @@ export function LineasTable({
           <span>Total:</span>
           <span className="text-blue-600">€{totalConIva.toFixed(2)}</span>
         </div>
+        {totalCoste > 0 && (
+          <div className="pt-2 mt-2 border-t border-gray-100 space-y-1">
+            <div className="flex justify-between text-gray-500">
+              <span>Coste piezas:</span>
+              <span>€{totalCoste.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between font-semibold text-green-600">
+              <span>Beneficio bruto:</span>
+              <span>€{beneficioBruto.toFixed(2)}</span>
+            </div>
+          </div>
+        )}
       </div>
     </Card>
   )
