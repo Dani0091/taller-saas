@@ -8,7 +8,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { X, Save, Plus, Trash2, Loader2, FileText, ChevronDown, Check, Clock, Car, Printer, Share2, Link, Copy, UserPlus } from 'lucide-react'
+import { X, Save, Plus, Trash2, Loader2, FileText, ChevronDown, Check, Clock, Car, Printer, Share2, Link, Copy, UserPlus, Edit2 } from 'lucide-react'
 import { OrdenPDFViewer } from './orden-pdf-viewer'
 import { FotoUploader } from './foto-uploader'
 import { InputScanner } from '@/components/ui/input-scanner'
@@ -134,6 +134,20 @@ export function DetalleOrdenSheet({
   const [mostrarFormVehiculo, setMostrarFormVehiculo] = useState(false)
   const [creandoVehiculo, setCreandoVehiculo] = useState(false)
   const [nuevoVehiculo, setNuevoVehiculo] = useState({
+    matricula: '',
+    marca: '',
+    modelo: '',
+    año: '',
+    color: '',
+    kilometros: '',
+    tipo_combustible: '',
+    vin: ''
+  })
+
+  // Estado para editar vehículo existente
+  const [editandoVehiculo, setEditandoVehiculo] = useState(false)
+  const [guardandoVehiculo, setGuardandoVehiculo] = useState(false)
+  const [vehiculoEditado, setVehiculoEditado] = useState({
     matricula: '',
     marca: '',
     modelo: '',
@@ -411,6 +425,74 @@ export function DetalleOrdenSheet({
       toast.error(error.message || 'Error al crear vehículo')
     } finally {
       setCreandoVehiculo(false)
+    }
+  }
+
+  // Iniciar edición de vehículo
+  const iniciarEdicionVehiculo = () => {
+    const vehiculo = vehiculos.find(v => v.id === formData.vehiculo_id)
+    if (!vehiculo) return
+
+    setVehiculoEditado({
+      matricula: vehiculo.matricula || '',
+      marca: vehiculo.marca || '',
+      modelo: vehiculo.modelo || '',
+      año: vehiculo.año?.toString() || '',
+      color: vehiculo.color || '',
+      kilometros: vehiculo.kilometros?.toString() || '',
+      tipo_combustible: vehiculo.tipo_combustible || '',
+      vin: vehiculo.vin || vehiculo.bastidor_vin || ''
+    })
+    setEditandoVehiculo(true)
+  }
+
+  // Guardar edición de vehículo
+  const guardarEdicionVehiculo = async () => {
+    if (!formData.vehiculo_id) return
+
+    setGuardandoVehiculo(true)
+    try {
+      const { error } = await supabase
+        .from('vehiculos')
+        .update({
+          matricula: vehiculoEditado.matricula.toUpperCase().replace(/[\s-]/g, ''),
+          marca: vehiculoEditado.marca || null,
+          modelo: vehiculoEditado.modelo || null,
+          año: vehiculoEditado.año ? parseInt(vehiculoEditado.año) : null,
+          color: vehiculoEditado.color || null,
+          kilometros: vehiculoEditado.kilometros ? parseInt(vehiculoEditado.kilometros) : null,
+          tipo_combustible: vehiculoEditado.tipo_combustible || null,
+          vin: vehiculoEditado.vin || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', formData.vehiculo_id)
+
+      if (error) throw error
+
+      // Actualizar lista local de vehículos
+      setVehiculos(prev => prev.map(v =>
+        v.id === formData.vehiculo_id
+          ? {
+              ...v,
+              matricula: vehiculoEditado.matricula.toUpperCase().replace(/[\s-]/g, ''),
+              marca: vehiculoEditado.marca || null,
+              modelo: vehiculoEditado.modelo || null,
+              año: vehiculoEditado.año ? parseInt(vehiculoEditado.año) : null,
+              color: vehiculoEditado.color || null,
+              kilometros: vehiculoEditado.kilometros ? parseInt(vehiculoEditado.kilometros) : null,
+              tipo_combustible: vehiculoEditado.tipo_combustible || null,
+              vin: vehiculoEditado.vin || null,
+            }
+          : v
+      ))
+
+      setEditandoVehiculo(false)
+      toast.success('Vehículo actualizado correctamente')
+    } catch (error: any) {
+      console.error('Error actualizando vehículo:', error)
+      toast.error(error.message || 'Error al actualizar vehículo')
+    } finally {
+      setGuardandoVehiculo(false)
     }
   }
 
@@ -1109,7 +1191,7 @@ export function DetalleOrdenSheet({
                     </div>
                   )}
 
-                  {vehiculoSeleccionado && (
+                  {vehiculoSeleccionado && !editandoVehiculo && (
                     <div className="mt-3 p-4 bg-gradient-to-br from-sky-50 to-cyan-50 rounded-xl border border-sky-200">
                       {/* Cabecera del vehículo */}
                       <div className="flex items-center gap-3 mb-3 pb-3 border-b border-sky-200">
@@ -1124,11 +1206,16 @@ export function DetalleOrdenSheet({
                             {vehiculoSeleccionado.matricula}
                           </p>
                         </div>
-                        {vehiculoSeleccionado.año && (
-                          <div className="bg-white px-2 py-1 rounded-lg border border-sky-200 text-sm font-medium text-gray-600">
-                            {vehiculoSeleccionado.año}
-                          </div>
-                        )}
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={iniciarEdicionVehiculo}
+                          className="gap-1 text-xs"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                          Editar
+                        </Button>
                       </div>
 
                       {/* Detalles del vehículo */}
@@ -1153,6 +1240,14 @@ export function DetalleOrdenSheet({
                             </span>
                           </div>
                         )}
+                        {vehiculoSeleccionado.año && (
+                          <div className="bg-white p-2 rounded-lg border border-sky-100">
+                            <span className="text-xs text-gray-500 block">Año</span>
+                            <span className="font-bold text-gray-900">
+                              {vehiculoSeleccionado.año}
+                            </span>
+                          </div>
+                        )}
                         {(vehiculoSeleccionado.vin || vehiculoSeleccionado.bastidor_vin) && (
                           <div className="col-span-2 bg-white p-2 rounded-lg border border-sky-100">
                             <span className="text-xs text-gray-500 block">Bastidor (VIN)</span>
@@ -1169,6 +1264,135 @@ export function DetalleOrdenSheet({
                           <span>📸</span>
                           Sube foto del cuadro para actualizar KM automáticamente
                         </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Formulario de edición de vehículo */}
+                  {vehiculoSeleccionado && editandoVehiculo && (
+                    <div className="mt-3 space-y-3 p-3 bg-amber-50 rounded-xl border border-amber-200">
+                      <h4 className="font-semibold text-amber-800 text-sm flex items-center gap-2">
+                        <Edit2 className="w-4 h-4" />
+                        Editar Vehículo
+                      </h4>
+
+                      {/* Matrícula */}
+                      <div>
+                        <Label className="text-xs text-gray-600 mb-1 block">Matrícula *</Label>
+                        <Input
+                          value={vehiculoEditado.matricula}
+                          onChange={(e) => setVehiculoEditado(prev => ({ ...prev, matricula: e.target.value.toUpperCase() }))}
+                          placeholder="1234ABC"
+                          className="font-mono uppercase"
+                        />
+                      </div>
+
+                      {/* Marca y Modelo */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-xs text-gray-600 mb-1 block">Marca</Label>
+                          <Input
+                            value={vehiculoEditado.marca}
+                            onChange={(e) => setVehiculoEditado(prev => ({ ...prev, marca: e.target.value }))}
+                            placeholder="Ford, BMW..."
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-gray-600 mb-1 block">Modelo</Label>
+                          <Input
+                            value={vehiculoEditado.modelo}
+                            onChange={(e) => setVehiculoEditado(prev => ({ ...prev, modelo: e.target.value }))}
+                            placeholder="Focus, 320i..."
+                          />
+                        </div>
+                      </div>
+
+                      {/* Año y Color */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-xs text-gray-600 mb-1 block">Año</Label>
+                          <Input
+                            type="number"
+                            value={vehiculoEditado.año}
+                            onChange={(e) => setVehiculoEditado(prev => ({ ...prev, año: e.target.value }))}
+                            placeholder="2020"
+                            min="1950"
+                            max={new Date().getFullYear() + 1}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-gray-600 mb-1 block">Color</Label>
+                          <Input
+                            value={vehiculoEditado.color}
+                            onChange={(e) => setVehiculoEditado(prev => ({ ...prev, color: e.target.value }))}
+                            placeholder="Blanco, Negro..."
+                          />
+                        </div>
+                      </div>
+
+                      {/* KM y Combustible */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-xs text-gray-600 mb-1 block">Kilómetros</Label>
+                          <Input
+                            type="number"
+                            value={vehiculoEditado.kilometros}
+                            onChange={(e) => setVehiculoEditado(prev => ({ ...prev, kilometros: e.target.value }))}
+                            placeholder="125000"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-gray-600 mb-1 block">Combustible</Label>
+                          <select
+                            value={vehiculoEditado.tipo_combustible}
+                            onChange={(e) => setVehiculoEditado(prev => ({ ...prev, tipo_combustible: e.target.value }))}
+                            className="w-full px-3 py-2 border rounded-lg text-sm"
+                          >
+                            <option value="">Seleccionar...</option>
+                            <option value="Gasolina">Gasolina</option>
+                            <option value="Diésel">Diésel</option>
+                            <option value="Híbrido">Híbrido</option>
+                            <option value="Eléctrico">Eléctrico</option>
+                            <option value="GLP">GLP</option>
+                            <option value="GNC">GNC</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* VIN */}
+                      <div>
+                        <Label className="text-xs text-gray-600 mb-1 block">Bastidor (VIN)</Label>
+                        <Input
+                          value={vehiculoEditado.vin}
+                          onChange={(e) => setVehiculoEditado(prev => ({ ...prev, vin: e.target.value.toUpperCase() }))}
+                          placeholder="WVWZZZ3CZWE123456"
+                          className="font-mono uppercase text-xs"
+                        />
+                      </div>
+
+                      {/* Botones */}
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setEditandoVehiculo(false)}
+                          className="flex-1"
+                        >
+                          Cancelar
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={guardarEdicionVehiculo}
+                          disabled={guardandoVehiculo || !vehiculoEditado.matricula.trim()}
+                          className="flex-1 gap-2 bg-amber-600 hover:bg-amber-700"
+                        >
+                          {guardandoVehiculo ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Save className="w-4 h-4" />
+                          )}
+                          {guardandoVehiculo ? 'Guardando...' : 'Guardar'}
+                        </Button>
                       </div>
                     </div>
                   )}
