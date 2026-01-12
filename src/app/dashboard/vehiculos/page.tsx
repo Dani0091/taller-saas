@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { Plus, Search, Filter, Menu, Loader2, AlertCircle, Car, User, Fuel, Calendar, Gauge } from 'lucide-react'
@@ -43,24 +43,29 @@ export default function VehiculosPage() {
   const supabase = createClient()
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [filtroActivo, setFiltroActivo] = useState('todos')
   const [busqueda, setBusqueda] = useState('')
   const [mostrarMenu, setMostrarMenu] = useState(false)
   const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState<string | null>(null)
-  const [modoCrear, setModoCrear] = useState(false)
+  const initRef = useRef(false)
 
   useEffect(() => {
-    cargarVehiculos()
+    if (!initRef.current) {
+      initRef.current = true
+      cargarVehiculos()
+    }
   }, [])
 
   const cargarVehiculos = async () => {
     try {
       setLoading(true)
+      setError(null)
 
       // 1. Obtener sesión y taller_id
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.user) {
-        toast.error('No autenticado')
+      if (!session?.user?.email) {
+        setError('No autenticado')
         return
       }
 
@@ -70,13 +75,13 @@ export default function VehiculosPage() {
         .eq('email', session.user.email)
         .single()
 
-      if (usuarioError || !usuario) {
-        toast.error('Usuario no encontrado')
+      if (usuarioError || !usuario?.taller_id) {
+        setError('Usuario no encontrado o sin taller asignado')
         return
       }
 
       // 2. Obtener vehículos del taller con datos del cliente
-      const { data, error } = await supabase
+      const { data, error: vehiculosError } = await supabase
         .from('vehiculos')
         .select(`
           id,
@@ -94,11 +99,12 @@ export default function VehiculosPage() {
         .eq('taller_id', usuario.taller_id)
         .order('updated_at', { ascending: false })
 
-      if (error) throw error
+      if (vehiculosError) throw vehiculosError
       setVehiculos((data as unknown as Vehiculo[]) || [])
-      console.log('✅ Vehículos cargados:', data?.length)
-    } catch (error: any) {
-      toast.error(error.message)
+    } catch (err: any) {
+      console.error('Error cargando vehículos:', err)
+      setError(err.message || 'Error al cargar vehículos')
+      toast.error('Error al cargar vehículos')
     } finally {
       setLoading(false)
     }
@@ -189,7 +195,16 @@ export default function VehiculosPage() {
 
       {/* CONTENIDO */}
       <div className="px-4 py-4 space-y-3">
-        {loading ? (
+        {error ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
+            <p className="text-red-600 font-medium mb-2">Error al cargar datos</p>
+            <p className="text-gray-500 text-sm mb-4">{error}</p>
+            <Button onClick={() => { setError(null); cargarVehiculos(); }}>
+              Reintentar
+            </Button>
+          </div>
+        ) : loading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-sky-600" />
           </div>
