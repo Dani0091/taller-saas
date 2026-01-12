@@ -4,18 +4,19 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, TrendingUp, Wrench, Clock, FileText, Loader2, Users, ArrowRight, Gauge, Receipt, Banknote, Calculator } from 'lucide-react'
+import { Plus, TrendingUp, Wrench, Clock, FileText, Loader2, Users, ArrowRight, Gauge, Receipt, Banknote, Calculator, CheckCircle, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 
 interface Metricas {
   ordenesHoy: number
-  ordenesTotal: number
+  pendientes: number
+  enProgreso: number
+  completadas: number
   facturadoMes: number
   baseImponibleMes: number
   ivaRecaudadoMes: number
   ivaTrimestre: number
-  enProgreso: number
   clientesActivos: number
 }
 
@@ -23,12 +24,13 @@ export default function DashboardPage() {
   const supabase = createClient()
   const [metricas, setMetricas] = useState<Metricas>({
     ordenesHoy: 0,
-    ordenesTotal: 0,
+    pendientes: 0,
+    enProgreso: 0,
+    completadas: 0,
     facturadoMes: 0,
     baseImponibleMes: 0,
     ivaRecaudadoMes: 0,
     ivaTrimestre: 0,
-    enProgreso: 0,
     clientesActivos: 0,
   })
   const [usuario, setUsuario] = useState<any>(null)
@@ -75,8 +77,17 @@ export default function DashboardPage() {
           o.fecha_entrada?.startsWith(hoy)
         ).length || 0
 
+        // Estados de órdenes
+        const pendientes = ordenes?.filter(o =>
+          ['recibido', 'diagnostico', 'presupuestado', 'aprobado'].includes(o.estado)
+        ).length || 0
+
         const enProgreso = ordenes?.filter(o =>
           o.estado === 'en_reparacion'
+        ).length || 0
+
+        const completadas = ordenes?.filter(o =>
+          ['completado', 'entregado'].includes(o.estado)
         ).length || 0
 
         // Calcular fechas para filtros
@@ -107,12 +118,13 @@ export default function DashboardPage() {
 
         setMetricas({
           ordenesHoy,
-          ordenesTotal: ordenes?.length || 0,
+          pendientes,
+          enProgreso,
+          completadas,
           facturadoMes,
           baseImponibleMes,
           ivaRecaudadoMes,
           ivaTrimestre,
-          enProgreso,
           clientesActivos: clientes?.length || 0,
         })
       }
@@ -173,40 +185,40 @@ export default function DashboardPage() {
           <p className="text-2xl md:text-3xl font-bold">{metricas.ordenesHoy}</p>
         </Card>
 
-        {/* Órdenes Total */}
-        <Card className="p-4 md:p-5 bg-gradient-to-br from-slate-800 to-slate-900 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
+        {/* Pendientes */}
+        <Card className="p-4 md:p-5 bg-gradient-to-br from-amber-500 to-orange-500 text-white border-0 shadow-lg shadow-amber-500/20 hover:shadow-xl hover:shadow-amber-500/30 transition-all duration-300 hover:scale-[1.02]">
           <div className="flex justify-between items-start mb-3">
-            <div className="w-10 h-10 bg-sky-500/20 rounded-xl flex items-center justify-center">
-              <Wrench className="w-5 h-5 text-sky-400" />
+            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
+              <AlertCircle className="w-5 h-5" />
             </div>
-            <span className="text-[10px] font-bold bg-sky-500/20 text-sky-400 px-2 py-1 rounded-full uppercase">Total</span>
+            <span className="text-[10px] font-bold bg-white/20 px-2 py-1 rounded-full uppercase">Espera</span>
           </div>
-          <p className="text-gray-400 text-xs font-medium mb-1">Órdenes Total</p>
-          <p className="text-2xl md:text-3xl font-bold">{metricas.ordenesTotal}</p>
+          <p className="text-white/80 text-xs font-medium mb-1">Pendientes</p>
+          <p className="text-2xl md:text-3xl font-bold">{metricas.pendientes}</p>
         </Card>
 
         {/* En Progreso */}
         <Card className="p-4 md:p-5 bg-gradient-to-br from-violet-500 to-purple-600 text-white border-0 shadow-lg shadow-violet-500/20 hover:shadow-xl hover:shadow-violet-500/30 transition-all duration-300 hover:scale-[1.02]">
           <div className="flex justify-between items-start mb-3">
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-              <Clock className="w-5 h-5" />
+              <Wrench className="w-5 h-5" />
             </div>
             <span className="text-[10px] font-bold bg-white/20 px-2 py-1 rounded-full uppercase">Activo</span>
           </div>
-          <p className="text-white/80 text-xs font-medium mb-1">En Progreso</p>
+          <p className="text-white/80 text-xs font-medium mb-1">En Reparación</p>
           <p className="text-2xl md:text-3xl font-bold">{metricas.enProgreso}</p>
         </Card>
 
-        {/* Clientes */}
-        <Card className="p-4 md:p-5 bg-gradient-to-br from-sky-600 to-sky-700 text-white border-0 shadow-lg shadow-sky-500/20 hover:shadow-xl hover:shadow-sky-500/30 transition-all duration-300 hover:scale-[1.02]">
+        {/* Completadas */}
+        <Card className="p-4 md:p-5 bg-gradient-to-br from-emerald-500 to-green-600 text-white border-0 shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-300 hover:scale-[1.02]">
           <div className="flex justify-between items-start mb-3">
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-              <Users className="w-5 h-5" />
+              <CheckCircle className="w-5 h-5" />
             </div>
-            <span className="text-[10px] font-bold bg-white/20 px-2 py-1 rounded-full uppercase">Activos</span>
+            <span className="text-[10px] font-bold bg-white/20 px-2 py-1 rounded-full uppercase">Listas</span>
           </div>
-          <p className="text-white/80 text-xs font-medium mb-1">Clientes</p>
-          <p className="text-2xl md:text-3xl font-bold">{metricas.clientesActivos}</p>
+          <p className="text-white/80 text-xs font-medium mb-1">Completadas</p>
+          <p className="text-2xl md:text-3xl font-bold">{metricas.completadas}</p>
         </Card>
       </div>
 
