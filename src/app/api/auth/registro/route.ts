@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@supabase/supabase-js'
 
 /**
@@ -8,6 +7,26 @@ import { createClient } from '@supabase/supabase-js'
  */
 export async function POST(request: Request) {
   try {
+    // Verificar variables de entorno primero
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!supabaseUrl) {
+      console.error('❌ NEXT_PUBLIC_SUPABASE_URL no está configurada')
+      return NextResponse.json(
+        { error: 'Error de configuración del servidor (URL)' },
+        { status: 500 }
+      )
+    }
+
+    if (!supabaseServiceKey) {
+      console.error('❌ SUPABASE_SERVICE_ROLE_KEY no está configurada')
+      return NextResponse.json(
+        { error: 'Error de configuración del servidor (KEY). Contacta al administrador.' },
+        { status: 500 }
+      )
+    }
+
     const body = await request.json()
 
     const {
@@ -57,15 +76,22 @@ export async function POST(request: Request) {
       )
     }
 
-    // Usar admin client para bypasear RLS
-    const supabaseAdmin = createAdminClient()
+    // Crear cliente admin directamente (bypass RLS)
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
 
-    // 1. Verificar si el email ya existe
+    console.log('📝 Iniciando registro para:', email_usuario)
+
+    // 1. Verificar si el email ya existe en usuarios
     const { data: existingUser } = await supabaseAdmin
       .from('usuarios')
       .select('email')
       .eq('email', email_usuario)
-      .single()
+      .maybeSingle()
 
     if (existingUser) {
       return NextResponse.json(
@@ -75,17 +101,18 @@ export async function POST(request: Request) {
     }
 
     // 2. Crear usuario en Supabase Auth
+    console.log('📝 Creando usuario en Auth...')
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: email_usuario,
       password: password,
-      email_confirm: true, // Auto-confirmar el email
+      email_confirm: true,
       user_metadata: {
         nombre: nombre_usuario,
       }
     })
 
     if (authError) {
-      console.error('Error creando auth user:', authError)
+      console.error('❌ Error creando auth user:', authError.message)
       if (authError.message.includes('already registered')) {
         return NextResponse.json(
           { error: 'Este email ya está registrado en el sistema' },
@@ -93,67 +120,78 @@ export async function POST(request: Request) {
         )
       }
       return NextResponse.json(
-        { error: 'Error al crear usuario' },
+        { error: `Error al crear usuario: ${authError.message}` },
         { status: 500 }
       )
     }
 
     if (!authData.user) {
       return NextResponse.json(
-        { error: 'Error al crear usuario' },
+        { error: 'Error al crear usuario - sin datos' },
         { status: 500 }
       )
     }
 
-    // 3. Crear el taller (con admin client, bypass RLS)
+    console.log('✅ Usuario Auth creado:', authData.user.id)
+
+    // 3. Crear el taller
+    console.log('📝 Creando taller...')
     const { data: taller, error: tallerError } = await supabaseAdmin
       .from('talleres')
-      .insert([{
+      .insert({
         nombre: nombre_taller,
         cif: cif,
         direccion: direccion || null,
         telefono: telefono || null,
         email: email_taller || email_usuario,
-      }])
+        plan_nombre: 'trial',
+        suscripcion_activa: true,
+      })
       .select('id')
       .single()
 
     if (tallerError) {
-      console.error('Error creando taller:', tallerError)
-      // Rollback: eliminar usuario auth
+      console.error('❌ Error creando taller:', tallerError.message, tallerError.details)
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
       return NextResponse.json(
-        { error: 'Error al crear el taller' },
+        { error: `Error al crear el taller: ${tallerError.message}` },
         { status: 500 }
       )
     }
 
-    // 4. Crear el usuario vinculado al taller (con admin client, bypass RLS)
-    const { error: usuarioError } = await supabaseAdmin
+    console.log('✅ Taller creado:', taller.id)
+
+    // 4. Crear el usuario vinculado al taller
+    console.log('📝 Vinculando usuario al taller...')
+    const { data: usuarioData, error: usuarioError } = await supabaseAdmin
       .from('usuarios')
-      .insert([{
+      .insert({
         email: email_usuario,
         nombre: nombre_usuario,
         rol: 'admin',
         taller_id: taller.id,
         activo: true,
-      }])
+      })
+      .select()
+      .single()
 
     if (usuarioError) {
-      console.error('Error creando usuario:', usuarioError)
-      // Rollback: eliminar taller y usuario auth
+      console.error('❌ Error creando usuario:', usuarioError.message, usuarioError.details, usuarioError.hint)
       await supabaseAdmin.from('talleres').delete().eq('id', taller.id)
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
       return NextResponse.json(
-        { error: 'Error al vincular usuario al taller' },
+        { error: `Error al vincular usuario: ${usuarioError.message}` },
         { status: 500 }
       )
     }
 
+    console.log('✅ Usuario vinculado:', usuarioData.id)
+
     // 5. Crear configuración por defecto del taller
+    console.log('📝 Creando configuración...')
     const { error: configError } = await supabaseAdmin
       .from('taller_config')
-      .insert([{
+      .insert({
         taller_id: taller.id,
         nombre_empresa: nombre_taller,
         cif: cif,
@@ -166,12 +204,15 @@ export async function POST(request: Request) {
         tarifa_con_iva: true,
         serie_factura: 'FA',
         numero_factura_inicial: 1,
-      }])
+      })
 
     if (configError) {
-      console.error('Error creando config (no crítico):', configError)
-      // No es crítico, continuamos
+      console.error('⚠️ Error creando config (no crítico):', configError.message)
+    } else {
+      console.log('✅ Configuración creada')
     }
+
+    console.log('🎉 Registro completado exitosamente')
 
     return NextResponse.json({
       success: true,
@@ -181,7 +222,7 @@ export async function POST(request: Request) {
     })
 
   } catch (error: any) {
-    console.error('Error en registro:', error)
+    console.error('❌ Error en registro:', error.message, error.stack)
     return NextResponse.json(
       { error: error.message || 'Error al registrar' },
       { status: 500 }
