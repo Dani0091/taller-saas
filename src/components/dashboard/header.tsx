@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Menu, LogOut, Bell, Gauge } from 'lucide-react'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -9,8 +10,17 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/dashboard': { title: 'Dashboard', subtitle: 'Vista general del taller' },
   '/dashboard/ordenes': { title: 'Órdenes', subtitle: 'Gestión de reparaciones' },
   '/dashboard/clientes': { title: 'Clientes', subtitle: 'Base de datos de clientes' },
+  '/dashboard/vehiculos': { title: 'Vehículos', subtitle: 'Flota de vehículos' },
   '/dashboard/facturas': { title: 'Facturas', subtitle: 'Facturación y cobros' },
   '/dashboard/configuracion': { title: 'Configuración', subtitle: 'Ajustes del taller' },
+}
+
+interface PlanInfo {
+  plan_nombre: string
+  plan_display: string
+  dias_restantes: number
+  suscripcion_activa: boolean
+  color: string
 }
 
 interface HeaderProps {
@@ -22,6 +32,22 @@ export function Header({ user, onMenuClick }: HeaderProps) {
   const router = useRouter()
   const pathname = usePathname()
   const supabase = createClient()
+  const [planInfo, setPlanInfo] = useState<PlanInfo | null>(null)
+
+  useEffect(() => {
+    const fetchPlan = async () => {
+      try {
+        const res = await fetch('/api/taller/plan')
+        if (res.ok) {
+          const data = await res.json()
+          setPlanInfo(data)
+        }
+      } catch (error) {
+        console.error('Error fetching plan:', error)
+      }
+    }
+    fetchPlan()
+  }, [])
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -71,7 +97,15 @@ export function Header({ user, onMenuClick }: HeaderProps) {
               <p className="text-sm font-medium text-gray-900 truncate max-w-[150px]">
                 {user?.email?.split('@')[0] || 'Usuario'}
               </p>
-              <p className="text-[10px] text-sky-500 font-medium">Plan PRO</p>
+              <p
+                className="text-[10px] font-medium"
+                style={{ color: planInfo?.color || '#9ca3af' }}
+              >
+                {planInfo?.plan_display || 'Cargando...'}
+                {planInfo?.plan_nombre === 'trial' && planInfo.dias_restantes > 0 && (
+                  <span className="text-gray-400 ml-1">({planInfo.dias_restantes}d)</span>
+                )}
+              </p>
             </div>
             <div className="w-9 h-9 bg-gradient-to-br from-sky-400 to-cyan-500 rounded-xl flex items-center justify-center shadow-md shadow-sky-500/20">
               <span className="text-white font-bold text-sm">

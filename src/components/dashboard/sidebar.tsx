@@ -1,16 +1,25 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Wrench, Users, FileText, Settings, X, Gauge } from 'lucide-react'
+import { Home, Wrench, Users, FileText, Settings, X, Gauge, Car } from 'lucide-react'
 
 const links = [
   { href: '/dashboard', label: 'Dashboard', icon: Home },
   { href: '/dashboard/ordenes', label: 'Órdenes', icon: Wrench },
   { href: '/dashboard/clientes', label: 'Clientes', icon: Users },
+  { href: '/dashboard/vehiculos', label: 'Vehículos', icon: Car },
   { href: '/dashboard/facturas', label: 'Facturas', icon: FileText },
   { href: '/dashboard/configuracion', label: 'Configuración', icon: Settings },
 ]
+
+interface PlanInfo {
+  plan_nombre: string
+  plan_display: string
+  dias_restantes: number
+  color: string
+}
 
 interface SidebarProps {
   user?: any
@@ -20,6 +29,22 @@ interface SidebarProps {
 
 export function Sidebar({ user, isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname()
+  const [planInfo, setPlanInfo] = useState<PlanInfo | null>(null)
+
+  useEffect(() => {
+    const fetchPlan = async () => {
+      try {
+        const res = await fetch('/api/taller/plan')
+        if (res.ok) {
+          const data = await res.json()
+          setPlanInfo(data)
+        }
+      } catch (error) {
+        console.error('Error fetching plan:', error)
+      }
+    }
+    fetchPlan()
+  }, [])
 
   const SidebarContent = ({ isMobile = false }: { isMobile?: boolean }) => (
     <>
@@ -31,7 +56,12 @@ export function Sidebar({ user, isOpen = false, onClose }: SidebarProps) {
           </div>
           <div>
             <h1 className="text-xl font-bold text-white">TallerAgil</h1>
-            <p className="text-[10px] text-sky-400 font-medium tracking-wider uppercase">Professional</p>
+            <p
+              className="text-[10px] font-medium tracking-wider uppercase"
+              style={{ color: planInfo?.color || '#38bdf8' }}
+            >
+              {planInfo?.plan_display || 'Cargando...'}
+            </p>
           </div>
         </div>
         {isMobile && (
@@ -90,7 +120,15 @@ export function Sidebar({ user, isOpen = false, onClose }: SidebarProps) {
               </div>
               <div className="flex items-center justify-between text-[10px]">
                 <span className="text-gray-500">TallerAgil v1.0</span>
-                <span className="px-2 py-0.5 bg-sky-500/20 text-sky-400 rounded-full font-medium">PRO</span>
+                <span
+                  className="px-2 py-0.5 rounded-full font-medium"
+                  style={{
+                    backgroundColor: `${planInfo?.color || '#38bdf8'}20`,
+                    color: planInfo?.color || '#38bdf8'
+                  }}
+                >
+                  {planInfo?.plan_nombre?.toUpperCase() || '...'}
+                </span>
               </div>
             </>
           ) : (
