@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
-import { X, Save, Trash2, Loader2 } from 'lucide-react'
+import { X, Save, Trash2, Loader2, MessageCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 import type { Cita, TipoCita, EstadoCita } from '@/types/citas'
 import { TIPOS_CITA, COLORES_CITA, ESTADOS_CITA } from '@/types/citas'
+import { WhatsAppCita } from './whatsapp-cita'
+import { ExportarCalendario } from './exportar-calendario'
 
 interface FormularioCitaProps {
   cita?: Cita | null
@@ -324,7 +326,7 @@ export function FormularioCita({ cita, fechaInicial, onClose, onSave }: Formular
           </div>
 
           {/* Botones */}
-          <div className="flex gap-2 pt-4 border-t">
+          <div className="flex flex-wrap gap-2 pt-4 border-t">
             {cita && (
               <Button
                 type="button"
@@ -335,6 +337,40 @@ export function FormularioCita({ cita, fechaInicial, onClose, onSave }: Formular
                 {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
               </Button>
             )}
+
+            {/* Botón exportar a calendario - solo si hay cita existente */}
+            {cita && formData.titulo && formData.fecha_inicio && (
+              <ExportarCalendario
+                cita={{
+                  titulo: formData.titulo,
+                  fecha_inicio: formData.fecha_inicio,
+                  fecha_fin: formData.fecha_fin || null,
+                  todo_el_dia: formData.todo_el_dia,
+                  descripcion: formData.descripcion || null
+                }}
+              />
+            )}
+
+            {/* Botón WhatsApp - solo si hay cita existente y cliente con teléfono */}
+            {cita && formData.cliente_id && (() => {
+              const clienteSeleccionado = clientes.find(c => c.id === formData.cliente_id)
+              if (clienteSeleccionado?.telefono) {
+                return (
+                  <WhatsAppCita
+                    telefono={clienteSeleccionado.telefono}
+                    cita={{
+                      titulo: formData.titulo,
+                      fecha_inicio: formData.fecha_inicio,
+                      fecha_fin: formData.fecha_fin || undefined,
+                      todo_el_dia: formData.todo_el_dia,
+                      descripcion: formData.descripcion || undefined
+                    }}
+                  />
+                )
+              }
+              return null
+            })()}
+
             <div className="flex-1" />
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar

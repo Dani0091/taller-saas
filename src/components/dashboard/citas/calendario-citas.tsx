@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths, isToday, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Clock, User, Car } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Clock, User, Car, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import type { Cita } from '@/types/citas'
 import { ESTADOS_CITA, TIPOS_CITA } from '@/types/citas'
+import { generarICSMultiple, descargarICS } from '@/lib/calendar/export'
 
 interface CalendarioCitasProps {
   onNuevaCita?: (fecha: Date) => void
@@ -71,6 +72,27 @@ export function CalendarioCitas({ onNuevaCita, onEditarCita }: CalendarioCitasPr
     ? getCitasDelDia(diaSeleccionado)
     : []
 
+  // Exportar todas las citas del mes
+  const exportarCitasMes = () => {
+    if (citas.length === 0) {
+      toast.error('No hay citas para exportar')
+      return
+    }
+
+    const citasExport = citas.map(c => ({
+      titulo: c.titulo,
+      descripcion: c.descripcion || undefined,
+      fecha_inicio: c.fecha_inicio,
+      fecha_fin: c.fecha_fin || undefined,
+      todo_el_dia: c.todo_el_dia
+    }))
+
+    const ics = generarICSMultiple(citasExport)
+    const nombreArchivo = `citas-${format(mesActual, 'yyyy-MM')}.ics`
+    descargarICS(ics, nombreArchivo)
+    toast.success(`${citas.length} citas exportadas`)
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
       {/* Calendario */}
@@ -103,6 +125,18 @@ export function CalendarioCitas({ onNuevaCita, onEditarCita }: CalendarioCitasPr
               >
                 <ChevronRight className="w-4 h-4" />
               </Button>
+              {citas.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={exportarCitasMes}
+                  className="ml-2 gap-1"
+                  title="Exportar citas del mes"
+                >
+                  <Download className="w-4 h-4" />
+                  <span className="hidden sm:inline">Exportar</span>
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>

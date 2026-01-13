@@ -7,9 +7,28 @@ import { DecimalInput } from '@/components/ui/decimal-input'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Loader2, Settings, Upload, X, Image as ImageIcon, FileText, CreditCard, Palette } from 'lucide-react'
+import { Loader2, Settings, Upload, X, Image as ImageIcon, FileText, CreditCard, Palette, Users, Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+
+interface Tarifa {
+  id?: string
+  tipo_cliente: string
+  tarifa_hora: number
+  tarifa_hora_urgente: number | null
+  descuento_piezas_porcentaje: number
+  descuento_mano_obra_porcentaje: number
+  dias_pago: number
+  limite_credito: number | null
+  activo: boolean
+}
+
+const TIPOS_CLIENTE = [
+  { value: 'particular', label: 'Particular', icon: '👤', desc: 'Clientes individuales' },
+  { value: 'empresa', label: 'Empresa', icon: '🏢', desc: 'Empresas y sociedades' },
+  { value: 'autonomo', label: 'Autónomo', icon: '💼', desc: 'Trabajadores autónomos' },
+  { value: 'flota', label: 'Flota', icon: '🚗', desc: 'Gestores de flotas' },
+]
 
 interface Config {
   id: string | null
@@ -43,6 +62,11 @@ export default function ConfiguracionPage() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [tallerId, setTallerId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Estado para tarifas por tipo de cliente
+  const [tarifas, setTarifas] = useState<Tarifa[]>([])
+  const [tarifaEditando, setTarifaEditando] = useState<string | null>(null)
+  const [guardandoTarifa, setGuardandoTarifa] = useState<string | null>(null)
 
   // Obtener taller_id del usuario autenticado
   useEffect(() => {
@@ -79,12 +103,75 @@ export default function ConfiguracionPage() {
     obtenerTallerId()
   }, [])
 
-  // Cargar config cuando tengamos taller_id
+  // Cargar config y tarifas cuando tengamos taller_id
   useEffect(() => {
     if (tallerId) {
       fetchConfig()
+      fetchTarifas()
     }
   }, [tallerId])
+
+  const fetchTarifas = async () => {
+    try {
+      const response = await fetch('/api/tarifas')
+      const data = await response.json()
+
+      if (data.tarifas) {
+        setTarifas(data.tarifas)
+      }
+    } catch (error) {
+      console.error('Error cargando tarifas:', error)
+    }
+  }
+
+  const getTarifaPorTipo = (tipo: string): Tarifa => {
+    const tarifa = tarifas.find(t => t.tipo_cliente === tipo)
+    return tarifa || {
+      tipo_cliente: tipo,
+      tarifa_hora: formData?.tarifa_hora || 45,
+      tarifa_hora_urgente: null,
+      descuento_piezas_porcentaje: 0,
+      descuento_mano_obra_porcentaje: 0,
+      dias_pago: 0,
+      limite_credito: null,
+      activo: true
+    }
+  }
+
+  const guardarTarifa = async (tarifa: Tarifa) => {
+    setGuardandoTarifa(tarifa.tipo_cliente)
+    try {
+      const response = await fetch('/api/tarifas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(tarifa)
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error)
+      }
+
+      const data = await response.json()
+
+      // Actualizar la lista de tarifas
+      setTarifas(prev => {
+        const exists = prev.find(t => t.tipo_cliente === tarifa.tipo_cliente)
+        if (exists) {
+          return prev.map(t => t.tipo_cliente === tarifa.tipo_cliente ? data.tarifa : t)
+        } else {
+          return [...prev, data.tarifa]
+        }
+      })
+
+      setTarifaEditando(null)
+      toast.success(`Tarifa ${TIPOS_CLIENTE.find(t => t.value === tarifa.tipo_cliente)?.label} guardada`)
+    } catch (error: any) {
+      toast.error(error.message || 'Error guardando tarifa')
+    } finally {
+      setGuardandoTarifa(null)
+    }
+  }
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -833,6 +920,128 @@ export default function ConfiguracionPage() {
             </div>
           </Card>
 
+      {/* Tarifas por Tipo de Cliente */}
+          <Card className="p-6 md:p-8 shadow-sm bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200">
+            <div className="flex items-center gap-2 mb-6 pb-4 border-b border-emerald-200">
+              <Users className="w-6 h-6 text-emerald-600" />
+              <h2 className="text-xl font-bold">Tarifas por Tipo de Cliente</h2>
+            </div>
+
+            <p className="text-sm text-gray-600 mb-6">
+              Configura precios diferenciados para cada tipo de cliente. Si no configuras una tarifa
+              específica, se usará la tarifa general del taller.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {TIPOS_CLIENTE.map((tipo) => {
+                const tarifa = getTarifaPorTipo(tipo.value)
+                const editando = tarifaEditando === tipo.value
+                const guardando = guardandoTarifa === tipo.value
+
+                return (
+                  <div
+                    key={tipo.value}
+                    className={`p-4 rounded-xl border-2 transition-all ${
+                      editando
+                        ? 'bg-white border-emerald-400 shadow-lg'
+                        : tarifas.find(t => t.tipo_cliente === tipo.value)
+                          ? 'bg-white border-emerald-200'
+                          : 'bg-gray-50 border-gray-200'
+                    }`}
+                  >
+                    {/* Header */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">{tipo.icon}</span>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{tipo.label}</h3>
+                          <p className="text-xs text-gray-500">{tipo.desc}</p>
+                        </div>
+                      </div>
+                      {!editando && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setTarifaEditando(tipo.value)}
+                          className="text-xs"
+                        >
+                          Editar
+                        </Button>
+                      )}
+                    </div>
+
+                    {editando ? (
+                      <TarifaEditor
+                        tarifa={tarifa}
+                        onSave={guardarTarifa}
+                        onCancel={() => setTarifaEditando(null)}
+                        guardando={guardando}
+                        tarifaBase={formData?.tarifa_hora || 45}
+                      />
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div className="bg-emerald-50 p-2 rounded-lg">
+                          <span className="text-xs text-gray-500 block">Tarifa/hora</span>
+                          <span className="font-bold text-emerald-700">
+                            {tarifa.tarifa_hora.toFixed(2)}€
+                          </span>
+                        </div>
+                        {tarifa.tarifa_hora_urgente && (
+                          <div className="bg-amber-50 p-2 rounded-lg">
+                            <span className="text-xs text-gray-500 block">Urgente</span>
+                            <span className="font-bold text-amber-700">
+                              {tarifa.tarifa_hora_urgente.toFixed(2)}€
+                            </span>
+                          </div>
+                        )}
+                        {tarifa.descuento_mano_obra_porcentaje > 0 && (
+                          <div className="bg-blue-50 p-2 rounded-lg">
+                            <span className="text-xs text-gray-500 block">Dto. M.O.</span>
+                            <span className="font-bold text-blue-700">
+                              {tarifa.descuento_mano_obra_porcentaje}%
+                            </span>
+                          </div>
+                        )}
+                        {tarifa.descuento_piezas_porcentaje > 0 && (
+                          <div className="bg-purple-50 p-2 rounded-lg">
+                            <span className="text-xs text-gray-500 block">Dto. Piezas</span>
+                            <span className="font-bold text-purple-700">
+                              {tarifa.descuento_piezas_porcentaje}%
+                            </span>
+                          </div>
+                        )}
+                        {tarifa.dias_pago > 0 && (
+                          <div className="bg-gray-50 p-2 rounded-lg">
+                            <span className="text-xs text-gray-500 block">Días pago</span>
+                            <span className="font-bold text-gray-700">
+                              {tarifa.dias_pago} días
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {!editando && tarifas.find(t => t.tipo_cliente === tipo.value) && (
+                      <div className="mt-2 flex items-center gap-1 text-xs text-emerald-600">
+                        <span className="w-2 h-2 bg-emerald-500 rounded-full"></span>
+                        Tarifa personalizada
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="mt-6 p-4 bg-white rounded-lg border border-emerald-200">
+              <p className="text-sm text-gray-600">
+                <strong>Nota:</strong> Las tarifas se aplicarán automáticamente al crear órdenes
+                según el tipo de cliente seleccionado. Los descuentos se aplicarán sobre el total
+                de mano de obra o piezas según corresponda.
+              </p>
+            </div>
+          </Card>
+
       {/* Botones */}
       <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
         <Button
@@ -853,6 +1062,130 @@ export default function ConfiguracionPage() {
         </Button>
       </div>
       </form>
+    </div>
+  )
+}
+
+// Componente para editar tarifa
+function TarifaEditor({
+  tarifa,
+  onSave,
+  onCancel,
+  guardando,
+  tarifaBase
+}: {
+  tarifa: Tarifa
+  onSave: (t: Tarifa) => void
+  onCancel: () => void
+  guardando: boolean
+  tarifaBase: number
+}) {
+  const [formTarifa, setFormTarifa] = useState<Tarifa>({
+    ...tarifa,
+    tarifa_hora: tarifa.tarifa_hora || tarifaBase
+  })
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <Label className="text-xs text-gray-600">Tarifa/hora (€)</Label>
+          <DecimalInput
+            value={formTarifa.tarifa_hora}
+            onChange={(value) => setFormTarifa({ ...formTarifa, tarifa_hora: value })}
+            min={0}
+            step={0.01}
+            className="text-sm"
+          />
+        </div>
+        <div>
+          <Label className="text-xs text-gray-600">Urgente (€)</Label>
+          <DecimalInput
+            value={formTarifa.tarifa_hora_urgente || 0}
+            onChange={(value) => setFormTarifa({ ...formTarifa, tarifa_hora_urgente: value || null })}
+            min={0}
+            step={0.01}
+            className="text-sm"
+            allowEmpty
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <Label className="text-xs text-gray-600">Dto. M.O. (%)</Label>
+          <DecimalInput
+            value={formTarifa.descuento_mano_obra_porcentaje}
+            onChange={(value) => setFormTarifa({ ...formTarifa, descuento_mano_obra_porcentaje: value })}
+            min={0}
+            max={100}
+            step={1}
+            className="text-sm"
+          />
+        </div>
+        <div>
+          <Label className="text-xs text-gray-600">Dto. Piezas (%)</Label>
+          <DecimalInput
+            value={formTarifa.descuento_piezas_porcentaje}
+            onChange={(value) => setFormTarifa({ ...formTarifa, descuento_piezas_porcentaje: value })}
+            min={0}
+            max={100}
+            step={1}
+            className="text-sm"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <Label className="text-xs text-gray-600">Días pago</Label>
+          <Input
+            type="number"
+            min={0}
+            value={formTarifa.dias_pago || ''}
+            onChange={(e) => setFormTarifa({ ...formTarifa, dias_pago: parseInt(e.target.value) || 0 })}
+            className="text-sm"
+            placeholder="0"
+          />
+        </div>
+        <div>
+          <Label className="text-xs text-gray-600">Límite crédito (€)</Label>
+          <DecimalInput
+            value={formTarifa.limite_credito || 0}
+            onChange={(value) => setFormTarifa({ ...formTarifa, limite_credito: value || null })}
+            min={0}
+            step={100}
+            className="text-sm"
+            allowEmpty
+          />
+        </div>
+      </div>
+
+      <div className="flex gap-2 pt-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onCancel}
+          className="flex-1 text-xs"
+        >
+          Cancelar
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => onSave(formTarifa)}
+          disabled={guardando}
+          className="flex-1 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700"
+        >
+          {guardando ? (
+            <Loader2 className="w-3 h-3 animate-spin" />
+          ) : (
+            <Save className="w-3 h-3" />
+          )}
+          Guardar
+        </Button>
+      </div>
     </div>
   )
 }
