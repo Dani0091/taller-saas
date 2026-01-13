@@ -10,6 +10,7 @@ import { Camera, Trash2, Loader2, Eye } from 'lucide-react'
 import { toast } from 'sonner'
 import { extraerDatosDeImagen } from '@/lib/ocr/tesseract-service'
 import { FOTO_LABELS, type TipoFoto } from '@/lib/constants'
+import { compressImage, isLowRAMDevice } from '@/lib/image/compressor'
 
 /**
  * Props del componente FotoUploader
@@ -42,11 +43,24 @@ export function FotoUploader(props: FotoUploaderProps) {
 
     try {
       setSubiendo(true)
-      setPreviewUrl(URL.createObjectURL(file))
+
+      // Comprimir imagen para móviles (especialmente dispositivos low-RAM)
+      let fileToUpload = file
+      try {
+        if (isLowRAMDevice()) {
+          toast.loading('📸 Optimizando imagen...')
+        }
+        fileToUpload = await compressImage(file)
+        toast.dismiss()
+      } catch (compressError) {
+        console.warn('⚠️ Error comprimiendo, usando original:', compressError)
+      }
+
+      setPreviewUrl(URL.createObjectURL(fileToUpload))
 
       // Subir a Telegram
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', fileToUpload)
       formData.append('ordenId', ordenId)
       formData.append('tipo', tipo)
 

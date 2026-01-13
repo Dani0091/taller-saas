@@ -4,6 +4,16 @@ const nextConfig: NextConfig = {
   // Output standalone para deploy optimizado (Docker, VPS, etc.)
   output: 'standalone',
 
+  // Variables de entorno del servidor (accesibles en API routes)
+  // IMPORTANTE: Las variables sin NEXT_PUBLIC_ solo están en el servidor
+  serverExternalPackages: ['tesseract.js'],
+
+  // Configuración de entorno para Railway/producción
+  env: {
+    // Las variables TELEGRAM_* se leen de process.env en runtime
+    // No necesitan estar aquí, pero documentamos que son requeridas
+  },
+
   // Optimizaciones de producción
   poweredByHeader: false,
 

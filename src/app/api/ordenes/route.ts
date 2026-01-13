@@ -33,23 +33,36 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // 3. Obtener SOLO órdenes de ESTE TALLER
-    const { data: ordenes, error: ordenesError } = await supabase
+    // Parámetros de filtro
+    const searchParams = request.nextUrl.searchParams
+    const incluirEliminadas = searchParams.get('incluir_eliminadas') === 'true'
+
+    // 3. Obtener SOLO órdenes de ESTE TALLER (excluir eliminadas por defecto)
+    let query = supabase
       .from('ordenes_reparacion')
       .select(`
         id,
         numero_orden,
+        numero_visual,
         estado,
         cliente_id,
         clientes(nombre, telefono, nif),
         vehiculo_id,
         vehiculos(marca, modelo, matricula),
         fecha_entrada,
-        total_con_iva
+        total_con_iva,
+        deleted_at
       `)
       .eq('taller_id', usuario.taller_id)
       .order('fecha_entrada', { ascending: false })
       .limit(50)
+
+    // Filtrar eliminadas por defecto
+    if (!incluirEliminadas) {
+      query = query.is('deleted_at', null)
+    }
+
+    const { data: ordenes, error: ordenesError } = await query
 
     if (ordenesError) throw ordenesError
 
@@ -192,3 +205,102 @@ export async function PATCH(request: NextRequest) {
     )
   }
 }
+
+/**
+ * DELETE - Borrado lógico de orden
+ * La orden no se elimina físicamente, solo se marca como eliminada
+ */
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = await createClient()
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json(
+        { success: false, error: 'ID requerido' },
+        { status: 400 }
+      )
+    }
+
+    // Verificar autenticación
+    const { data: { session } } = await supabase.auth.getSession()
+
+    if (!session?.user) {
+      return NextResponse.json(
+        { success: false, error: 'No autorizado' },
+        { status: 401 }
+      )
+    }
+
+    // Obtener usuario para registrar quién eliminó
+    const { data: usuario } = await supabase
+      .from('usuarios')
+      .select('id, taller_id')
+      .eq('email', session.user.email)
+      .single()
+
+    if (!usuario?.taller_id) {
+      return NextResponse.json(
+        { success: false, error: 'Usuario sin taller' },
+        { status: 403 }
+      )
+    }
+
+    // Verificar que la orden pertenece al taller
+    const { data: ordenExistente } = await supabase
+      .from('ordenes_reparacion')
+      .select('id, numero_visual, taller_id')
+      .eq('id', id)
+      .eq('taller_id', usuario.taller_id)
+      .is('deleted_at', null)
+      .single()
+
+    if (!ordenExistente) {
+      return NextResponse.json(
+        { success: false, error: 'Orden no encontrada' },
+        { status: 404 }
+      )
+    }
+
+    // Borrado lógico: marcar con deleted_at y deleted_by
+    const { error } = await supabase
+      .from('ordenes_reparacion')
+      .update({
+        deleted_at: new Date().toISOString(),
+        deleted_by: usuario.id
+      })
+      .eq('id', id)
+
+    if (error) throw error
+
+    // Registrar en historial de cambios (si existe la tabla)
+    try {
+      await supabase.from('historial_cambios').insert({
+        taller_id: usuario.taller_id,
+        usuario_id: usuario.id,
+        tabla: 'ordenes_reparacion',
+        registro_id: id,
+        accion: 'eliminar',
+        datos_anteriores: { numero_visual: ordenExistente.numero_visual }
+      })
+    } catch {
+      // Ignorar si la tabla no existe todavía
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Orden eliminada correctamente'
+    })
+  } catch (error: any) {
+    return NextResponse.json(
+      { success: false, error: 'Error al eliminar orden' },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * Restaurar orden eliminada (para admins)
+ * PUT /api/ordenes?action=restaurar&id=xxx
+ */
