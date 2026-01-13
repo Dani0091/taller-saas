@@ -3,6 +3,7 @@
 -- ============================================
 -- Ejecutar en Supabase SQL Editor
 -- Fecha: 2025-01-13
+-- CORREGIDO: Usa DROP POLICY IF EXISTS antes de CREATE POLICY
 -- ============================================
 
 -- ============================================
@@ -76,7 +77,7 @@ CREATE TABLE IF NOT EXISTS historial_cambios (
     usuario_id UUID REFERENCES usuarios(id) ON DELETE SET NULL,
     tabla VARCHAR(100) NOT NULL,
     registro_id UUID NOT NULL,
-    accion VARCHAR(20) NOT NULL, -- 'crear', 'actualizar', 'eliminar', 'restaurar'
+    accion VARCHAR(20) NOT NULL,
     datos_anteriores JSONB,
     datos_nuevos JSONB,
     ip_address VARCHAR(45),
@@ -91,12 +92,14 @@ CREATE INDEX IF NOT EXISTS idx_historial_fecha ON historial_cambios(created_at D
 -- RLS para historial
 ALTER TABLE historial_cambios ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "Ver historial del taller" ON historial_cambios
+DROP POLICY IF EXISTS "Ver historial del taller" ON historial_cambios;
+CREATE POLICY "Ver historial del taller" ON historial_cambios
     FOR SELECT USING (
         taller_id IN (SELECT taller_id FROM usuarios WHERE email = auth.jwt()->>'email')
     );
 
-CREATE POLICY IF NOT EXISTS "Insertar historial del taller" ON historial_cambios
+DROP POLICY IF EXISTS "Insertar historial del taller" ON historial_cambios;
+CREATE POLICY "Insertar historial del taller" ON historial_cambios
     FOR INSERT WITH CHECK (
         taller_id IN (SELECT taller_id FROM usuarios WHERE email = auth.jwt()->>'email')
     );
@@ -115,7 +118,7 @@ CREATE TABLE IF NOT EXISTS citas (
     -- Información de la cita
     titulo VARCHAR(255) NOT NULL,
     descripcion TEXT,
-    tipo VARCHAR(50) DEFAULT 'cita', -- 'cita', 'recordatorio', 'aviso', 'itv', 'revision'
+    tipo VARCHAR(50) DEFAULT 'cita',
 
     -- Fecha y hora
     fecha_inicio TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -123,7 +126,7 @@ CREATE TABLE IF NOT EXISTS citas (
     todo_el_dia BOOLEAN DEFAULT FALSE,
 
     -- Estado
-    estado VARCHAR(50) DEFAULT 'pendiente', -- 'pendiente', 'confirmada', 'completada', 'cancelada', 'no_asistio'
+    estado VARCHAR(50) DEFAULT 'pendiente',
 
     -- Recordatorios
     recordatorio_email BOOLEAN DEFAULT FALSE,
@@ -136,6 +139,10 @@ CREATE TABLE IF NOT EXISTS citas (
 
     -- Notas internas
     notas TEXT,
+
+    -- Google Calendar sync
+    google_event_id VARCHAR(255),
+    google_calendar_id VARCHAR(255),
 
     -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -152,12 +159,14 @@ CREATE INDEX IF NOT EXISTS idx_citas_estado ON citas(estado);
 -- RLS para citas
 ALTER TABLE citas ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "Ver citas del taller" ON citas
+DROP POLICY IF EXISTS "Ver citas del taller" ON citas;
+CREATE POLICY "Ver citas del taller" ON citas
     FOR SELECT USING (
         taller_id IN (SELECT taller_id FROM usuarios WHERE email = auth.jwt()->>'email')
     );
 
-CREATE POLICY IF NOT EXISTS "Gestionar citas del taller" ON citas
+DROP POLICY IF EXISTS "Gestionar citas del taller" ON citas;
+CREATE POLICY "Gestionar citas del taller" ON citas
     FOR ALL USING (
         taller_id IN (SELECT taller_id FROM usuarios WHERE email = auth.jwt()->>'email')
     );
@@ -174,30 +183,16 @@ CREATE TRIGGER update_citas_updated_at BEFORE UPDATE ON citas
 CREATE TABLE IF NOT EXISTS tarifas_cliente (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     taller_id UUID NOT NULL REFERENCES talleres(id) ON DELETE CASCADE,
-
-    -- Tipo de cliente al que aplica
-    tipo_cliente VARCHAR(50) NOT NULL, -- 'particular', 'empresa', 'autonomo', 'flota'
-
-    -- Tarifas de mano de obra
+    tipo_cliente VARCHAR(50) NOT NULL,
     tarifa_hora DECIMAL(10,2) NOT NULL DEFAULT 45.00,
-    tarifa_hora_urgente DECIMAL(10,2), -- Tarifa para trabajos urgentes
-
-    -- Descuentos automáticos
+    tarifa_hora_urgente DECIMAL(10,2),
     descuento_piezas_porcentaje DECIMAL(5,2) DEFAULT 0,
     descuento_mano_obra_porcentaje DECIMAL(5,2) DEFAULT 0,
-
-    -- Condiciones de pago
-    dias_pago INTEGER DEFAULT 0, -- 0 = al contado
+    dias_pago INTEGER DEFAULT 0,
     limite_credito DECIMAL(12,2),
-
-    -- Activo
     activo BOOLEAN DEFAULT TRUE,
-
-    -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-
-    -- Único por taller y tipo
     UNIQUE(taller_id, tipo_cliente)
 );
 
@@ -206,12 +201,14 @@ CREATE INDEX IF NOT EXISTS idx_tarifas_taller ON tarifas_cliente(taller_id);
 -- RLS para tarifas
 ALTER TABLE tarifas_cliente ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "Ver tarifas del taller" ON tarifas_cliente
+DROP POLICY IF EXISTS "Ver tarifas del taller" ON tarifas_cliente;
+CREATE POLICY "Ver tarifas del taller" ON tarifas_cliente
     FOR SELECT USING (
         taller_id IN (SELECT taller_id FROM usuarios WHERE email = auth.jwt()->>'email')
     );
 
-CREATE POLICY IF NOT EXISTS "Gestionar tarifas del taller" ON tarifas_cliente
+DROP POLICY IF EXISTS "Gestionar tarifas del taller" ON tarifas_cliente;
+CREATE POLICY "Gestionar tarifas del taller" ON tarifas_cliente
     FOR ALL USING (
         taller_id IN (SELECT taller_id FROM usuarios WHERE email = auth.jwt()->>'email')
     );
@@ -225,7 +222,6 @@ CREATE TRIGGER update_tarifas_updated_at BEFORE UPDATE ON tarifas_cliente
 -- 5. CAMPOS ADICIONALES PARA LÍNEAS DE ORDEN
 -- ============================================
 
--- Añadir campos de coste y tiempos a lineas_orden
 ALTER TABLE lineas_orden
 ADD COLUMN IF NOT EXISTS precio_coste DECIMAL(12,2) DEFAULT 0,
 ADD COLUMN IF NOT EXISTS proveedor VARCHAR(255),
@@ -237,12 +233,11 @@ ADD COLUMN IF NOT EXISTS tiempo_real_minutos INTEGER;
 -- 6. CAMPOS ADICIONALES PARA CLIENTES
 -- ============================================
 
--- Añadir campos para registro completo de clientes
 ALTER TABLE clientes
 ADD COLUMN IF NOT EXISTS fecha_nacimiento DATE,
 ADD COLUMN IF NOT EXISTS segundo_telefono VARCHAR(20),
 ADD COLUMN IF NOT EXISTS email_secundario VARCHAR(255),
-ADD COLUMN IF NOT EXISTS preferencia_contacto VARCHAR(50) DEFAULT 'telefono', -- 'telefono', 'email', 'whatsapp', 'sms'
+ADD COLUMN IF NOT EXISTS preferencia_contacto VARCHAR(50) DEFAULT 'telefono',
 ADD COLUMN IF NOT EXISTS acepta_marketing BOOLEAN DEFAULT FALSE,
 ADD COLUMN IF NOT EXISTS como_nos_conocio VARCHAR(100),
 ADD COLUMN IF NOT EXISTS credito_disponible DECIMAL(12,2) DEFAULT 0,
@@ -256,30 +251,18 @@ ADD COLUMN IF NOT EXISTS ultima_visita DATE;
 CREATE TABLE IF NOT EXISTS documentos_procesados (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     taller_id UUID NOT NULL REFERENCES talleres(id) ON DELETE CASCADE,
-
-    -- Referencia opcional
     orden_id UUID REFERENCES ordenes_reparacion(id) ON DELETE SET NULL,
     cliente_id UUID REFERENCES clientes(id) ON DELETE SET NULL,
-
-    -- Información del documento
-    tipo_documento VARCHAR(50) NOT NULL, -- 'albaran', 'factura', 'presupuesto', 'ficha_tecnica', 'otro'
+    tipo_documento VARCHAR(50) NOT NULL,
     nombre_archivo VARCHAR(255),
     url_original TEXT,
     url_procesado TEXT,
-
-    -- Datos extraídos por OCR/IA
     texto_extraido TEXT,
-    datos_estructurados JSONB, -- JSON con datos parseados
+    datos_estructurados JSONB,
     confianza_ocr DECIMAL(5,2),
-
-    -- Servicio usado
-    servicio_ocr VARCHAR(50), -- 'tesseract', 'gemini', 'openrouter', etc.
-
-    -- Estado
-    estado VARCHAR(50) DEFAULT 'pendiente', -- 'pendiente', 'procesando', 'completado', 'error'
+    servicio_ocr VARCHAR(50),
+    estado VARCHAR(50) DEFAULT 'pendiente',
     error_mensaje TEXT,
-
-    -- Timestamps
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     procesado_at TIMESTAMP WITH TIME ZONE
 );
@@ -291,25 +274,29 @@ CREATE INDEX IF NOT EXISTS idx_docs_tipo ON documentos_procesados(tipo_documento
 -- RLS para documentos
 ALTER TABLE documentos_procesados ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY IF NOT EXISTS "Ver documentos del taller" ON documentos_procesados
+DROP POLICY IF EXISTS "Ver documentos del taller" ON documentos_procesados;
+CREATE POLICY "Ver documentos del taller" ON documentos_procesados
     FOR SELECT USING (
         taller_id IN (SELECT taller_id FROM usuarios WHERE email = auth.jwt()->>'email')
     );
 
-CREATE POLICY IF NOT EXISTS "Gestionar documentos del taller" ON documentos_procesados
+DROP POLICY IF EXISTS "Gestionar documentos del taller" ON documentos_procesados;
+CREATE POLICY "Gestionar documentos del taller" ON documentos_procesados
     FOR ALL USING (
         taller_id IN (SELECT taller_id FROM usuarios WHERE email = auth.jwt()->>'email')
     );
 
 -- ============================================
+-- 8. CONFIGURACIÓN GOOGLE CALENDAR (para taller_config)
+-- ============================================
+
+ALTER TABLE taller_config
+ADD COLUMN IF NOT EXISTS google_calendar_enabled BOOLEAN DEFAULT FALSE,
+ADD COLUMN IF NOT EXISTS google_calendar_id VARCHAR(255),
+ADD COLUMN IF NOT EXISTS google_refresh_token TEXT;
+
+-- ============================================
 -- VERIFICACIÓN
 -- ============================================
--- Ejecutar para verificar que todo se creó correctamente:
 
-SELECT
-    table_name,
-    (SELECT COUNT(*) FROM information_schema.columns WHERE table_name = t.table_name) as columns
-FROM information_schema.tables t
-WHERE table_schema = 'public'
-AND table_type = 'BASE TABLE'
-ORDER BY table_name;
+SELECT 'Migración completada correctamente' as status;

@@ -64,7 +64,7 @@ export function LineasTable({
         await onAgregar(formData)
         toast.success('✅ Línea agregada')
       }
-      setFormData({ tipo: 'mano_obra' as const, descripcion: '', cantidad: 1, precio_unitario: 0, horas: 0, precio_coste: 0, proveedor: '', referencia: '' })
+      setFormData({ tipo: 'mano_obra' as 'mano_obra' | 'pieza' | 'servicio' | 'consumible', descripcion: '', cantidad: 1, precio_unitario: 0, horas: 0, precio_coste: 0, proveedor: '', referencia: '' })
       setShowForm(false)
     } catch (error: any) {
       toast.error('Error: ' + error.message)
