@@ -11,6 +11,7 @@ import { createClient } from '@/lib/supabase/client'
 import { X, Save, Plus, Trash2, Loader2, FileText, ChevronDown, Check, Clock, Car, Printer, Share2, Link, Copy, UserPlus, Edit2 } from 'lucide-react'
 import { OrdenPDFViewer } from './orden-pdf-viewer'
 import { FotoUploader } from './foto-uploader'
+import { GoogleCalendarButton } from './google-calendar-button'
 import { InputScanner } from '@/components/ui/input-scanner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -2042,6 +2043,19 @@ export function DetalleOrdenSheet({
               <Printer className="w-4 h-4" />
               Ver / Imprimir Orden Completa
             </Button>
+          )}
+
+          {/* Añadir a Google Calendar */}
+          {!modoCrear && ordenSeleccionada && (
+            <div className="flex justify-center">
+              <GoogleCalendarButton
+                ordenId={ordenSeleccionada}
+                titulo={`Orden ${ordenNumero}`}
+                descripcion={formData.descripcion_problema || formData.trabajos_realizados}
+                clienteNombre={clientes.find(c => c.id === formData.cliente_id)?.nombre}
+                vehiculoInfo={vehiculoSeleccionado ? `${vehiculoSeleccionado.marca} ${vehiculoSeleccionado.modelo} - ${vehiculoSeleccionado.matricula}` : undefined}
+              />
+            </div>
           )}
 
           {!modoCrear && ESTADOS_FACTURABLES.includes(formData.estado as any) && (

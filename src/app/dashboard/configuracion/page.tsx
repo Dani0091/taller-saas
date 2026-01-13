@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Loader2, Settings, Upload, X, Image as ImageIcon, FileText, CreditCard, Palette, Users, Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import { GoogleCalendarConnection } from '@/components/dashboard/configuracion/google-calendar-connection'
 
 interface Tarifa {
   id?: string
@@ -1041,6 +1042,9 @@ export default function ConfiguracionPage() {
               </p>
             </div>
           </Card>
+
+          {/* Integración Google Calendar */}
+          <GoogleCalendarConnection />
 
       {/* Botones */}
       <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
