@@ -2,14 +2,21 @@
  * @fileoverview Componente para subir fotos de vehículos a órdenes de reparación
  * @description Permite subir fotos vía Telegram API con capacidad de OCR para
  * detectar automáticamente matrícula y kilómetros del cuadro de mandos
+ *
+ * OPTIMIZADO: Compresión adaptativa para móviles con poca RAM (Xiaomi, etc.)
+ * El OCR se procesa en el BACKEND para evitar crashes de memoria
  */
 'use client'
 
 import { useState, useRef } from 'react'
 import { Camera, Trash2, Loader2, Eye } from 'lucide-react'
 import { toast } from 'sonner'
-import { extraerDatosDeImagen } from '@/lib/ocr/tesseract-service'
 import { FOTO_LABELS, type TipoFoto } from '@/lib/constants'
+import {
+  compressImageForMobile,
+  getAdaptiveCompressionOptions,
+  isLowMemoryDevice
+} from '@/lib/utils/image-compressor'
 
 /**
  * Props del componente FotoUploader
@@ -42,11 +49,28 @@ export function FotoUploader(props: FotoUploaderProps) {
 
     try {
       setSubiendo(true)
-      setPreviewUrl(URL.createObjectURL(file))
+
+      // Comprimir imagen para móviles con poca RAM
+      let fileToUpload: Blob = file
+      const compressionOptions = getAdaptiveCompressionOptions()
+
+      if (isLowMemoryDevice()) {
+        toast.loading('Optimizando imagen...')
+      }
+
+      try {
+        fileToUpload = await compressImageForMobile(file, compressionOptions)
+        toast.dismiss()
+      } catch (compressError) {
+        console.warn('Compresión falló, usando original:', compressError)
+        toast.dismiss()
+      }
+
+      setPreviewUrl(URL.createObjectURL(fileToUpload))
 
       // Subir a Telegram
       const formData = new FormData()
-      formData.append('file', file)
+      formData.append('file', fileToUpload, file.name)
       formData.append('ordenId', ordenId)
       formData.append('tipo', tipo)
 
@@ -61,9 +85,9 @@ export function FotoUploader(props: FotoUploaderProps) {
       onFotoSubida(data.imageUrl)
       toast.success('✅ Foto subida')
 
-      // OCR solo para foto entrada
+      // OCR en BACKEND (no en cliente) para evitar crashes de memoria
       if (tipo === 'entrada' && onOCRData) {
-        procesarOCRFoto(data.imageUrl)
+        procesarOCRBackend(fileToUpload)
       }
     } catch (error: any) {
       toast.error(error.message)
@@ -74,27 +98,41 @@ export function FotoUploader(props: FotoUploaderProps) {
     }
   }
 
-  const procesarOCRFoto = async (imageUrl: string) => {
+  // OCR procesado en el BACKEND para evitar crashes en móviles
+  const procesarOCRBackend = async (file: Blob) => {
     try {
       setProcesandoOCR(true)
-      toast.loading('🔍 Procesando OCR (primera vez tarda más)...')
-      
-      const resultado = await extraerDatosDeImagen(imageUrl)
+      toast.loading('🔍 Analizando imagen...')
+
+      const formData = new FormData()
+      formData.append('file', file, 'foto.jpg')
+      formData.append('tipo', 'vehiculo')
+
+      const res = await fetch('/api/ocr/process', {
+        method: 'POST',
+        body: formData
+      })
+
+      const resultado = await res.json()
+      toast.dismiss()
 
       if (!resultado.success) {
         console.warn('OCR warning:', resultado.error)
-        toast.dismiss()
         return
       }
 
       if (resultado.matricula || resultado.km) {
-        onOCRData?.({ matricula: resultado.matricula || undefined, km: resultado.km || undefined })
-        const msg = [resultado.matricula, resultado.km ? `${resultado.km}km` : ''].filter(Boolean).join(' ')
-        toast.dismiss()
+        onOCRData?.({
+          matricula: resultado.matricula || undefined,
+          km: resultado.km || undefined
+        })
+        const msg = [
+          resultado.matricula,
+          resultado.km ? `${resultado.km}km` : ''
+        ].filter(Boolean).join(' ')
         toast.success(`✅ OCR: ${msg}`)
       } else {
-        toast.dismiss()
-        toast.info('ℹ️ No se encontró matrícula o km')
+        toast.info('ℹ️ No se detectó matrícula o km')
       }
     } catch (error: any) {
       toast.dismiss()
