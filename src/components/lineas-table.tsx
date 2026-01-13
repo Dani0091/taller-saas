@@ -28,8 +28,17 @@ export function LineasTable({
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [formData, setFormData] = useState({
-    tipo: 'mano_obra' as const,
+  const [formData, setFormData] = useState<{
+    tipo: 'mano_obra' | 'pieza' | 'servicio' | 'consumible'
+    descripcion: string
+    cantidad: number
+    precio_unitario: number
+    horas: number
+    precio_coste: number
+    proveedor: string
+    referencia: string
+  }>({
+    tipo: 'mano_obra',
     descripcion: '',
     cantidad: 1,
     precio_unitario: 0,
@@ -55,7 +64,7 @@ export function LineasTable({
         await onAgregar(formData)
         toast.success('✅ Línea agregada')
       }
-      setFormData({ tipo: 'mano_obra', descripcion: '', cantidad: 1, precio_unitario: 0, horas: 0, precio_coste: 0, proveedor: '', referencia: '' })
+      setFormData({ tipo: 'mano_obra' as const, descripcion: '', cantidad: 1, precio_unitario: 0, horas: 0, precio_coste: 0, proveedor: '', referencia: '' })
       setShowForm(false)
     } catch (error: any) {
       toast.error('Error: ' + error.message)
@@ -280,7 +289,7 @@ export function LineasTable({
                         variant="ghost"
                         onClick={() => {
                           setFormData({
-                            tipo: linea.tipo as typeof formData.tipo,
+                            tipo: linea.tipo,
                             descripcion: linea.descripcion,
                             cantidad: linea.cantidad,
                             precio_unitario: linea.precio_unitario,
