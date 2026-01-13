@@ -1,9 +1,6 @@
 import './globals.css'
-import { Inter } from 'next/font/google'
-import { Toaster } from 'sonner'
 import type { Metadata, Viewport } from 'next'
-
-const inter = Inter({ subsets: ['latin'] })
+import { Toaster } from 'sonner'
 
 export const metadata: Metadata = {
   title: 'TallerAgil - Gestión Inteligente',
@@ -42,9 +39,9 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icon-192x192.png" />
         <link rel="icon" type="image/png" href="/icon-192x192.png" />
       </head>
-      <body className={inter.className}>
+      <body className="font-sans antialiased">
         {children}
-        <Toaster />
+        <Toaster richColors position="top-right" />
         <PWAInstall />
       </body>
     </html>
