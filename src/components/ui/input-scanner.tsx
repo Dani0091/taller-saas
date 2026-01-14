@@ -1,14 +1,19 @@
 /**
  * @fileoverview Botón de escaneo inline para inputs
  * @description Botón pequeño que permite escanear matrícula, VIN o KM
- * usando la cámara y OCR existente (Tesseract)
+ * usando la cámara y OCR del backend (no consume memoria del móvil)
+ *
+ * OPTIMIZADO: Usa API backend para evitar crashes en móviles con poca RAM
  */
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
 import { Camera, Loader2, X } from 'lucide-react'
 import { toast } from 'sonner'
-import { extraerDatosDeImagen } from '@/lib/ocr/tesseract-service'
+import {
+  compressImageForMobile,
+  getAdaptiveCompressionOptions
+} from '@/lib/utils/image-compressor'
 
 interface InputScannerProps {
   tipo: 'matricula' | 'vin' | 'km'
@@ -81,68 +86,67 @@ export function InputScanner({ tipo, onResult, disabled }: InputScannerProps) {
         URL.revokeObjectURL(previewUrl)
       }
 
+      // Comprimir imagen para móviles
+      let fileToScan: Blob = file
+      try {
+        const opts = getAdaptiveCompressionOptions()
+        fileToScan = await compressImageForMobile(file, opts)
+      } catch {
+        // Si falla la compresión, usar original
+      }
+
       // Crear preview
-      const url = URL.createObjectURL(file)
+      const url = URL.createObjectURL(fileToScan)
       setPreviewUrl(url)
       setShowPreview(true)
 
       toast.loading('Escaneando...', { id: 'scan' })
 
-      // Convertir a base64 para OCR
-      const reader = new FileReader()
+      // Enviar al backend OCR (no consume memoria del móvil)
+      const formData = new FormData()
+      formData.append('file', fileToScan, 'scan.jpg')
+      formData.append('tipo', tipo)
 
-      reader.onerror = () => {
-        toast.dismiss('scan')
-        toast.error('Error al leer el archivo')
+      const res = await fetch('/api/ocr/process', {
+        method: 'POST',
+        body: formData
+      })
+
+      const resultado = await res.json()
+      toast.dismiss('scan')
+
+      if (!resultado.success) {
+        toast.error(resultado.error || 'Error al procesar imagen')
         setScanning(false)
+        return
       }
 
-      reader.onload = async (e) => {
-        const base64 = e.target?.result as string
+      let valorDetectado: string | null = null
 
-        try {
-          // Procesar con OCR
-          const resultado = await extraerDatosDeImagen(base64, {
-            preprocess: true,
-            adaptivePreprocess: true,
-            retryOnLowConfidence: true
-          })
-
-          toast.dismiss('scan')
-
-          let valorDetectado: string | null = null
-
-          switch (tipo) {
-            case 'matricula':
-              valorDetectado = resultado.matricula
-              break
-            case 'vin':
-              valorDetectado = extraerVIN(resultado.texto)
-              break
-            case 'km':
-              valorDetectado = resultado.km?.toString() || null
-              break
-          }
-
-          if (valorDetectado) {
-            onResult(valorDetectado)
-            toast.success(`${tipo === 'matricula' ? 'Matrícula' : tipo === 'vin' ? 'VIN' : 'KM'}: ${valorDetectado}`)
-            // Limpiar y cerrar
-            if (previewUrl) URL.revokeObjectURL(previewUrl)
-            setShowPreview(false)
-            setPreviewUrl(null)
-          } else {
-            toast.error(`No se detectó ${tipo === 'matricula' ? 'la matrícula' : tipo === 'vin' ? 'el VIN' : 'los KM'}`)
-          }
-        } catch (ocrError) {
-          toast.dismiss('scan')
-          toast.error('Error al procesar imagen')
-        }
-
-        setScanning(false)
+      switch (tipo) {
+        case 'matricula':
+          valorDetectado = resultado.matricula
+          break
+        case 'vin':
+          valorDetectado = extraerVIN(resultado.texto || '')
+          break
+        case 'km':
+          valorDetectado = resultado.km?.toString() || null
+          break
       }
 
-      reader.readAsDataURL(file)
+      if (valorDetectado) {
+        onResult(valorDetectado)
+        toast.success(`${tipo === 'matricula' ? 'Matrícula' : tipo === 'vin' ? 'VIN' : 'KM'}: ${valorDetectado}`)
+        // Limpiar y cerrar
+        if (previewUrl) URL.revokeObjectURL(previewUrl)
+        setShowPreview(false)
+        setPreviewUrl(null)
+      } else {
+        toast.error(`No se detectó ${tipo === 'matricula' ? 'la matrícula' : tipo === 'vin' ? 'el VIN' : 'los KM'}`)
+      }
+
+      setScanning(false)
     } catch (error) {
       toast.dismiss('scan')
       toast.error('Error al escanear')
