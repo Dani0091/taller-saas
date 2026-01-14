@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Wrench, Users, FileText, Settings, X, Gauge, Car } from 'lucide-react'
+import { Home, Wrench, Users, FileText, Settings, X, Gauge, Car, CalendarDays } from 'lucide-react'
 
 const links = [
   { href: '/dashboard', label: 'Dashboard', icon: Home },
   { href: '/dashboard/ordenes', label: 'Órdenes', icon: Wrench },
+  { href: '/dashboard/citas', label: 'Citas', icon: CalendarDays },
   { href: '/dashboard/clientes', label: 'Clientes', icon: Users },
   { href: '/dashboard/vehiculos', label: 'Vehículos', icon: Car },
   { href: '/dashboard/facturas', label: 'Facturas', icon: FileText },
