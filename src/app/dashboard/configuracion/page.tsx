@@ -819,10 +819,10 @@ export default function ConfiguracionPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Serie de factura */}
+            {/* Serie de factura por defecto */}
             <div>
               <Label htmlFor="serie_factura" className="block text-sm font-semibold mb-2">
-                Serie de Factura
+                Serie Principal (por defecto)
               </Label>
               <Input
                 id="serie_factura"
@@ -833,14 +833,14 @@ export default function ConfiguracionPage() {
                 className="w-full"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Prefijo para tus facturas (ej: FA, 2024/, F-)
+                Serie que se usará automáticamente en nuevas facturas
               </p>
             </div>
 
             {/* Número inicial */}
             <div>
               <Label htmlFor="numero_factura_inicial" className="block text-sm font-semibold mb-2">
-                Número Inicial de Factura
+                Número Inicial (serie principal)
               </Label>
               <Input
                 id="numero_factura_inicial"
@@ -884,11 +884,12 @@ export default function ConfiguracionPage() {
             <div className="md:col-span-2 mt-6 pt-6 border-t border-gray-200">
               <div className="flex items-center gap-2 mb-4">
                 <List className="w-5 h-5 text-purple-600" />
-                <h3 className="text-lg font-bold text-gray-900">Series de Facturación</h3>
+                <h3 className="text-lg font-bold text-gray-900">Series Adicionales (opcional)</h3>
               </div>
 
               <p className="text-sm text-gray-600 mb-4">
-                Gestiona las series de facturación disponibles. Cada serie tiene un prefijo único y un contador independiente.
+                Crea series adicionales si necesitas separar facturación (ej: Rectificativas, Abonos).
+                Al crear facturas podrás elegir qué serie usar. Si no creas ninguna, solo usarás la serie principal de arriba.
               </p>
 
               {/* Lista de series existentes */}
