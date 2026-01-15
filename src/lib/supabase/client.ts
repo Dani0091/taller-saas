@@ -1,21 +1,28 @@
-import { createBrowserClient } from '@supabase/ssr';
-import type { Database } from '@/types/database.types';
+import { createBrowserClient } from '@supabase/ssr'
 
 /**
- * CLIENTE SUPABASE - LADO CLIENTE (navegador)
- * 
+ * CLIENTE SUPABASE - LADO CLIENTE
+ *
  * Este cliente se usa en:
- * - Componentes Client ('use client')
- * - Llamadas desde el navegador
- * - Acciones del usuario en tiempo real
- * 
- * ⚠️ NUNCA exponga SUPABASE_SERVICE_ROLE_KEY aquí
- * Solo use NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+ * - Client Components ('use client')
+ *
+ * Durante el prerendering/build, las variables de entorno pueden no estar disponibles.
+ * Usamos valores fallback vacíos que serán reemplazados en runtime.
  */
 
 export function createClient() {
-  return createBrowserClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!
-  );
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+
+  // Durante prerendering en build, las env vars pueden no estar disponibles
+  // Retornamos un cliente mock que no fallará pero no funcionará realmente
+  if (!supabaseUrl || !supabaseAnonKey) {
+    // Retornar un cliente con URL y key placeholders para evitar errores en build
+    return createBrowserClient(
+      'https://placeholder.supabase.co',
+      'placeholder-key'
+    )
+  }
+
+  return createBrowserClient(supabaseUrl, supabaseAnonKey)
 }

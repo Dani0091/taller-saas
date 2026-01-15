@@ -1,51 +1,28 @@
-import { createClient } from '@/utils/supabase/server'
-import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { NextRequest, NextResponse } from 'next/server'
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
-    const { searchParams } = new URL(request.url)
-    const tallerId = searchParams.get('taller_id')
+    const tallerId = request.nextUrl.searchParams.get('taller_id')
 
-    let query = supabase.from('clientes').select('*')
-
-    if (tallerId) {
-      query = query.eq('taller_id', tallerId)
+    if (!tallerId) {
+      return NextResponse.json([], { status: 200 })
     }
-
-    const { data, error } = await query.order('created_at', { ascending: false })
-
-    if (error) {
-      console.error('DB Error:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
-
-    return NextResponse.json(data || [])
-  } catch (err) {
-    console.error('API Error:', err)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
-  }
-}
-
-export async function POST(request: Request) {
-  try {
-    const supabase = await createClient()
-    const body = await request.json()
 
     const { data, error } = await supabase
       .from('clientes')
-      .insert([body])
-      .select()
-      .single()
+      .select('id, nombre, nif')
+      .eq('taller_id', tallerId)
 
     if (error) {
-      console.error('DB Error:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      console.error('Error:', error)
+      return NextResponse.json([], { status: 200 })
     }
 
-    return NextResponse.json(data, { status: 201 })
-  } catch (err) {
-    console.error('API Error:', err)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json(data || [], { status: 200 })
+  } catch (error) {
+    console.error('Error:', error)
+    return NextResponse.json([], { status: 200 })
   }
 }

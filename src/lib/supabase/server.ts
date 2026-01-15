@@ -1,26 +1,30 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import type { Database } from '@/types/database.types';
 
 /**
  * CLIENTE SUPABASE - LADO SERVIDOR
- * 
+ *
  * Este cliente se usa en:
  * - Server Components
  * - Route Handlers (/api/*)
  * - Server Actions
  * - Middleware
- * 
- * ✅ Aquí SÍ puedes usar SUPABASE_SERVICE_ROLE_KEY
- * Solo en variables de entorno (nunca expongas en navegador)
  */
 
 export async function createClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error('❌ Missing Supabase environment variables')
+    throw new Error('Missing required environment variables: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY')
+  }
+
   const cookieStore = await cookies();
 
-  return createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+  return createServerClient(
+    supabaseUrl,
+    supabaseAnonKey,
     {
       cookies: {
         get(name: string) {

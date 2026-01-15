@@ -1,0 +1,33 @@
+# Dependencias
+node_modules
+npm-debug.log*
+
+# Build outputs
+.next
+out
+
+# Testing
+coverage
+.vitest
+
+# Archivos de desarrollo
+.git
+.gitignore
+*.md
+.env*
+!.env.example
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Otros
+*.log
+.vercel
+.turbo
