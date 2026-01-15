@@ -213,19 +213,21 @@ export default function NuevaFacturaPage() {
 
       if (data.error) {
         toast.error(data.error)
-      } else {
+      } else if (data.cliente) {
         toast.success('Cliente creado correctamente')
         const nuevoClienteData = {
-          id: data.id,
-          nombre: nuevoCliente.nombre,
-          nif: nuevoCliente.nif || '',
-          telefono: nuevoCliente.telefono,
-          email: nuevoCliente.email
+          id: data.cliente.id,
+          nombre: data.cliente.nombre,
+          nif: data.cliente.nif || '',
+          telefono: data.cliente.telefono,
+          email: data.cliente.email
         }
         setClientes([...clientes, nuevoClienteData])
-        setFormData({ ...formData, cliente_id: data.id })
+        setFormData({ ...formData, cliente_id: data.cliente.id })
         setMostrarCrearCliente(false)
         setNuevoCliente({ nombre: '', nif: '', telefono: '', email: '', direccion: '' })
+      } else {
+        toast.error('Error al crear cliente: respuesta inválida')
       }
     } catch (error) {
       console.error('Error creando cliente:', error)
