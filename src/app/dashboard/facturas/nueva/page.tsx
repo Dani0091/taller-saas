@@ -136,14 +136,9 @@ export default function NuevaFacturaPage() {
         setIvaPorDefecto(data.porcentaje_iva || 21)
         setNuevaLinea(prev => ({ ...prev, ivaPorcentaje: String(data.porcentaje_iva || 21) }))
 
-        // Configurar series disponibles
-        const series: SerieFactura[] = [
-          { id: '1', codigo: data.serie_factura || 'FA', nombre: 'Factura' },
-          { id: '2', codigo: 'PR', nombre: 'Presupuesto' },
-          { id: '3', codigo: 'AB', nombre: 'Abono' },
-          { id: '4', codigo: 'RE', nombre: 'Rectificativa' },
-        ]
-        setSeriesDisponibles(series)
+        // Cargar series dinámicamente desde la base de datos
+        fetchSeries()
+
         setFormData(prev => ({
           ...prev,
           serie: data.serie_factura || 'FA',
@@ -152,6 +147,36 @@ export default function NuevaFacturaPage() {
       }
     } catch (error) {
       console.error('Error cargando config:', error)
+    }
+  }
+
+  const fetchSeries = async () => {
+    if (!tallerId) return
+
+    try {
+      const response = await fetch(`/api/series/obtener?taller_id=${tallerId}`)
+      const data = await response.json()
+
+      if (data.series && data.series.length > 0) {
+        const seriesFormateadas = data.series.map((s: any) => ({
+          id: s.id,
+          codigo: s.prefijo,
+          nombre: s.nombre
+        }))
+        setSeriesDisponibles(seriesFormateadas)
+
+        // Si no hay serie seleccionada, usar la primera disponible
+        if (!formData.serie && seriesFormateadas.length > 0) {
+          setFormData(prev => ({ ...prev, serie: seriesFormateadas[0].codigo }))
+        }
+      } else {
+        // Si no hay series, mostrar advertencia
+        toast.warning('No hay series de facturación configuradas. Ve a Configuración para crear una.')
+        setSeriesDisponibles([])
+      }
+    } catch (error) {
+      console.error('Error cargando series:', error)
+      toast.error('Error al cargar series de facturación')
     }
   }
 
