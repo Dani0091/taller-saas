@@ -78,34 +78,43 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Generar número de factura con la serie seleccionada
-    const { data: todasFacturas, error: facturasError } = await supabase
-      .from('facturas')
-      .select('numero_factura')
+    // OPERACIÓN ATÓMICA: Obtener y actualizar el número de serie
+    // 1. Buscar la serie en series_facturacion
+    const { data: serieData, error: serieError } = await supabase
+      .from('series_facturacion')
+      .select('id, ultimo_numero, prefijo')
       .eq('taller_id', taller_id)
-      .like('numero_factura', `${serieToUse}%`)
+      .eq('prefijo', serieToUse)
+      .single()
 
-    if (facturasError) {
+    if (serieError || !serieData) {
       return NextResponse.json(
-        { error: 'Error al buscar facturas existentes', details: facturasError.message },
+        {
+          error: `Serie "${serieToUse}" no encontrada`,
+          details: 'Debes crear la serie en Configuración antes de usarla',
+          code: 'SERIE_NOT_FOUND'
+        },
+        { status: 404 }
+      )
+    }
+
+    // 2. Incrementar el último número
+    const siguienteNumero = serieData.ultimo_numero + 1
+
+    // 3. Actualizar la serie con el nuevo número (operación atómica)
+    const { error: updateError } = await supabase
+      .from('series_facturacion')
+      .update({ ultimo_numero: siguienteNumero })
+      .eq('id', serieData.id)
+
+    if (updateError) {
+      return NextResponse.json(
+        { error: 'Error al actualizar serie', details: updateError.message },
         { status: 500 }
       )
     }
 
-    // Crear patrón regex para la serie específica
-    const serieRegex = new RegExp(`^${serieToUse}(\\d+)$`)
-    let maxNumero = 0
-    if (todasFacturas && todasFacturas.length > 0) {
-      todasFacturas.forEach((f: { numero_factura: string }) => {
-        const match = f.numero_factura.match(serieRegex)
-        if (match) {
-          const num = parseInt(match[1], 10)
-          if (num > maxNumero) maxNumero = num
-        }
-      })
-    }
-
-    const siguienteNumero = maxNumero + 1
+    // 4. Generar el número de factura
     const numeroFactura = `${serieToUse}${siguienteNumero.toString().padStart(3, '0')}`
 
     // Crear factura
