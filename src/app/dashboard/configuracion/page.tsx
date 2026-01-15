@@ -879,153 +879,153 @@ export default function ConfiguracionPage() {
                 estás empezando o si necesitas continuar una numeración existente.
               </p>
             </div>
-          </div>
-        </Card>
 
-        {/* Gestión de Series de Facturación */}
-        <Card className="p-6 md:p-8 shadow-sm bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200">
-          <div className="flex items-center gap-2 mb-6 pb-4 border-b border-purple-200">
-            <List className="w-6 h-6 text-purple-600" />
-            <h2 className="text-xl font-bold">Series de Facturación</h2>
-          </div>
+            {/* Gestión de Series de Facturación - DENTRO de Configuración de Facturación */}
+            <div className="md:col-span-2 mt-6 pt-6 border-t border-gray-200">
+              <div className="flex items-center gap-2 mb-4">
+                <List className="w-5 h-5 text-purple-600" />
+                <h3 className="text-lg font-bold text-gray-900">Series de Facturación</h3>
+              </div>
 
-          <p className="text-sm text-gray-600 mb-6">
-            Gestiona las series de facturación disponibles. Cada serie tiene un prefijo único y un contador independiente.
-          </p>
+              <p className="text-sm text-gray-600 mb-4">
+                Gestiona las series de facturación disponibles. Cada serie tiene un prefijo único y un contador independiente.
+              </p>
 
-          {/* Lista de series existentes */}
-          {cargandoSeries ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
-            </div>
-          ) : series.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              {series.map((serie) => (
-                <div
-                  key={serie.id}
-                  className="p-4 bg-white rounded-lg border-2 border-purple-200 hover:border-purple-400 transition-all"
-                >
-                  <div className="flex items-start justify-between mb-2">
+              {/* Lista de series existentes */}
+              {cargandoSeries ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
+                </div>
+              ) : series.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  {series.map((serie) => (
+                    <div
+                      key={serie.id}
+                      className="p-4 bg-purple-50 rounded-lg border-2 border-purple-200 hover:border-purple-400 transition-all"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <h4 className="font-bold text-gray-900">{serie.nombre}</h4>
+                          <p className="text-sm text-gray-600">
+                            Prefijo: <span className="font-mono font-bold text-purple-600">{serie.prefijo}</span>
+                          </p>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEditarSerie(serie)}
+                            className="gap-1"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEliminarSerie(serie.id)}
+                            className="gap-1 text-red-600 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-purple-100">
+                        <span className="text-xs text-gray-500">Último número:</span>
+                        <span className="font-mono font-bold text-purple-700">{serie.ultimo_numero}</span>
+                        <span className="text-xs text-gray-400">
+                          (Próximo: {serie.prefijo}{(serie.ultimo_numero + 1).toString().padStart(3, '0')})
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 bg-purple-50 rounded-lg border-2 border-dashed border-purple-200 mb-4">
+                  <p className="text-gray-500">No hay series configuradas</p>
+                  <p className="text-sm text-gray-400 mt-1">Crea tu primera serie para comenzar</p>
+                </div>
+              )}
+
+              {/* Formulario para crear/editar serie */}
+              {mostrarFormSerie ? (
+                <div className="p-4 bg-purple-50 rounded-lg border-2 border-purple-400 shadow-lg">
+                  <h4 className="font-bold text-gray-900 mb-4">
+                    {serieEditando ? 'Editar Serie' : 'Nueva Serie'}
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
-                      <h3 className="font-bold text-gray-900">{serie.nombre}</h3>
-                      <p className="text-sm text-gray-600">
-                        Prefijo: <span className="font-mono font-bold text-purple-600">{serie.prefijo}</span>
-                      </p>
+                      <Label className="text-sm font-semibold mb-2">Nombre *</Label>
+                      <Input
+                        placeholder="Ej: Factura, Rectificativa"
+                        value={formSerie.nombre}
+                        onChange={(e) => setFormSerie({ ...formSerie, nombre: e.target.value })}
+                      />
                     </div>
-                    <div className="flex gap-1">
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleEditarSerie(serie)}
-                        className="gap-1"
-                      >
-                        <Edit2 className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleEliminarSerie(serie.id)}
-                        className="gap-1 text-red-600 hover:bg-red-50"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
+                    <div>
+                      <Label className="text-sm font-semibold mb-2">Prefijo *</Label>
+                      <Input
+                        placeholder="Ej: FA, RE, AB"
+                        value={formSerie.prefijo}
+                        onChange={(e) => setFormSerie({ ...formSerie, prefijo: e.target.value.toUpperCase() })}
+                        className="font-mono"
+                        maxLength={5}
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-sm font-semibold mb-2">Número Inicial</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={formSerie.ultimo_numero}
+                        onChange={(e) => setFormSerie({ ...formSerie, ultimo_numero: parseInt(e.target.value) || 0 })}
+                      />
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-purple-100">
-                    <span className="text-xs text-gray-500">Último número:</span>
-                    <span className="font-mono font-bold text-purple-700">{serie.ultimo_numero}</span>
-                    <span className="text-xs text-gray-400">
-                      (Próximo: {serie.prefijo}{(serie.ultimo_numero + 1).toString().padStart(3, '0')})
-                    </span>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleCancelarFormSerie}
+                      className="flex-1"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={serieEditando ? handleActualizarSerie : handleCrearSerie}
+                      className="flex-1 bg-purple-600 hover:bg-purple-700"
+                    >
+                      {serieEditando ? 'Actualizar' : 'Crear Serie'}
+                    </Button>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 bg-white rounded-lg border-2 border-dashed border-purple-200 mb-6">
-              <p className="text-gray-500">No hay series configuradas</p>
-              <p className="text-sm text-gray-400 mt-1">Crea tu primera serie para comenzar</p>
-            </div>
-          )}
-
-          {/* Formulario para crear/editar serie */}
-          {mostrarFormSerie ? (
-            <div className="p-4 bg-white rounded-lg border-2 border-purple-400 shadow-lg">
-              <h3 className="font-bold text-gray-900 mb-4">
-                {serieEditando ? 'Editar Serie' : 'Nueva Serie'}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div>
-                  <Label className="text-sm font-semibold mb-2">Nombre *</Label>
-                  <Input
-                    placeholder="Ej: Factura, Rectificativa"
-                    value={formSerie.nombre}
-                    onChange={(e) => setFormSerie({ ...formSerie, nombre: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-semibold mb-2">Prefijo *</Label>
-                  <Input
-                    placeholder="Ej: FA, RE, AB"
-                    value={formSerie.prefijo}
-                    onChange={(e) => setFormSerie({ ...formSerie, prefijo: e.target.value.toUpperCase() })}
-                    className="font-mono"
-                    maxLength={5}
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-semibold mb-2">Número Inicial</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={formSerie.ultimo_numero}
-                    onChange={(e) => setFormSerie({ ...formSerie, ultimo_numero: parseInt(e.target.value) || 0 })}
-                  />
-                </div>
-              </div>
-              <div className="flex gap-2">
+              ) : (
                 <Button
                   type="button"
-                  variant="outline"
-                  onClick={handleCancelarFormSerie}
-                  className="flex-1"
+                  onClick={() => setMostrarFormSerie(true)}
+                  className="w-full gap-2 bg-purple-600 hover:bg-purple-700"
                 >
-                  Cancelar
+                  <Plus className="w-4 h-4" />
+                  Nueva Serie de Facturación
                 </Button>
-                <Button
-                  type="button"
-                  onClick={serieEditando ? handleActualizarSerie : handleCrearSerie}
-                  className="flex-1 bg-purple-600 hover:bg-purple-700"
-                >
-                  {serieEditando ? 'Actualizar' : 'Crear Serie'}
-                </Button>
+              )}
+
+              {/* Información importante */}
+              <div className="mt-4 p-4 bg-amber-50 rounded-lg border border-amber-300">
+                <p className="text-sm text-amber-800 font-medium mb-1">
+                  ⚠️ Importante
+                </p>
+                <ul className="text-xs text-amber-700 space-y-1 ml-4 list-disc">
+                  <li>Cada serie debe tener un prefijo único</li>
+                  <li>El número inicial solo se usa al crear la serie</li>
+                  <li>No puedes eliminar series que tengan facturas asociadas</li>
+                  <li>El contador se incrementa automáticamente al crear facturas</li>
+                </ul>
               </div>
             </div>
-          ) : (
-            <Button
-              type="button"
-              onClick={() => setMostrarFormSerie(true)}
-              className="w-full gap-2 bg-purple-600 hover:bg-purple-700"
-            >
-              <Plus className="w-4 h-4" />
-              Nueva Serie de Facturación
-            </Button>
-          )}
-
-          {/* Información importante */}
-          <div className="mt-6 p-4 bg-amber-50 rounded-lg border border-amber-300">
-            <p className="text-sm text-amber-800 font-medium mb-1">
-              ⚠️ Importante
-            </p>
-            <ul className="text-xs text-amber-700 space-y-1 ml-4 list-disc">
-              <li>Cada serie debe tener un prefijo único</li>
-              <li>El número inicial solo se usa al crear la serie</li>
-              <li>No puedes eliminar series que tengan facturas asociadas</li>
-              <li>El contador se incrementa automáticamente al crear facturas</li>
-            </ul>
           </div>
         </Card>
 
