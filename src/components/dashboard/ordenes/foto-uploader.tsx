@@ -134,19 +134,33 @@ export function FotoUploader(props: FotoUploaderProps) {
         <div className="space-y-2">
           <div className="relative w-full aspect-video bg-gray-100 rounded-lg overflow-hidden border-2 border-gray-200">
             <img src={mostrarPreview} alt={tipo} className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-40 transition-all flex items-center justify-center gap-2 opacity-0 hover:opacity-100">
-              <a href={mostrarPreview} target="_blank" rel="noopener noreferrer" className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                <Eye className="w-4 h-4" />
+            {/* Botones siempre visibles en móvil, hover en desktop */}
+            <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent flex items-center justify-center gap-2">
+              <a
+                href={mostrarPreview}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:scale-95 transition-transform"
+              >
+                <Eye className="w-5 h-5" />
               </a>
-              <button onClick={() => fileInputRef.current?.click()} className="p-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700" disabled={disabled || subiendo}>
-                <Camera className="w-4 h-4" />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="p-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:scale-95 transition-transform"
+                disabled={disabled || subiendo}
+              >
+                <Camera className="w-5 h-5" />
               </button>
-              <button onClick={handleEliminar} className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700" disabled={disabled}>
-                <Trash2 className="w-4 h-4" />
+              <button
+                onClick={handleEliminar}
+                className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 active:scale-95 transition-transform"
+                disabled={disabled}
+              >
+                <Trash2 className="w-5 h-5" />
               </button>
             </div>
             {subiendo && <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center"><Loader2 className="w-6 h-6 text-white animate-spin" /></div>}
-            {procesandoOCR && <div className="absolute bottom-2 left-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> OCR...</div>}
+            {procesandoOCR && <div className="absolute top-2 left-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> OCR...</div>}
           </div>
           <p className="text-xs text-green-600">✅ Guardada</p>
         </div>
