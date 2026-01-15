@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
     const {
       taller_id,
       cliente_id,
+      serie,
       fecha_emision,
       fecha_vencimiento,
       base_imponible,
@@ -30,6 +31,9 @@ export async function POST(request: NextRequest) {
       metodo_pago,
       estado,
       lineas,
+      persona_contacto,
+      telefono_contacto,
+      condiciones_pago,
     } = body
 
     // Validaciones
@@ -58,12 +62,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Cliente no encontrado' }, { status: 404 })
     }
 
-    // Generar número de factura
+    // Determinar serie a usar (del body o de la configuración del taller)
+    let serieToUse = serie || 'FA'
+
+    if (!serie) {
+      // Intentar obtener serie por defecto de la configuración del taller
+      const { data: config } = await supabase
+        .from('taller_config')
+        .select('serie_factura')
+        .eq('taller_id', taller_id)
+        .single()
+
+      if (config?.serie_factura) {
+        serieToUse = config.serie_factura
+      }
+    }
+
+    // Generar número de factura con la serie seleccionada
     const { data: todasFacturas, error: facturasError } = await supabase
       .from('facturas')
       .select('numero_factura')
       .eq('taller_id', taller_id)
-      .like('numero_factura', 'FA%')
+      .like('numero_factura', `${serieToUse}%`)
 
     if (facturasError) {
       return NextResponse.json(
@@ -72,10 +92,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Crear patrón regex para la serie específica
+    const serieRegex = new RegExp(`^${serieToUse}(\\d+)$`)
     let maxNumero = 0
     if (todasFacturas && todasFacturas.length > 0) {
       todasFacturas.forEach((f: { numero_factura: string }) => {
-        const match = f.numero_factura.match(/FA(\d+)/)
+        const match = f.numero_factura.match(serieRegex)
         if (match) {
           const num = parseInt(match[1], 10)
           if (num > maxNumero) maxNumero = num
@@ -84,14 +106,14 @@ export async function POST(request: NextRequest) {
     }
 
     const siguienteNumero = maxNumero + 1
-    const numeroFactura = `FA${siguienteNumero.toString().padStart(3, '0')}`
+    const numeroFactura = `${serieToUse}${siguienteNumero.toString().padStart(3, '0')}`
 
     // Crear factura
-    const facturaData = {
+    const facturaData: Record<string, any> = {
       taller_id,
       cliente_id,
       numero_factura: numeroFactura,
-      numero_serie: 'FA',
+      numero_serie: serieToUse,
       fecha_emision: fecha_emision || new Date().toISOString().split('T')[0],
       fecha_vencimiento,
       base_imponible: base_imponible || 0,
@@ -100,6 +122,17 @@ export async function POST(request: NextRequest) {
       metodo_pago,
       estado: estado || 'borrador',
       iva_porcentaje: 21,
+    }
+
+    // Añadir campos opcionales de contacto si están presentes
+    if (persona_contacto) {
+      facturaData.persona_contacto = persona_contacto
+    }
+    if (telefono_contacto) {
+      facturaData.telefono_contacto = telefono_contacto
+    }
+    if (condiciones_pago) {
+      facturaData.condiciones_pago = condiciones_pago
     }
 
     const { data: factura, error: facturaError } = await supabase

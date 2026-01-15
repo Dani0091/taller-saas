@@ -225,6 +225,9 @@ interface PDFFacturaProps {
     ciudad?: string
     provincia?: string
   }
+  // Persona de contacto (puede diferir del cliente)
+  personaContacto?: string
+  telefonoContacto?: string
   vehiculo?: {
     marca?: string
     modelo?: string
@@ -272,6 +275,8 @@ export const PDFFactura = ({
   logoUrl,
   emisor,
   receptor,
+  personaContacto,
+  telefonoContacto,
   vehiculo,
   lineas,
   baseImponible,
@@ -360,6 +365,16 @@ export const PDFFactura = ({
                 {receptor.codigoPostal} {receptor.ciudad}
                 {receptor.provincia && `, ${receptor.provincia}`}
               </Text>
+            )}
+            {/* Persona de contacto si difiere del cliente */}
+            {personaContacto && (
+              <>
+                <Text style={{ ...styles.dataLabel, marginTop: 6 }}>Persona de contacto:</Text>
+                <Text style={styles.dataValueSmall}>{personaContacto}</Text>
+                {telefonoContacto && (
+                  <Text style={styles.dataValueSmall}>Tel: {telefonoContacto}</Text>
+                )}
+              </>
             )}
           </View>
 

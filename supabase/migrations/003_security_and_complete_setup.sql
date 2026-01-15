@@ -414,7 +414,20 @@ CREATE POLICY "Usuarios gestionan config api de su taller"
   USING (taller_id IN (SELECT taller_id FROM usuarios WHERE auth_id = auth.uid()));
 
 -- ============================================
--- PARTE 14: CAMPOS OCR EN VEHÍCULOS
+-- PARTE 14: CAMPOS CONTACTO EN FACTURAS
+-- ============================================
+
+ALTER TABLE facturas
+ADD COLUMN IF NOT EXISTS persona_contacto TEXT,
+ADD COLUMN IF NOT EXISTS telefono_contacto TEXT,
+ADD COLUMN IF NOT EXISTS condiciones_pago TEXT;
+
+COMMENT ON COLUMN facturas.persona_contacto IS 'Persona de contacto (puede diferir del cliente)';
+COMMENT ON COLUMN facturas.telefono_contacto IS 'Teléfono de la persona de contacto';
+COMMENT ON COLUMN facturas.condiciones_pago IS 'Condiciones especiales de pago';
+
+-- ============================================
+-- PARTE 16: CAMPOS OCR EN VEHÍCULOS
 -- ============================================
 
 ALTER TABLE vehiculos
@@ -429,7 +442,7 @@ COMMENT ON COLUMN vehiculos.ficha_tecnica_url IS 'URL de la foto de la ficha té
 COMMENT ON COLUMN vehiculos.permiso_circulacion_url IS 'URL del permiso de circulación';
 
 -- ============================================
--- PARTE 15: MEJORAS EN FOTOS DE ÓRDENES
+-- PARTE 17: MEJORAS EN FOTOS DE ÓRDENES
 -- ============================================
 
 -- Crear tabla para fotos con metadatos

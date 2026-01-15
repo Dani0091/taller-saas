@@ -115,6 +115,9 @@ export async function GET(request: NextRequest) {
         email: cliente?.email,
         telefono: cliente?.telefono,
       },
+      // Persona de contacto (puede diferir del cliente)
+      personaContacto: factura.persona_contacto || null,
+      telefonoContacto: factura.telefono_contacto || null,
       vehiculo,
       lineas: (lineas || []).map((l: any) => ({
         descripcion: l.concepto || l.descripcion || 'Servicio',
