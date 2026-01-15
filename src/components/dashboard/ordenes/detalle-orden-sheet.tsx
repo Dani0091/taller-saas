@@ -1280,12 +1280,18 @@ export function DetalleOrdenSheet({
                       {/* Matrícula */}
                       <div>
                         <Label className="text-xs text-gray-600 mb-1 block">Matrícula *</Label>
-                        <Input
-                          value={vehiculoEditado.matricula}
-                          onChange={(e) => setVehiculoEditado(prev => ({ ...prev, matricula: e.target.value.toUpperCase() }))}
-                          placeholder="1234ABC"
-                          className="font-mono uppercase"
-                        />
+                        <div className="flex gap-2">
+                          <Input
+                            value={vehiculoEditado.matricula}
+                            onChange={(e) => setVehiculoEditado(prev => ({ ...prev, matricula: e.target.value.toUpperCase() }))}
+                            placeholder="1234ABC"
+                            className="font-mono uppercase flex-1"
+                          />
+                          <InputScanner
+                            tipo="matricula"
+                            onResult={(val) => setVehiculoEditado(prev => ({ ...prev, matricula: val }))}
+                          />
+                        </div>
                       </div>
 
                       {/* Marca y Modelo */}
@@ -1335,12 +1341,19 @@ export function DetalleOrdenSheet({
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <Label className="text-xs text-gray-600 mb-1 block">Kilómetros</Label>
-                          <Input
-                            type="number"
-                            value={vehiculoEditado.kilometros}
-                            onChange={(e) => setVehiculoEditado(prev => ({ ...prev, kilometros: e.target.value }))}
-                            placeholder="125000"
-                          />
+                          <div className="flex gap-1">
+                            <Input
+                              type="number"
+                              value={vehiculoEditado.kilometros}
+                              onChange={(e) => setVehiculoEditado(prev => ({ ...prev, kilometros: e.target.value }))}
+                              placeholder="125000"
+                              className="flex-1"
+                            />
+                            <InputScanner
+                              tipo="km"
+                              onResult={(val) => setVehiculoEditado(prev => ({ ...prev, kilometros: val }))}
+                            />
+                          </div>
                         </div>
                         <div>
                           <Label className="text-xs text-gray-600 mb-1 block">Combustible</Label>
@@ -1363,12 +1376,18 @@ export function DetalleOrdenSheet({
                       {/* VIN */}
                       <div>
                         <Label className="text-xs text-gray-600 mb-1 block">Bastidor (VIN)</Label>
-                        <Input
-                          value={vehiculoEditado.vin}
-                          onChange={(e) => setVehiculoEditado(prev => ({ ...prev, vin: e.target.value.toUpperCase() }))}
-                          placeholder="WVWZZZ3CZWE123456"
-                          className="font-mono uppercase text-xs"
-                        />
+                        <div className="flex gap-2">
+                          <Input
+                            value={vehiculoEditado.vin}
+                            onChange={(e) => setVehiculoEditado(prev => ({ ...prev, vin: e.target.value.toUpperCase() }))}
+                            placeholder="WVWZZZ3CZWE123456"
+                            className="font-mono uppercase text-xs flex-1"
+                          />
+                          <InputScanner
+                            tipo="vin"
+                            onResult={(val) => setVehiculoEditado(prev => ({ ...prev, vin: val }))}
+                          />
+                        </div>
                       </div>
 
                       {/* Botones */}

@@ -818,134 +818,118 @@ export default function ConfiguracionPage() {
             <h2 className="text-xl font-bold">Configuración de Facturación</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Serie de factura por defecto */}
-            <div>
-              <Label htmlFor="serie_factura" className="block text-sm font-semibold mb-2">
-                Serie Principal (por defecto)
-              </Label>
-              <Input
-                id="serie_factura"
-                name="serie_factura"
-                placeholder="FA"
-                value={formData.serie_factura || ''}
-                onChange={handleChange}
-                className="w-full"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Serie que se usará automáticamente en nuevas facturas
-              </p>
-            </div>
-
-            {/* Número inicial */}
-            <div>
-              <Label htmlFor="numero_factura_inicial" className="block text-sm font-semibold mb-2">
-                Número Inicial (serie principal)
-              </Label>
-              <Input
-                id="numero_factura_inicial"
-                name="numero_factura_inicial"
-                type="number"
-                min="1"
-                placeholder="1"
-                value={formData.numero_factura_inicial || ''}
-                onChange={handleChange}
-                className="w-full"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Para continuar tu numeración actual
-              </p>
-            </div>
-
-            {/* Preview de numeración */}
-            <div className="md:col-span-2 p-4 bg-sky-50 rounded-lg border border-sky-200">
-              <p className="text-sm text-sky-800">
-                <strong>Ejemplo:</strong> Tu próxima factura será{' '}
-                <span className="font-mono bg-white px-2 py-1 rounded border">
+          {/* Sistema Unificado de Series */}
+          <div className="space-y-6">
+            {/* Información de la serie activa */}
+            <div className="p-4 bg-gradient-to-r from-sky-50 to-blue-50 rounded-lg border border-sky-200">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-sky-800 flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Serie Activa
+                </h3>
+                <span className="px-2 py-1 bg-sky-600 text-white text-xs rounded-full">Por defecto</span>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs text-gray-600">Prefijo</Label>
+                  <Input
+                    name="serie_factura"
+                    placeholder="FA"
+                    value={formData.serie_factura || ''}
+                    onChange={handleChange}
+                    className="font-mono text-lg font-bold"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-600">Siguiente número</Label>
+                  <Input
+                    name="numero_factura_inicial"
+                    type="number"
+                    min="1"
+                    placeholder="1"
+                    value={formData.numero_factura_inicial || ''}
+                    onChange={handleChange}
+                    className="font-mono"
+                  />
+                </div>
+              </div>
+              <p className="text-sm text-sky-700 mt-3">
+                Próxima factura: <span className="font-mono font-bold bg-white px-2 py-0.5 rounded">
                   {formData.serie_factura || 'FA'}{String(formData.numero_factura_inicial || 1).padStart(3, '0')}
                 </span>
               </p>
             </div>
 
             {/* Aviso importante */}
-            <div className="md:col-span-2 p-4 bg-amber-50 rounded-lg border border-amber-300">
-              <p className="text-sm text-amber-800 font-medium mb-1">
-                ⚠️ Importante sobre la numeración
-              </p>
-              <p className="text-xs text-amber-700">
-                Si ya tienes facturas emitidas, cambiar la serie o el número inicial podría causar
-                conflictos en la numeración secuencial. La ley exige que las facturas sigan una
-                numeración correlativa sin saltos ni duplicados. Solo modifica estos valores si
-                estás empezando o si necesitas continuar una numeración existente.
+            <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-sm">
+              <p className="text-amber-800">
+                <strong>⚠️ Numeración:</strong> Las facturas deben seguir numeración correlativa sin saltos.
+                Solo modifica estos valores al empezar o para continuar numeración existente.
               </p>
             </div>
 
-            {/* Gestión de Series de Facturación - DENTRO de Configuración de Facturación */}
-            <div className="md:col-span-2 mt-6 pt-6 border-t border-gray-200">
-              <div className="flex items-center gap-2 mb-4">
-                <List className="w-5 h-5 text-purple-600" />
-                <h3 className="text-lg font-bold text-gray-900">Series Adicionales (opcional)</h3>
+            {/* Series Adicionales */}
+            <div className="pt-4 border-t">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <List className="w-4 h-4 text-purple-600" />
+                    Series Adicionales
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Para rectificativas, abonos u otras series especiales
+                  </p>
+                </div>
               </div>
-
-              <p className="text-sm text-gray-600 mb-4">
-                Crea series adicionales si necesitas separar facturación (ej: Rectificativas, Abonos).
-                Al crear facturas podrás elegir qué serie usar. Si no creas ninguna, solo usarás la serie principal de arriba.
-              </p>
 
               {/* Lista de series existentes */}
               {cargandoSeries ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin text-purple-600" />
+                <div className="flex items-center justify-center py-6">
+                  <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
                 </div>
               ) : series.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="space-y-2 mb-4">
                   {series.map((serie) => (
                     <div
                       key={serie.id}
-                      className="p-4 bg-purple-50 rounded-lg border-2 border-purple-200 hover:border-purple-400 transition-all"
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border hover:border-purple-300 transition-all"
                     >
-                      <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-4">
+                        <span className="font-mono font-bold text-purple-600 bg-purple-100 px-2 py-1 rounded">
+                          {serie.prefijo}
+                        </span>
                         <div>
-                          <h4 className="font-bold text-gray-900">{serie.nombre}</h4>
-                          <p className="text-sm text-gray-600">
-                            Prefijo: <span className="font-mono font-bold text-purple-600">{serie.prefijo}</span>
+                          <p className="font-medium text-gray-900">{serie.nombre}</p>
+                          <p className="text-xs text-gray-500">
+                            Próximo: {serie.prefijo}{(serie.ultimo_numero + 1).toString().padStart(3, '0')}
                           </p>
                         </div>
-                        <div className="flex gap-1">
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEditarSerie(serie)}
-                            className="gap-1"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEliminarSerie(serie.id)}
-                            className="gap-1 text-red-600 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        </div>
                       </div>
-                      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-purple-100">
-                        <span className="text-xs text-gray-500">Último número:</span>
-                        <span className="font-mono font-bold text-purple-700">{serie.ultimo_numero}</span>
-                        <span className="text-xs text-gray-400">
-                          (Próximo: {serie.prefijo}{(serie.ultimo_numero + 1).toString().padStart(3, '0')})
-                        </span>
+                      <div className="flex gap-1">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleEditarSerie(serie)}
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleEliminarSerie(serie.id)}
+                          className="text-red-600 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 bg-purple-50 rounded-lg border-2 border-dashed border-purple-200 mb-4">
-                  <p className="text-gray-500">No hay series configuradas</p>
-                  <p className="text-sm text-gray-400 mt-1">Crea tu primera serie para comenzar</p>
+                <div className="text-center py-4 bg-gray-50 rounded-lg border-2 border-dashed mb-4">
+                  <p className="text-sm text-gray-500">Sin series adicionales</p>
                 </div>
               )}
 
