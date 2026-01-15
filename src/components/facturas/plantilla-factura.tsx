@@ -71,6 +71,11 @@ interface PlantillaFacturaProps {
   verifactuQR?: string
   verifactuURL?: string
   logo?: string
+  // Campos adicionales para renting/flotas
+  numeroAutorizacion?: string
+  referenciaExterna?: string
+  personaContacto?: string
+  telefonoContacto?: string
 }
 
 export function PlantillaFactura({
@@ -95,6 +100,11 @@ export function PlantillaFactura({
   verifactuQR,
   verifactuURL,
   logo,
+  // Campos adicionales
+  numeroAutorizacion,
+  referenciaExterna,
+  personaContacto,
+  telefonoContacto,
 }: PlantillaFacturaProps) {
   return (
     <div className="bg-white p-12 font-sans text-gray-900" style={{ width: '210mm', height: '297mm' }}>
@@ -199,6 +209,33 @@ export function PlantillaFactura({
           </div>
         )}
       </div>
+
+      {/* DATOS ADICIONALES RENTING/FLOTAS */}
+      {(numeroAutorizacion || referenciaExterna || personaContacto) && (
+        <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-amber-50 rounded-lg border border-amber-200">
+          {numeroAutorizacion && (
+            <div>
+              <h3 className="text-xs uppercase font-bold text-amber-700 mb-1">Nº Autorización:</h3>
+              <p className="text-sm font-mono font-bold text-gray-900">{numeroAutorizacion}</p>
+            </div>
+          )}
+          {referenciaExterna && (
+            <div>
+              <h3 className="text-xs uppercase font-bold text-amber-700 mb-1">Referencia:</h3>
+              <p className="text-sm font-mono text-gray-900">{referenciaExterna}</p>
+            </div>
+          )}
+          {personaContacto && (
+            <div>
+              <h3 className="text-xs uppercase font-bold text-amber-700 mb-1">Contacto:</h3>
+              <p className="text-sm text-gray-900">{personaContacto}</p>
+              {telefonoContacto && (
+                <p className="text-xs text-gray-600">{telefonoContacto}</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* INFORMACIÓN DE PAGO */}
       <div className="grid grid-cols-2 gap-8 mb-8 pb-8 border-b-2 border-gray-200">

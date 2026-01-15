@@ -34,6 +34,9 @@ export async function POST(request: NextRequest) {
       persona_contacto,
       telefono_contacto,
       condiciones_pago,
+      // Campos adicionales para renting/flotas
+      numero_autorizacion,
+      referencia_externa,
     } = body
 
     // Validaciones
@@ -142,6 +145,13 @@ export async function POST(request: NextRequest) {
     }
     if (condiciones_pago) {
       facturaData.condiciones_pago = condiciones_pago
+    }
+    // Campos para renting/flotas
+    if (numero_autorizacion) {
+      facturaData.numero_autorizacion = numero_autorizacion
+    }
+    if (referencia_externa) {
+      facturaData.referencia_externa = referencia_externa
     }
 
     const { data: factura, error: facturaError } = await supabase

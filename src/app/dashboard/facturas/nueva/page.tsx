@@ -69,6 +69,9 @@ export default function NuevaFacturaPage() {
     condiciones_pago: '',
     persona_contacto: '',
     telefono_contacto: '',
+    // Campos para renting/flotas
+    numero_autorizacion: '',
+    referencia_externa: '',
   })
 
   // Nueva línea
@@ -238,19 +241,21 @@ export default function NuevaFacturaPage() {
 
       if (data.error) {
         toast.error(data.error)
-      } else {
+      } else if (data.cliente) {
         toast.success('Cliente creado correctamente')
         const nuevoClienteData = {
-          id: data.id,
-          nombre: nuevoCliente.nombre,
-          nif: nuevoCliente.nif || '',
-          telefono: nuevoCliente.telefono,
-          email: nuevoCliente.email
+          id: data.cliente.id,
+          nombre: data.cliente.nombre,
+          nif: data.cliente.nif || '',
+          telefono: data.cliente.telefono,
+          email: data.cliente.email
         }
         setClientes([...clientes, nuevoClienteData])
-        setFormData({ ...formData, cliente_id: data.id })
+        setFormData({ ...formData, cliente_id: data.cliente.id })
         setMostrarCrearCliente(false)
         setNuevoCliente({ nombre: '', nif: '', telefono: '', email: '', direccion: '' })
+      } else {
+        toast.error('Error al crear cliente: respuesta inválida')
       }
     } catch (error) {
       console.error('Error creando cliente:', error)
@@ -341,6 +346,8 @@ export default function NuevaFacturaPage() {
           condiciones_pago: formData.condiciones_pago,
           persona_contacto: formData.persona_contacto,
           telefono_contacto: formData.telefono_contacto,
+          numero_autorizacion: formData.numero_autorizacion || null,
+          referencia_externa: formData.referencia_externa || null,
           estado: 'borrador',
           lineas: lineas.map(l => ({
             descripcion: l.descripcion,
@@ -461,6 +468,32 @@ export default function NuevaFacturaPage() {
                   placeholder="+34 600 000 000"
                   value={formData.telefono_contacto}
                   onChange={(e) => setFormData({ ...formData, telefono_contacto: e.target.value })}
+                />
+              </div>
+
+              {/* Nº Autorización (Renting/Flotas) */}
+              <div>
+                <Label className="block text-sm font-semibold mb-2">
+                  Nº Autorización
+                  <span className="text-xs text-gray-400 ml-1">(Renting)</span>
+                </Label>
+                <Input
+                  placeholder="Ej: GT-123456"
+                  value={formData.numero_autorizacion}
+                  onChange={(e) => setFormData({ ...formData, numero_autorizacion: e.target.value })}
+                />
+              </div>
+
+              {/* Referencia Externa */}
+              <div>
+                <Label className="block text-sm font-semibold mb-2">
+                  Ref. Externa
+                  <span className="text-xs text-gray-400 ml-1">(Opcional)</span>
+                </Label>
+                <Input
+                  placeholder="Referencia del cliente"
+                  value={formData.referencia_externa}
+                  onChange={(e) => setFormData({ ...formData, referencia_externa: e.target.value })}
                 />
               </div>
 

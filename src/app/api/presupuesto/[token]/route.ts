@@ -203,10 +203,11 @@ export async function POST(
       )
     }
 
-    // Actualizar orden con aceptación
+    // Actualizar orden con aceptación y cambiar estado a "aprobado"
     const { error: updateError } = await supabaseAdmin
       .from('ordenes_reparacion')
       .update({
+        estado: 'aprobado', // Cambiar estado automáticamente
         fecha_aceptacion_cliente: new Date().toISOString(),
         presupuesto_aprobado_por_cliente: true,
         ip_aceptacion: ip,

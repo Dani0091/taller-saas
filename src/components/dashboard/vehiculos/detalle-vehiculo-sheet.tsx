@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
+import { InputScanner } from '@/components/ui/input-scanner'
 import { toast } from 'sonner'
 import Link from 'next/link'
 
@@ -321,13 +322,20 @@ export function DetalleVehiculoSheet({
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label>Kilómetros</Label>
-                        <Input
-                          name="kilometros"
-                          type="number"
-                          value={formData.kilometros || ''}
-                          onChange={handleNumericChange}
-                          placeholder="45000"
-                        />
+                        <div className="flex gap-1">
+                          <Input
+                            name="kilometros"
+                            type="number"
+                            value={formData.kilometros || ''}
+                            onChange={handleNumericChange}
+                            placeholder="45000"
+                            className="flex-1"
+                          />
+                          <InputScanner
+                            tipo="km"
+                            onResult={(val) => setFormData(prev => ({ ...prev, kilometros: parseInt(val) || null }))}
+                          />
+                        </div>
                       </div>
                       <div>
                         <Label>Combustible</Label>
@@ -400,13 +408,20 @@ export function DetalleVehiculoSheet({
 
                     <div>
                       <Label>VIN / Bastidor</Label>
-                      <Input
-                        name="vin"
-                        value={formData.vin || ''}
-                        onChange={handleChange}
-                        placeholder="WVWZZZ3CZWE123456"
-                        maxLength={17}
-                      />
+                      <div className="flex gap-1">
+                        <Input
+                          name="vin"
+                          value={formData.vin || ''}
+                          onChange={handleChange}
+                          placeholder="WVWZZZ3CZWE123456"
+                          maxLength={17}
+                          className="flex-1 font-mono text-xs"
+                        />
+                        <InputScanner
+                          tipo="vin"
+                          onResult={(val) => setFormData(prev => ({ ...prev, vin: val }))}
+                        />
+                      </div>
                     </div>
                   </Card>
                 </>
