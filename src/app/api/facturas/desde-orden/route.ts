@@ -48,7 +48,11 @@ export async function POST(request: NextRequest) {
       siguienteNumero = serieData.ultimo_numero + 1
       serieId = serieData.id
     } else {
-      // Fallback: buscar el máximo en facturas existentes
+      // Serie no existe - CREARLA AUTOMÁTICAMENTE
+      console.log(`Serie "${serieFactura}" no existe, creándola automáticamente...`)
+
+      // Buscar el máximo en facturas existentes para no romper la secuencia
+      let maxNumero = (config?.numero_factura_inicial || 1) - 1
       const { data: todasFacturas } = await supabase
         .from('facturas')
         .select('numero_factura')
@@ -56,7 +60,6 @@ export async function POST(request: NextRequest) {
         .eq('numero_serie', serieFactura)
 
       if (todasFacturas && todasFacturas.length > 0) {
-        let maxNumero = 0
         todasFacturas.forEach((f: { numero_factura: string }) => {
           const match = f.numero_factura.match(/(\d+)$/)
           if (match) {
@@ -64,7 +67,28 @@ export async function POST(request: NextRequest) {
             if (num > maxNumero) maxNumero = num
           }
         })
-        siguienteNumero = Math.max(siguienteNumero, maxNumero + 1)
+      }
+
+      // Crear la serie con el número máximo encontrado
+      const { data: nuevaSerie, error: crearSerieError } = await supabase
+        .from('series_facturacion')
+        .insert([{
+          taller_id,
+          nombre: `Serie ${serieFactura}`,
+          prefijo: serieFactura,
+          ultimo_numero: maxNumero >= 0 ? maxNumero : 0
+        }])
+        .select()
+        .single()
+
+      if (nuevaSerie) {
+        serieId = nuevaSerie.id
+        siguienteNumero = nuevaSerie.ultimo_numero + 1
+        console.log(`Serie "${serieFactura}" creada con ID: ${nuevaSerie.id}, siguiente: ${siguienteNumero}`)
+      } else {
+        console.error('Error creando serie:', crearSerieError)
+        // Continuar con el número calculado si falla la creación
+        siguienteNumero = maxNumero + 1
       }
     }
 
