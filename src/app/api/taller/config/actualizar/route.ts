@@ -94,6 +94,43 @@ export async function POST(request: Request) {
       )
     }
 
+    // SINCRONIZAR SERIE CON TABLA series_facturacion
+    // Si se configura una serie, asegurarse de que exista en la tabla de series
+    if (serie_factura) {
+      const prefijo = serie_factura.toUpperCase().trim()
+
+      // Verificar si ya existe la serie
+      const { data: serieExistente } = await supabase
+        .from('series_facturacion')
+        .select('id, ultimo_numero')
+        .eq('taller_id', taller_id)
+        .eq('prefijo', prefijo)
+        .single()
+
+      if (!serieExistente) {
+        // Crear la serie si no existe
+        const numeroInicial = (numero_factura_inicial || 1) - 1 // Restamos 1 porque se incrementa al crear factura
+
+        await supabase
+          .from('series_facturacion')
+          .insert([{
+            taller_id,
+            nombre: `Serie ${prefijo}`,
+            prefijo: prefijo,
+            ultimo_numero: numeroInicial >= 0 ? numeroInicial : 0
+          }])
+      } else if (numero_factura_inicial !== undefined) {
+        // Si existe y se especifica un número inicial, actualizar el último número
+        const nuevoUltimoNumero = (numero_factura_inicial || 1) - 1
+        if (nuevoUltimoNumero >= 0) {
+          await supabase
+            .from('series_facturacion')
+            .update({ ultimo_numero: nuevoUltimoNumero })
+            .eq('id', serieExistente.id)
+        }
+      }
+    }
+
     return NextResponse.json({ success: true, data: response.data })
   } catch (error: any) {
     return NextResponse.json(
