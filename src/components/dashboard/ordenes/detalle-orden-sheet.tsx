@@ -20,7 +20,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { fotosToString, getFotoUrl, setFotoUrl } from '@/lib/utils'
+import { fotosToString, getFotoUrl, setFotoUrl, getFotoByKey, setFotoByKey } from '@/lib/utils'
 import { ESTADOS_ORDEN, FRACCIONES_HORA, CANTIDADES, ESTADOS_FACTURABLES, FOTOS_DIAGNOSTICO, FOTO_LABELS, type TipoFoto } from '@/lib/constants'
 
 interface Orden {
@@ -207,7 +207,7 @@ export function DetalleOrdenSheet({
       // Cargar clientes
       const { data: clientesData } = await supabase
         .from('clientes')
-        .select('id, nombre, nif, telefono')
+        .select('id, nombre, apellidos, nif, telefono')
         .eq('taller_id', usuario.taller_id)
         .order('nombre')
 
@@ -1575,24 +1575,677 @@ export function DetalleOrdenSheet({
                   className="resize-none"
                 />
               </Card>
+
+              {/* Notas */}
+              <Card className="p-4">
+                <Label className="text-sm font-semibold mb-2 block">Notas internas</Label>
+                <Textarea
+                  value={formData.notas || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, notas: e.target.value }))}
+                  placeholder="Notas para el equipo del taller..."
+                  rows={2}
+                  className="resize-none"
+                />
+              </Card>
+            </>
+          )}
+
+          {tab === 'fotos' && (
+            <>
+              {modoCrear ? (
+                <Card className="p-4 bg-amber-50 border-amber-200">
+                  <p className="text-sm text-amber-800">
+                    💡 Guarda la orden primero para poder subir fotos
+                  </p>
+                </Card>
+              ) : (
+                <>
+                  {/* Fotos de entrada */}
+                  <Card className="p-4">
+                    <Label className="text-sm font-semibold mb-3 block">📸 Fotos de Entrada</Label>
+                    <p className="text-xs text-gray-500 mb-4">
+                      Documenta el estado del vehículo al llegar al taller
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <FotoUploader
+                        tipo="entrada"
+                        ordenId={ordenSeleccionada || ''}
+                        fotoUrl={getFotoUrl(formData.fotos_entrada || '', 0)}
+                        onFotoSubida={(url) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            fotos_entrada: setFotoUrl(prev.fotos_entrada || '', 0, url)
+                          }))
+                        }}
+                        onOCRData={(data) => {
+                          // Verificar matrícula si hay vehículo seleccionado
+                          if (data.matricula && vehiculoSeleccionado) {
+                            const matriculaLimpia = data.matricula.replace(/[\s-]/g, '').toUpperCase()
+                            const matriculaVehiculo = vehiculoSeleccionado.matricula.replace(/[\s-]/g, '').toUpperCase()
+                            if (matriculaLimpia === matriculaVehiculo) {
+                              toast.success(`✅ Matrícula coincide: ${data.matricula}`)
+                            } else {
+                              toast.warning(`⚠️ Matrícula detectada (${data.matricula}) no coincide con el vehículo (${vehiculoSeleccionado.matricula})`)
+                            }
+                          } else if (data.matricula) {
+                            toast.info(`Matrícula detectada: ${data.matricula}`)
+                          }
+
+                          // Actualizar KM del vehículo
+                          if (data.km && formData.vehiculo_id) {
+                            actualizarKMVehiculo(data.km)
+                          } else if (data.km) {
+                            toast.info(`KM detectados: ${data.km.toLocaleString()} (selecciona un vehículo para guardar)`)
+                          }
+                        }}
+                      />
+                      <FotoUploader
+                        tipo="frontal"
+                        ordenId={ordenSeleccionada || ''}
+                        fotoUrl={getFotoUrl(formData.fotos_entrada || '', 1)}
+                        onFotoSubida={(url) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            fotos_entrada: setFotoUrl(prev.fotos_entrada || '', 1, url)
+                          }))
+                        }}
+                      />
+                      <FotoUploader
+                        tipo="izquierda"
+                        ordenId={ordenSeleccionada || ''}
+                        fotoUrl={getFotoUrl(formData.fotos_entrada || '', 2)}
+                        onFotoSubida={(url) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            fotos_entrada: setFotoUrl(prev.fotos_entrada || '', 2, url)
+                          }))
+                        }}
+                      />
+                      <FotoUploader
+                        tipo="derecha"
+                        ordenId={ordenSeleccionada || ''}
+                        fotoUrl={getFotoUrl(formData.fotos_entrada || '', 3)}
+                        onFotoSubida={(url) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            fotos_entrada: setFotoUrl(prev.fotos_entrada || '', 3, url)
+                          }))
+                        }}
+                      />
+                    </div>
+                  </Card>
+
+                  {/* Fotos de salida */}
+                  <Card className="p-4">
+                    <Label className="text-sm font-semibold mb-3 block">✅ Fotos de Salida</Label>
+                    <p className="text-xs text-gray-500 mb-4">
+                      Documenta el estado del vehículo al entregar
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <FotoUploader
+                        tipo="salida"
+                        ordenId={ordenSeleccionada || ''}
+                        fotoUrl={getFotoUrl(formData.fotos_salida || '', 0)}
+                        onFotoSubida={(url) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            fotos_salida: setFotoUrl(prev.fotos_salida || '', 0, url)
+                          }))
+                        }}
+                      />
+                      <FotoUploader
+                        tipo="trasera"
+                        ordenId={ordenSeleccionada || ''}
+                        fotoUrl={getFotoUrl(formData.fotos_salida || '', 1)}
+                        onFotoSubida={(url) => {
+                          setFormData(prev => ({
+                            ...prev,
+                            fotos_salida: setFotoUrl(prev.fotos_salida || '', 1, url)
+                          }))
+                        }}
+                      />
+                    </div>
+                  </Card>
+                </>
+              )}
+            </>
+          )}
+
+          {tab === 'trabajo' && (
+            <>
+              {/* Diagnóstico */}
+              <Card className="p-4">
+                <Label className="text-sm font-semibold mb-2 block">Diagnóstico técnico</Label>
+                <Textarea
+                  value={formData.diagnostico || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, diagnostico: e.target.value }))}
+                  placeholder="Resultado del diagnóstico del vehículo..."
+                  rows={3}
+                  className="resize-none"
+                />
+              </Card>
+
+              {/* Fotos de diagnóstico */}
+              <Card className="p-4 bg-amber-50/50 border-amber-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-lg">📷</span>
+                  <Label className="text-sm font-semibold">Fotos de diagnóstico</Label>
+                </div>
+                <p className="text-xs text-gray-500 mb-4">
+                  Sube fotos del cuadro de instrumentos, testigos de fallo, o cualquier evidencia visual del problema.
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  {FOTOS_DIAGNOSTICO.map((tipoFoto) => (
+                    <FotoUploader
+                      key={tipoFoto}
+                      tipo={tipoFoto}
+                      fotoUrl={getFotoByKey(formData.fotos_diagnostico || '', tipoFoto)}
+                      ordenId={ordenSeleccionada || 'nueva'}
+                      onFotoSubida={(url) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          fotos_diagnostico: setFotoByKey(prev.fotos_diagnostico || '', tipoFoto, url)
+                        }))
+                      }}
+                      disabled={!ordenSeleccionada && !modoCrear}
+                    />
+                  ))}
+                </div>
+              </Card>
+
+              {/* Trabajos realizados */}
+              <Card className="p-4">
+                <Label className="text-sm font-semibold mb-2 block">Trabajos realizados</Label>
+                <Textarea
+                  value={formData.trabajos_realizados || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, trabajos_realizados: e.target.value }))}
+                  placeholder="Describe los trabajos que se han realizado..."
+                  rows={3}
+                  className="resize-none"
+                />
+              </Card>
+
+              {/* Aprovisionamiento de piezas */}
+              <Card className="p-4 bg-purple-50/50 border-purple-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-lg">📦</span>
+                  <Label className="text-sm font-semibold">Aprovisionamiento de piezas</Label>
+                </div>
+                <p className="text-xs text-gray-500 mb-4">
+                  Añade las piezas que necesitas buscar/pedir. Luego podrás añadirlas como líneas de facturación con el precio final.
+                </p>
+
+                {/* Lista de piezas pendientes - Tabla estilo orden impresa */}
+                <div className="border rounded-lg overflow-hidden bg-white mb-3">
+                  <table className="w-full text-xs">
+                    <thead className="bg-purple-100">
+                      <tr>
+                        <th className="px-2 py-2 text-left font-semibold text-purple-800">Descripción / Referencia</th>
+                        <th className="px-2 py-2 text-center font-semibold text-purple-800 w-12">Uds</th>
+                        <th className="px-2 py-2 text-right font-semibold text-purple-800 w-16">Precio</th>
+                        <th className="px-2 py-2 w-8"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {lineas.filter(l => l.tipo === 'pieza').length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="px-2 py-4 text-center text-gray-400">
+                            Sin piezas añadidas. Usa la pestaña "Líneas" para añadir piezas.
+                          </td>
+                        </tr>
+                      ) : (
+                        lineas.filter(l => l.tipo === 'pieza').map(pieza => (
+                          <tr key={pieza.id} className="hover:bg-gray-50">
+                            <td className="px-2 py-2">
+                              <span className="font-medium">{pieza.descripcion}</span>
+                            </td>
+                            <td className="px-2 py-2 text-center">{pieza.cantidad}</td>
+                            <td className="px-2 py-2 text-right font-mono">
+                              {pieza.precio_unitario > 0 ? `€${pieza.precio_unitario.toFixed(2)}` : '-'}
+                            </td>
+                            <td className="px-2 py-2">
+                              <button
+                                onClick={() => eliminarLinea(pieza.id)}
+                                className="p-1 text-red-500 hover:bg-red-50 rounded"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mini-formulario rápido para añadir pieza */}
+                <div className="p-3 bg-purple-100/50 rounded-lg border border-purple-200">
+                  <p className="text-xs font-semibold text-purple-800 mb-2">➕ Añadir pieza rápida</p>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Descripción de la pieza..."
+                      className="flex-1 text-xs h-8"
+                      id="pieza-rapida-desc"
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Uds"
+                      className="w-14 text-xs h-8 text-center"
+                      defaultValue={1}
+                      min={1}
+                      id="pieza-rapida-qty"
+                    />
+                    <Button
+                      size="sm"
+                      className="h-8 px-3 bg-purple-600 hover:bg-purple-700 text-xs"
+                      onClick={() => {
+                        const descInput = document.getElementById('pieza-rapida-desc') as HTMLInputElement
+                        const qtyInput = document.getElementById('pieza-rapida-qty') as HTMLInputElement
+                        const desc = descInput?.value?.trim()
+                        const qty = parseInt(qtyInput?.value) || 1
+
+                        if (!desc) {
+                          toast.error('Escribe una descripción')
+                          return
+                        }
+
+                        setLineas(prev => [...prev, {
+                          id: `new-${Date.now()}`,
+                          tipo: 'pieza',
+                          descripcion: desc,
+                          cantidad: qty,
+                          precio_unitario: 0, // Precio pendiente de buscar
+                          isNew: true
+                        }])
+
+                        if (descInput) descInput.value = ''
+                        if (qtyInput) qtyInput.value = '1'
+                        toast.success('Pieza añadida (precio pendiente)')
+                      }}
+                    >
+                      <Plus className="w-3 h-3" />
+                    </Button>
+                  </div>
+                  <p className="text-[10px] text-purple-600 mt-1">
+                    💡 Añade piezas aquí rápidamente. Luego ve a "Líneas" para poner los precios finales.
+                  </p>
+                </div>
+              </Card>
+
+              {/* Tiempos con selector de fracciones */}
+              <Card className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Clock className="w-5 h-5 text-sky-600" />
+                  <Label className="text-sm font-semibold">Tiempo de trabajo</Label>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Horas estimadas */}
+                  <div>
+                    <Label className="text-xs text-gray-500 mb-2 block">Horas estimadas</Label>
+                    <select
+                      value={formData.tiempo_estimado_horas || 0}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        tiempo_estimado_horas: parseFloat(e.target.value)
+                      }))}
+                      className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white text-center"
+                    >
+                      <option value="0">Sin estimar</option>
+                      {FRACCIONES_HORA.map(f => (
+                        <option key={f.value} value={f.value}>{f.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Horas reales */}
+                  <div>
+                    <Label className="text-xs text-gray-500 mb-2 block">Horas reales</Label>
+                    <select
+                      value={formData.tiempo_real_horas || 0}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        tiempo_real_horas: parseFloat(e.target.value)
+                      }))}
+                      className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white text-center"
+                    >
+                      <option value="0">Sin registrar</option>
+                      {FRACCIONES_HORA.map(f => (
+                        <option key={f.value} value={f.value}>{f.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Input manual para valores personalizados */}
+                <div className="mt-3 pt-3 border-t">
+                  <Label className="text-xs text-gray-500 mb-2 block">O introduce un valor personalizado:</Label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.25"
+                      value={formData.tiempo_estimado_horas || ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        tiempo_estimado_horas: parseFloat(e.target.value) || 0
+                      }))}
+                      placeholder="Estimadas"
+                      className="text-center"
+                    />
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.25"
+                      value={formData.tiempo_real_horas || ''}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        tiempo_real_horas: parseFloat(e.target.value) || 0
+                      }))}
+                      placeholder="Reales"
+                      className="text-center"
+                    />
+                  </div>
+                </div>
+              </Card>
+            </>
+          )}
+
+          {tab === 'items' && (
+            <>
+              {/* Añadir línea */}
+              <Card className="p-4 border-2 border-dashed border-sky-200 bg-sky-50/50">
+                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <Plus className="w-4 h-4" />
+                  Añadir línea de trabajo
+                </h3>
+
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-xs text-gray-600 mb-1 block">Tipo de trabajo</Label>
+                    <select
+                      value={nuevaLinea.tipo}
+                      onChange={(e) => setNuevaLinea(prev => ({ ...prev, tipo: e.target.value as any }))}
+                      className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white"
+                    >
+                      <option value="mano_obra">🔧 Mano de obra</option>
+                      <option value="pieza">⚙️ Recambio / Pieza</option>
+                      <option value="servicio">🛠️ Servicio externo</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <Label className="text-xs text-gray-600 mb-1 block">Descripción del trabajo</Label>
+                    <Input
+                      value={nuevaLinea.descripcion}
+                      onChange={(e) => setNuevaLinea(prev => ({ ...prev, descripcion: e.target.value }))}
+                      placeholder="Ej: Cambio de aceite y filtro"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs text-gray-600 mb-1 block">
+                        {nuevaLinea.tipo === 'mano_obra' ? '⏱️ Horas de trabajo' : '📦 Cantidad (uds)'}
+                      </Label>
+                      {nuevaLinea.tipo === 'mano_obra' ? (
+                        <select
+                          value={nuevaLinea.cantidad}
+                          onChange={(e) => setNuevaLinea(prev => ({
+                            ...prev,
+                            cantidad: parseFloat(e.target.value)
+                          }))}
+                          className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white text-center"
+                        >
+                          {FRACCIONES_HORA.map(f => (
+                            <option key={f.value} value={f.value}>{f.label}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <select
+                          value={nuevaLinea.cantidad}
+                          onChange={(e) => setNuevaLinea(prev => ({
+                            ...prev,
+                            cantidad: parseFloat(e.target.value)
+                          }))}
+                          className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white text-center"
+                        >
+                          {CANTIDADES.map(c => (
+                            <option key={c.value} value={c.value}>{c.label}</option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                    <div>
+                      <Label className="text-xs text-gray-600 mb-1 block">
+                        {nuevaLinea.tipo === 'mano_obra' ? '💶 Precio/hora (€)' : '💶 Precio/unidad (€)'}
+                      </Label>
+                      <DecimalInput
+                        value={nuevaLinea.precio_unitario}
+                        onChange={(value) => setNuevaLinea(prev => ({
+                          ...prev,
+                          precio_unitario: value
+                        }))}
+                        min={0}
+                        step={0.01}
+                        placeholder="0.00"
+                        className="text-right"
+                      />
+                    </div>
+                  </div>
+
+                  {nuevaLinea.cantidad > 0 && nuevaLinea.precio_unitario > 0 && (
+                    <div className="p-2 bg-green-100 rounded-lg text-center">
+                      <span className="text-sm text-gray-600">Subtotal: </span>
+                      <span className="font-bold text-green-700">
+                        €{(nuevaLinea.cantidad * nuevaLinea.precio_unitario).toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+
+                  <Button onClick={agregarLinea} className="w-full gap-2 bg-sky-600 hover:bg-sky-700">
+                    <Plus className="w-4 h-4" />
+                    Añadir línea
+                  </Button>
+                </div>
+              </Card>
+
+              {/* Lista de líneas */}
+              {lineas.length > 0 && (
+                <Card className="p-4">
+                  <h3 className="font-semibold text-gray-900 mb-3">
+                    Líneas añadidas ({lineas.length})
+                  </h3>
+                  <div className="space-y-2">
+                    {lineas.map(linea => (
+                      <div
+                        key={linea.id}
+                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900 truncate">{linea.descripcion}</p>
+                          <p className="text-sm text-gray-500">
+                            {linea.cantidad} x €{linea.precio_unitario.toFixed(2)}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-gray-900">
+                            €{(linea.cantidad * linea.precio_unitario).toFixed(2)}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => eliminarLinea(linea.id)}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              )}
+
+              {/* Resumen */}
+              <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900 text-white">
+                <h3 className="font-semibold mb-3">Resumen</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Mano de obra:</span>
+                    <span>€{totales.manoObra.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Recambios:</span>
+                    <span>€{totales.piezas.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Servicios:</span>
+                    <span>€{totales.servicios.toFixed(2)}</span>
+                  </div>
+                  <div className="border-t border-gray-700 pt-2 flex justify-between">
+                    <span className="text-gray-400">Subtotal:</span>
+                    <span>€{totales.subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">IVA (21%):</span>
+                    <span>€{totales.iva.toFixed(2)}</span>
+                  </div>
+                  <div className="border-t border-gray-600 pt-2 flex justify-between text-lg font-bold">
+                    <span>Total:</span>
+                    <span className="text-green-400">€{totales.total.toFixed(2)}</span>
+                  </div>
+                </div>
+              </Card>
             </>
           )}
         </div>
+
         {/* Footer */}
-        <div className="bg-white border-t px-4 py-3 flex items-center justify-between">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-900">
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleGuardar}
-            className="bg-blue-600 text-white hover:bg-blue-700"
-          >
-            {modoCrear ? 'Crear Orden' : 'Guardar Cambios'}
-          </Button>
+        <div className="bg-white border-t p-4 space-y-2 shrink-0">
+          {/* Compartir presupuesto con cliente */}
+          {!modoCrear && ordenSeleccionada && (
+            <div className="space-y-2">
+              {!enlacePresupuesto ? (
+                <Button
+                  onClick={handleCompartirPresupuesto}
+                  disabled={compartiendo}
+                  variant="outline"
+                  className="w-full gap-2 py-3 border-purple-300 text-purple-700 hover:bg-purple-50"
+                >
+                  {compartiendo ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Share2 className="w-4 h-4" />
+                  )}
+                  {compartiendo ? 'Generando enlace...' : 'Enviar Presupuesto al Cliente'}
+                </Button>
+              ) : (
+                <div className="bg-purple-50 border border-purple-200 rounded-xl p-3 space-y-2">
+                  <p className="text-xs text-purple-700 font-medium">Enlace del presupuesto:</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={enlacePresupuesto}
+                      readOnly
+                      className="flex-1 text-xs bg-white border rounded-lg px-2 py-1.5 font-mono truncate"
+                    />
+                    <Button size="sm" variant="outline" onClick={copiarEnlace} className="gap-1">
+                      <Copy className="w-3 h-3" />
+                    </Button>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      onClick={enviarWhatsApp}
+                      className="flex-1 gap-1 bg-green-600 hover:bg-green-700"
+                    >
+                      <Share2 className="w-3 h-3" />
+                      WhatsApp
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => window.open(enlacePresupuesto, '_blank')}
+                      className="flex-1 gap-1"
+                    >
+                      <Link className="w-3 h-3" />
+                      Abrir
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Botón para imprimir orden completa */}
+          {!modoCrear && ordenSeleccionada && (
+            <Button
+              onClick={() => setMostrarPDF(true)}
+              variant="outline"
+              className="w-full gap-2 py-3"
+            >
+              <Printer className="w-4 h-4" />
+              Ver / Imprimir Orden Completa
+            </Button>
+          )}
+
+          {/* Añadir a Google Calendar */}
+          {!modoCrear && ordenSeleccionada && (
+            <div className="flex justify-center">
+              <GoogleCalendarButton
+                ordenId={ordenSeleccionada}
+                titulo={`Orden ${ordenNumero}`}
+                descripcion={formData.descripcion_problema || formData.trabajos_realizados}
+                clienteNombre={clientes.find(c => c.id === formData.cliente_id)?.nombre}
+                vehiculoInfo={vehiculoSeleccionado ? `${vehiculoSeleccionado.marca} ${vehiculoSeleccionado.modelo} - ${vehiculoSeleccionado.matricula}` : undefined}
+              />
+            </div>
+          )}
+
+          {!modoCrear && ESTADOS_FACTURABLES.includes(formData.estado as any) && (
+            <Button
+              onClick={handleGenerarFactura}
+              disabled={generandoFactura || guardando}
+              className="w-full gap-2 bg-green-600 hover:bg-green-700 py-3"
+            >
+              {generandoFactura ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <FileText className="w-4 h-4" />
+              )}
+              {generandoFactura ? 'Generando...' : 'Generar Factura'}
+            </Button>
+          )}
+
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="flex-1 py-3"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleGuardar}
+              disabled={guardando || !formData.cliente_id}
+              className="flex-1 gap-2 py-3 bg-sky-600 hover:bg-sky-700"
+            >
+              {guardando ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              {guardando ? 'Guardando...' : (modoCrear ? 'Crear Orden' : 'Guardar Cambios')}
+            </Button>
+          </div>
         </div>
+
+        {/* Modal PDF */}
+        {mostrarPDF && ordenSeleccionada && (
+          <OrdenPDFViewer
+            ordenId={ordenSeleccionada}
+            onClose={() => setMostrarPDF(false)}
+          />
+        )}
       </div>
     </div>
   )

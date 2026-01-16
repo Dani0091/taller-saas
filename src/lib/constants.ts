@@ -175,16 +175,20 @@ export const INVOICE_PREFIX = 'FA'
  * Etiquetas para tipos de foto en órdenes
  */
 export const FOTO_LABELS = {
-  entrada: '📸 Entrada Frontal',
-  frontal: '🚗 Frontal',
-  izquierda: '⬅️ Lado Izquierdo',
-  derecha: '➡️ Lado Derecho',
-  trasera: '🔙 Trasera',
-  salida: '✅ Salida',
-  proceso: '🔧 Proceso',
+  // Fotos de entrada del vehículo (las 4 caras)
+  entrada: '📋 Documentación',
+  frontal: '🚗 Frontal (Delantero)',
+  izquierda: '⬅️ Lateral Izquierdo',
+  derecha: '➡️ Lateral Derecho',
+  trasera: '🔙 Trasero (Posterior)',
+  // Fotos adicionales
+  salida: '✅ Foto Salida',
+  proceso: '🔧 Durante Trabajo',
+  interior: '🪑 Interior/Habitáculo',
+  motor: '🔧 Vano Motor',
   // Fotos de diagnóstico
   cuadro: '🎛️ Cuadro Instrumentos',
-  fallo_motor: '⚠️ Fallo Motor/Testigo',
+  fallo_motor: '⚠️ Testigo Avería',
   diagnostico_1: '🔍 Diagnóstico 1',
   diagnostico_2: '🔍 Diagnóstico 2',
 } as const

@@ -75,8 +75,10 @@ export function FotoUploader(props: FotoUploaderProps) {
       onFotoSubida(data.imageUrl)
       toast.success('✅ Foto subida')
 
-      // OCR solo para foto entrada
-      if (tipo === 'entrada' && onOCRData) {
+      // OCR para fotos relevantes (entrada, cuadro, fallo_motor)
+      const tiposConOCR = ['entrada', 'cuadro', 'fallo_motor']
+      if (tiposConOCR.includes(tipo) && onOCRData) {
+        // Ejecutar OCR en segundo plano para no bloquear la UI
         procesarOCRFoto(data.imageUrl)
       }
     } catch (error: any) {

@@ -135,6 +135,57 @@ export function setFotoUrl(fotos: string, index: number, url: string): string {
   return arr.filter(Boolean).join(',')
 }
 
+/**
+ * Obtiene la URL de una foto por su clave (para fotos nombradas como diagnóstico)
+ * Formato: "clave1=url1|clave2=url2"
+ * @param fotos - String con el formato clave=url separado por |
+ * @param key - Clave de la foto
+ * @returns URL de la foto o string vacío
+ */
+export function getFotoByKey(fotos: string, key: string): string {
+  if (!fotos) return ''
+  const pairs = fotos.split('|').filter(Boolean)
+  for (const pair of pairs) {
+    const eqIndex = pair.indexOf('=')
+    if (eqIndex === -1) continue
+    const k = pair.substring(0, eqIndex)
+    const v = pair.substring(eqIndex + 1)
+    if (k === key) return v || ''
+  }
+  return ''
+}
+
+/**
+ * Establece la URL de una foto por su clave (para fotos nombradas)
+ * Formato: "clave1=url1|clave2=url2"
+ * @param fotos - String actual con formato clave=url
+ * @param key - Clave de la foto
+ * @param url - Nueva URL
+ * @returns Nuevo string con la foto actualizada
+ */
+export function setFotoByKey(fotos: string, key: string, url: string): string {
+  const pairs = fotos ? fotos.split('|').filter(Boolean) : []
+  const map = new Map<string, string>()
+
+  for (const pair of pairs) {
+    const eqIndex = pair.indexOf('=')
+    if (eqIndex === -1) continue
+    const k = pair.substring(0, eqIndex)
+    const v = pair.substring(eqIndex + 1)
+    if (k && v) map.set(k, v)
+  }
+
+  if (url) {
+    map.set(key, url)
+  } else {
+    map.delete(key)
+  }
+
+  return Array.from(map.entries())
+    .map(([k, v]) => `${k}=${v}`)
+    .join('|')
+}
+
 // =============================================================================
 // CÁLCULOS DE IVA
 // =============================================================================
