@@ -30,8 +30,43 @@ export async function POST(request: NextRequest) {
       .single()
 
     const serieFactura = config?.serie_factura || 'FA'
-    const numeroInicial = config?.numero_factura_inicial || 1
     const ivaPorcentaje = config?.porcentaje_iva || 21
+
+    // Buscar la serie en series_facturacion para usar numeración consistente
+    let siguienteNumero = config?.numero_factura_inicial || 1
+    let serieId: string | null = null
+
+    const { data: serieData } = await supabase
+      .from('series_facturacion')
+      .select('id, ultimo_numero')
+      .eq('taller_id', taller_id)
+      .eq('prefijo', serieFactura)
+      .single()
+
+    if (serieData) {
+      // Si la serie existe en la tabla, usar su numeración
+      siguienteNumero = serieData.ultimo_numero + 1
+      serieId = serieData.id
+    } else {
+      // Fallback: buscar el máximo en facturas existentes
+      const { data: todasFacturas } = await supabase
+        .from('facturas')
+        .select('numero_factura')
+        .eq('taller_id', taller_id)
+        .eq('numero_serie', serieFactura)
+
+      if (todasFacturas && todasFacturas.length > 0) {
+        let maxNumero = 0
+        todasFacturas.forEach((f: { numero_factura: string }) => {
+          const match = f.numero_factura.match(/(\d+)$/)
+          if (match) {
+            const num = parseInt(match[1], 10)
+            if (num > maxNumero) maxNumero = num
+          }
+        })
+        siguienteNumero = Math.max(siguienteNumero, maxNumero + 1)
+      }
+    }
 
     // Obtener la orden con todas sus relaciones
     const { data: orden, error: ordenError } = await supabase
@@ -67,25 +102,7 @@ export async function POST(request: NextRequest) {
       .select('*')
       .eq('orden_id', orden_id)
 
-    // Generar número de factura secuencial usando configuración del taller
-    const { data: todasFacturas } = await supabase
-      .from('facturas')
-      .select('numero_factura')
-      .eq('taller_id', taller_id)
-
-    let maxNumero = numeroInicial - 1 // Empezar desde el número inicial configurado
-    if (todasFacturas && todasFacturas.length > 0) {
-      todasFacturas.forEach((f: { numero_factura: string }) => {
-        // Extraer número de cualquier formato (FA001, 2024/001, F-001, etc.)
-        const match = f.numero_factura.match(/(\d+)$/)
-        if (match) {
-          const num = parseInt(match[1], 10)
-          if (num > maxNumero) maxNumero = num
-        }
-      })
-    }
-
-    const siguienteNumero = maxNumero + 1
+    // Generar número de factura con el formato estándar
     const numeroFactura = `${serieFactura}${siguienteNumero.toString().padStart(3, '0')}`
 
     // Calcular totales
@@ -152,6 +169,27 @@ export async function POST(request: NextRequest) {
         updated_at: new Date().toISOString()
       })
       .eq('id', orden_id)
+
+    // Actualizar la numeración de la serie usada
+    if (serieId) {
+      // Si usamos series_facturacion, actualizar ahí
+      await supabase
+        .from('series_facturacion')
+        .update({
+          ultimo_numero: siguienteNumero,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', serieId)
+    } else {
+      // Si usamos taller_config (fallback), actualizar ahí
+      await supabase
+        .from('taller_config')
+        .update({
+          numero_factura_inicial: siguienteNumero + 1,
+          updated_at: new Date().toISOString()
+        })
+        .eq('taller_id', taller_id)
+    }
 
     return NextResponse.json({
       success: true,

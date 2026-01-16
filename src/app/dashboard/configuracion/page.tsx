@@ -1325,7 +1325,7 @@ export default function ConfiguracionPage() {
         </Card>
 
         {/* Integración Google Calendar */}
-        <GoogleCalendarConnection />
+        <GoogleCalendarConnection tallerId={tallerId || undefined} />
 
         {/* Botones */}
         <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
