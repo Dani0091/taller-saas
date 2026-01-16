@@ -182,7 +182,15 @@ export const FOTO_LABELS = {
   trasera: '🔙 Trasera',
   salida: '✅ Salida',
   proceso: '🔧 Proceso',
+  // Fotos de diagnóstico
+  cuadro: '🎛️ Cuadro Instrumentos',
+  fallo_motor: '⚠️ Fallo Motor/Testigo',
+  diagnostico_1: '🔍 Diagnóstico 1',
+  diagnostico_2: '🔍 Diagnóstico 2',
 } as const
 
 /** Tipos de foto disponibles */
 export type TipoFoto = keyof typeof FOTO_LABELS
+
+/** Fotos de diagnóstico (para la pestaña trabajo) */
+export const FOTOS_DIAGNOSTICO: TipoFoto[] = ['cuadro', 'fallo_motor', 'diagnostico_1', 'diagnostico_2']

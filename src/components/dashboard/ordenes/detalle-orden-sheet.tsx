@@ -21,7 +21,7 @@ import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { fotosToString, getFotoUrl, setFotoUrl } from '@/lib/utils'
-import { ESTADOS_ORDEN, FRACCIONES_HORA, CANTIDADES, ESTADOS_FACTURABLES } from '@/lib/constants'
+import { ESTADOS_ORDEN, FRACCIONES_HORA, CANTIDADES, ESTADOS_FACTURABLES, FOTOS_DIAGNOSTICO, FOTO_LABELS, type TipoFoto } from '@/lib/constants'
 
 interface Orden {
   id?: string
@@ -42,6 +42,7 @@ interface Orden {
   total_con_iva?: number
   fotos_entrada?: string
   fotos_salida?: string
+  fotos_diagnostico?: string
   nivel_combustible?: string
   renuncia_presupuesto?: boolean
   accion_imprevisto?: string
@@ -103,6 +104,7 @@ export function DetalleOrdenSheet({
     tiempo_real_horas: 0,
     fotos_entrada: '',
     fotos_salida: '',
+    fotos_diagnostico: '',
     nivel_combustible: '',
     renuncia_presupuesto: false,
     accion_imprevisto: 'avisar',
@@ -243,6 +245,7 @@ export function DetalleOrdenSheet({
           total_con_iva: ordenData.total_con_iva || 0,
           fotos_entrada: fotosToString(ordenData.fotos_entrada),
           fotos_salida: fotosToString(ordenData.fotos_salida),
+          fotos_diagnostico: fotosToString(ordenData.fotos_diagnostico),
           nivel_combustible: ordenData.nivel_combustible || '',
           renuncia_presupuesto: ordenData.renuncia_presupuesto || false,
           accion_imprevisto: ordenData.accion_imprevisto || 'avisar',
@@ -609,6 +612,7 @@ export function DetalleOrdenSheet({
         total_con_iva: totales.total,
         fotos_entrada: formData.fotos_entrada,
         fotos_salida: formData.fotos_salida,
+        fotos_diagnostico: formData.fotos_diagnostico,
         nivel_combustible: formData.nivel_combustible || null,
         renuncia_presupuesto: formData.renuncia_presupuesto,
         accion_imprevisto: formData.accion_imprevisto || 'avisar',
@@ -698,6 +702,7 @@ export function DetalleOrdenSheet({
         total_con_iva: totales.total,
         fotos_entrada: formData.fotos_entrada,
         fotos_salida: formData.fotos_salida,
+        fotos_diagnostico: formData.fotos_diagnostico,
         nivel_combustible: formData.nivel_combustible || null,
         renuncia_presupuesto: formData.renuncia_presupuesto,
         accion_imprevisto: formData.accion_imprevisto || 'avisar',
@@ -1736,6 +1741,34 @@ export function DetalleOrdenSheet({
                 />
               </Card>
 
+              {/* Fotos de diagnóstico */}
+              <Card className="p-4 bg-amber-50/50 border-amber-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-lg">📷</span>
+                  <Label className="text-sm font-semibold">Fotos de diagnóstico</Label>
+                </div>
+                <p className="text-xs text-gray-500 mb-4">
+                  Sube fotos del cuadro de instrumentos, testigos de fallo, o cualquier evidencia visual del problema.
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  {FOTOS_DIAGNOSTICO.map((tipoFoto) => (
+                    <FotoUploader
+                      key={tipoFoto}
+                      tipo={tipoFoto}
+                      fotoUrl={getFotoUrl(formData.fotos_diagnostico || '', tipoFoto)}
+                      ordenId={ordenSeleccionada || 'nueva'}
+                      onFotoSubida={(url) => {
+                        setFormData(prev => ({
+                          ...prev,
+                          fotos_diagnostico: setFotoUrl(prev.fotos_diagnostico || '', tipoFoto, url)
+                        }))
+                      }}
+                      disabled={!ordenSeleccionada && !modoCrear}
+                    />
+                  ))}
+                </div>
+              </Card>
+
               {/* Trabajos realizados */}
               <Card className="p-4">
                 <Label className="text-sm font-semibold mb-2 block">Trabajos realizados</Label>
@@ -1746,6 +1779,113 @@ export function DetalleOrdenSheet({
                   rows={3}
                   className="resize-none"
                 />
+              </Card>
+
+              {/* Aprovisionamiento de piezas */}
+              <Card className="p-4 bg-purple-50/50 border-purple-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-lg">📦</span>
+                  <Label className="text-sm font-semibold">Aprovisionamiento de piezas</Label>
+                </div>
+                <p className="text-xs text-gray-500 mb-4">
+                  Añade las piezas que necesitas buscar/pedir. Luego podrás añadirlas como líneas de facturación con el precio final.
+                </p>
+
+                {/* Lista de piezas pendientes - Tabla estilo orden impresa */}
+                <div className="border rounded-lg overflow-hidden bg-white mb-3">
+                  <table className="w-full text-xs">
+                    <thead className="bg-purple-100">
+                      <tr>
+                        <th className="px-2 py-2 text-left font-semibold text-purple-800">Descripción / Referencia</th>
+                        <th className="px-2 py-2 text-center font-semibold text-purple-800 w-12">Uds</th>
+                        <th className="px-2 py-2 text-right font-semibold text-purple-800 w-16">Precio</th>
+                        <th className="px-2 py-2 w-8"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {lineas.filter(l => l.tipo === 'pieza').length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="px-2 py-4 text-center text-gray-400">
+                            Sin piezas añadidas. Usa la pestaña "Líneas" para añadir piezas.
+                          </td>
+                        </tr>
+                      ) : (
+                        lineas.filter(l => l.tipo === 'pieza').map(pieza => (
+                          <tr key={pieza.id} className="hover:bg-gray-50">
+                            <td className="px-2 py-2">
+                              <span className="font-medium">{pieza.descripcion}</span>
+                            </td>
+                            <td className="px-2 py-2 text-center">{pieza.cantidad}</td>
+                            <td className="px-2 py-2 text-right font-mono">
+                              {pieza.precio_unitario > 0 ? `€${pieza.precio_unitario.toFixed(2)}` : '-'}
+                            </td>
+                            <td className="px-2 py-2">
+                              <button
+                                onClick={() => eliminarLinea(pieza.id)}
+                                className="p-1 text-red-500 hover:bg-red-50 rounded"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Mini-formulario rápido para añadir pieza */}
+                <div className="p-3 bg-purple-100/50 rounded-lg border border-purple-200">
+                  <p className="text-xs font-semibold text-purple-800 mb-2">➕ Añadir pieza rápida</p>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Descripción de la pieza..."
+                      className="flex-1 text-xs h-8"
+                      id="pieza-rapida-desc"
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Uds"
+                      className="w-14 text-xs h-8 text-center"
+                      defaultValue={1}
+                      min={1}
+                      id="pieza-rapida-qty"
+                    />
+                    <Button
+                      size="sm"
+                      className="h-8 px-3 bg-purple-600 hover:bg-purple-700 text-xs"
+                      onClick={() => {
+                        const descInput = document.getElementById('pieza-rapida-desc') as HTMLInputElement
+                        const qtyInput = document.getElementById('pieza-rapida-qty') as HTMLInputElement
+                        const desc = descInput?.value?.trim()
+                        const qty = parseInt(qtyInput?.value) || 1
+
+                        if (!desc) {
+                          toast.error('Escribe una descripción')
+                          return
+                        }
+
+                        setLineas(prev => [...prev, {
+                          id: `new-${Date.now()}`,
+                          tipo: 'pieza',
+                          descripcion: desc,
+                          cantidad: qty,
+                          precio_unitario: 0, // Precio pendiente de buscar
+                          isNew: true
+                        }])
+
+                        if (descInput) descInput.value = ''
+                        if (qtyInput) qtyInput.value = '1'
+                        toast.success('Pieza añadida (precio pendiente)')
+                      }}
+                    >
+                      <Plus className="w-3 h-3" />
+                    </Button>
+                  </div>
+                  <p className="text-[10px] text-purple-600 mt-1">
+                    💡 Añade piezas aquí rápidamente. Luego ve a "Líneas" para poner los precios finales.
+                  </p>
+                </div>
               </Card>
 
               {/* Tiempos con selector de fracciones */}

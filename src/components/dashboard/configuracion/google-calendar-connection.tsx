@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Loader2, Calendar, Check, X, ExternalLink, AlertCircle } from 'lucide-react'
+import { Loader2, Calendar, Check, X, ExternalLink, AlertCircle, Settings } from 'lucide-react'
 import { toast } from 'sonner'
+import { GoogleCalendarConfig } from './google-calendar-config'
 
 interface GoogleCalendarStatus {
   connected: boolean
@@ -14,10 +15,15 @@ interface GoogleCalendarStatus {
   connected_at?: string
 }
 
-export function GoogleCalendarConnection() {
+interface Props {
+  tallerId?: string
+}
+
+export function GoogleCalendarConnection({ tallerId }: Props) {
   const [status, setStatus] = useState<GoogleCalendarStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [disconnecting, setDisconnecting] = useState(false)
+  const [showConfig, setShowConfig] = useState(false)
 
   useEffect(() => {
     fetchStatus()
@@ -114,17 +120,40 @@ export function GoogleCalendarConnection() {
       </div>
 
       {!status?.configured ? (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-          <div className="flex gap-3">
-            <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-            <div>
-              <p className="text-sm font-medium text-amber-800">Configuración requerida</p>
-              <p className="text-sm text-amber-700 mt-1">
-                Para usar Google Calendar, el administrador debe configurar las credenciales
-                de Google (GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET) en las variables de entorno.
-              </p>
+        <div className="space-y-4">
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <div className="flex gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-amber-800">Configuración requerida</p>
+                <p className="text-sm text-amber-700 mt-1">
+                  Para usar Google Calendar, configura tus propias credenciales de Google.
+                  Esto te permite usar el tier gratuito de Google Calendar API.
+                </p>
+              </div>
             </div>
           </div>
+
+          <Button
+            variant="outline"
+            onClick={() => setShowConfig(!showConfig)}
+            className="w-full gap-2"
+          >
+            <Settings className="w-4 h-4" />
+            {showConfig ? 'Ocultar configuración' : 'Configurar credenciales'}
+          </Button>
+
+          {showConfig && tallerId && (
+            <div className="border rounded-lg p-4 bg-gray-50">
+              <GoogleCalendarConfig
+                tallerId={tallerId}
+                onConfigured={() => {
+                  setShowConfig(false)
+                  fetchStatus()
+                }}
+              />
+            </div>
+          )}
         </div>
       ) : status.connected ? (
         <div className="space-y-4">

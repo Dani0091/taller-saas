@@ -15,16 +15,18 @@ const createStyles = (colorPrimario: string, colorSecundario: string) => StyleSh
   page: {
     flexDirection: 'column',
     backgroundColor: '#FFFFFF',
-    padding: 40,
+    padding: 30, // Reducido de 40 a 30 para mejor uso del espacio A4
+    paddingBottom: 50, // Espacio para footer
     fontFamily: 'Helvetica',
+    fontSize: 9, // Tamaño base más pequeño
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 30,
-    borderTopWidth: 4,
+    marginBottom: 20, // Reducido de 30
+    borderTopWidth: 3, // Reducido de 4
     borderTopColor: colorPrimario,
-    paddingTop: 20,
+    paddingTop: 15, // Reducido de 20
   },
   leftHeader: {
     flex: 1,
@@ -34,165 +36,169 @@ const createStyles = (colorPrimario: string, colorSecundario: string) => StyleSh
     textAlign: 'right',
   },
   title: {
-    fontSize: 24,
+    fontSize: 18, // Reducido de 24
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 5, // Reducido de 8
     color: '#111827',
   },
   subtitle: {
-    fontSize: 9,
+    fontSize: 8, // Reducido de 9
     color: '#666666',
-    marginBottom: 2,
+    marginBottom: 1, // Reducido de 2
   },
   facturaNumber: {
-    fontSize: 28,
+    fontSize: 22, // Reducido de 28
     fontWeight: 'bold',
     color: '#cccccc',
-    marginBottom: 12,
+    marginBottom: 8, // Reducido de 12
   },
   facturaBox: {
     border: '1px solid #e5e7eb',
     backgroundColor: '#f3f4f6',
-    padding: 12,
-    borderRadius: 4,
+    padding: 8, // Reducido de 12
+    borderRadius: 3, // Reducido de 4
   },
   infoDatos: {
     flexDirection: 'row',
-    marginBottom: 20,
-    gap: 30,
+    marginBottom: 15, // Reducido de 20
+    gap: 20, // Reducido de 30
   },
   dataBlock: {
     flex: 1,
-    borderLeftWidth: 3,
+    borderLeftWidth: 2, // Reducido de 3
     borderLeftColor: colorPrimario,
-    paddingLeft: 12,
+    paddingLeft: 8, // Reducido de 12
   },
   dataBlockVehicle: {
     flex: 1,
-    borderLeftWidth: 3,
+    borderLeftWidth: 2, // Reducido de 3
     borderLeftColor: '#f97316',
-    paddingLeft: 12,
+    paddingLeft: 8, // Reducido de 12
   },
   dataLabel: {
-    fontSize: 8,
+    fontSize: 7, // Reducido de 8
     fontWeight: 'bold',
     color: '#666666',
     textTransform: 'uppercase',
-    marginBottom: 4,
+    marginBottom: 2, // Reducido de 4
   },
   dataValue: {
-    fontSize: 11,
+    fontSize: 9, // Reducido de 11
     fontWeight: 'bold',
     color: '#111827',
-    marginBottom: 2,
+    marginBottom: 1, // Reducido de 2
   },
   dataValueSmall: {
-    fontSize: 9,
+    fontSize: 8, // Reducido de 9
     color: '#666666',
   },
   table: {
-    marginBottom: 20,
+    marginBottom: 12, // Reducido de 20
   },
   tableHeader: {
     flexDirection: 'row',
     backgroundColor: colorPrimario + '15', // Color con opacidad
-    borderBottomWidth: 2,
+    borderBottomWidth: 1, // Reducido de 2
     borderBottomColor: colorPrimario,
-    paddingVertical: 8,
+    paddingVertical: 5, // Reducido de 8
   },
   tableRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
-    paddingVertical: 6,
+    paddingVertical: 4, // Reducido de 6
+    minHeight: 18, // Altura mínima para consistencia
   },
   tableCell: {
     flex: 1,
-    paddingHorizontal: 8,
-    fontSize: 9,
+    paddingHorizontal: 4, // Reducido de 8
+    fontSize: 8, // Reducido de 9
   },
   tableCellRight: {
     flex: 1,
-    paddingHorizontal: 8,
-    fontSize: 9,
+    paddingHorizontal: 4, // Reducido de 8
+    fontSize: 8, // Reducido de 9
     textAlign: 'right',
   },
   totalsBox: {
     marginLeft: 'auto',
-    width: '45%',
-    marginBottom: 20,
+    width: '40%', // Reducido de 45%
+    marginBottom: 12, // Reducido de 20
   },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 4,
-    paddingHorizontal: 12,
+    paddingVertical: 2, // Reducido de 4
+    paddingHorizontal: 8, // Reducido de 12
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
-    fontSize: 9,
+    fontSize: 8, // Reducido de 9
   },
   totalRowBold: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingVertical: 3, // Reducido de 6
+    paddingHorizontal: 8, // Reducido de 12
     backgroundColor: '#f3f4f6',
-    borderBottomWidth: 2,
+    borderBottomWidth: 1, // Reducido de 2
     borderBottomColor: '#e5e7eb',
-    fontSize: 9,
+    fontSize: 8, // Reducido de 9
     fontWeight: 'bold',
   },
   totalFinal: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: 6, // Reducido de 10
+    paddingHorizontal: 8, // Reducido de 12
     backgroundColor: colorSecundario,
     color: '#ffffff',
-    fontSize: 12,
+    fontSize: 10, // Reducido de 12
     fontWeight: 'bold',
-    marginTop: 4,
-    borderRadius: 4,
+    marginTop: 2, // Reducido de 4
+    borderRadius: 3, // Reducido de 4
   },
   verifactuBox: {
     backgroundColor: '#fef3c7',
-    borderLeftWidth: 3,
+    borderLeftWidth: 2, // Reducido de 3
     borderLeftColor: '#eab308',
-    padding: 10,
-    marginBottom: 15,
-    fontSize: 8,
+    padding: 6, // Reducido de 10
+    marginBottom: 8, // Reducido de 15
+    fontSize: 7, // Reducido de 8
   },
   notasBox: {
     backgroundColor: '#f3f4f6',
-    padding: 12,
-    marginBottom: 15,
-    fontSize: 9,
-    borderRadius: 4,
+    padding: 8, // Reducido de 12
+    marginBottom: 8, // Reducido de 15
+    fontSize: 8, // Reducido de 9
+    borderRadius: 3, // Reducido de 4
   },
   ibanBox: {
     backgroundColor: colorPrimario + '10',
     borderWidth: 1,
     borderColor: colorPrimario,
-    padding: 12,
-    marginBottom: 15,
-    borderRadius: 4,
+    padding: 8, // Reducido de 12
+    marginBottom: 8, // Reducido de 15
+    borderRadius: 3, // Reducido de 4
   },
   footer: {
-    marginTop: 'auto',
-    paddingTop: 15,
+    position: 'absolute', // Fijado al fondo
+    bottom: 20,
+    left: 30,
+    right: 30,
+    paddingTop: 8, // Reducido de 15
     borderTopWidth: 1,
     borderTopColor: '#e5e7eb',
-    fontSize: 7,
+    fontSize: 6, // Reducido de 7
     color: '#666666',
   },
   footerGrid: {
     flexDirection: 'row',
-    marginBottom: 10,
-    gap: 15,
+    marginBottom: 6, // Reducido de 10
+    gap: 10, // Reducido de 15
   },
   footerColumn: {
     flex: 1,
-    fontSize: 7,
+    fontSize: 6, // Reducido de 7
   },
 })
 
@@ -310,7 +316,7 @@ export const PDFFactura = ({
             {logoUrl && (
               <Image
                 src={logoUrl}
-                style={{ width: 70, height: 70, marginBottom: 8, objectFit: 'contain' }}
+                style={{ width: 50, height: 50, marginBottom: 5, objectFit: 'contain' }}
               />
             )}
             <Text style={styles.title}>{emisor.nombre}</Text>
@@ -335,15 +341,15 @@ export const PDFFactura = ({
             <Text style={styles.facturaNumber}>FACTURA</Text>
             <View style={styles.facturaBox}>
               <Text style={styles.dataLabel}>Número de Factura</Text>
-              <Text style={{ fontSize: 16, fontWeight: 'bold', color: colorPrimario, marginBottom: 8 }}>
+              <Text style={{ fontSize: 12, fontWeight: 'bold', color: colorPrimario, marginBottom: 4 }}>
                 {serie}{numeroFactura}
               </Text>
               <Text style={styles.dataLabel}>Fecha de Emisión</Text>
-              <Text style={{ fontSize: 11, fontWeight: 'bold', marginBottom: 4 }}>
+              <Text style={{ fontSize: 9, fontWeight: 'bold', marginBottom: 2 }}>
                 {new Date(fechaEmision).toLocaleDateString('es-ES')}
               </Text>
               <Text style={styles.dataLabel}>Fecha de Vencimiento</Text>
-              <Text style={{ fontSize: 11, fontWeight: 'bold' }}>
+              <Text style={{ fontSize: 9, fontWeight: 'bold' }}>
                 {new Date(fechaVencimiento).toLocaleDateString('es-ES')}
               </Text>
             </View>
@@ -369,7 +375,7 @@ export const PDFFactura = ({
             {/* Persona de contacto si difiere del cliente */}
             {personaContacto && (
               <>
-                <Text style={{ ...styles.dataLabel, marginTop: 6 }}>Persona de contacto:</Text>
+                <Text style={{ ...styles.dataLabel, marginTop: 4 }}>Persona de contacto:</Text>
                 <Text style={styles.dataValueSmall}>{personaContacto}</Text>
                 {telefonoContacto && (
                   <Text style={styles.dataValueSmall}>Tel: {telefonoContacto}</Text>
@@ -483,20 +489,20 @@ export const PDFFactura = ({
         {/* INFORMACIÓN DE PAGO */}
         {iban && (
           <View style={styles.ibanBox}>
-            <Text style={{ fontWeight: 'bold', marginBottom: 6, fontSize: 10, color: colorSecundario }}>
+            <Text style={{ fontWeight: 'bold', marginBottom: 4, fontSize: 8, color: colorSecundario }}>
               Datos para el pago
             </Text>
-            <View style={{ flexDirection: 'row', marginBottom: 4 }}>
-              <Text style={{ fontSize: 9, width: 100 }}>Método de pago:</Text>
-              <Text style={{ fontSize: 9, fontWeight: 'bold' }}>{metodoPago}</Text>
+            <View style={{ flexDirection: 'row', marginBottom: 2 }}>
+              <Text style={{ fontSize: 7, width: 70 }}>Método de pago:</Text>
+              <Text style={{ fontSize: 7, fontWeight: 'bold' }}>{metodoPago}</Text>
             </View>
-            <View style={{ flexDirection: 'row', marginBottom: 4 }}>
-              <Text style={{ fontSize: 9, width: 100 }}>IBAN:</Text>
-              <Text style={{ fontSize: 9, fontWeight: 'bold', fontFamily: 'Courier' }}>{iban}</Text>
+            <View style={{ flexDirection: 'row', marginBottom: 2 }}>
+              <Text style={{ fontSize: 7, width: 70 }}>IBAN:</Text>
+              <Text style={{ fontSize: 7, fontWeight: 'bold', fontFamily: 'Courier' }}>{iban}</Text>
             </View>
             <View style={{ flexDirection: 'row' }}>
-              <Text style={{ fontSize: 9, width: 100 }}>Condiciones:</Text>
-              <Text style={{ fontSize: 9, fontWeight: 'bold' }}>{condicionesPago}</Text>
+              <Text style={{ fontSize: 7, width: 70 }}>Condiciones:</Text>
+              <Text style={{ fontSize: 7, fontWeight: 'bold' }}>{condicionesPago}</Text>
             </View>
           </View>
         )}
@@ -508,21 +514,21 @@ export const PDFFactura = ({
         {esVerifactu && verifactuNumero && verifactuQRImage && (
           <View style={{
             backgroundColor: '#ecfdf5',
-            borderWidth: 2,
+            borderWidth: 1,
             borderColor: '#059669',
-            borderRadius: 4,
-            padding: 12,
-            marginBottom: 15,
+            borderRadius: 3,
+            padding: 8,
+            marginBottom: 8,
             flexDirection: 'row',
           }}>
             {/* Código QR - Tamaño 30-40mm según normativa */}
             {verifactuQRImage && (
-              <View style={{ marginRight: 12 }}>
+              <View style={{ marginRight: 8 }}>
                 <Image
                   src={verifactuQRImage}
                   style={{
-                    width: 85, // ~30mm a 72dpi
-                    height: 85,
+                    width: 70, // Reducido de 85
+                    height: 70,
                   }}
                 />
               </View>
@@ -532,37 +538,37 @@ export const PDFFactura = ({
             <View style={{ flex: 1 }}>
               {/* Frase obligatoria */}
               <Text style={{
-                fontSize: 10,
+                fontSize: 8,
                 fontWeight: 'bold',
                 color: '#059669',
-                marginBottom: 6,
+                marginBottom: 4,
               }}>
                 VERI*FACTU
               </Text>
               <Text style={{
-                fontSize: 8,
+                fontSize: 7,
                 color: '#065f46',
-                marginBottom: 8,
+                marginBottom: 4,
               }}>
                 Factura verificable en la sede electrónica de la AEAT
               </Text>
 
               {/* Datos de verificación */}
-              <View style={{ flexDirection: 'row', marginBottom: 4 }}>
-                <Text style={{ fontSize: 7, color: '#374151', width: 80 }}>
+              <View style={{ flexDirection: 'row', marginBottom: 2 }}>
+                <Text style={{ fontSize: 6, color: '#374151', width: 65 }}>
                   Nº Verificación:
                 </Text>
-                <Text style={{ fontSize: 7, fontWeight: 'bold', fontFamily: 'Courier' }}>
+                <Text style={{ fontSize: 6, fontWeight: 'bold', fontFamily: 'Courier' }}>
                   {verifactuNumero}
                 </Text>
               </View>
 
               {verifactuHuella && (
-                <View style={{ flexDirection: 'row', marginBottom: 4 }}>
-                  <Text style={{ fontSize: 7, color: '#374151', width: 80 }}>
+                <View style={{ flexDirection: 'row', marginBottom: 2 }}>
+                  <Text style={{ fontSize: 6, color: '#374151', width: 65 }}>
                     Huella SHA-256:
                   </Text>
-                  <Text style={{ fontSize: 6, fontFamily: 'Courier' }}>
+                  <Text style={{ fontSize: 5, fontFamily: 'Courier' }}>
                     {verifactuHuella.substring(0, 32)}...
                   </Text>
                 </View>
@@ -570,10 +576,10 @@ export const PDFFactura = ({
 
               {verifactuURL && (
                 <View style={{ flexDirection: 'row' }}>
-                  <Text style={{ fontSize: 7, color: '#374151', width: 80 }}>
+                  <Text style={{ fontSize: 6, color: '#374151', width: 65 }}>
                     Verificar en:
                   </Text>
-                  <Text style={{ fontSize: 6, color: '#2563eb' }}>
+                  <Text style={{ fontSize: 5, color: '#2563eb' }}>
                     sede.agenciatributaria.gob.es
                   </Text>
                 </View>
@@ -593,39 +599,36 @@ export const PDFFactura = ({
         {/* NOTAS LEGALES DEL TALLER */}
         {notasLegales && (
           <View style={{ ...styles.notasBox, backgroundColor: '#f9fafb' }}>
-            <Text style={{ fontSize: 8, color: '#666666' }}>{notasLegales}</Text>
+            <Text style={{ fontSize: 7, color: '#666666' }}>{notasLegales}</Text>
           </View>
         )}
 
-        {/* FOOTER */}
-        <View style={styles.footer}>
+        {/* FOOTER - Fijado al fondo de la página */}
+        <View style={styles.footer} fixed>
           <View style={styles.footerGrid}>
             <View style={styles.footerColumn}>
-              <Text style={{ fontWeight: 'bold', marginBottom: 3, color: colorSecundario }}>
+              <Text style={{ fontWeight: 'bold', marginBottom: 2, color: colorSecundario }}>
                 Información Legal
               </Text>
-              <Text>Factura emitida según RD 1619/2012</Text>
-              <Text>Cumplimiento Orden HAP/492/2017</Text>
+              <Text>RD 1619/2012 | HAP/492/2017</Text>
               <Text>Directiva UE 2006/112/CE</Text>
             </View>
             <View style={styles.footerColumn}>
-              <Text style={{ fontWeight: 'bold', marginBottom: 3, color: colorSecundario }}>
+              <Text style={{ fontWeight: 'bold', marginBottom: 2, color: colorSecundario }}>
                 Conservación
               </Text>
               <Text>Período: 4 años</Text>
-              <Text>Formato: Electrónico/Digital</Text>
-              <Text>Accesibilidad según normativa</Text>
+              <Text>Formato: Electrónico</Text>
             </View>
             <View style={styles.footerColumn}>
-              <Text style={{ fontWeight: 'bold', marginBottom: 3, color: colorSecundario }}>
-                Derechos del Cliente
+              <Text style={{ fontWeight: 'bold', marginBottom: 2, color: colorSecundario }}>
+                Derechos
               </Text>
-              <Text>Puede verificar en portal AEAT</Text>
-              <Text>Derecho a información adicional</Text>
-              <Text>Conservar para sus registros</Text>
+              <Text>Verificable en AEAT</Text>
+              <Text>Conservar para registros</Text>
             </View>
           </View>
-          <Text style={{ marginTop: 8, textAlign: 'center' }}>
+          <Text style={{ marginTop: 4, textAlign: 'center' }}>
             {emisor.nombre} | {emisor.email} | {emisor.telefono}
           </Text>
         </View>

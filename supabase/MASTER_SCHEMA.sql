@@ -154,6 +154,7 @@ CREATE TABLE IF NOT EXISTS ordenes_reparacion (
     notas TEXT,
     fotos_entrada TEXT,
     fotos_salida TEXT,
+    fotos_diagnostico TEXT, -- Fotos de diagnóstico (cuadro, testigos, etc.)
     -- Campos formulario físico
     nivel_combustible VARCHAR(10),
     renuncia_presupuesto BOOLEAN DEFAULT FALSE,
