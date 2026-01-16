@@ -83,22 +83,57 @@ export async function POST(request: NextRequest) {
 
     // OPERACIÓN ATÓMICA: Obtener y actualizar el número de serie
     // 1. Buscar la serie en series_facturacion
-    const { data: serieData, error: serieError } = await supabase
+    let serieData = null
+    const { data: serieExistente, error: serieError } = await supabase
       .from('series_facturacion')
       .select('id, ultimo_numero, prefijo')
       .eq('taller_id', taller_id)
       .eq('prefijo', serieToUse)
       .single()
 
-    if (serieError || !serieData) {
-      return NextResponse.json(
-        {
-          error: `Serie "${serieToUse}" no encontrada`,
-          details: 'Debes crear la serie en Configuración antes de usarla',
-          code: 'SERIE_NOT_FOUND'
-        },
-        { status: 404 }
-      )
+    if (serieError || !serieExistente) {
+      // Serie no existe - CREARLA AUTOMÁTICAMENTE
+      console.log(`Serie "${serieToUse}" no existe, creándola automáticamente...`)
+
+      // Obtener el número inicial de la config si existe
+      let numeroInicial = 0
+      const { data: configData } = await supabase
+        .from('taller_config')
+        .select('numero_factura_inicial')
+        .eq('taller_id', taller_id)
+        .single()
+
+      if (configData?.numero_factura_inicial) {
+        numeroInicial = configData.numero_factura_inicial - 1 // -1 porque se incrementa al crear
+        if (numeroInicial < 0) numeroInicial = 0
+      }
+
+      const { data: nuevaSerie, error: crearSerieError } = await supabase
+        .from('series_facturacion')
+        .insert([{
+          taller_id,
+          nombre: `Serie ${serieToUse}`,
+          prefijo: serieToUse,
+          ultimo_numero: numeroInicial
+        }])
+        .select()
+        .single()
+
+      if (crearSerieError || !nuevaSerie) {
+        return NextResponse.json(
+          {
+            error: `No se pudo crear la serie "${serieToUse}"`,
+            details: crearSerieError?.message || 'Error desconocido',
+            code: 'SERIE_CREATE_ERROR'
+          },
+          { status: 500 }
+        )
+      }
+
+      serieData = nuevaSerie
+      console.log(`Serie "${serieToUse}" creada con ID: ${nuevaSerie.id}`)
+    } else {
+      serieData = serieExistente
     }
 
     // 2. Incrementar el último número
