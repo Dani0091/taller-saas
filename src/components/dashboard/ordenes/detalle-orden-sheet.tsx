@@ -393,7 +393,7 @@ export function DetalleOrdenSheet({
         .insert({
           taller_id: tallerId,
           cliente_id: formData.cliente_id,
-          matricula: nuevoVehiculo.matricula.toUpperCase().replace(/[\s-]/g, ''),
+          matricula: nuevoVehiculo.matricula.toUpperCase().replace(/\s/g, ''),
           marca: nuevoVehiculo.marca || null,
           modelo: nuevoVehiculo.modelo || null,
           año: nuevoVehiculo.año ? parseInt(nuevoVehiculo.año) : null,
@@ -459,7 +459,7 @@ export function DetalleOrdenSheet({
       const { error } = await supabase
         .from('vehiculos')
         .update({
-          matricula: vehiculoEditado.matricula.toUpperCase().replace(/[\s-]/g, ''),
+          matricula: vehiculoEditado.matricula.toUpperCase().replace(/\s/g, ''),
           marca: vehiculoEditado.marca || null,
           modelo: vehiculoEditado.modelo || null,
           año: vehiculoEditado.año ? parseInt(vehiculoEditado.año) : null,
@@ -478,7 +478,7 @@ export function DetalleOrdenSheet({
         v.id === formData.vehiculo_id
           ? {
               ...v,
-              matricula: vehiculoEditado.matricula.toUpperCase().replace(/[\s-]/g, ''),
+              matricula: vehiculoEditado.matricula.toUpperCase().replace(/\s/g, ''),
               marca: vehiculoEditado.marca || null,
               modelo: vehiculoEditado.modelo || null,
               año: vehiculoEditado.año ? parseInt(vehiculoEditado.año) : null,
@@ -617,7 +617,7 @@ export function DetalleOrdenSheet({
         renuncia_presupuesto: formData.renuncia_presupuesto,
         accion_imprevisto: formData.accion_imprevisto || 'avisar',
         recoger_piezas: formData.recoger_piezas,
-        danos_carroceria: formData.danos_carroceria || null,
+        daños_carroceria: formData.danos_carroceria || null,
         coste_diario_estancia: formData.coste_diario_estancia || null,
         kilometros_entrada: formData.kilometros_entrada || null,
       }
@@ -707,9 +707,9 @@ export function DetalleOrdenSheet({
         renuncia_presupuesto: formData.renuncia_presupuesto,
         accion_imprevisto: formData.accion_imprevisto || 'avisar',
         recoger_piezas: formData.recoger_piezas,
-        danos_carroceria: formData.danos_carroceria || null,
-        coste_diario_estancia: formData.coste_diario_estancia || null,
-        kilometros_entrada: formData.kilometros_entrada || null,
+        danos_carroceria: formData.danos_carroceria,
+        coste_diario_estancia: formData.coste_diario_estancia,
+        kilometros_entrada: formData.kilometros_entrada,
         updated_at: new Date().toISOString()
       }
 
@@ -717,7 +717,6 @@ export function DetalleOrdenSheet({
         .from('ordenes_reparacion')
         .update(ordenData)
         .eq('id', ordenSeleccionada)
-
     } catch (error) {
       console.error('Error guardando antes de facturar:', error)
     } finally {
@@ -839,8 +838,7 @@ export function DetalleOrdenSheet({
           <div className="relative">
             <button
               onClick={() => setMostrarEstados(!mostrarEstados)}
-              className={`w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl border-2 transition-all ${estadoActual.color} text-white`}
-            >
+              className={`w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl border-2 transition-all ${estadoActual.color} text-white`}>
               <span className="flex items-center gap-2 font-medium">
                 <span>{estadoActual.icon}</span>
                 {estadoActual.label}
@@ -856,8 +854,7 @@ export function DetalleOrdenSheet({
                     onClick={() => cambiarEstado(estado.value)}
                     className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${
                       formData.estado === estado.value ? 'bg-gray-100' : ''
-                    }`}
-                  >
+                    }`}>
                     <span className={`w-3 h-3 rounded-full ${estado.color}`} />
                     <span className="flex-1 text-left font-medium">{estado.label}</span>
                     {formData.estado === estado.value && (
@@ -885,8 +882,7 @@ export function DetalleOrdenSheet({
                 tab === t.id
                   ? 'border-sky-600 text-sky-600 bg-sky-50'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
+              }`}>
               <span className="mr-1">{t.icon}</span>
               {t.label}
             </button>
@@ -1455,8 +1451,7 @@ export function DetalleOrdenSheet({
                           formData.nivel_combustible === nivel
                             ? 'bg-amber-500 border-amber-500 text-white'
                             : 'bg-white border-gray-200 text-gray-600 hover:border-amber-300'
-                        }`}
-                      >
+                        }`}> 
                         {nivel}
                       </button>
                     ))}
@@ -1504,10 +1499,7 @@ export function DetalleOrdenSheet({
                   <input
                     type="checkbox"
                     checked={formData.presupuesto_aprobado_por_cliente || false}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      presupuesto_aprobado_por_cliente: e.target.checked
-                    }))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, presupuesto_aprobado_por_cliente: e.target.checked }))}
                     className="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
                   />
                   <div>
@@ -1521,10 +1513,7 @@ export function DetalleOrdenSheet({
                   <input
                     type="checkbox"
                     checked={formData.renuncia_presupuesto || false}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      renuncia_presupuesto: e.target.checked
-                    }))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, renuncia_presupuesto: e.target.checked }))}
                     className="w-5 h-5 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                   />
                   <div>
@@ -1538,10 +1527,7 @@ export function DetalleOrdenSheet({
                   <input
                     type="checkbox"
                     checked={formData.recoger_piezas || false}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      recoger_piezas: e.target.checked
-                    }))}
+                    onChange={(e) => setFormData(prev => ({ ...prev, recoger_piezas: e.target.checked }))}
                     className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
                   <div>
@@ -1561,8 +1547,7 @@ export function DetalleOrdenSheet({
                         formData.accion_imprevisto === 'avisar'
                           ? 'bg-blue-500 border-blue-500 text-white'
                           : 'bg-white border-gray-200 text-gray-600 hover:border-blue-300'
-                      }`}
-                    >
+                      }`}>
                       📞 Avisar antes
                     </button>
                     <button
@@ -1572,8 +1557,7 @@ export function DetalleOrdenSheet({
                         formData.accion_imprevisto === 'actuar'
                           ? 'bg-green-500 border-green-500 text-white'
                           : 'bg-white border-gray-200 text-gray-600 hover:border-green-300'
-                      }`}
-                    >
+                      }`}>
                       🔧 Actuar directamente
                     </button>
                   </div>
@@ -1586,7 +1570,7 @@ export function DetalleOrdenSheet({
                 <Textarea
                   value={formData.danos_carroceria || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, danos_carroceria: e.target.value }))}
-                  placeholder="Describe los daños preexistentes en la carrocería del vehículo (golpes, arañazos, abolladuras...)"
+                  placeholder="Describe los daños preexistentes en la carrocería del vehículo (golpe, rasguño, etc.)..."
                   rows={3}
                   className="resize-none"
                 />
@@ -2156,7 +2140,7 @@ export function DetalleOrdenSheet({
                 </Button>
               ) : (
                 <div className="bg-purple-50 border border-purple-200 rounded-xl p-3 space-y-2">
-                  <p className="text-xs text-purple-700 font-medium">📋 Enlace del presupuesto:</p>
+                  <p className="text-xs text-purple-700 font-medium">Enlace del presupuesto:</p>
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -2232,28 +2216,37 @@ export function DetalleOrdenSheet({
             </Button>
           )}
 
-          <Button
-            onClick={handleGuardar}
-            disabled={guardando || !formData.cliente_id}
-            className="w-full gap-2 py-3 bg-sky-600 hover:bg-sky-700"
-          >
-            {guardando ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4" />
-            )}
-            {guardando ? 'Guardando...' : (modoCrear ? 'Crear Orden' : 'Guardar Cambios')}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="flex-1 py-3"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleGuardar}
+              disabled={guardando || !formData.cliente_id}
+              className="flex-1 gap-2 py-3 bg-sky-600 hover:bg-sky-700"
+            >
+              {guardando ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
+              {guardando ? 'Guardando...' : (modoCrear ? 'Crear Orden' : 'Guardar Cambios')}
+            </Button>
+          </div>
         </div>
-      </div>
 
-      {/* Modal PDF de orden de trabajo */}
-      {mostrarPDF && ordenSeleccionada && (
-        <OrdenPDFViewer
-          ordenId={ordenSeleccionada}
-          onClose={() => setMostrarPDF(false)}
-        />
-      )}
+        {/* Modal PDF */}
+        {mostrarPDF && ordenSeleccionada && (
+          <OrdenPDFViewer
+            ordenId={ordenSeleccionada}
+            onClose={() => setMostrarPDF(false)}
+          />
+        )}
+      </div>
     </div>
   )
 }
