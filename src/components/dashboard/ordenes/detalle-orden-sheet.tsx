@@ -20,7 +20,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { fotosToString, getFotoUrl, setFotoUrl } from '@/lib/utils'
+import { fotosToString, getFotoUrl, setFotoUrl, getFotoByKey, setFotoByKey } from '@/lib/utils'
 import { ESTADOS_ORDEN, FRACCIONES_HORA, CANTIDADES, ESTADOS_FACTURABLES, FOTOS_DIAGNOSTICO, FOTO_LABELS, type TipoFoto } from '@/lib/constants'
 
 interface Orden {
@@ -1755,12 +1755,12 @@ export function DetalleOrdenSheet({
                     <FotoUploader
                       key={tipoFoto}
                       tipo={tipoFoto}
-                      fotoUrl={getFotoUrl(formData.fotos_diagnostico || '', tipoFoto)}
+                      fotoUrl={getFotoByKey(formData.fotos_diagnostico || '', tipoFoto)}
                       ordenId={ordenSeleccionada || 'nueva'}
                       onFotoSubida={(url) => {
                         setFormData(prev => ({
                           ...prev,
-                          fotos_diagnostico: setFotoUrl(prev.fotos_diagnostico || '', tipoFoto, url)
+                          fotos_diagnostico: setFotoByKey(prev.fotos_diagnostico || '', tipoFoto, url)
                         }))
                       }}
                       disabled={!ordenSeleccionada && !modoCrear}
