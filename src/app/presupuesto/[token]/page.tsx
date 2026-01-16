@@ -206,34 +206,34 @@ export default function PresupuestoPublico({ params }: { params: Promise<{ token
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden print:shadow-none print:rounded-none">
           {/* Cabecera con color del taller */}
           <div
-            className="p-6 text-white"
+            className="p-4 sm:p-6 text-white"
             style={{ backgroundColor: colorPrimario }}
           >
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div className="flex items-center gap-3 sm:gap-4">
                 {presupuesto.taller.logoUrl ? (
                   <img
                     src={presupuesto.taller.logoUrl}
                     alt="Logo"
-                    className="h-14 w-auto object-contain bg-white rounded-lg p-1"
+                    className="h-12 sm:h-14 w-auto object-contain bg-white rounded-lg p-1"
                   />
                 ) : (
-                  <div className="w-14 h-14 bg-white/20 rounded-lg flex items-center justify-center text-3xl">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white/20 rounded-lg flex items-center justify-center text-2xl sm:text-3xl">
                     🔧
                   </div>
                 )}
-                <div>
-                  <h2 className="text-xl font-bold">{presupuesto.taller.nombre}</h2>
-                  <p className="text-sm opacity-90">{presupuesto.taller.direccion}</p>
-                  <p className="text-sm opacity-90">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-lg sm:text-xl font-bold truncate">{presupuesto.taller.nombre}</h2>
+                  <p className="text-xs sm:text-sm opacity-90 truncate">{presupuesto.taller.direccion}</p>
+                  <p className="text-xs sm:text-sm opacity-90 truncate">
                     {presupuesto.taller.telefono} • {presupuesto.taller.email}
                   </p>
                 </div>
               </div>
-              <div className="text-right">
-                <p className="text-sm opacity-75">PRESUPUESTO</p>
-                <p className="text-2xl font-bold">{presupuesto.numero}</p>
-                <p className="text-sm opacity-90 mt-1">
+              <div className="text-left sm:text-right flex-shrink-0 border-t sm:border-t-0 pt-3 sm:pt-0 mt-1 sm:mt-0 border-white/20">
+                <p className="text-xs opacity-75">PRESUPUESTO</p>
+                <p className="text-xl sm:text-2xl font-bold font-mono">{presupuesto.numero}</p>
+                <p className="text-xs sm:text-sm opacity-90 mt-1">
                   {formatFecha(presupuesto.fechaEmision)}
                 </p>
               </div>
@@ -254,9 +254,9 @@ export default function PresupuestoPublico({ params }: { params: Promise<{ token
           )}
 
           {/* Contenido */}
-          <div className="p-6 space-y-6">
+          <div className="p-4 sm:p-6 space-y-5 sm:space-y-6">
             {/* Cliente y Vehículo */}
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
                   Cliente
@@ -298,28 +298,28 @@ export default function PresupuestoPublico({ params }: { params: Promise<{ token
                 <h3 className="text-xs font-semibold text-gray-500 uppercase mb-3">
                   Detalle del presupuesto
                 </h3>
-                <div className="border rounded-lg overflow-hidden">
-                  <table className="w-full text-sm">
+                <div className="border rounded-lg overflow-hidden overflow-x-auto">
+                  <table className="w-full text-sm min-w-[320px]">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-4 py-2 text-left font-medium text-gray-600">Concepto</th>
-                        <th className="px-4 py-2 text-center font-medium text-gray-600">Cant.</th>
-                        <th className="px-4 py-2 text-right font-medium text-gray-600">Precio</th>
-                        <th className="px-4 py-2 text-right font-medium text-gray-600">Total</th>
+                        <th className="px-3 sm:px-4 py-2 text-left font-medium text-gray-600">Concepto</th>
+                        <th className="px-2 sm:px-4 py-2 text-center font-medium text-gray-600 w-16">Cant.</th>
+                        <th className="px-2 sm:px-4 py-2 text-right font-medium text-gray-600 w-20">Precio</th>
+                        <th className="px-3 sm:px-4 py-2 text-right font-medium text-gray-600 w-20">Total</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
                       {presupuesto.lineas.map((linea, i) => (
                         <tr key={i}>
-                          <td className="px-4 py-3">
-                            <span className="mr-2">
+                          <td className="px-3 sm:px-4 py-3">
+                            <span className="mr-1 sm:mr-2">
                               {linea.tipo === 'mano_obra' ? '🔧' : linea.tipo === 'pieza' ? '⚙️' : '🛠️'}
                             </span>
-                            {linea.descripcion}
+                            <span className="break-words">{linea.descripcion}</span>
                           </td>
-                          <td className="px-4 py-3 text-center">{linea.cantidad}</td>
-                          <td className="px-4 py-3 text-right">€{linea.precio.toFixed(2)}</td>
-                          <td className="px-4 py-3 text-right font-medium">€{linea.total.toFixed(2)}</td>
+                          <td className="px-2 sm:px-4 py-3 text-center">{linea.cantidad}</td>
+                          <td className="px-2 sm:px-4 py-3 text-right whitespace-nowrap">€{linea.precio.toFixed(2)}</td>
+                          <td className="px-3 sm:px-4 py-3 text-right font-medium whitespace-nowrap">€{linea.total.toFixed(2)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -329,8 +329,8 @@ export default function PresupuestoPublico({ params }: { params: Promise<{ token
             )}
 
             {/* Totales */}
-            <div className="flex justify-end">
-              <div className="w-72 space-y-2">
+            <div className="flex justify-center sm:justify-end">
+              <div className="w-full sm:w-72 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Mano de obra:</span>
                   <span>€{presupuesto.totales.manoObra.toFixed(2)}</span>
