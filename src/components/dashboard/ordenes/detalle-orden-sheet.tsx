@@ -207,7 +207,7 @@ export function DetalleOrdenSheet({
       // Cargar clientes
       const { data: clientesData } = await supabase
         .from('clientes')
-        .select('id, nombre, nif, telefono')
+        .select('id, nombre, apellidos, nif, telefono')
         .eq('taller_id', usuario.taller_id)
         .order('nombre')
 

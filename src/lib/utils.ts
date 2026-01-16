@@ -137,8 +137,8 @@ export function setFotoUrl(fotos: string, index: number, url: string): string {
 
 /**
  * Obtiene la URL de una foto por su clave (para fotos nombradas como diagnóstico)
- * Formato: "clave1:url1|clave2:url2"
- * @param fotos - String con el formato clave:url separado por |
+ * Formato: "clave1=url1|clave2=url2"
+ * @param fotos - String con el formato clave=url separado por |
  * @param key - Clave de la foto
  * @returns URL de la foto o string vacío
  */
@@ -146,7 +146,10 @@ export function getFotoByKey(fotos: string, key: string): string {
   if (!fotos) return ''
   const pairs = fotos.split('|').filter(Boolean)
   for (const pair of pairs) {
-    const [k, v] = pair.split(':')
+    const eqIndex = pair.indexOf('=')
+    if (eqIndex === -1) continue
+    const k = pair.substring(0, eqIndex)
+    const v = pair.substring(eqIndex + 1)
     if (k === key) return v || ''
   }
   return ''
@@ -154,8 +157,8 @@ export function getFotoByKey(fotos: string, key: string): string {
 
 /**
  * Establece la URL de una foto por su clave (para fotos nombradas)
- * Formato: "clave1:url1|clave2:url2"
- * @param fotos - String actual con formato clave:url
+ * Formato: "clave1=url1|clave2=url2"
+ * @param fotos - String actual con formato clave=url
  * @param key - Clave de la foto
  * @param url - Nueva URL
  * @returns Nuevo string con la foto actualizada
@@ -165,7 +168,10 @@ export function setFotoByKey(fotos: string, key: string, url: string): string {
   const map = new Map<string, string>()
 
   for (const pair of pairs) {
-    const [k, v] = pair.split(':')
+    const eqIndex = pair.indexOf('=')
+    if (eqIndex === -1) continue
+    const k = pair.substring(0, eqIndex)
+    const v = pair.substring(eqIndex + 1)
     if (k && v) map.set(k, v)
   }
 
@@ -176,7 +182,7 @@ export function setFotoByKey(fotos: string, key: string, url: string): string {
   }
 
   return Array.from(map.entries())
-    .map(([k, v]) => `${k}:${v}`)
+    .map(([k, v]) => `${k}=${v}`)
     .join('|')
 }
 
