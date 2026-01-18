@@ -617,7 +617,7 @@ export function DetalleOrdenSheet({
         renuncia_presupuesto: formData.renuncia_presupuesto,
         accion_imprevisto: formData.accion_imprevisto || 'avisar',
         recoger_piezas: formData.recoger_piezas,
-        daños_carroceria: formData.danos_carroceria || null,
+        danos_carroceria: formData.danos_carroceria || null,
         coste_diario_estancia: formData.coste_diario_estancia || null,
         kilometros_entrada: formData.kilometros_entrada || null,
       }
