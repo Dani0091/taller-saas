@@ -82,6 +82,16 @@ export default function NuevaFacturaPage() {
     ivaPorcentaje: '21',
   })
 
+  // Servicios rápidos preconfigurados (con IVA ya configurado)
+  const SERVICIOS_RAPIDOS = [
+    { nombre: '⛽ Gasolina', descripcion: 'Repostaje de combustible', iva: 0, icon: '⛽' },
+    { nombre: '🧽 Lavado', descripcion: 'Lavado de vehículo', iva: 21, icon: '🧽' },
+    { nombre: '🅿️ Parking', descripcion: 'Servicio de aparcamiento', iva: 21, icon: '🅿️' },
+    { nombre: '🔋 Batería', descripcion: 'Carga/Sustitución batería', iva: 21, icon: '🔋' },
+    { nombre: '💨 Aire', descripcion: 'Inflado de neumáticos', iva: 21, icon: '💨' },
+    { nombre: '🧴 AdBlue', descripcion: 'Recarga AdBlue', iva: 21, icon: '🧴' },
+  ]
+
   // Porcentaje IVA por defecto
   const [ivaPorDefecto, setIvaPorDefecto] = useState(21)
 
@@ -271,12 +281,16 @@ export default function NuevaFacturaPage() {
       return
     }
 
+    // Parsear IVA correctamente (0% es válido)
+    const ivaValue = parseFloat(nuevaLinea.ivaPorcentaje)
+    const ivaPorcentajeFinal = !isNaN(ivaValue) ? ivaValue : ivaPorDefecto
+
     const linea: LineaFactura = {
       id: Date.now().toString(),
       descripcion: nuevaLinea.descripcion,
       cantidad: parseFloat(nuevaLinea.cantidad),
       precioUnitario: parseFloat(nuevaLinea.precioUnitario),
-      ivaPorcentaje: parseFloat(nuevaLinea.ivaPorcentaje) || ivaPorDefecto,
+      ivaPorcentaje: ivaPorcentajeFinal,
     }
 
     setLineas([...lineas, linea])
@@ -556,6 +570,32 @@ export default function NuevaFacturaPage() {
           {/* LÍNEAS */}
           <Card className="p-6 border-l-4 border-l-green-600">
             <h2 className="font-bold text-lg mb-4 text-gray-900">Conceptos</h2>
+
+            {/* SERVICIOS RÁPIDOS */}
+            <div className="mb-6 p-4 bg-amber-50 rounded-xl border-2 border-amber-200">
+              <p className="text-sm font-semibold text-amber-800 mb-3">⚡ Servicios Rápidos (IVA preconfigurado)</p>
+              <div className="flex flex-wrap gap-2">
+                {SERVICIOS_RAPIDOS.map((servicio) => (
+                  <button
+                    key={servicio.nombre}
+                    type="button"
+                    onClick={() => setNuevaLinea({
+                      descripcion: servicio.descripcion,
+                      cantidad: '1',
+                      precioUnitario: '',
+                      ivaPorcentaje: String(servicio.iva),
+                    })}
+                    className="px-3 py-2 bg-white border-2 border-amber-300 rounded-lg text-sm font-medium hover:bg-amber-100 hover:border-amber-400 transition-all active:scale-95"
+                  >
+                    {servicio.nombre}
+                    <span className="ml-1 text-xs text-gray-500">({servicio.iva}%)</span>
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-amber-600 mt-2">
+                💡 Gasolina lleva 0% IVA porque ya incluye impuestos en el precio de compra
+              </p>
+            </div>
 
             {lineas.length > 0 && (
               <div className="overflow-x-auto mb-6">

@@ -212,7 +212,9 @@ export async function POST(request: NextRequest) {
       const lineasData = lineas.map((linea: any, index: number) => {
         const cantidad = parseFloat(linea.cantidad) || 1
         const precioUnitario = parseFloat(linea.precioUnitario || linea.precio_unitario) || 0
-        const ivaPorcentaje = parseFloat(linea.iva_porcentaje) || ivaPorcentajeConfig
+        // Manejar IVA 0% correctamente (no usar || porque 0 es falsy)
+        const ivaParseado = parseFloat(linea.iva_porcentaje)
+        const ivaPorcentaje = !isNaN(ivaParseado) ? ivaParseado : ivaPorcentajeConfig
         const baseImponible = cantidad * precioUnitario
         const ivaImporte = baseImponible * (ivaPorcentaje / 100)
         const totalLinea = baseImponible + ivaImporte
