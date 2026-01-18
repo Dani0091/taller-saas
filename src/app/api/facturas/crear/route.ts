@@ -68,17 +68,17 @@ export async function POST(request: NextRequest) {
     // Determinar serie a usar (del body o de la configuración del taller)
     let serieToUse = serie || 'FA'
 
-    if (!serie) {
-      // Intentar obtener serie por defecto de la configuración del taller
-      const { data: config } = await supabase
-        .from('taller_config')
-        .select('serie_factura')
-        .eq('taller_id', taller_id)
-        .single()
+    // Obtener configuración del taller (IVA, serie, etc.)
+    const { data: tallerConfig } = await supabase
+      .from('taller_config')
+      .select('serie_factura, porcentaje_iva')
+      .eq('taller_id', taller_id)
+      .single()
 
-      if (config?.serie_factura) {
-        serieToUse = config.serie_factura
-      }
+    const ivaPorcentajeConfig = tallerConfig?.porcentaje_iva || 21
+
+    if (!serie && tallerConfig?.serie_factura) {
+      serieToUse = tallerConfig.serie_factura
     }
 
     // OPERACIÓN ATÓMICA: Obtener y actualizar el número de serie
@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
       total: total || 0,
       metodo_pago,
       estado: estado || 'borrador',
-      iva_porcentaje: 21,
+      iva_porcentaje: ivaPorcentajeConfig,
     }
 
     // Añadir campos opcionales de contacto si están presentes
@@ -212,7 +212,7 @@ export async function POST(request: NextRequest) {
       const lineasData = lineas.map((linea: any, index: number) => {
         const cantidad = parseFloat(linea.cantidad) || 1
         const precioUnitario = parseFloat(linea.precioUnitario || linea.precio_unitario) || 0
-        const ivaPorcentaje = parseFloat(linea.iva_porcentaje) || 21
+        const ivaPorcentaje = parseFloat(linea.iva_porcentaje) || ivaPorcentajeConfig
         const baseImponible = cantidad * precioUnitario
         const ivaImporte = baseImponible * (ivaPorcentaje / 100)
         const totalLinea = baseImponible + ivaImporte

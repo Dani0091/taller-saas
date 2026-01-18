@@ -47,8 +47,11 @@ export async function middleware(request: NextRequest) {
     '/auth/login',
     '/auth/registro',
     '/auth/callback',
+    '/auth/recuperar',
+    '/auth/nueva-password',
     '/api/auth',
-    '/api/presupuesto', // Presupuestos públicos
+    '/api/presupuesto', // API de presupuestos públicos
+    '/presupuesto',     // Página pública de presupuestos (compartir con cliente)
   ]
 
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
