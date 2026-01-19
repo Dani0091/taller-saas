@@ -129,10 +129,12 @@ export async function POST(request: NextRequest) {
     // Generar número de factura con el formato estándar
     const numeroFactura = `${serieFactura}${siguienteNumero.toString().padStart(3, '0')}`
 
-    // Calcular totales
-    const baseImponible = orden.total_sin_iva || orden.subtotal_mano_obra + orden.subtotal_piezas || 0
-    const iva = orden.iva_amount || baseImponible * (ivaPorcentaje / 100)
-    const total = orden.total_con_iva || baseImponible + iva
+    // Calcular totales (asegurar valores numéricos válidos)
+    const baseImponible = parseFloat(orden.total_sin_iva) ||
+                          parseFloat(orden.subtotal_mano_obra || 0) + parseFloat(orden.subtotal_piezas || 0) ||
+                          0
+    const iva = parseFloat(orden.iva_amount) || (baseImponible * (ivaPorcentaje / 100))
+    const total = parseFloat(orden.total_con_iva) || (baseImponible + iva)
 
     // Crear la factura
     const { data: factura, error: facturaError } = await supabase
@@ -140,6 +142,7 @@ export async function POST(request: NextRequest) {
       .insert([{
         taller_id,
         cliente_id: orden.cliente_id,
+        orden_id: orden_id,
         numero_factura: numeroFactura,
         numero_serie: serieFactura,
         fecha_emision: new Date().toISOString().split('T')[0],
@@ -150,6 +153,8 @@ export async function POST(request: NextRequest) {
         total: total,
         metodo_pago: 'Transferencia bancaria',
         estado: 'borrador',
+        condiciones_pago: config?.condiciones_pago,
+        notas_internas: config?.notas_factura,
       }])
       .select()
       .single()
@@ -157,7 +162,11 @@ export async function POST(request: NextRequest) {
     if (facturaError || !factura) {
       console.error('Error al crear factura:', facturaError)
       return NextResponse.json(
-        { error: 'Error al crear la factura' },
+        {
+          error: 'Error al crear la factura',
+          details: facturaError?.message || 'Sin detalles',
+          code: facturaError?.code
+        },
         { status: 500 }
       )
     }
@@ -218,6 +227,15 @@ export async function POST(request: NextRequest) {
 
       if (lineasError) {
         console.error('Error creando líneas de factura:', lineasError)
+        console.error('Líneas que intentamos insertar:', JSON.stringify(lineasFactura, null, 2))
+        return NextResponse.json(
+          {
+            error: 'Error al crear líneas de factura',
+            details: lineasError?.message || 'Sin detalles',
+            code: lineasError?.code
+          },
+          { status: 500 }
+        )
       }
     } else {
       // Si no hay líneas, crear una línea genérica con el total
@@ -278,10 +296,14 @@ export async function POST(request: NextRequest) {
       numero_factura: numeroFactura,
       message: `Factura ${numeroFactura} creada correctamente`,
     })
-  } catch (error) {
-    console.error('Error:', error)
+  } catch (error: any) {
+    console.error('Error en desde-orden:', error)
     return NextResponse.json(
-      { error: 'Error interno del servidor' },
+      {
+        error: 'Error interno del servidor',
+        details: error?.message || error?.toString() || 'Sin detalles',
+        stack: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+      },
       { status: 500 }
     )
   }
