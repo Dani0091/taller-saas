@@ -164,26 +164,65 @@ export async function POST(request: NextRequest) {
 
     // Crear líneas de factura desde las líneas de la orden
     if (lineasOrden && lineasOrden.length > 0) {
-      const lineasFactura = lineasOrden.map((linea: any) => ({
-        factura_id: factura.id,
-        descripcion: linea.descripcion || linea.concepto,
-        cantidad: linea.cantidad || 1,
-        precio_unitario: linea.precio_unitario || linea.precio || 0,
-      }))
+      const lineasFactura = lineasOrden.map((linea: any, index: number) => {
+        const cantidad = parseFloat(linea.cantidad) || 1
+        const precioUnitario = parseFloat(linea.precio_unitario) || 0
+        const ivaPorcentajeLinea = parseFloat(linea.iva_porcentaje) || ivaPorcentaje
 
-      await supabase
+        // Calcular importes
+        const baseImponibleLinea = cantidad * precioUnitario
+        const ivaImporte = baseImponibleLinea * (ivaPorcentajeLinea / 100)
+        const totalLinea = baseImponibleLinea + ivaImporte
+
+        // Determinar concepto basado en el tipo de línea
+        let concepto = 'Servicio'
+        if (linea.tipo === 'mano_obra') concepto = 'Mano de obra'
+        else if (linea.tipo === 'pieza') concepto = 'Pieza / Repuesto'
+        else if (linea.tipo === 'servicio') concepto = 'Servicio'
+
+        return {
+          factura_id: factura.id,
+          numero_linea: index + 1,
+          concepto: concepto,
+          descripcion: linea.descripcion || linea.concepto || 'Servicio',
+          cantidad: cantidad,
+          precio_unitario: precioUnitario,
+          base_imponible: baseImponibleLinea,
+          iva_porcentaje: ivaPorcentajeLinea,
+          iva_importe: ivaImporte,
+          total_linea: totalLinea,
+          importe_total: totalLinea
+        }
+      })
+
+      const { error: lineasError } = await supabase
         .from('lineas_factura')
         .insert(lineasFactura)
+
+      if (lineasError) {
+        console.error('Error creando líneas de factura:', lineasError)
+      }
     } else {
       // Si no hay líneas, crear una línea genérica con el total
-      await supabase
+      const { error: lineaError } = await supabase
         .from('lineas_factura')
         .insert([{
           factura_id: factura.id,
+          numero_linea: 1,
+          concepto: 'Reparación',
           descripcion: `Reparación vehículo ${orden.vehiculos?.matricula || ''} - ${orden.descripcion_problema || 'Servicio de taller'}`,
           cantidad: 1,
           precio_unitario: baseImponible,
+          base_imponible: baseImponible,
+          iva_porcentaje: ivaPorcentaje,
+          iva_importe: iva,
+          total_linea: total,
+          importe_total: total
         }])
+
+      if (lineaError) {
+        console.error('Error creando línea genérica de factura:', lineaError)
+      }
     }
 
     // Actualizar la orden (solo campos que existen en la base de datos)
