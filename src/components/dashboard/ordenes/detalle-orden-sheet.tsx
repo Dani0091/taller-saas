@@ -60,9 +60,11 @@ interface DetalleOrdenSheetProps {
   modoCrear?: boolean
 }
 
+type TipoLinea = 'mano_obra' | 'pieza' | 'servicio' | 'suplido' | 'reembolso'
+
 interface Linea {
   id: string
-  tipo: 'mano_obra' | 'pieza' | 'servicio'
+  tipo: TipoLinea
   descripcion: string
   cantidad: number
   precio_unitario: number
@@ -115,8 +117,13 @@ export function DetalleOrdenSheet({
     kilometros_entrada: undefined,
   })
 
-  const [nuevaLinea, setNuevaLinea] = useState({
-    tipo: 'mano_obra' as const,
+  const [nuevaLinea, setNuevaLinea] = useState<{
+    tipo: TipoLinea
+    descripcion: string
+    cantidad: number
+    precio_unitario: number
+  }>({
+    tipo: 'mano_obra',
     descripcion: '',
     cantidad: 1,
     precio_unitario: 0
@@ -2015,7 +2022,7 @@ export function DetalleOrdenSheet({
                     <select
                       value={nuevaLinea.tipo}
                       onChange={(e) => {
-                        const nuevoTipo = e.target.value as any
+                        const nuevoTipo = e.target.value as TipoLinea
                         setNuevaLinea(prev => ({
                           ...prev,
                           tipo: nuevoTipo,
