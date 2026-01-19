@@ -260,6 +260,7 @@ interface PDFFacturaProps {
   notas?: string
   notasLegales?: string
   iban?: string
+  estado?: string // Estado de la factura (borrador, emitida, pagada, anulada)
   // VERI*FACTU - Nuevos campos obligatorios
   verifactuNumero?: string
   verifactuURL?: string
@@ -299,6 +300,7 @@ export const PDFFactura = ({
   notas,
   notasLegales,
   iban,
+  estado,
   verifactuNumero,
   verifactuURL,
   verifactuQRImage,
@@ -351,10 +353,24 @@ export const PDFFactura = ({
               <Text style={{ fontSize: 9, fontWeight: 'bold', marginBottom: 2 }}>
                 {new Date(fechaEmision).toLocaleDateString('es-ES')}
               </Text>
-              <Text style={styles.dataLabel}>Fecha de Vencimiento</Text>
-              <Text style={{ fontSize: 9, fontWeight: 'bold' }}>
-                {new Date(fechaVencimiento).toLocaleDateString('es-ES')}
-              </Text>
+              {/* Distinguir entre pago al contado y aplazado */}
+              {fechaVencimiento === fechaEmision || estado === 'pagada' ? (
+                <>
+                  <Text style={{ fontSize: 7, color: '#059669', fontWeight: 'bold', marginTop: 2 }}>
+                    PAGADO AL CONTADO
+                  </Text>
+                  <Text style={{ fontSize: 7, color: '#059669' }}>
+                    {new Date(fechaEmision).toLocaleDateString('es-ES')}
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.dataLabel}>Vencimiento</Text>
+                  <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#f59e0b' }}>
+                    {new Date(fechaVencimiento).toLocaleDateString('es-ES')}
+                  </Text>
+                </>
+              )}
             </View>
           </View>
         </View>

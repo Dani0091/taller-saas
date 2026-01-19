@@ -85,6 +85,17 @@ export default function NuevaFacturaPage() {
   // Porcentaje IVA por defecto
   const [ivaPorDefecto, setIvaPorDefecto] = useState(21)
 
+  // Estados para gestión de pago
+  const [pagadoAlEmitir, setPagadoAlEmitir] = useState(true)
+  const [plazoPago, setPlazoPago] = useState(30) // días
+
+  // Función para calcular fecha de vencimiento
+  const calcularFechaVencimiento = (fechaEmision: string, dias: number): string => {
+    const fecha = new Date(fechaEmision)
+    fecha.setDate(fecha.getDate() + dias)
+    return fecha.toISOString().split('T')[0]
+  }
+
   // Obtener taller_id del usuario autenticado
   useEffect(() => {
     const obtenerTallerId = async () => {
@@ -128,6 +139,20 @@ export default function NuevaFacturaPage() {
     }
   }, [tallerId])
 
+  // Actualizar fecha_vencimiento automáticamente según pagadoAlEmitir y plazoPago
+  useEffect(() => {
+    if (pagadoAlEmitir) {
+      // Si es pago al contado, vencimiento = emisión
+      setFormData(prev => ({ ...prev, fecha_vencimiento: prev.fecha_emision }))
+    } else {
+      // Si es aplazado, calcular según plazo
+      setFormData(prev => ({
+        ...prev,
+        fecha_vencimiento: calcularFechaVencimiento(prev.fecha_emision, plazoPago)
+      }))
+    }
+  }, [pagadoAlEmitir, plazoPago, formData.fecha_emision])
+
   const fetchConfig = async () => {
     if (!tallerId) return
 
@@ -144,8 +169,8 @@ export default function NuevaFacturaPage() {
 
         setFormData(prev => ({
           ...prev,
-          serie: data.serie_factura || 'FA',
-          condiciones_pago: data.condiciones_pago || ''
+          serie: data.serie_factura || 'FA'
+          // No poner valor por defecto en condiciones_pago
         }))
       }
     } catch (error) {
@@ -329,7 +354,9 @@ export default function NuevaFacturaPage() {
       )
       const total = baseImponible + iva
 
-      const response = await fetch('/api/facturas/crear', {
+      // PASO 1: Crear borrador (sin número)
+      toast.loading('Creando borrador de factura...')
+      const responseCrear = await fetch('/api/facturas/crear', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -348,7 +375,6 @@ export default function NuevaFacturaPage() {
           telefono_contacto: formData.telefono_contacto,
           numero_autorizacion: formData.numero_autorizacion || null,
           referencia_externa: formData.referencia_externa || null,
-          estado: 'borrador',
           lineas: lineas.map(l => ({
             descripcion: l.descripcion,
             cantidad: l.cantidad,
@@ -358,16 +384,42 @@ export default function NuevaFacturaPage() {
         }),
       })
 
-      const data = await response.json()
+      const dataBorrador = await responseCrear.json()
 
-      if (data.error) {
-        toast.error(data.error)
+      if (dataBorrador.error) {
+        toast.dismiss()
+        toast.error(dataBorrador.error)
+        return
+      }
+
+      // PASO 2: Emitir factura (asignar número)
+      const estadoFinal = pagadoAlEmitir ? 'pagada' : 'emitida'
+      toast.dismiss()
+      toast.loading(`Emitiendo factura...`)
+
+      const responseEmitir = await fetch('/api/facturas/emitir', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          factura_id: dataBorrador.id,
+          estado_final: estadoFinal
+        }),
+      })
+
+      const dataEmitida = await responseEmitir.json()
+
+      toast.dismiss()
+      if (dataEmitida.error) {
+        toast.error(`Borrador creado pero error al emitir: ${dataEmitida.error}`)
+        // Aún así redirigir al borrador para que el usuario pueda emitirlo manualmente
+        router.push(`/dashboard/facturas/ver?id=${dataBorrador.id}`)
       } else {
-        toast.success(`Factura ${data.numero_factura} creada`)
-        router.push(`/dashboard/facturas/ver?id=${data.id}`)
+        toast.success(`✅ Factura ${dataEmitida.numero_factura} ${estadoFinal === 'pagada' ? 'emitida y pagada' : 'emitida'}`)
+        router.push(`/dashboard/facturas/ver?id=${dataBorrador.id}`)
       }
     } catch (error) {
       console.error(error)
+      toast.dismiss()
       toast.error('Error al crear factura')
     } finally {
       setLoading(false)
@@ -513,7 +565,7 @@ export default function NuevaFacturaPage() {
                 </select>
               </div>
 
-              {/* Fechas */}
+              {/* Fecha Emisión */}
               <div>
                 <Label className="block text-sm font-semibold mb-2">Fecha Emisión</Label>
                 <Input
@@ -523,19 +575,81 @@ export default function NuevaFacturaPage() {
                 />
               </div>
 
-              <div>
+              {/* ¿Pagado al emitir? */}
+              <div className="lg:col-span-2">
+                <Label className="block text-sm font-semibold mb-2">¿Pagado al emitir?</Label>
+                <div className="flex gap-6">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={pagadoAlEmitir}
+                      onChange={() => setPagadoAlEmitir(true)}
+                      className="w-4 h-4 text-sky-600"
+                    />
+                    <span className="text-sm">Sí (pagado hoy)</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      checked={!pagadoAlEmitir}
+                      onChange={() => setPagadoAlEmitir(false)}
+                      className="w-4 h-4 text-sky-600"
+                    />
+                    <span className="text-sm">No (pendiente de pago)</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Selector de plazo (solo si NO está pagado al emitir) */}
+              {!pagadoAlEmitir && (
+                <div className="lg:col-span-2">
+                  <Label className="block text-sm font-semibold mb-2">Plazo de pago</Label>
+                  <div className="flex gap-3">
+                    <select
+                      value={plazoPago}
+                      onChange={(e) => setPlazoPago(Number(e.target.value))}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                    >
+                      <option value={15}>15 días</option>
+                      <option value={30}>30 días</option>
+                      <option value={60}>60 días</option>
+                      <option value={90}>90 días</option>
+                    </select>
+                    <div className="flex items-center px-3 py-2 bg-gray-100 rounded-lg text-sm">
+                      <span className="text-gray-600">Vto: </span>
+                      <span className="ml-1 font-semibold">
+                        {new Date(formData.fecha_vencimiento).toLocaleDateString('es-ES')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Fecha Vencimiento (mostrada pero calculada automáticamente) */}
+              <div className={!pagadoAlEmitir ? '' : 'lg:col-span-2'}>
                 <Label className="block text-sm font-semibold mb-2">Fecha Vencimiento</Label>
                 <Input
                   type="date"
                   value={formData.fecha_vencimiento}
                   onChange={(e) => setFormData({ ...formData, fecha_vencimiento: e.target.value })}
+                  disabled={pagadoAlEmitir}
+                  className={pagadoAlEmitir ? 'bg-gray-100' : ''}
                 />
+                {pagadoAlEmitir && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Al contado: vencimiento = fecha de emisión
+                  </p>
+                )}
               </div>
 
+              {/* Condiciones de Pago (opcional, sin valor por defecto) */}
               <div>
-                <Label className="block text-sm font-semibold mb-2">Condiciones de Pago</Label>
+                <Label className="block text-sm font-semibold mb-2">
+                  Condiciones de Pago
+                  <span className="text-xs text-gray-400 ml-1">(Opcional)</span>
+                </Label>
                 <Input
-                  placeholder="Pago a 30 días"
+                  placeholder="Ej: Pago a 30 días"
                   value={formData.condiciones_pago}
                   onChange={(e) => setFormData({ ...formData, condiciones_pago: e.target.value })}
                 />
@@ -545,7 +659,7 @@ export default function NuevaFacturaPage() {
             <div className="mt-4">
               <Label className="block text-sm font-semibold mb-2">Notas Internas</Label>
               <Textarea
-                placeholder="Notas privadas (no aparecen en factura)"
+                placeholder="Notas privadas (no aparecen en factura). Ej: Pagado 50% tarjeta + 50% efectivo"
                 value={formData.notas}
                 onChange={(e) => setFormData({ ...formData, notas: e.target.value })}
                 rows={2}

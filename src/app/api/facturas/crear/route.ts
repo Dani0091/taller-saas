@@ -81,93 +81,23 @@ export async function POST(request: NextRequest) {
       serieToUse = tallerConfig.serie_factura
     }
 
-    // OPERACIÓN ATÓMICA: Obtener y actualizar el número de serie
-    // 1. Buscar la serie en series_facturacion
-    let serieData = null
-    const { data: serieExistente, error: serieError } = await supabase
-      .from('series_facturacion')
-      .select('id, ultimo_numero, prefijo')
-      .eq('taller_id', taller_id)
-      .eq('prefijo', serieToUse)
-      .single()
+    // NUEVO FLUJO: Las facturas se crean siempre como BORRADOR sin número
+    // El número se asigna al EMITIR la factura (endpoint /emitir)
+    // Esto evita huecos en la numeración según normativa española
 
-    if (serieError || !serieExistente) {
-      // Serie no existe - CREARLA AUTOMÁTICAMENTE
-      console.log(`Serie "${serieToUse}" no existe, creándola automáticamente...`)
-
-      // Obtener el número inicial de la config si existe
-      let numeroInicial = 0
-      const { data: configData } = await supabase
-        .from('taller_config')
-        .select('numero_factura_inicial')
-        .eq('taller_id', taller_id)
-        .single()
-
-      if (configData?.numero_factura_inicial) {
-        numeroInicial = configData.numero_factura_inicial - 1 // -1 porque se incrementa al crear
-        if (numeroInicial < 0) numeroInicial = 0
-      }
-
-      const { data: nuevaSerie, error: crearSerieError } = await supabase
-        .from('series_facturacion')
-        .insert([{
-          taller_id,
-          nombre: `Serie ${serieToUse}`,
-          prefijo: serieToUse,
-          ultimo_numero: numeroInicial
-        }])
-        .select()
-        .single()
-
-      if (crearSerieError || !nuevaSerie) {
-        return NextResponse.json(
-          {
-            error: `No se pudo crear la serie "${serieToUse}"`,
-            details: crearSerieError?.message || 'Error desconocido',
-            code: 'SERIE_CREATE_ERROR'
-          },
-          { status: 500 }
-        )
-      }
-
-      serieData = nuevaSerie
-      console.log(`Serie "${serieToUse}" creada con ID: ${nuevaSerie.id}`)
-    } else {
-      serieData = serieExistente
-    }
-
-    // 2. Incrementar el último número
-    const siguienteNumero = serieData.ultimo_numero + 1
-
-    // 3. Actualizar la serie con el nuevo número (operación atómica)
-    const { error: updateError } = await supabase
-      .from('series_facturacion')
-      .update({ ultimo_numero: siguienteNumero })
-      .eq('id', serieData.id)
-
-    if (updateError) {
-      return NextResponse.json(
-        { error: 'Error al actualizar serie', details: updateError.message },
-        { status: 500 }
-      )
-    }
-
-    // 4. Generar el número de factura
-    const numeroFactura = `${serieToUse}${siguienteNumero.toString().padStart(3, '0')}`
-
-    // Crear factura
+    // Crear factura como BORRADOR (sin número aún)
     const facturaData: Record<string, any> = {
       taller_id,
       cliente_id,
-      numero_factura: numeroFactura,
-      numero_serie: serieToUse,
+      numero_factura: null, // Sin número aún - se asignará al emitir
+      numero_serie: serieToUse, // Guardamos la serie para usar después
       fecha_emision: fecha_emision || new Date().toISOString().split('T')[0],
       fecha_vencimiento,
       base_imponible: base_imponible || 0,
       iva: iva || 0,
       total: total || 0,
       metodo_pago,
-      estado: estado || 'borrador',
+      estado: 'borrador', // SIEMPRE crear como borrador - se cambia al emitir
       iva_porcentaje: ivaPorcentajeConfig,
     }
 
@@ -251,8 +181,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       id: facturaId,
-      numero_factura: numeroFactura,
-      message: 'Factura creada correctamente',
+      numero_factura: null, // Sin número aún - es un borrador
+      estado: 'borrador',
+      message: 'Borrador de factura creado correctamente',
+      info: 'Para asignar número y emitir la factura, usa el endpoint /api/facturas/emitir',
     })
   } catch (error: any) {
     return NextResponse.json(

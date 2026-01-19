@@ -157,6 +157,8 @@ export async function GET(request: NextRequest) {
       iban: tallerConfig?.iban || null,
       // Código del método de pago para lógica condicional
       metodoPagoCodigo: factura.metodo_pago,
+      // Estado de la factura para mostrar si está pagada o pendiente
+      estado: factura.estado,
       verifactuNumero: factura.numero_verifactu,
       verifactuURL: factura.verifactu_qr_url,
       // Colores personalizados del taller
