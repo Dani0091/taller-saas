@@ -216,8 +216,7 @@ export async function POST(request: NextRequest) {
         const tipoLinea = linea.tipo_linea || 'servicio'
 
         const baseImponibleLinea = cantidad * precioUnitario
-        // IMPORTANTE: Los suplidos NO llevan IVA (ya fue pagado en la operación original)
-        const ivaImporte = tipoLinea === 'suplido' ? 0 : baseImponibleLinea * (ivaPorcentajeLinea / 100)
+        const ivaImporte = baseImponibleLinea * (ivaPorcentajeLinea / 100)
         const totalLinea = baseImponibleLinea + ivaImporte
 
         return {
