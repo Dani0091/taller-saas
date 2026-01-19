@@ -1,7 +1,7 @@
 /**
  * @fileoverview Componente Sheet para detalle de órdenes de reparación
  * @description Panel lateral deslizante para crear/editar órdenes de trabajo
- * Incluye: info del cliente/vehículo, fotos con OCR, trabajo realizado, líneas de facturación
+ * Incluye: info del cliente/vehículo, fotos con OCR, trabajo realizado, elementos de facturación
  */
 'use client'
 
@@ -873,7 +873,7 @@ export function DetalleOrdenSheet({
             { id: 'info', label: 'Info', icon: '📋' },
             { id: 'fotos', label: 'Fotos', icon: '📸' },
             { id: 'trabajo', label: 'Trabajo', icon: '🔧' },
-            { id: 'items', label: 'Líneas', icon: '💰' },
+            { id: 'items', label: 'Elementos', icon: '💰' },
           ].map(t => (
             <button
               key={t.id}
@@ -1772,7 +1772,7 @@ export function DetalleOrdenSheet({
                   <Label className="text-sm font-semibold">Aprovisionamiento de piezas</Label>
                 </div>
                 <p className="text-xs text-gray-500 mb-4">
-                  Añade las piezas que necesitas buscar/pedir. Luego podrás añadirlas como líneas de facturación con el precio final.
+                  Añade las piezas que necesitas buscar/pedir. Luego podrás añadirlas como elementos de facturación con el precio final.
                 </p>
 
                 {/* Lista de piezas pendientes - Tabla estilo orden impresa */}
@@ -1790,7 +1790,7 @@ export function DetalleOrdenSheet({
                       {lineas.filter(l => l.tipo === 'pieza').length === 0 ? (
                         <tr>
                           <td colSpan={4} className="px-2 py-4 text-center text-gray-400">
-                            Sin piezas añadidas. Usa la pestaña "Líneas" para añadir piezas.
+                            Sin piezas añadidas. Usa la pestaña "Elementos" para añadir piezas.
                           </td>
                         </tr>
                       ) : (
@@ -1867,7 +1867,7 @@ export function DetalleOrdenSheet({
                     </Button>
                   </div>
                   <p className="text-[10px] text-purple-600 mt-1">
-                    💡 Añade piezas aquí rápidamente. Luego ve a "Líneas" para poner los precios finales.
+                    💡 Añade piezas aquí rápidamente. Luego ve a "Elementos" para poner los precios finales.
                   </p>
                 </div>
               </Card>
@@ -2050,11 +2050,11 @@ export function DetalleOrdenSheet({
                 </div>
               </Card>
 
-              {/* Lista de líneas */}
+              {/* Lista de elementos */}
               {lineas.length > 0 && (
                 <Card className="p-4">
                   <h3 className="font-semibold text-gray-900 mb-3">
-                    Líneas añadidas ({lineas.length})
+                    Elementos añadidos ({lineas.length})
                   </h3>
                   <div className="space-y-2">
                     {lineas.map(linea => (

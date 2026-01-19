@@ -299,7 +299,7 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
                 <div>
                   <Label className="text-xs font-semibold">Ciudad</Label>
                   <Input
-                    placeholder="Madrid"
+                    placeholder="Valencia"
                     value={formData.ciudad}
                     onChange={(e) => setFormData(prev => ({ ...prev, ciudad: e.target.value }))}
                   />
