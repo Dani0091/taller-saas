@@ -129,38 +129,10 @@ export async function POST(request: NextRequest) {
     // Generar número de factura con el formato estándar
     const numeroFactura = `${serieFactura}${siguienteNumero.toString().padStart(3, '0')}`
 
-    // Calcular totales correctamente considerando suplidos
-    let baseImponibleTotal = 0
-    let ivaTotal = 0
-    let totalGeneral = 0
-
-    if (lineasOrden && lineasOrden.length > 0) {
-      // Calcular desde las líneas para considerar suplidos correctamente
-      lineasOrden.forEach((linea: any) => {
-        const cantidad = parseFloat(linea.cantidad) || 1
-        const precioUnitario = parseFloat(linea.precio_unitario) || 0
-        const ivaPorcentajeLinea = parseFloat(linea.iva_porcentaje) || ivaPorcentaje
-
-        // Determinar si es suplido
-        const esSuplido = linea.tipo === 'suplido'
-
-        const baseLinea = cantidad * precioUnitario
-        const ivaLinea = esSuplido ? 0 : baseLinea * (ivaPorcentajeLinea / 100)
-
-        baseImponibleTotal += baseLinea
-        ivaTotal += ivaLinea
-        totalGeneral += baseLinea + ivaLinea
-      })
-    } else {
-      // Fallback: usar totales de la orden si no hay líneas
-      baseImponibleTotal = orden.total_sin_iva || (orden.subtotal_mano_obra || 0) + (orden.subtotal_piezas || 0) || 0
-      ivaTotal = orden.iva_amount || baseImponibleTotal * (ivaPorcentaje / 100)
-      totalGeneral = orden.total_con_iva || baseImponibleTotal + ivaTotal
-    }
-
-    const baseImponible = baseImponibleTotal
-    const iva = ivaTotal
-    const total = totalGeneral
+    // Calcular totales desde la orden (sin lógica especial para suplidos)
+    const baseImponible = orden.total_sin_iva || (orden.subtotal_mano_obra || 0) + (orden.subtotal_piezas || 0) || 0
+    const iva = orden.iva_amount || baseImponible * (ivaPorcentaje / 100)
+    const total = orden.total_con_iva || baseImponible + iva
 
     // Crear la factura
     const { data: factura, error: facturaError } = await supabase
@@ -222,10 +194,9 @@ export async function POST(request: NextRequest) {
           tipoLinea = 'reembolso'
         }
 
-        // Calcular importes según el tipo de línea
-        // IMPORTANTE: Los suplidos NO llevan IVA (ya fue pagado en la operación original)
+        // Calcular importes (todos los tipos con IVA normal)
         const baseImponibleLinea = cantidad * precioUnitario
-        const ivaImporte = tipoLinea === 'suplido' ? 0 : baseImponibleLinea * (ivaPorcentajeLinea / 100)
+        const ivaImporte = baseImponibleLinea * (ivaPorcentajeLinea / 100)
         const totalLinea = baseImponibleLinea + ivaImporte
 
         return {
