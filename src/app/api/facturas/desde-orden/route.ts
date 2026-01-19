@@ -169,16 +169,32 @@ export async function POST(request: NextRequest) {
         const precioUnitario = parseFloat(linea.precio_unitario) || 0
         const ivaPorcentajeLinea = parseFloat(linea.iva_porcentaje) || ivaPorcentaje
 
-        // Calcular importes
-        const baseImponibleLinea = cantidad * precioUnitario
-        const ivaImporte = baseImponibleLinea * (ivaPorcentajeLinea / 100)
-        const totalLinea = baseImponibleLinea + ivaImporte
-
-        // Determinar concepto basado en el tipo de línea
+        // Determinar concepto y tipo basado en el tipo de línea
         let concepto = 'Servicio'
-        if (linea.tipo === 'mano_obra') concepto = 'Mano de obra'
-        else if (linea.tipo === 'pieza') concepto = 'Pieza / Repuesto'
-        else if (linea.tipo === 'servicio') concepto = 'Servicio'
+        let tipoLinea = 'servicio'
+
+        if (linea.tipo === 'mano_obra') {
+          concepto = 'Mano de obra'
+          tipoLinea = 'servicio'
+        } else if (linea.tipo === 'pieza') {
+          concepto = 'Pieza / Repuesto'
+          tipoLinea = 'servicio'
+        } else if (linea.tipo === 'servicio') {
+          concepto = 'Servicio'
+          tipoLinea = 'servicio'
+        } else if (linea.tipo === 'suplido') {
+          concepto = 'Suplido'
+          tipoLinea = 'suplido'
+        } else if (linea.tipo === 'reembolso') {
+          concepto = 'Reembolso'
+          tipoLinea = 'reembolso'
+        }
+
+        // Calcular importes según el tipo de línea
+        // IMPORTANTE: Los suplidos NO llevan IVA (ya fue pagado en la operación original)
+        const baseImponibleLinea = cantidad * precioUnitario
+        const ivaImporte = tipoLinea === 'suplido' ? 0 : baseImponibleLinea * (ivaPorcentajeLinea / 100)
+        const totalLinea = baseImponibleLinea + ivaImporte
 
         return {
           factura_id: factura.id,
@@ -191,7 +207,8 @@ export async function POST(request: NextRequest) {
           iva_porcentaje: ivaPorcentajeLinea,
           iva_importe: ivaImporte,
           total_linea: totalLinea,
-          importe_total: totalLinea
+          importe_total: totalLinea,
+          tipo_linea: tipoLinea
         }
       })
 
@@ -217,7 +234,8 @@ export async function POST(request: NextRequest) {
           iva_porcentaje: ivaPorcentaje,
           iva_importe: iva,
           total_linea: total,
-          importe_total: total
+          importe_total: total,
+          tipo_linea: 'servicio'
         }])
 
       if (lineaError) {

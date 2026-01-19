@@ -377,7 +377,7 @@ export default function ConfiguracionPage() {
         serie_factura: data.serie_factura || 'FA',
         numero_factura_inicial: data.numero_factura_inicial || 1,
         iban: data.iban || null,
-        condiciones_pago: data.condiciones_pago || 'Pago a 30 días',
+        condiciones_pago: data.condiciones_pago || null,
         notas_factura: data.notas_factura || null,
         // Colores de marca
         color_primario: data.color_primario || '#0284c7',
@@ -581,7 +581,7 @@ export default function ConfiguracionPage() {
               <Input
                 id="direccion"
                 name="direccion"
-                placeholder="Calle Principal 123, 28001 Madrid"
+                placeholder="Calle Principal 123, 46001 Valencia"
                 value={formData.direccion || ''}
                 onChange={handleChange}
                 className="w-full"

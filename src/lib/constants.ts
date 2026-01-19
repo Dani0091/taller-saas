@@ -78,7 +78,19 @@ export const FRACCIONES_HORA = [
   { value: 4, label: '4 horas' },
   { value: 5, label: '5 horas' },
   { value: 6, label: '6 horas' },
+  { value: 7, label: '7 horas' },
   { value: 8, label: '8 horas' },
+  { value: 10, label: '10 horas' },
+  { value: 12, label: '12 horas' },
+  { value: 16, label: '16 horas' },
+  { value: 20, label: '20 horas' },
+  { value: 24, label: '24 horas' },
+  { value: 30, label: '30 horas' },
+  { value: 40, label: '40 horas' },
+  { value: 50, label: '50 horas' },
+  { value: 60, label: '60 horas' },
+  { value: 80, label: '80 horas' },
+  { value: 100, label: '100 horas' },
 ] as const
 
 // =============================================================================
@@ -177,10 +189,10 @@ export const INVOICE_PREFIX = 'FA'
 export const FOTO_LABELS = {
   // Fotos de entrada del vehículo (las 4 caras)
   entrada: '📋 Documentación',
-  frontal: '🚗 Frontal (Delantero)',
+  frontal: '🚗 Foto Frontal',
   izquierda: '⬅️ Lateral Izquierdo',
   derecha: '➡️ Lateral Derecho',
-  trasera: '🔙 Trasero (Posterior)',
+  trasera: '🔙 Foto Trasera',
   // Fotos adicionales
   salida: '✅ Foto Salida',
   proceso: '🔧 Durante Trabajo',

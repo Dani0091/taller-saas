@@ -431,22 +431,29 @@ export const PDFFactura = ({
           </View>
 
           {/* Rows */}
-          {lineas.map((linea, idx) => (
-            <View key={idx} style={styles.tableRow}>
-              <Text style={{ ...styles.tableCell, flex: 3 }}>
-                {linea.descripcion}
-              </Text>
-              <Text style={styles.tableCellRight}>
-                {linea.cantidad}
-              </Text>
-              <Text style={styles.tableCellRight}>
-                €{linea.precioUnitario.toFixed(2)}
-              </Text>
-              <Text style={{ ...styles.tableCellRight, fontWeight: 'bold' }}>
-                €{linea.total.toFixed(2)}
-              </Text>
-            </View>
-          ))}
+          {lineas.map((linea, idx) => {
+            const esSuplido = linea.tipoLinea === 'suplido'
+            const descripcionFinal = esSuplido
+              ? `💸 SUPLIDO: ${linea.descripcion}`
+              : linea.descripcion
+
+            return (
+              <View key={idx} style={styles.tableRow}>
+                <Text style={{ ...styles.tableCell, flex: 3 }}>
+                  {descripcionFinal}
+                </Text>
+                <Text style={styles.tableCellRight}>
+                  {linea.cantidad}
+                </Text>
+                <Text style={styles.tableCellRight}>
+                  €{linea.precioUnitario.toFixed(2)}
+                </Text>
+                <Text style={{ ...styles.tableCellRight, fontWeight: 'bold' }}>
+                  €{linea.total.toFixed(2)}
+                </Text>
+              </View>
+            )
+          })}
         </View>
 
         {/* TOTALES */}

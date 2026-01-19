@@ -217,7 +217,7 @@ export function EditarClienteSheet({ clienteId, onClose, onActualizar }: EditarC
                 <div>
                   <Label className="text-xs font-semibold">Ciudad</Label>
                   <Input
-                    placeholder="Madrid"
+                    placeholder="Valencia"
                     value={formData.ciudad}
                     onChange={(e) => setFormData(prev => ({ ...prev, ciudad: e.target.value }))}
                   />

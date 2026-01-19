@@ -1,7 +1,7 @@
 /**
  * @fileoverview Componente Sheet para detalle de órdenes de reparación
  * @description Panel lateral deslizante para crear/editar órdenes de trabajo
- * Incluye: info del cliente/vehículo, fotos con OCR, trabajo realizado, líneas de facturación
+ * Incluye: info del cliente/vehículo, fotos con OCR, trabajo realizado, elementos de facturación
  */
 'use client'
 
@@ -85,6 +85,7 @@ export function DetalleOrdenSheet({
   const [clientes, setClientes] = useState<any[]>([])
   const [vehiculos, setVehiculos] = useState<any[]>([])
   const [tallerId, setTallerId] = useState<string>('')
+  const [tarifaHora, setTarifaHora] = useState<number>(45)
   const [ordenNumero, setOrdenNumero] = useState<string>('')
   const [mostrarEstados, setMostrarEstados] = useState(false)
   const [mostrarPDF, setMostrarPDF] = useState(false)
@@ -203,6 +204,17 @@ export function DetalleOrdenSheet({
       }
 
       setTallerId(usuario.taller_id)
+
+      // Cargar configuración del taller (para tarifa hora)
+      const { data: tallerConfig } = await supabase
+        .from('taller_config')
+        .select('tarifa_hora')
+        .eq('taller_id', usuario.taller_id)
+        .single()
+
+      if (tallerConfig?.tarifa_hora) {
+        setTarifaHora(tallerConfig.tarifa_hora)
+      }
 
       // Cargar clientes
       const { data: clientesData } = await supabase
@@ -873,7 +885,7 @@ export function DetalleOrdenSheet({
             { id: 'info', label: 'Info', icon: '📋' },
             { id: 'fotos', label: 'Fotos', icon: '📸' },
             { id: 'trabajo', label: 'Trabajo', icon: '🔧' },
-            { id: 'items', label: 'Líneas', icon: '💰' },
+            { id: 'items', label: 'Elementos', icon: '💰' },
           ].map(t => (
             <button
               key={t.id}
@@ -1586,6 +1598,27 @@ export function DetalleOrdenSheet({
                   rows={2}
                   className="resize-none"
                 />
+
+                {/* Upload de documentación adicional */}
+                <div className="mt-3 pt-3 border-t">
+                  <Label className="text-xs font-semibold mb-2 block text-gray-600">
+                    📄 Documentación adicional (Hoja de orden, notas escritas, etc.)
+                  </Label>
+                  {!modoCrear && ordenSeleccionada && (
+                    <FotoUploader
+                      ordenId={ordenSeleccionada}
+                      tallerId={tallerId}
+                      categoria="fotos_diagnostico"
+                      label="Subir documento/foto"
+                      small
+                    />
+                  )}
+                  {modoCrear && (
+                    <p className="text-xs text-gray-400 italic">
+                      Guarda la orden primero para poder subir documentos
+                    </p>
+                  )}
+                </div>
               </Card>
             </>
           )}
@@ -1772,7 +1805,7 @@ export function DetalleOrdenSheet({
                   <Label className="text-sm font-semibold">Aprovisionamiento de piezas</Label>
                 </div>
                 <p className="text-xs text-gray-500 mb-4">
-                  Añade las piezas que necesitas buscar/pedir. Luego podrás añadirlas como líneas de facturación con el precio final.
+                  Añade las piezas que necesitas buscar/pedir. Luego podrás añadirlas como elementos de facturación con el precio final.
                 </p>
 
                 {/* Lista de piezas pendientes - Tabla estilo orden impresa */}
@@ -1790,7 +1823,7 @@ export function DetalleOrdenSheet({
                       {lineas.filter(l => l.tipo === 'pieza').length === 0 ? (
                         <tr>
                           <td colSpan={4} className="px-2 py-4 text-center text-gray-400">
-                            Sin piezas añadidas. Usa la pestaña "Líneas" para añadir piezas.
+                            Sin piezas añadidas. Usa la pestaña "Elementos" para añadir piezas.
                           </td>
                         </tr>
                       ) : (
@@ -1867,7 +1900,7 @@ export function DetalleOrdenSheet({
                     </Button>
                   </div>
                   <p className="text-[10px] text-purple-600 mt-1">
-                    💡 Añade piezas aquí rápidamente. Luego ve a "Líneas" para poner los precios finales.
+                    💡 Añade piezas aquí rápidamente. Luego ve a "Elementos" para poner los precios finales.
                   </p>
                 </div>
               </Card>
@@ -1962,16 +1995,36 @@ export function DetalleOrdenSheet({
 
                 <div className="space-y-3">
                   <div>
-                    <Label className="text-xs text-gray-600 mb-1 block">Tipo de trabajo</Label>
+                    <Label className="text-xs text-gray-600 mb-1 block">Tipo de elemento</Label>
                     <select
                       value={nuevaLinea.tipo}
-                      onChange={(e) => setNuevaLinea(prev => ({ ...prev, tipo: e.target.value as any }))}
+                      onChange={(e) => {
+                        const nuevoTipo = e.target.value as any
+                        setNuevaLinea(prev => ({
+                          ...prev,
+                          tipo: nuevoTipo,
+                          // Auto-rellenar precio si es mano de obra
+                          precio_unitario: nuevoTipo === 'mano_obra' ? tarifaHora : 0
+                        }))
+                      }}
                       className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white"
                     >
                       <option value="mano_obra">🔧 Mano de obra</option>
                       <option value="pieza">⚙️ Recambio / Pieza</option>
                       <option value="servicio">🛠️ Servicio externo</option>
+                      <option value="suplido">💸 Suplido (pagado por cliente: ITV, multa, etc.)</option>
+                      <option value="reembolso">💰 Reembolso (compra por cliente)</option>
                     </select>
+                    {nuevaLinea.tipo === 'suplido' && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        ⚠️ Suplidos: Se suman al total SIN IVA (ej: pago de ITV, multa)
+                      </p>
+                    )}
+                    {nuevaLinea.tipo === 'reembolso' && (
+                      <p className="text-xs text-blue-600 mt-1">
+                        ℹ️ Reembolsos: Se suman a base imponible CON IVA (ej: pieza comprada)
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -2050,11 +2103,11 @@ export function DetalleOrdenSheet({
                 </div>
               </Card>
 
-              {/* Lista de líneas */}
+              {/* Lista de elementos */}
               {lineas.length > 0 && (
                 <Card className="p-4">
                   <h3 className="font-semibold text-gray-900 mb-3">
-                    Líneas añadidas ({lineas.length})
+                    Elementos añadidos ({lineas.length})
                   </h3>
                   <div className="space-y-2">
                     {lineas.map(linea => (

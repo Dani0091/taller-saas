@@ -213,8 +213,11 @@ export async function POST(request: NextRequest) {
         const cantidad = parseFloat(linea.cantidad) || 1
         const precioUnitario = parseFloat(linea.precioUnitario || linea.precio_unitario) || 0
         const ivaPorcentajeLinea = parseFloat(linea.iva_porcentaje) || ivaPorcentajeConfig
+        const tipoLinea = linea.tipo_linea || 'servicio'
+
         const baseImponibleLinea = cantidad * precioUnitario
-        const ivaImporte = baseImponibleLinea * (ivaPorcentajeLinea / 100)
+        // IMPORTANTE: Los suplidos NO llevan IVA (ya fue pagado en la operación original)
+        const ivaImporte = tipoLinea === 'suplido' ? 0 : baseImponibleLinea * (ivaPorcentajeLinea / 100)
         const totalLinea = baseImponibleLinea + ivaImporte
 
         return {
@@ -228,7 +231,8 @@ export async function POST(request: NextRequest) {
           iva_porcentaje: ivaPorcentajeLinea,
           iva_importe: ivaImporte,
           total_linea: totalLinea,
-          importe_total: totalLinea
+          importe_total: totalLinea,
+          tipo_linea: tipoLinea
         }
       })
 
