@@ -573,7 +573,6 @@ export default function NuevaFacturaPage() {
                   <tbody>
                     {lineas.map((linea) => {
                       const subtotal = linea.cantidad * linea.precioUnitario
-                      const ivaLinea = subtotal * linea.ivaPorcentaje / 100
                       return (
                         <tr key={linea.id} className="border-b hover:bg-gray-50">
                           <td className="py-3 px-2">{linea.descripcion}</td>
@@ -581,7 +580,7 @@ export default function NuevaFacturaPage() {
                           <td className="text-right py-3 px-2">{linea.precioUnitario.toFixed(2)}€</td>
                           <td className="text-center py-3 px-2">{linea.ivaPorcentaje}%</td>
                           <td className="text-right py-3 px-2 font-semibold">
-                            {(subtotal + ivaLinea).toFixed(2)}€
+                            {subtotal.toFixed(2)}€
                           </td>
                           <td className="text-center py-3 px-2">
                             <Button
@@ -656,9 +655,8 @@ export default function NuevaFacturaPage() {
                     {(() => {
                       const cant = parseFloat(nuevaLinea.cantidad || '0')
                       const precio = parseFloat(nuevaLinea.precioUnitario || '0')
-                      const iva = parseFloat(nuevaLinea.ivaPorcentaje || '21')
                       const base = cant * precio
-                      return (base + base * iva / 100).toFixed(2)
+                      return base.toFixed(2)
                     })()}€
                   </div>
                 </div>

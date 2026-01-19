@@ -8,6 +8,20 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
+/**
+ * Traduce códigos de método de pago a texto completo
+ */
+function traducirMetodoPago(codigo: string | null | undefined): string {
+  const traducciones: Record<string, string> = {
+    'T': 'Transferencia bancaria',
+    'E': 'Efectivo',
+    'A': 'Tarjeta',
+    'B': 'Bizum',
+    'O': 'Otro'
+  }
+  return traducciones[codigo?.toUpperCase() || ''] || 'No especificado'
+}
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -136,11 +150,13 @@ export async function GET(request: NextRequest) {
       descuento: factura.descuento_global || 0,
       envio: 0,
       total: factura.total,
-      metodoPago: factura.metodo_pago,
-      condicionesPago: factura.condiciones_pago || tallerConfig?.condiciones_pago || '',
+      metodoPago: traducirMetodoPago(factura.metodo_pago),
+      condicionesPago: factura.condiciones_pago || tallerConfig?.condiciones_pago || null,
       notas: factura.notas_internas,
       notasLegales: tallerConfig?.notas_factura || null,
       iban: tallerConfig?.iban || null,
+      // Código del método de pago para lógica condicional
+      metodoPagoCodigo: factura.metodo_pago,
       verifactuNumero: factura.numero_verifactu,
       verifactuURL: factura.verifactu_qr_url,
       // Colores personalizados del taller

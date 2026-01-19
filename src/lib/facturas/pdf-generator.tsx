@@ -255,7 +255,8 @@ interface PDFFacturaProps {
   envio?: number
   total: number
   metodoPago?: string
-  condicionesPago?: string
+  metodoPagoCodigo?: string // Código del método (T, E, A, B, O) para lógica condicional
+  condicionesPago?: string | null
   notas?: string
   notasLegales?: string
   iban?: string
@@ -293,7 +294,8 @@ export const PDFFactura = ({
   envio = 0,
   total,
   metodoPago = 'Transferencia bancaria',
-  condicionesPago = '',
+  metodoPagoCodigo,
+  condicionesPago,
   notas,
   notasLegales,
   iban,
@@ -488,23 +490,33 @@ export const PDFFactura = ({
         </View>
 
         {/* INFORMACIÓN DE PAGO */}
-        {iban && (
+        {/* Solo mostrar si hay método de pago, IBAN (para transferencia) o condiciones */}
+        {(metodoPago || (iban && metodoPagoCodigo?.toUpperCase() === 'T') || condicionesPago) && (
           <View style={styles.ibanBox}>
             <Text style={{ fontWeight: 'bold', marginBottom: 4, fontSize: 8, color: colorSecundario }}>
               Datos para el pago
             </Text>
-            <View style={{ flexDirection: 'row', marginBottom: 2 }}>
-              <Text style={{ fontSize: 7, width: 70 }}>Método de pago:</Text>
-              <Text style={{ fontSize: 7, fontWeight: 'bold' }}>{metodoPago}</Text>
-            </View>
-            <View style={{ flexDirection: 'row', marginBottom: 2 }}>
-              <Text style={{ fontSize: 7, width: 70 }}>IBAN:</Text>
-              <Text style={{ fontSize: 7, fontWeight: 'bold', fontFamily: 'Courier' }}>{iban}</Text>
-            </View>
-            <View style={{ flexDirection: 'row' }}>
-              <Text style={{ fontSize: 7, width: 70 }}>Condiciones:</Text>
-              <Text style={{ fontSize: 7, fontWeight: 'bold' }}>{condicionesPago}</Text>
-            </View>
+            {/* Siempre mostrar método de pago si existe */}
+            {metodoPago && (
+              <View style={{ flexDirection: 'row', marginBottom: 2 }}>
+                <Text style={{ fontSize: 7, width: 70 }}>Método de pago:</Text>
+                <Text style={{ fontSize: 7, fontWeight: 'bold' }}>{metodoPago}</Text>
+              </View>
+            )}
+            {/* IBAN solo si el método de pago es Transferencia */}
+            {iban && metodoPagoCodigo?.toUpperCase() === 'T' && (
+              <View style={{ flexDirection: 'row', marginBottom: 2 }}>
+                <Text style={{ fontSize: 7, width: 70 }}>IBAN:</Text>
+                <Text style={{ fontSize: 7, fontWeight: 'bold', fontFamily: 'Courier' }}>{iban}</Text>
+              </View>
+            )}
+            {/* Condiciones solo si tienen contenido */}
+            {condicionesPago && condicionesPago.trim() !== '' && (
+              <View style={{ flexDirection: 'row' }}>
+                <Text style={{ fontSize: 7, width: 70 }}>Condiciones:</Text>
+                <Text style={{ fontSize: 7, fontWeight: 'bold' }}>{condicionesPago}</Text>
+              </View>
+            )}
           </View>
         )}
 
