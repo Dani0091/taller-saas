@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     console.log(`📋 Obteniendo configuración del taller...`)
     const { data: config, error: configError } = await supabase
       .from('taller_config')
-      .select('serie_factura, numero_factura_inicial, iban, condiciones_pago, notas_factura, porcentaje_iva')
+      .select('serie_factura, numero_factura_inicial, iban, condiciones_pago, notas_factura, porcentaje_iva, precio_hora_trabajo')
       .eq('taller_id', taller_id)
       .single()
 
@@ -54,7 +54,8 @@ export async function POST(request: NextRequest) {
 
     const serieFactura = config?.serie_factura || 'FA'
     const ivaPorcentaje = config?.porcentaje_iva || 21
-    console.log(`✅ Configuración obtenida: Serie=${serieFactura}, IVA=${ivaPorcentaje}%`)
+    const precioHoraTrabajo = config?.precio_hora_trabajo || 0
+    console.log(`✅ Configuración obtenida: Serie=${serieFactura}, IVA=${ivaPorcentaje}%, Precio hora=${precioHoraTrabajo}€`)
 
     // ==================== OBTENER Y VALIDAR ORDEN ====================
     console.log(`📦 Obteniendo orden ${orden_id}...`)
@@ -231,7 +232,14 @@ SOLUCIÓN: Verifica que el cliente "${orden.clientes?.nombre}" exista en Cliente
     if (lineasOrden && lineasOrden.length > 0) {
       const lineasFactura = lineasOrden.map((linea: any, index: number) => {
         const cantidad = parseFloat(linea.cantidad) || 1
-        const precioUnitario = parseFloat(linea.precio_unitario) || 0
+
+        // Para mano de obra sin precio, usar precio_hora_trabajo de configuración
+        let precioUnitario = parseFloat(linea.precio_unitario) || 0
+        if (linea.tipo === 'mano_obra' && precioUnitario === 0 && precioHoraTrabajo > 0) {
+          precioUnitario = precioHoraTrabajo
+          console.log(`   ℹ️  Aplicando precio hora trabajo: ${precioHoraTrabajo}€ a línea de mano de obra`)
+        }
+
         const ivaPorcentajeLinea = parseFloat(linea.iva_porcentaje) || ivaPorcentaje
 
         // Determinar concepto y tipo basado en el tipo de línea
@@ -325,124 +333,29 @@ SOLUCIÓN: Verifica que el cliente "${orden.clientes?.nombre}" exista en Cliente
       })
       .eq('id', orden_id)
 
-    // ==================== EMITIR FACTURA (ASIGNAR NÚMERO) ====================
-    // Ahora que el borrador está completo, emitirlo automáticamente
-    console.log(`📤 Emitiendo factura automáticamente...`)
-
-    // Facturas desde órdenes siempre se emiten como 'emitida' (pendiente de pago)
-    const estadoFinal = 'emitida'
-
-    // Buscar o crear serie si no existe
-    let serieId = null
-    const { data: serieExistente } = await supabase
-      .from('series_facturacion')
-      .select('id, ultimo_numero, prefijo')
-      .eq('taller_id', taller_id)
-      .eq('prefijo', serieFactura)
-      .single()
-
-    if (!serieExistente) {
-      // Crear serie automáticamente
-      const { data: nuevaSerie } = await supabase
-        .from('series_facturacion')
-        .insert([{
-          taller_id,
-          nombre: `Serie ${serieFactura}`,
-          prefijo: serieFactura,
-          ultimo_numero: 0
-        }])
-        .select()
-        .single()
-
-      serieId = nuevaSerie?.id
-    } else {
-      serieId = serieExistente.id
-    }
-
-    if (!serieId) {
-      console.error('❌ No se pudo obtener/crear serie')
-      return NextResponse.json({
-        success: false,
-        error: 'Borrador creado pero no se pudo asignar número',
-        factura_id: factura.id,
-        sugerencia: 'La factura está en borrador. Emítela manualmente desde la interfaz.'
-      }, { status: 500 })
-    }
-
-    // Obtener siguiente número y actualizar serie (atómico)
-    const { data: serieActualizada } = await supabase
-      .from('series_facturacion')
-      .select('ultimo_numero')
-      .eq('id', serieId)
-      .single()
-
-    const siguienteNumero = (serieActualizada?.ultimo_numero || 0) + 1
-
-    const { error: updateSerieError } = await supabase
-      .from('series_facturacion')
-      .update({ ultimo_numero: siguienteNumero })
-      .eq('id', serieId)
-
-    if (updateSerieError) {
-      console.error('❌ Error actualizando serie:', updateSerieError)
-      return NextResponse.json({
-        success: false,
-        error: 'Borrador creado pero no se pudo asignar número',
-        factura_id: factura.id,
-        sugerencia: 'La factura está en borrador. Emítela manualmente desde la interfaz.'
-      }, { status: 500 })
-    }
-
-    // Generar número de factura
-    const numeroFactura = `${serieFactura}${siguienteNumero.toString().padStart(3, '0')}`
-
-    // Actualizar factura con número y estado
-    const { error: updateFacturaError } = await supabase
-      .from('facturas')
-      .update({
-        numero_factura: numeroFactura,
-        estado: estadoFinal,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', factura.id)
-
-    if (updateFacturaError) {
-      console.error('❌ Error emitiendo factura:', updateFacturaError)
-      // Revertir número de serie
-      await supabase
-        .from('series_facturacion')
-        .update({ ultimo_numero: siguienteNumero - 1 })
-        .eq('id', serieId)
-
-      return NextResponse.json({
-        success: false,
-        error: 'Borrador creado pero no se pudo emitir',
-        factura_id: factura.id,
-        sugerencia: 'La factura está en borrador. Emítela manualmente desde la interfaz.'
-      }, { status: 500 })
-    }
-
-    // ==================== ÉXITO ====================
-    console.log(`✅ ¡FACTURA EMITIDA EXITOSAMENTE!`)
-    console.log(`   - Número: ${numeroFactura}`)
-    console.log(`   - Estado: ${estadoFinal}`)
-    console.log(`   - ID: ${factura.id}`)
+    // ==================== ÉXITO - BORRADOR CREADO ====================
+    console.log(`✅ ¡BORRADOR DE FACTURA CREADO EXITOSAMENTE!`)
+    console.log(`   - ID Borrador: ${factura.id}`)
     console.log(`   - Cliente: ${orden.clientes.nombre}`)
     console.log(`   - Total: ${total.toFixed(2)}€`)
     console.log(`   - Líneas: ${lineasOrden?.length || 1}`)
+    console.log(`   ℹ️  La factura está en estado BORRADOR`)
+    console.log(`   ℹ️  Debe emitirse desde la interfaz para asignar número`)
 
     return NextResponse.json({
       success: true,
       id: factura.id,
-      numero_factura: numeroFactura,
-      estado: estadoFinal,
-      message: `✅ Factura ${numeroFactura} emitida correctamente`,
+      numero_factura: null, // Sin número aún - es borrador
+      estado: 'borrador',
+      message: 'Borrador de factura creado correctamente',
+      info: 'La factura se ha creado como borrador. Revísala y emítela desde la interfaz para asignar número.',
       datos: {
-        numero: numeroFactura,
+        factura_id: factura.id,
         cliente: orden.clientes.nombre,
         total: total,
-        estado: estadoFinal,
-        lineas: lineasOrden?.length || 1
+        estado: 'borrador',
+        lineas: lineasOrden?.length || 1,
+        orden_numero: orden.numero_orden
       }
     })
   } catch (error: any) {
