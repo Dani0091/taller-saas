@@ -215,9 +215,10 @@ export async function POST(request: NextRequest) {
         const ivaPorcentajeLinea = parseFloat(linea.iva_porcentaje) || ivaPorcentajeConfig
         const tipoLinea = linea.tipo_linea || 'servicio'
 
+        // Calcular importes
+        // IMPORTANTE: total_linea es solo la BASE, el IVA se suma a nivel de factura
         const baseImponibleLinea = cantidad * precioUnitario
         const ivaImporte = baseImponibleLinea * (ivaPorcentajeLinea / 100)
-        const totalLinea = baseImponibleLinea + ivaImporte
 
         return {
           factura_id: facturaId,
@@ -229,8 +230,8 @@ export async function POST(request: NextRequest) {
           base_imponible: baseImponibleLinea,
           iva_porcentaje: ivaPorcentajeLinea,
           iva_importe: ivaImporte,
-          total_linea: totalLinea,
-          importe_total: totalLinea,
+          total_linea: baseImponibleLinea,  // Solo base, SIN IVA
+          importe_total: baseImponibleLinea,  // Solo base, SIN IVA
           tipo_linea: tipoLinea
         }
       })

@@ -207,6 +207,32 @@ export async function POST(request: NextRequest) {
       .select('*')
       .eq('orden_id', orden_id)
 
+    // Calcular totales CORRECTAMENTE desde las líneas
+    let baseImponibleTotal = 0
+    let ivaTotal = 0
+
+    if (lineasOrden && lineasOrden.length > 0) {
+      lineasOrden.forEach((linea: any) => {
+        const cantidad = parseFloat(linea.cantidad) || 1
+        const precioUnitario = parseFloat(linea.precio_unitario) || 0
+        const ivaPorcentajeLinea = parseFloat(linea.iva_porcentaje) || ivaPorcentaje
+
+        const baseLinea = cantidad * precioUnitario
+        const ivaLinea = baseLinea * (ivaPorcentajeLinea / 100)
+
+        baseImponibleTotal += baseLinea
+        ivaTotal += ivaLinea
+      })
+    } else {
+      // Fallback si no hay líneas
+      baseImponibleTotal = orden.total_sin_iva || (orden.subtotal_mano_obra || 0) + (orden.subtotal_piezas || 0) || 0
+      ivaTotal = orden.iva_amount || baseImponibleTotal * (ivaPorcentaje / 100)
+    }
+
+    const baseImponible = baseImponibleTotal
+    const iva = ivaTotal
+    const total = baseImponible + iva
+
     // ACTUALIZAR LA SERIE PRIMERO (operación atómica para evitar duplicados)
     if (serieId) {
       console.log(`🔄 Actualizando serie ${serieFactura} a último_numero: ${siguienteNumero}`)
@@ -250,11 +276,6 @@ export async function POST(request: NextRequest) {
 
     // Generar número de factura con el formato estándar
     const numeroFactura = `${serieFactura}${siguienteNumero.toString().padStart(3, '0')}`
-
-    // Calcular totales desde la orden (sin lógica especial para suplidos)
-    const baseImponible = orden.total_sin_iva || (orden.subtotal_mano_obra || 0) + (orden.subtotal_piezas || 0) || 0
-    const iva = orden.iva_amount || baseImponible * (ivaPorcentaje / 100)
-    const total = orden.total_con_iva || baseImponible + iva
 
     // ==================== CREAR FACTURA ====================
     console.log(`💾 Creando factura ${numeroFactura}...`)
@@ -360,10 +381,10 @@ SOLUCIÓN: Verifica que el cliente "${orden.clientes?.nombre}" exista en Cliente
           tipoLinea = 'reembolso'
         }
 
-        // Calcular importes (todos los tipos con IVA normal)
+        // Calcular importes
+        // IMPORTANTE: total_linea es solo la BASE, el IVA se suma a nivel de factura
         const baseImponibleLinea = cantidad * precioUnitario
         const ivaImporte = baseImponibleLinea * (ivaPorcentajeLinea / 100)
-        const totalLinea = baseImponibleLinea + ivaImporte
 
         return {
           factura_id: factura.id,
@@ -375,8 +396,8 @@ SOLUCIÓN: Verifica que el cliente "${orden.clientes?.nombre}" exista en Cliente
           base_imponible: baseImponibleLinea,
           iva_porcentaje: ivaPorcentajeLinea,
           iva_importe: ivaImporte,
-          total_linea: totalLinea,
-          importe_total: totalLinea,
+          total_linea: baseImponibleLinea,  // Solo base, SIN IVA
+          importe_total: baseImponibleLinea,  // Solo base, SIN IVA
           tipo_linea: tipoLinea
         }
       })
@@ -398,7 +419,8 @@ SOLUCIÓN: Verifica que el cliente "${orden.clientes?.nombre}" exista en Cliente
         )
       }
     } else {
-      // Si no hay líneas, crear una línea genérica con el total
+      // Si no hay líneas, crear una línea genérica
+      // IMPORTANTE: total_linea es solo la BASE, el IVA se suma a nivel de factura
       const { error: lineaError } = await supabase
         .from('lineas_factura')
         .insert([{
@@ -411,8 +433,8 @@ SOLUCIÓN: Verifica que el cliente "${orden.clientes?.nombre}" exista en Cliente
           base_imponible: baseImponible,
           iva_porcentaje: ivaPorcentaje,
           iva_importe: iva,
-          total_linea: total,
-          importe_total: total,
+          total_linea: baseImponible,  // Solo base, SIN IVA
+          importe_total: baseImponible,  // Solo base, SIN IVA
           tipo_linea: 'servicio'
         }])
 
