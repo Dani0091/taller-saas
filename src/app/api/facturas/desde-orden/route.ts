@@ -129,12 +129,10 @@ export async function POST(request: NextRequest) {
     // Generar número de factura con el formato estándar
     const numeroFactura = `${serieFactura}${siguienteNumero.toString().padStart(3, '0')}`
 
-    // Calcular totales (asegurar valores numéricos válidos)
-    const baseImponible = parseFloat(orden.total_sin_iva) ||
-                          parseFloat(orden.subtotal_mano_obra || 0) + parseFloat(orden.subtotal_piezas || 0) ||
-                          0
-    const iva = parseFloat(orden.iva_amount) || (baseImponible * (ivaPorcentaje / 100))
-    const total = parseFloat(orden.total_con_iva) || (baseImponible + iva)
+    // Calcular totales
+    const baseImponible = orden.total_sin_iva || (orden.subtotal_mano_obra || 0) + (orden.subtotal_piezas || 0) || 0
+    const iva = orden.iva_amount || baseImponible * (ivaPorcentaje / 100)
+    const total = orden.total_con_iva || baseImponible + iva
 
     // Crear la factura
     const { data: factura, error: facturaError } = await supabase
@@ -142,7 +140,6 @@ export async function POST(request: NextRequest) {
       .insert([{
         taller_id,
         cliente_id: orden.cliente_id,
-        orden_id: orden_id,
         numero_factura: numeroFactura,
         numero_serie: serieFactura,
         fecha_emision: new Date().toISOString().split('T')[0],
@@ -153,8 +150,6 @@ export async function POST(request: NextRequest) {
         total: total,
         metodo_pago: 'Transferencia bancaria',
         estado: 'borrador',
-        condiciones_pago: config?.condiciones_pago,
-        notas_internas: config?.notas_factura,
       }])
       .select()
       .single()
