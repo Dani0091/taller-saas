@@ -209,12 +209,29 @@ export async function POST(request: NextRequest) {
 
     // Crear líneas de factura
     if (lineas && lineas.length > 0) {
-      const lineasData = lineas.map((linea: any) => ({
-        factura_id: facturaId,
-        descripcion: linea.descripcion || linea.concepto || 'Servicio',
-        cantidad: linea.cantidad || 1,
-        precio_unitario: linea.precioUnitario || linea.precio_unitario || 0,
-      }))
+      const lineasData = lineas.map((linea: any, index: number) => {
+        const cantidad = parseFloat(linea.cantidad) || 1
+        const precioUnitario = parseFloat(linea.precioUnitario || linea.precio_unitario) || 0
+        const ivaPorcentajeLinea = parseFloat(linea.iva_porcentaje) || ivaPorcentajeConfig
+        const baseImponibleLinea = cantidad * precioUnitario
+        const ivaImporte = baseImponibleLinea * (ivaPorcentajeLinea / 100)
+        const totalLinea = baseImponibleLinea + ivaImporte
+
+        return {
+          factura_id: facturaId,
+          numero_linea: index + 1,
+          concepto: linea.concepto || linea.descripcion || 'Servicio',
+          descripcion: linea.descripcion || null,
+          cantidad: cantidad,
+          precio_unitario: precioUnitario,
+          base_imponible: baseImponibleLinea,
+          iva_porcentaje: ivaPorcentajeLinea,
+          iva_importe: ivaImporte,
+          total_linea: totalLinea,
+          importe_total: totalLinea,
+          tipo_linea: linea.tipo_linea || 'servicio'
+        }
+      })
 
       const { error: lineasError } = await supabase
         .from('lineas_factura')

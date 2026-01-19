@@ -164,12 +164,46 @@ export async function POST(request: NextRequest) {
 
     // Crear líneas de factura desde las líneas de la orden
     if (lineasOrden && lineasOrden.length > 0) {
-      const lineasFactura = lineasOrden.map((linea: any) => ({
-        factura_id: factura.id,
-        descripcion: linea.descripcion || linea.concepto || 'Servicio',
-        cantidad: linea.cantidad || 1,
-        precio_unitario: linea.precio_unitario || linea.precio || 0,
-      }))
+      const lineasFactura = lineasOrden.map((linea: any, index: number) => {
+        const cantidad = parseFloat(linea.cantidad) || 1
+        const precioUnitario = parseFloat(linea.precio_unitario) || 0
+        const ivaPorcentajeLinea = parseFloat(linea.iva_porcentaje) || ivaPorcentaje
+
+        // Calcular importes
+        const baseImponibleLinea = cantidad * precioUnitario
+        const ivaImporte = baseImponibleLinea * (ivaPorcentajeLinea / 100)
+        const totalLinea = baseImponibleLinea + ivaImporte
+
+        // Determinar concepto y tipo basado en el tipo de línea
+        let concepto = 'Servicio'
+        let tipoLinea = 'servicio'
+
+        if (linea.tipo === 'mano_obra') {
+          concepto = 'Mano de obra'
+          tipoLinea = 'servicio'
+        } else if (linea.tipo === 'pieza') {
+          concepto = 'Pieza / Repuesto'
+          tipoLinea = 'servicio'
+        } else if (linea.tipo === 'servicio') {
+          concepto = 'Servicio'
+          tipoLinea = 'servicio'
+        }
+
+        return {
+          factura_id: factura.id,
+          numero_linea: index + 1,
+          concepto: concepto,
+          descripcion: linea.descripcion || linea.concepto || 'Servicio',
+          cantidad: cantidad,
+          precio_unitario: precioUnitario,
+          base_imponible: baseImponibleLinea,
+          iva_porcentaje: ivaPorcentajeLinea,
+          iva_importe: ivaImporte,
+          total_linea: totalLinea,
+          importe_total: totalLinea,
+          tipo_linea: tipoLinea
+        }
+      })
 
       const { error: lineasError } = await supabase
         .from('lineas_factura')
@@ -184,9 +218,17 @@ export async function POST(request: NextRequest) {
         .from('lineas_factura')
         .insert([{
           factura_id: factura.id,
+          numero_linea: 1,
+          concepto: 'Reparación',
           descripcion: `Reparación vehículo ${orden.vehiculos?.matricula || ''} - ${orden.descripcion_problema || 'Servicio de taller'}`,
           cantidad: 1,
           precio_unitario: baseImponible,
+          base_imponible: baseImponible,
+          iva_porcentaje: ivaPorcentaje,
+          iva_importe: iva,
+          total_linea: total,
+          importe_total: total,
+          tipo_linea: 'servicio'
         }])
 
       if (lineaError) {

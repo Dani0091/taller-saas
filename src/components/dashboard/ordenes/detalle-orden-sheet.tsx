@@ -85,6 +85,7 @@ export function DetalleOrdenSheet({
   const [clientes, setClientes] = useState<any[]>([])
   const [vehiculos, setVehiculos] = useState<any[]>([])
   const [tallerId, setTallerId] = useState<string>('')
+  const [tarifaHora, setTarifaHora] = useState<number>(45)
   const [ordenNumero, setOrdenNumero] = useState<string>('')
   const [mostrarEstados, setMostrarEstados] = useState(false)
   const [mostrarPDF, setMostrarPDF] = useState(false)
@@ -203,6 +204,17 @@ export function DetalleOrdenSheet({
       }
 
       setTallerId(usuario.taller_id)
+
+      // Cargar configuración del taller (para tarifa hora)
+      const { data: tallerConfig } = await supabase
+        .from('taller_config')
+        .select('tarifa_hora')
+        .eq('taller_id', usuario.taller_id)
+        .single()
+
+      if (tallerConfig?.tarifa_hora) {
+        setTarifaHora(tallerConfig.tarifa_hora)
+      }
 
       // Cargar clientes
       const { data: clientesData } = await supabase
@@ -1965,7 +1977,15 @@ export function DetalleOrdenSheet({
                     <Label className="text-xs text-gray-600 mb-1 block">Tipo de trabajo</Label>
                     <select
                       value={nuevaLinea.tipo}
-                      onChange={(e) => setNuevaLinea(prev => ({ ...prev, tipo: e.target.value as any }))}
+                      onChange={(e) => {
+                        const nuevoTipo = e.target.value as any
+                        setNuevaLinea(prev => ({
+                          ...prev,
+                          tipo: nuevoTipo,
+                          // Auto-rellenar precio si es mano de obra
+                          precio_unitario: nuevoTipo === 'mano_obra' ? tarifaHora : 0
+                        }))
+                      }}
                       className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white"
                     >
                       <option value="mano_obra">🔧 Mano de obra</option>
