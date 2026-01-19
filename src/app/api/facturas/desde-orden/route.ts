@@ -15,22 +15,46 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { orden_id, taller_id } = body
 
+    // ==================== VALIDACIONES INICIALES ====================
+    console.log(`🚀 Iniciando creación de factura`)
+    console.log(`   - Orden ID: ${orden_id}`)
+    console.log(`   - Taller ID: ${taller_id}`)
+
     if (!orden_id || !taller_id) {
+      console.error('❌ Faltan parámetros requeridos')
       return NextResponse.json(
-        { error: 'orden_id y taller_id son requeridos' },
+        {
+          error: 'Faltan datos requeridos',
+          details: 'Se requieren orden_id y taller_id',
+          sugerencia: 'Verifica que la orden esté seleccionada correctamente'
+        },
         { status: 400 }
       )
     }
 
-    // Obtener configuración del taller para numeración
-    const { data: config } = await supabase
+    // ==================== OBTENER CONFIGURACIÓN ====================
+    console.log(`📋 Obteniendo configuración del taller...`)
+    const { data: config, error: configError } = await supabase
       .from('taller_config')
       .select('serie_factura, numero_factura_inicial, iban, condiciones_pago, notas_factura, porcentaje_iva')
       .eq('taller_id', taller_id)
       .single()
 
+    if (configError) {
+      console.error('❌ Error obteniendo configuración:', configError)
+      return NextResponse.json(
+        {
+          error: 'No se pudo obtener la configuración del taller',
+          details: configError.message,
+          sugerencia: 'Verifica que el taller esté configurado correctamente en Configuración'
+        },
+        { status: 500 }
+      )
+    }
+
     const serieFactura = config?.serie_factura || 'FA'
     const ivaPorcentaje = config?.porcentaje_iva || 21
+    console.log(`✅ Configuración obtenida: Serie=${serieFactura}, IVA=${ivaPorcentaje}%`)
 
     // Buscar la serie en series_facturacion para usar numeración consistente
     let siguienteNumero = config?.numero_factura_inicial || 1
@@ -104,7 +128,8 @@ export async function POST(request: NextRequest) {
     console.log(`   - Serie ID: ${serieId || 'null (usando fallback)'}`)
     console.log(`   - Factura completa: ${serieFactura}${siguienteNumero.toString().padStart(3, '0')}`)
 
-    // Obtener la orden con todas sus relaciones
+    // ==================== OBTENER Y VALIDAR ORDEN ====================
+    console.log(`📦 Obteniendo orden ${orden_id}...`)
     const { data: orden, error: ordenError } = await supabase
       .from('ordenes_reparacion')
       .select(`
@@ -117,11 +142,55 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (ordenError || !orden) {
+      console.error('❌ Orden no encontrada:', ordenError)
       return NextResponse.json(
-        { error: 'Orden no encontrada' },
+        {
+          error: 'Orden no encontrada',
+          details: ordenError?.message || 'La orden no existe',
+          sugerencia: 'Verifica que la orden exista y pertenezca a tu taller'
+        },
         { status: 404 }
       )
     }
+
+    console.log(`✅ Orden encontrada: ${orden.numero_orden || orden_id}`)
+    console.log(`   - Cliente: ${orden.clientes?.nombre || 'Sin nombre'}`)
+    console.log(`   - Estado: ${orden.estado}`)
+
+    // Validar que el cliente existe
+    if (!orden.cliente_id || !orden.clientes) {
+      console.error('❌ La orden no tiene cliente asociado')
+      return NextResponse.json(
+        {
+          error: 'Orden sin cliente',
+          details: 'La orden debe tener un cliente asociado para generar factura',
+          sugerencia: 'Edita la orden y asigna un cliente antes de facturar'
+        },
+        { status: 400 }
+      )
+    }
+
+    // Verificar si ya existe una factura para esta orden
+    console.log(`🔍 Verificando si ya existe factura para esta orden...`)
+    const { data: facturaExistente } = await supabase
+      .from('facturas')
+      .select('id, numero_factura')
+      .eq('orden_id', orden_id)
+      .maybeSingle()
+
+    if (facturaExistente) {
+      console.warn(`⚠️  Ya existe factura: ${facturaExistente.numero_factura}`)
+      return NextResponse.json(
+        {
+          error: 'Ya existe una factura para esta orden',
+          details: `Factura ${facturaExistente.numero_factura} ya creada`,
+          factura_id: facturaExistente.id,
+          sugerencia: 'Si necesitas modificar la factura, edítala desde la sección de Facturas'
+        },
+        { status: 400 }
+      )
+    }
+    console.log(`✅ No existe factura previa, procediendo...`)
 
     // Verificar que la orden esté completada o en estado válido para facturar
     const estadosValidos = ['aprobado', 'en_reparacion', 'completado', 'entregado']
@@ -187,12 +256,18 @@ export async function POST(request: NextRequest) {
     const iva = orden.iva_amount || baseImponible * (ivaPorcentaje / 100)
     const total = orden.total_con_iva || baseImponible + iva
 
-    // Crear la factura
+    // ==================== CREAR FACTURA ====================
+    console.log(`💾 Creando factura ${numeroFactura}...`)
+    console.log(`   - Base imponible: ${baseImponible.toFixed(2)}€`)
+    console.log(`   - IVA (${ivaPorcentaje}%): ${iva.toFixed(2)}€`)
+    console.log(`   - Total: ${total.toFixed(2)}€`)
+
     const { data: factura, error: facturaError } = await supabase
       .from('facturas')
       .insert([{
         taller_id,
         cliente_id: orden.cliente_id,
+        orden_id: orden_id, // Vincular factura con orden
         numero_factura: numeroFactura,
         numero_serie: serieFactura,
         fecha_emision: new Date().toISOString().split('T')[0],
@@ -216,12 +291,34 @@ export async function POST(request: NextRequest) {
 
       if (facturaError?.code === '23505') {
         // Duplicate key - número de factura ya existe
-        mensajeUsuario = `El número de factura ${numeroFactura} ya existe`
-        sugerencia = 'Esto puede ocurrir si intentas crear varias facturas muy rápido. Espera unos segundos e intenta de nuevo.'
+        mensajeUsuario = `Ya existe una factura con el número ${numeroFactura}`
+        sugerencia = `
+ESTO ES NORMAL si acabas de crear otra factura. SOLUCIONES:
+
+1. ESPERA 5 SEGUNDOS e intenta de nuevo (el sistema se auto-corregirá)
+2. Si persiste, ve a Configuración → Facturas y verifica:
+   - La serie "${serieFactura}" existe
+   - El último número de la serie está actualizado
+3. Si el problema continúa, contacta con soporte indicando:
+   - Número de factura: ${numeroFactura}
+   - Serie: ${serieFactura}
+   - Orden ID: ${orden_id}
+        `.trim()
       } else if (facturaError?.code === '23503') {
         // Foreign key violation
-        mensajeUsuario = 'Error de relación: Cliente o taller no encontrado'
-        sugerencia = 'Verifica que el cliente y el taller existan en la base de datos.'
+        mensajeUsuario = 'Error de relación: Datos vinculados no encontrados'
+        sugerencia = `
+POSIBLES CAUSAS:
+- El cliente de la orden fue eliminado
+- El taller no existe en la base de datos
+- La serie de facturación tiene problemas
+
+SOLUCIÓN: Verifica que el cliente "${orden.clientes?.nombre}" exista en Clientes.
+        `.trim()
+      } else if (facturaError?.code === '22P02') {
+        // Invalid input format
+        mensajeUsuario = 'Formato de datos inválido'
+        sugerencia = 'Hay datos con formato incorrecto. Verifica que los importes sean números válidos.'
       }
 
       return NextResponse.json(
@@ -332,21 +429,45 @@ export async function POST(request: NextRequest) {
       })
       .eq('id', orden_id)
 
-    // La numeración ya fue actualizada ANTES de crear la factura (líneas 130-146)
+    // La numeración ya fue actualizada ANTES de crear la factura
     // para evitar duplicados en peticiones simultáneas
+
+    // ==================== ÉXITO ====================
+    console.log(`✅ ¡FACTURA CREADA EXITOSAMENTE!`)
+    console.log(`   - Número: ${numeroFactura}`)
+    console.log(`   - ID: ${factura.id}`)
+    console.log(`   - Cliente: ${orden.clientes.nombre}`)
+    console.log(`   - Total: ${total.toFixed(2)}€`)
+    console.log(`   - Líneas: ${lineasOrden?.length || 1}`)
 
     return NextResponse.json({
       success: true,
       id: factura.id,
       numero_factura: numeroFactura,
-      message: `Factura ${numeroFactura} creada correctamente`,
+      message: `✅ Factura ${numeroFactura} creada correctamente`,
+      datos: {
+        numero: numeroFactura,
+        cliente: orden.clientes.nombre,
+        total: total,
+        lineas: lineasOrden?.length || 1
+      }
     })
   } catch (error: any) {
-    console.error('Error en desde-orden:', error)
+    console.error('❌ ERROR INESPERADO en desde-orden:', error)
+    console.error('Stack:', error?.stack)
+
     return NextResponse.json(
       {
-        error: 'Error interno del servidor',
+        error: 'Error inesperado al crear la factura',
         details: error?.message || error?.toString() || 'Sin detalles',
+        sugerencia: `
+ERROR TÉCNICO - Contacta con soporte proporcionando:
+1. Hora exacta del error: ${new Date().toISOString()}
+2. Este mensaje de error
+3. Orden ID que intentabas facturar
+
+El equipo técnico investigará el problema.
+        `.trim(),
         stack: process.env.NODE_ENV === 'development' ? error?.stack : undefined
       },
       { status: 500 }
