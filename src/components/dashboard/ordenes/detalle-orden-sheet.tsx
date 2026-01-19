@@ -1598,6 +1598,27 @@ export function DetalleOrdenSheet({
                   rows={2}
                   className="resize-none"
                 />
+
+                {/* Upload de documentación adicional */}
+                <div className="mt-3 pt-3 border-t">
+                  <Label className="text-xs font-semibold mb-2 block text-gray-600">
+                    📄 Documentación adicional (Hoja de orden, notas escritas, etc.)
+                  </Label>
+                  {!modoCrear && ordenSeleccionada && (
+                    <FotoUploader
+                      ordenId={ordenSeleccionada}
+                      tallerId={tallerId}
+                      categoria="fotos_diagnostico"
+                      label="Subir documento/foto"
+                      small
+                    />
+                  )}
+                  {modoCrear && (
+                    <p className="text-xs text-gray-400 italic">
+                      Guarda la orden primero para poder subir documentos
+                    </p>
+                  )}
+                </div>
               </Card>
             </>
           )}
@@ -1974,7 +1995,7 @@ export function DetalleOrdenSheet({
 
                 <div className="space-y-3">
                   <div>
-                    <Label className="text-xs text-gray-600 mb-1 block">Tipo de trabajo</Label>
+                    <Label className="text-xs text-gray-600 mb-1 block">Tipo de elemento</Label>
                     <select
                       value={nuevaLinea.tipo}
                       onChange={(e) => {
@@ -1991,7 +2012,19 @@ export function DetalleOrdenSheet({
                       <option value="mano_obra">🔧 Mano de obra</option>
                       <option value="pieza">⚙️ Recambio / Pieza</option>
                       <option value="servicio">🛠️ Servicio externo</option>
+                      <option value="suplido">💸 Suplido (pagado por cliente: ITV, multa, etc.)</option>
+                      <option value="reembolso">💰 Reembolso (compra por cliente)</option>
                     </select>
+                    {nuevaLinea.tipo === 'suplido' && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        ⚠️ Suplidos: Se suman al total SIN IVA (ej: pago de ITV, multa)
+                      </p>
+                    )}
+                    {nuevaLinea.tipo === 'reembolso' && (
+                      <p className="text-xs text-blue-600 mt-1">
+                        ℹ️ Reembolsos: Se suman a base imponible CON IVA (ej: pieza comprada)
+                      </p>
+                    )}
                   </div>
 
                   <div>

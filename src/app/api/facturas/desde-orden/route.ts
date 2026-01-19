@@ -187,6 +187,12 @@ export async function POST(request: NextRequest) {
         } else if (linea.tipo === 'servicio') {
           concepto = 'Servicio'
           tipoLinea = 'servicio'
+        } else if (linea.tipo === 'suplido') {
+          concepto = 'Suplido'
+          tipoLinea = 'suplido'
+        } else if (linea.tipo === 'reembolso') {
+          concepto = 'Reembolso'
+          tipoLinea = 'reembolso'
         }
 
         return {
