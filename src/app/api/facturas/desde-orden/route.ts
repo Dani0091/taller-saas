@@ -169,11 +169,6 @@ export async function POST(request: NextRequest) {
         const precioUnitario = parseFloat(linea.precio_unitario) || 0
         const ivaPorcentajeLinea = parseFloat(linea.iva_porcentaje) || ivaPorcentaje
 
-        // Calcular importes
-        const baseImponibleLinea = cantidad * precioUnitario
-        const ivaImporte = baseImponibleLinea * (ivaPorcentajeLinea / 100)
-        const totalLinea = baseImponibleLinea + ivaImporte
-
         // Determinar concepto y tipo basado en el tipo de línea
         let concepto = 'Servicio'
         let tipoLinea = 'servicio'
@@ -194,6 +189,12 @@ export async function POST(request: NextRequest) {
           concepto = 'Reembolso'
           tipoLinea = 'reembolso'
         }
+
+        // Calcular importes según el tipo de línea
+        // IMPORTANTE: Los suplidos NO llevan IVA (ya fue pagado en la operación original)
+        const baseImponibleLinea = cantidad * precioUnitario
+        const ivaImporte = tipoLinea === 'suplido' ? 0 : baseImponibleLinea * (ivaPorcentajeLinea / 100)
+        const totalLinea = baseImponibleLinea + ivaImporte
 
         return {
           factura_id: factura.id,
