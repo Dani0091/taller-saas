@@ -246,6 +246,7 @@ interface PDFFacturaProps {
     cantidad: number
     precioUnitario: number
     total: number
+    tipoLinea?: string
   }>
   baseImponible: number
   ivaPercentaje: number
