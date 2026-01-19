@@ -5,17 +5,50 @@
 --        El número se asigna SOLO cuando se emiten (estado: emitida/pagada)
 --        Esto evita huecos en la numeración si se cancelan borradores
 
--- Eliminar restricción NOT NULL de numero_factura
+-- PASO 1: Limpiar datos existentes que violarían el constraint
+-- Asignar números temporales a facturas emitidas/pagadas sin número
+DO $$
+DECLARE
+  factura_record RECORD;
+  siguiente_num INTEGER;
+BEGIN
+  -- Para cada factura sin número que NO sea borrador
+  FOR factura_record IN
+    SELECT id, taller_id, numero_serie, estado
+    FROM facturas
+    WHERE numero_factura IS NULL
+    AND estado != 'borrador'
+  LOOP
+    -- Obtener el último número de la serie o empezar en 1
+    SELECT COALESCE(MAX(CAST(SUBSTRING(numero_factura FROM '[0-9]+$') AS INTEGER)), 0) + 1
+    INTO siguiente_num
+    FROM facturas
+    WHERE taller_id = factura_record.taller_id
+    AND numero_serie = factura_record.numero_serie
+    AND numero_factura IS NOT NULL;
+
+    -- Asignar número temporal
+    UPDATE facturas
+    SET numero_factura = factura_record.numero_serie || LPAD(siguiente_num::TEXT, 3, '0')
+    WHERE id = factura_record.id;
+
+    RAISE NOTICE 'Asignado número % a factura % (estado: %)',
+      factura_record.numero_serie || LPAD(siguiente_num::TEXT, 3, '0'),
+      factura_record.id,
+      factura_record.estado;
+  END LOOP;
+END $$;
+
+-- PASO 2: Eliminar restricción NOT NULL de numero_factura
 ALTER TABLE facturas
   ALTER COLUMN numero_factura DROP NOT NULL;
 
--- Añadir constraint: Si estado != 'borrador', numero_factura debe existir
--- Esto garantiza que solo los borradores pueden no tener número
+-- PASO 3: Añadir constraint flexible
+-- Permitir: borrador con NULL, o cualquier estado con número
 ALTER TABLE facturas
   ADD CONSTRAINT facturas_numero_required_unless_draft
   CHECK (
-    (estado = 'borrador' AND numero_factura IS NULL) OR
-    (estado != 'borrador' AND numero_factura IS NOT NULL)
+    numero_factura IS NOT NULL OR estado = 'borrador'
   );
 
 -- Comentario explicativo
