@@ -126,6 +126,25 @@ export async function POST(request: NextRequest) {
       .select('*')
       .eq('orden_id', orden_id)
 
+    // ACTUALIZAR LA SERIE PRIMERO (operación atómica para evitar duplicados)
+    if (serieId) {
+      const { error: updateError } = await supabase
+        .from('series_facturacion')
+        .update({
+          ultimo_numero: siguienteNumero,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', serieId)
+
+      if (updateError) {
+        console.error('Error actualizando serie:', updateError)
+        return NextResponse.json(
+          { error: 'Error al actualizar numeración de serie' },
+          { status: 500 }
+        )
+      }
+    }
+
     // Generar número de factura con el formato estándar
     const numeroFactura = `${serieFactura}${siguienteNumero.toString().padStart(3, '0')}`
 
@@ -156,11 +175,27 @@ export async function POST(request: NextRequest) {
 
     if (facturaError || !factura) {
       console.error('Error al crear factura:', facturaError)
+
+      // Mensaje de error específico según el código
+      let mensajeUsuario = 'Error al crear la factura'
+      let sugerencia = ''
+
+      if (facturaError?.code === '23505') {
+        // Duplicate key - número de factura ya existe
+        mensajeUsuario = `El número de factura ${numeroFactura} ya existe`
+        sugerencia = 'Esto puede ocurrir si intentas crear varias facturas muy rápido. Espera unos segundos e intenta de nuevo.'
+      } else if (facturaError?.code === '23503') {
+        // Foreign key violation
+        mensajeUsuario = 'Error de relación: Cliente o taller no encontrado'
+        sugerencia = 'Verifica que el cliente y el taller existan en la base de datos.'
+      }
+
       return NextResponse.json(
         {
-          error: 'Error al crear la factura',
+          error: mensajeUsuario,
           details: facturaError?.message || 'Sin detalles',
-          code: facturaError?.code
+          code: facturaError?.code,
+          sugerencia: sugerencia
         },
         { status: 500 }
       )
@@ -255,7 +290,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Actualizar la orden (solo campos que existen en la base de datos)
+    // Actualizar la orden
     await supabase
       .from('ordenes_reparacion')
       .update({
@@ -263,26 +298,8 @@ export async function POST(request: NextRequest) {
       })
       .eq('id', orden_id)
 
-    // Actualizar la numeración de la serie usada
-    if (serieId) {
-      // Si usamos series_facturacion, actualizar ahí
-      await supabase
-        .from('series_facturacion')
-        .update({
-          ultimo_numero: siguienteNumero,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', serieId)
-    } else {
-      // Si usamos taller_config (fallback), actualizar ahí
-      await supabase
-        .from('taller_config')
-        .update({
-          numero_factura_inicial: siguienteNumero + 1,
-          updated_at: new Date().toISOString()
-        })
-        .eq('taller_id', taller_id)
-    }
+    // La numeración ya fue actualizada ANTES de crear la factura (líneas 130-146)
+    // para evitar duplicados en peticiones simultáneas
 
     return NextResponse.json({
       success: true,
