@@ -34,6 +34,7 @@ export async function POST(request: NextRequest) {
       persona_contacto,
       telefono_contacto,
       condiciones_pago,
+      notas_internas,
       // Campos adicionales para renting/flotas
       numero_autorizacion,
       referencia_externa,
@@ -110,6 +111,9 @@ export async function POST(request: NextRequest) {
     }
     if (condiciones_pago) {
       facturaData.condiciones_pago = condiciones_pago
+    }
+    if (notas_internas) {
+      facturaData.notas_internas = notas_internas
     }
     // Campos para renting/flotas
     if (numero_autorizacion) {

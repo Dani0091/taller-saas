@@ -744,7 +744,9 @@ export function DetalleOrdenSheet({
 
     setGenerandoFactura(true)
     try {
-      const res = await fetch('/api/facturas/desde-orden', {
+      // PASO 1: Crear borrador desde orden
+      toast.loading('Creando borrador de factura...')
+      const resCrear = await fetch('/api/facturas/desde-orden', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -753,16 +755,40 @@ export function DetalleOrdenSheet({
         })
       })
 
-      const data = await res.json()
+      const dataBorrador = await resCrear.json()
 
-      if (!res.ok) {
-        throw new Error(data.error || 'Error al generar factura')
+      if (!resCrear.ok) {
+        throw new Error(dataBorrador.error || 'Error al crear borrador de factura')
       }
 
-      toast.success(`Factura ${data.numero_factura} creada`)
-      onActualizar()
-      router.push(`/dashboard/facturas/ver?id=${data.id}`)
+      // PASO 2: Emitir factura (asignar número)
+      toast.dismiss()
+      toast.loading('Emitiendo factura...')
+
+      const resEmitir = await fetch('/api/facturas/emitir', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          factura_id: dataBorrador.id,
+          estado_final: 'emitida' // Facturas desde órdenes se emiten como pendientes de pago
+        })
+      })
+
+      const dataEmitida = await resEmitir.json()
+
+      toast.dismiss()
+      if (!resEmitir.ok) {
+        // Si falla la emisión, aún así tenemos el borrador
+        toast.warning(`Borrador creado pero no se pudo emitir: ${dataEmitida.error}`)
+        onActualizar()
+        router.push(`/dashboard/facturas/ver?id=${dataBorrador.id}`)
+      } else {
+        toast.success(`✅ Factura ${dataEmitida.numero_factura} emitida correctamente`)
+        onActualizar()
+        router.push(`/dashboard/facturas/ver?id=${dataBorrador.id}`)
+      }
     } catch (error: any) {
+      toast.dismiss()
       toast.error(error.message)
     } finally {
       setGenerandoFactura(false)
