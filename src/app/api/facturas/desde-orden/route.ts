@@ -233,52 +233,12 @@ export async function POST(request: NextRequest) {
     const iva = ivaTotal
     const total = baseImponible + iva
 
-    // ACTUALIZAR LA SERIE PRIMERO (operación atómica para evitar duplicados)
-    if (serieId) {
-      console.log(`🔄 Actualizando serie ${serieFactura} a último_numero: ${siguienteNumero}`)
-      const { error: updateError } = await supabase
-        .from('series_facturacion')
-        .update({
-          ultimo_numero: siguienteNumero
-        })
-        .eq('id', serieId)
+    // ==================== NUEVO FLUJO: NUMERACIÓN INTELIGENTE ====================
+    // Las facturas se crean como BORRADOR sin número, y se emiten automáticamente
+    // Esto cumple con normativa española evitando huecos en numeración
 
-      if (updateError) {
-        console.error('❌ Error actualizando serie:', updateError)
-        return NextResponse.json(
-          {
-            error: 'Error al actualizar numeración de serie',
-            details: updateError?.message,
-            code: updateError?.code,
-            sugerencia: 'La serie existe pero no se pudo actualizar. Verifica los permisos en Supabase.'
-          },
-          { status: 500 }
-        )
-      }
-      console.log(`✅ Serie actualizada correctamente`)
-    } else {
-      // Si no hay serieId, significa que NO existe en series_facturacion
-      // Actualizar taller_config como fallback
-      console.log(`⚠️  Sin serieId, actualizando taller_config.numero_factura_inicial a ${siguienteNumero + 1}`)
-      const { error: configError } = await supabase
-        .from('taller_config')
-        .update({
-          numero_factura_inicial: siguienteNumero + 1
-        })
-        .eq('taller_id', taller_id)
-
-      if (configError) {
-        console.error('❌ Error actualizando taller_config:', configError)
-      } else {
-        console.log(`✅ taller_config actualizado`)
-      }
-    }
-
-    // Generar número de factura con el formato estándar
-    const numeroFactura = `${serieFactura}${siguienteNumero.toString().padStart(3, '0')}`
-
-    // ==================== CREAR FACTURA ====================
-    console.log(`💾 Creando factura ${numeroFactura}...`)
+    // ==================== CREAR FACTURA COMO BORRADOR ====================
+    console.log(`💾 Creando borrador de factura para orden ${orden.numero_orden || orden_id}...`)
     console.log(`   - Base imponible: ${baseImponible.toFixed(2)}€`)
     console.log(`   - IVA (${ivaPorcentaje}%): ${iva.toFixed(2)}€`)
     console.log(`   - Total: ${total.toFixed(2)}€`)
@@ -289,7 +249,7 @@ export async function POST(request: NextRequest) {
         taller_id,
         cliente_id: orden.cliente_id,
         orden_id: orden_id, // Vincular factura con orden
-        numero_factura: numeroFactura,
+        numero_factura: null, // SIN NÚMERO - se asigna al emitir
         numero_serie: serieFactura,
         fecha_emision: new Date().toISOString().split('T')[0],
         fecha_vencimiento: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -297,42 +257,26 @@ export async function POST(request: NextRequest) {
         iva_porcentaje: ivaPorcentaje,
         iva: iva,
         total: total,
-        metodo_pago: 'Transferencia bancaria',
-        estado: 'borrador',
+        metodo_pago: 'T', // Transferencia por defecto para órdenes
+        estado: 'borrador', // SIEMPRE borrador - se cambia al emitir
       }])
       .select()
       .single()
 
     if (facturaError || !factura) {
-      console.error('Error al crear factura:', facturaError)
+      console.error('❌ Error al crear borrador de factura:', facturaError)
 
       // Mensaje de error específico según el código
-      let mensajeUsuario = 'Error al crear la factura'
+      let mensajeUsuario = 'Error al crear borrador de factura'
       let sugerencia = ''
 
-      if (facturaError?.code === '23505') {
-        // Duplicate key - número de factura ya existe
-        mensajeUsuario = `Ya existe una factura con el número ${numeroFactura}`
-        sugerencia = `
-ESTO ES NORMAL si acabas de crear otra factura. SOLUCIONES:
-
-1. ESPERA 5 SEGUNDOS e intenta de nuevo (el sistema se auto-corregirá)
-2. Si persiste, ve a Configuración → Facturas y verifica:
-   - La serie "${serieFactura}" existe
-   - El último número de la serie está actualizado
-3. Si el problema continúa, contacta con soporte indicando:
-   - Número de factura: ${numeroFactura}
-   - Serie: ${serieFactura}
-   - Orden ID: ${orden_id}
-        `.trim()
-      } else if (facturaError?.code === '23503') {
+      if (facturaError?.code === '23503') {
         // Foreign key violation
         mensajeUsuario = 'Error de relación: Datos vinculados no encontrados'
         sugerencia = `
 POSIBLES CAUSAS:
 - El cliente de la orden fue eliminado
 - El taller no existe en la base de datos
-- La serie de facturación tiene problemas
 
 SOLUCIÓN: Verifica que el cliente "${orden.clientes?.nombre}" exista en Clientes.
         `.trim()
@@ -352,6 +296,8 @@ SOLUCIÓN: Verifica que el cliente "${orden.clientes?.nombre}" exista en Cliente
         { status: 500 }
       )
     }
+
+    console.log(`✅ Borrador creado con ID: ${factura.id}`)
 
     // Crear líneas de factura desde las líneas de la orden
     if (lineasOrden && lineasOrden.length > 0) {
@@ -451,12 +397,107 @@ SOLUCIÓN: Verifica que el cliente "${orden.clientes?.nombre}" exista en Cliente
       })
       .eq('id', orden_id)
 
-    // La numeración ya fue actualizada ANTES de crear la factura
-    // para evitar duplicados en peticiones simultáneas
+    // ==================== EMITIR FACTURA (ASIGNAR NÚMERO) ====================
+    // Ahora que el borrador está completo, emitirlo automáticamente
+    console.log(`📤 Emitiendo factura automáticamente...`)
+
+    // Facturas desde órdenes siempre se emiten como 'emitida' (pendiente de pago)
+    const estadoFinal = 'emitida'
+
+    // Buscar o crear serie si no existe
+    let serieId = null
+    const { data: serieExistente } = await supabase
+      .from('series_facturacion')
+      .select('id, ultimo_numero, prefijo')
+      .eq('taller_id', taller_id)
+      .eq('prefijo', serieFactura)
+      .single()
+
+    if (!serieExistente) {
+      // Crear serie automáticamente
+      const { data: nuevaSerie } = await supabase
+        .from('series_facturacion')
+        .insert([{
+          taller_id,
+          nombre: `Serie ${serieFactura}`,
+          prefijo: serieFactura,
+          ultimo_numero: 0
+        }])
+        .select()
+        .single()
+
+      serieId = nuevaSerie?.id
+    } else {
+      serieId = serieExistente.id
+    }
+
+    if (!serieId) {
+      console.error('❌ No se pudo obtener/crear serie')
+      return NextResponse.json({
+        success: false,
+        error: 'Borrador creado pero no se pudo asignar número',
+        factura_id: factura.id,
+        sugerencia: 'La factura está en borrador. Emítela manualmente desde la interfaz.'
+      }, { status: 500 })
+    }
+
+    // Obtener siguiente número y actualizar serie (atómico)
+    const { data: serieActualizada } = await supabase
+      .from('series_facturacion')
+      .select('ultimo_numero')
+      .eq('id', serieId)
+      .single()
+
+    const siguienteNumero = (serieActualizada?.ultimo_numero || 0) + 1
+
+    const { error: updateSerieError } = await supabase
+      .from('series_facturacion')
+      .update({ ultimo_numero: siguienteNumero })
+      .eq('id', serieId)
+
+    if (updateSerieError) {
+      console.error('❌ Error actualizando serie:', updateSerieError)
+      return NextResponse.json({
+        success: false,
+        error: 'Borrador creado pero no se pudo asignar número',
+        factura_id: factura.id,
+        sugerencia: 'La factura está en borrador. Emítela manualmente desde la interfaz.'
+      }, { status: 500 })
+    }
+
+    // Generar número de factura
+    const numeroFactura = `${serieFactura}${siguienteNumero.toString().padStart(3, '0')}`
+
+    // Actualizar factura con número y estado
+    const { error: updateFacturaError } = await supabase
+      .from('facturas')
+      .update({
+        numero_factura: numeroFactura,
+        estado: estadoFinal,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', factura.id)
+
+    if (updateFacturaError) {
+      console.error('❌ Error emitiendo factura:', updateFacturaError)
+      // Revertir número de serie
+      await supabase
+        .from('series_facturacion')
+        .update({ ultimo_numero: siguienteNumero - 1 })
+        .eq('id', serieId)
+
+      return NextResponse.json({
+        success: false,
+        error: 'Borrador creado pero no se pudo emitir',
+        factura_id: factura.id,
+        sugerencia: 'La factura está en borrador. Emítela manualmente desde la interfaz.'
+      }, { status: 500 })
+    }
 
     // ==================== ÉXITO ====================
-    console.log(`✅ ¡FACTURA CREADA EXITOSAMENTE!`)
+    console.log(`✅ ¡FACTURA EMITIDA EXITOSAMENTE!`)
     console.log(`   - Número: ${numeroFactura}`)
+    console.log(`   - Estado: ${estadoFinal}`)
     console.log(`   - ID: ${factura.id}`)
     console.log(`   - Cliente: ${orden.clientes.nombre}`)
     console.log(`   - Total: ${total.toFixed(2)}€`)
@@ -466,11 +507,13 @@ SOLUCIÓN: Verifica que el cliente "${orden.clientes?.nombre}" exista en Cliente
       success: true,
       id: factura.id,
       numero_factura: numeroFactura,
-      message: `✅ Factura ${numeroFactura} creada correctamente`,
+      estado: estadoFinal,
+      message: `✅ Factura ${numeroFactura} emitida correctamente`,
       datos: {
         numero: numeroFactura,
         cliente: orden.clientes.nombre,
         total: total,
+        estado: estadoFinal,
         lineas: lineasOrden?.length || 1
       }
     })
