@@ -820,18 +820,18 @@ export default function ConfiguracionPage() {
 
           {/* Sistema Unificado de Series */}
           <div className="space-y-6">
-            {/* Información de la serie activa */}
-            <div className="p-4 bg-gradient-to-r from-sky-50 to-blue-50 rounded-lg border border-sky-200">
+            {/* Información de la serie por defecto */}
+            <div className="p-4 bg-gradient-to-r from-sky-50 to-blue-50 rounded-lg border-2 border-sky-300">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold text-sky-800 flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Serie Activa
+                  <FileText className="w-5 h-5" />
+                  Serie por Defecto (Configuración Rápida)
                 </h3>
-                <span className="px-2 py-1 bg-sky-600 text-white text-xs rounded-full">Por defecto</span>
+                <span className="px-2 py-1 bg-sky-600 text-white text-xs rounded-full">Fallback</span>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs text-gray-600">Prefijo</Label>
+                  <Label className="text-xs text-gray-600 font-semibold">Prefijo por Defecto</Label>
                   <Input
                     name="serie_factura"
                     placeholder="FA"
@@ -839,9 +839,12 @@ export default function ConfiguracionPage() {
                     onChange={handleChange}
                     className="font-mono text-lg font-bold"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Prefijo que se usará si no tienes series creadas
+                  </p>
                 </div>
                 <div>
-                  <Label className="text-xs text-gray-600">Siguiente número</Label>
+                  <Label className="text-xs text-gray-600 font-semibold">Número Inicial</Label>
                   <Input
                     name="numero_factura_inicial"
                     type="number"
@@ -851,21 +854,35 @@ export default function ConfiguracionPage() {
                     onChange={handleChange}
                     className="font-mono"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Número inicial para nuevas series
+                  </p>
                 </div>
               </div>
-              <p className="text-sm text-sky-700 mt-3">
-                Próxima factura: <span className="font-mono font-bold bg-white px-2 py-0.5 rounded">
-                  {formData.serie_factura || 'FA'}{String(formData.numero_factura_inicial || 1).padStart(3, '0')}
-                </span>
-              </p>
+              <div className="mt-4 p-3 bg-white rounded border border-sky-200">
+                <p className="text-xs text-sky-700 font-semibold mb-1">
+                  Vista previa de próxima factura:
+                </p>
+                <p className="text-lg">
+                  <span className="font-mono font-bold text-sky-600">
+                    {formData.serie_factura || 'FA'}{String(formData.numero_factura_inicial || 1).padStart(3, '0')}
+                  </span>
+                </p>
+              </div>
             </div>
 
-            {/* Aviso importante */}
-            <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-sm">
-              <p className="text-amber-800">
-                <strong>⚠️ Numeración:</strong> Las facturas deben seguir numeración correlativa sin saltos.
-                Solo modifica estos valores al empezar o para continuar numeración existente.
+            {/* Aviso importante mejorado */}
+            <div className="p-4 bg-amber-50 rounded-lg border-2 border-amber-300">
+              <p className="text-amber-900 font-semibold mb-2 flex items-center gap-2">
+                <span className="text-xl">⚠️</span>
+                Importante sobre Numeración de Facturas
               </p>
+              <ul className="text-sm text-amber-800 space-y-1 ml-6 list-disc">
+                <li>Las facturas deben seguir numeración correlativa sin saltos (requisito legal)</li>
+                <li>Si creas series abajo, esas tendrán prioridad sobre esta configuración</li>
+                <li>Solo modifica estos valores al empezar o para continuar numeración existente</li>
+                <li>El sistema creará automáticamente las series la primera vez que factures</li>
+              </ul>
             </div>
 
             {/* Series Adicionales */}

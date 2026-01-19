@@ -342,7 +342,7 @@ export const PDFFactura = ({
             <View style={styles.facturaBox}>
               <Text style={styles.dataLabel}>Número de Factura</Text>
               <Text style={{ fontSize: 12, fontWeight: 'bold', color: colorPrimario, marginBottom: 4 }}>
-                {serie}{numeroFactura}
+                {numeroFactura}
               </Text>
               <Text style={styles.dataLabel}>Fecha de Emisión</Text>
               <Text style={{ fontSize: 9, fontWeight: 'bold', marginBottom: 2 }}>
@@ -596,9 +596,12 @@ export const PDFFactura = ({
           </View>
         )}
 
-        {/* NOTAS LEGALES DEL TALLER */}
+        {/* NOTAS LEGALES DEL TALLER - Ahora aparecen sobre el footer */}
         {notasLegales && (
-          <View style={{ ...styles.notasBox, backgroundColor: '#f9fafb' }}>
+          <View style={{ ...styles.notasBox, backgroundColor: '#f9fafb', marginBottom: 60 }}>
+            <Text style={{ fontSize: 7, color: '#666666', fontWeight: 'bold', marginBottom: 2 }}>
+              Notas Legales / Información Adicional:
+            </Text>
             <Text style={{ fontSize: 7, color: '#666666' }}>{notasLegales}</Text>
           </View>
         )}

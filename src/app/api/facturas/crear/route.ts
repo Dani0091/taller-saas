@@ -212,22 +212,23 @@ export async function POST(request: NextRequest) {
       const lineasData = lineas.map((linea: any, index: number) => {
         const cantidad = parseFloat(linea.cantidad) || 1
         const precioUnitario = parseFloat(linea.precioUnitario || linea.precio_unitario) || 0
-        const ivaPorcentaje = parseFloat(linea.iva_porcentaje) || ivaPorcentajeConfig
-        const baseImponible = cantidad * precioUnitario
-        const ivaImporte = baseImponible * (ivaPorcentaje / 100)
-        const totalLinea = baseImponible + ivaImporte
+        const ivaPorcentajeLinea = parseFloat(linea.iva_porcentaje) || ivaPorcentajeConfig
+        const baseImponibleLinea = cantidad * precioUnitario
+        const ivaImporte = baseImponibleLinea * (ivaPorcentajeLinea / 100)
+        const totalLinea = baseImponibleLinea + ivaImporte
 
         return {
           factura_id: facturaId,
           numero_linea: index + 1,
-          concepto: linea.descripcion || linea.concepto || 'Servicio',
+          concepto: linea.concepto || linea.descripcion || 'Servicio',
           descripcion: linea.descripcion || null,
           cantidad: cantidad,
           precio_unitario: precioUnitario,
-          base_imponible: baseImponible,
-          iva_porcentaje: ivaPorcentaje,
+          base_imponible: baseImponibleLinea,
+          iva_porcentaje: ivaPorcentajeLinea,
           iva_importe: ivaImporte,
           total_linea: totalLinea,
+          importe_total: totalLinea
         }
       })
 
