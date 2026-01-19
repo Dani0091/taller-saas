@@ -354,7 +354,9 @@ export default function NuevaFacturaPage() {
       )
       const total = baseImponible + iva
 
-      const response = await fetch('/api/facturas/crear', {
+      // PASO 1: Crear borrador (sin número)
+      toast.loading('Creando borrador de factura...')
+      const responseCrear = await fetch('/api/facturas/crear', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -373,7 +375,6 @@ export default function NuevaFacturaPage() {
           telefono_contacto: formData.telefono_contacto,
           numero_autorizacion: formData.numero_autorizacion || null,
           referencia_externa: formData.referencia_externa || null,
-          estado: pagadoAlEmitir ? 'pagada' : 'emitida',
           lineas: lineas.map(l => ({
             descripcion: l.descripcion,
             cantidad: l.cantidad,
@@ -383,16 +384,42 @@ export default function NuevaFacturaPage() {
         }),
       })
 
-      const data = await response.json()
+      const dataBorrador = await responseCrear.json()
 
-      if (data.error) {
-        toast.error(data.error)
+      if (dataBorrador.error) {
+        toast.dismiss()
+        toast.error(dataBorrador.error)
+        return
+      }
+
+      // PASO 2: Emitir factura (asignar número)
+      const estadoFinal = pagadoAlEmitir ? 'pagada' : 'emitida'
+      toast.dismiss()
+      toast.loading(`Emitiendo factura...`)
+
+      const responseEmitir = await fetch('/api/facturas/emitir', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          factura_id: dataBorrador.id,
+          estado_final: estadoFinal
+        }),
+      })
+
+      const dataEmitida = await responseEmitir.json()
+
+      toast.dismiss()
+      if (dataEmitida.error) {
+        toast.error(`Borrador creado pero error al emitir: ${dataEmitida.error}`)
+        // Aún así redirigir al borrador para que el usuario pueda emitirlo manualmente
+        router.push(`/dashboard/facturas/ver?id=${dataBorrador.id}`)
       } else {
-        toast.success(`Factura ${data.numero_factura} creada`)
-        router.push(`/dashboard/facturas/ver?id=${data.id}`)
+        toast.success(`✅ Factura ${dataEmitida.numero_factura} ${estadoFinal === 'pagada' ? 'emitida y pagada' : 'emitida'}`)
+        router.push(`/dashboard/facturas/ver?id=${dataBorrador.id}`)
       }
     } catch (error) {
       console.error(error)
+      toast.dismiss()
       toast.error('Error al crear factura')
     } finally {
       setLoading(false)
