@@ -84,13 +84,25 @@ export async function POST(request: NextRequest) {
       if (nuevaSerie) {
         serieId = nuevaSerie.id
         siguienteNumero = nuevaSerie.ultimo_numero + 1
-        console.log(`Serie "${serieFactura}" creada con ID: ${nuevaSerie.id}, siguiente: ${siguienteNumero}`)
+        console.log(`✅ Serie "${serieFactura}" creada exitosamente`)
+        console.log(`   - ID: ${nuevaSerie.id}`)
+        console.log(`   - Último número: ${nuevaSerie.ultimo_numero}`)
+        console.log(`   - Siguiente factura será: ${serieFactura}${siguienteNumero.toString().padStart(3, '0')}`)
       } else {
-        console.error('Error creando serie:', crearSerieError)
+        console.error('❌ Error creando serie:', crearSerieError)
+        console.log(`⚠️  Usando fallback: taller_config.numero_factura_inicial`)
         // Continuar con el número calculado si falla la creación
         siguienteNumero = maxNumero + 1
+        serieId = null // Asegurar que es null para usar fallback
       }
     }
+
+    // Log de verificación antes de crear factura
+    console.log(`📝 Creando factura:`)
+    console.log(`   - Serie: ${serieFactura}`)
+    console.log(`   - Número que se usará: ${siguienteNumero}`)
+    console.log(`   - Serie ID: ${serieId || 'null (usando fallback)'}`)
+    console.log(`   - Factura completa: ${serieFactura}${siguienteNumero.toString().padStart(3, '0')}`)
 
     // Obtener la orden con todas sus relaciones
     const { data: orden, error: ordenError } = await supabase
@@ -128,20 +140,42 @@ export async function POST(request: NextRequest) {
 
     // ACTUALIZAR LA SERIE PRIMERO (operación atómica para evitar duplicados)
     if (serieId) {
+      console.log(`🔄 Actualizando serie ${serieFactura} a último_numero: ${siguienteNumero}`)
       const { error: updateError } = await supabase
         .from('series_facturacion')
         .update({
-          ultimo_numero: siguienteNumero,
-          updated_at: new Date().toISOString()
+          ultimo_numero: siguienteNumero
         })
         .eq('id', serieId)
 
       if (updateError) {
-        console.error('Error actualizando serie:', updateError)
+        console.error('❌ Error actualizando serie:', updateError)
         return NextResponse.json(
-          { error: 'Error al actualizar numeración de serie' },
+          {
+            error: 'Error al actualizar numeración de serie',
+            details: updateError?.message,
+            code: updateError?.code,
+            sugerencia: 'La serie existe pero no se pudo actualizar. Verifica los permisos en Supabase.'
+          },
           { status: 500 }
         )
+      }
+      console.log(`✅ Serie actualizada correctamente`)
+    } else {
+      // Si no hay serieId, significa que NO existe en series_facturacion
+      // Actualizar taller_config como fallback
+      console.log(`⚠️  Sin serieId, actualizando taller_config.numero_factura_inicial a ${siguienteNumero + 1}`)
+      const { error: configError } = await supabase
+        .from('taller_config')
+        .update({
+          numero_factura_inicial: siguienteNumero + 1
+        })
+        .eq('taller_id', taller_id)
+
+      if (configError) {
+        console.error('❌ Error actualizando taller_config:', configError)
+      } else {
+        console.log(`✅ taller_config actualizado`)
       }
     }
 
