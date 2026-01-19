@@ -1604,16 +1604,32 @@ export function DetalleOrdenSheet({
                   <Label className="text-xs font-semibold mb-2 block text-gray-600">
                     📄 Documentación adicional (Hoja de orden, notas escritas, etc.)
                   </Label>
-                  {!modoCrear && ordenSeleccionada && (
-                    <FotoUploader
-                      ordenId={ordenSeleccionada}
-                      tallerId={tallerId}
-                      categoria="fotos_diagnostico"
-                      label="Subir documento/foto"
-                      small
-                    />
-                  )}
-                  {modoCrear && (
+                  {!modoCrear && ordenSeleccionada ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      <FotoUploader
+                        tipo="diagnostico_1"
+                        ordenId={ordenSeleccionada}
+                        fotoUrl={getFotoByKey(formData.fotos_diagnostico || '', 'diagnostico_1')}
+                        onFotoSubida={(url) => {
+                          const fotosActuales = formData.fotos_diagnostico || ''
+                          const fotosObj = fotosActuales ? JSON.parse(fotosActuales) : {}
+                          fotosObj['diagnostico_1'] = url
+                          setFormData(prev => ({ ...prev, fotos_diagnostico: JSON.stringify(fotosObj) }))
+                        }}
+                      />
+                      <FotoUploader
+                        tipo="diagnostico_2"
+                        ordenId={ordenSeleccionada}
+                        fotoUrl={getFotoByKey(formData.fotos_diagnostico || '', 'diagnostico_2')}
+                        onFotoSubida={(url) => {
+                          const fotosActuales = formData.fotos_diagnostico || ''
+                          const fotosObj = fotosActuales ? JSON.parse(fotosActuales) : {}
+                          fotosObj['diagnostico_2'] = url
+                          setFormData(prev => ({ ...prev, fotos_diagnostico: JSON.stringify(fotosObj) }))
+                        }}
+                      />
+                    </div>
+                  ) : (
                     <p className="text-xs text-gray-400 italic">
                       Guarda la orden primero para poder subir documentos
                     </p>
