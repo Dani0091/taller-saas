@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { DecimalInput } from '@/components/ui/decimal-input'
 import { ArrowLeft, Loader2, Plus, X, Check, UserPlus, FileText } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
@@ -77,8 +78,8 @@ export default function NuevaFacturaPage() {
   // Nueva línea
   const [nuevaLinea, setNuevaLinea] = useState({
     descripcion: '',
-    cantidad: '1',
-    precioUnitario: '',
+    cantidad: 1,
+    precioUnitario: 0,
     ivaPorcentaje: '21',
   })
 
@@ -291,7 +292,7 @@ export default function NuevaFacturaPage() {
   }
 
   const handleAgregarLinea = () => {
-    if (!nuevaLinea.descripcion || !nuevaLinea.cantidad || !nuevaLinea.precioUnitario) {
+    if (!nuevaLinea.descripcion || nuevaLinea.cantidad <= 0 || nuevaLinea.precioUnitario <= 0) {
       toast.error('Completa todos los campos de la línea')
       return
     }
@@ -299,16 +300,16 @@ export default function NuevaFacturaPage() {
     const linea: LineaFactura = {
       id: Date.now().toString(),
       descripcion: nuevaLinea.descripcion,
-      cantidad: parseFloat(nuevaLinea.cantidad),
-      precioUnitario: parseFloat(nuevaLinea.precioUnitario),
+      cantidad: nuevaLinea.cantidad,
+      precioUnitario: nuevaLinea.precioUnitario,
       ivaPorcentaje: parseFloat(nuevaLinea.ivaPorcentaje) || ivaPorDefecto,
     }
 
     setLineas([...lineas, linea])
     setNuevaLinea({
       descripcion: '',
-      cantidad: '1',
-      precioUnitario: '',
+      cantidad: 1,
+      precioUnitario: 0,
       ivaPorcentaje: String(ivaPorDefecto),
     })
   }
@@ -729,24 +730,22 @@ export default function NuevaFacturaPage() {
               <div className="grid grid-cols-4 gap-3">
                 <div>
                   <Label className="block text-sm font-semibold mb-2">Cantidad</Label>
-                  <Input
-                    type="number"
-                    min="0.01"
-                    step="0.01"
+                  <DecimalInput
                     value={nuevaLinea.cantidad}
-                    onChange={(e) => setNuevaLinea({ ...nuevaLinea, cantidad: e.target.value })}
+                    onChange={(value) => setNuevaLinea({ ...nuevaLinea, cantidad: value })}
                     className="text-center"
+                    min={0.01}
+                    step={0.01}
                   />
                 </div>
                 <div>
                   <Label className="block text-sm font-semibold mb-2">Precio (€)</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="0.00"
+                  <DecimalInput
                     value={nuevaLinea.precioUnitario}
-                    onChange={(e) => setNuevaLinea({ ...nuevaLinea, precioUnitario: e.target.value })}
+                    onChange={(value) => setNuevaLinea({ ...nuevaLinea, precioUnitario: value })}
+                    placeholder="0.00"
+                    min={0}
+                    step={0.01}
                     className="text-right"
                   />
                 </div>

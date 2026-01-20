@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
+import { DecimalInput } from '@/components/ui/decimal-input'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -17,9 +18,9 @@ export default function NuevaFacturaPage() {
   const [formData, setFormData] = useState({
     numero_factura: '',
     cliente_id: '',
-    base_imponible: '',
-    iva: '',
-    total: '',
+    base_imponible: 0,
+    iva: 0,
+    total: 0,
     metodo_pago: '',
   })
 
@@ -53,9 +54,9 @@ export default function NuevaFacturaPage() {
           taller_id: tallerId,
           numero_factura: formData.numero_factura,
           cliente_id: formData.cliente_id || null,
-          base_imponible: parseFloat(formData.base_imponible) || 0,
-          iva: parseFloat(formData.iva) || 0,
-          total: parseFloat(formData.total) || 0,
+          base_imponible: formData.base_imponible || 0,
+          iva: formData.iva || 0,
+          total: formData.total || 0,
           metodo_pago: formData.metodo_pago || null,
         }),
       })
@@ -118,42 +119,42 @@ export default function NuevaFacturaPage() {
 
           <div>
             <Label htmlFor="base_imponible">Base Imponible *</Label>
-            <Input
+            <DecimalInput
               id="base_imponible"
-              name="base_imponible"
-              type="number"
-              placeholder="0.00"
-              step="0.01"
               value={formData.base_imponible}
-              onChange={handleChange}
+              onChange={(value) => setFormData(prev => ({ ...prev, base_imponible: value }))}
+              placeholder="0.00"
+              step={0.01}
+              min={0}
+              allowEmpty={true}
               required
             />
           </div>
 
           <div>
             <Label htmlFor="iva">IVA (21%) *</Label>
-            <Input
+            <DecimalInput
               id="iva"
-              name="iva"
-              type="number"
-              placeholder="0.00"
-              step="0.01"
               value={formData.iva}
-              onChange={handleChange}
+              onChange={(value) => setFormData(prev => ({ ...prev, iva: value }))}
+              placeholder="0.00"
+              step={0.01}
+              min={0}
+              allowEmpty={true}
               required
             />
           </div>
 
           <div>
             <Label htmlFor="total">Total *</Label>
-            <Input
+            <DecimalInput
               id="total"
-              name="total"
-              type="number"
-              placeholder="0.00"
-              step="0.01"
               value={formData.total}
-              onChange={handleChange}
+              onChange={(value) => setFormData(prev => ({ ...prev, total: value }))}
+              placeholder="0.00"
+              step={0.01}
+              min={0}
+              allowEmpty={true}
               required
             />
           </div>

@@ -845,14 +845,14 @@ export default function ConfiguracionPage() {
                 </div>
                 <div>
                   <Label className="text-xs text-gray-600 font-semibold">Número Inicial</Label>
-                  <Input
-                    name="numero_factura_inicial"
-                    type="number"
-                    min="1"
+                  <DecimalInput
+                    value={formData.numero_factura_inicial}
+                    onChange={(value) => setFormData(prev => ({ ...prev, numero_factura_inicial: value }))}
                     placeholder="1"
-                    value={formData.numero_factura_inicial || ''}
-                    onChange={handleChange}
                     className="font-mono"
+                    min={1}
+                    step={1}
+                    allowEmpty={true}
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     Número inicial para nuevas series
@@ -977,12 +977,12 @@ export default function ConfiguracionPage() {
                     </div>
                     <div>
                       <Label className="text-sm font-semibold mb-2">Número Inicial</Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        placeholder="0"
+                      <DecimalInput
                         value={formSerie.ultimo_numero}
-                        onChange={(e) => setFormSerie({ ...formSerie, ultimo_numero: parseInt(e.target.value) || 0 })}
+                        onChange={(value) => setFormSerie({ ...formSerie, ultimo_numero: value })}
+                        placeholder="0"
+                        min={0}
+                        step={1}
                       />
                     </div>
                   </div>
@@ -1441,13 +1441,13 @@ function TarifaEditor({
       <div className="grid grid-cols-2 gap-2">
         <div>
           <Label className="text-xs text-gray-600">Días pago</Label>
-          <Input
-            type="number"
-            min={0}
-            value={formTarifa.dias_pago || ''}
-            onChange={(e) => setFormTarifa({ ...formTarifa, dias_pago: parseInt(e.target.value) || 0 })}
+          <DecimalInput
+            value={formTarifa.dias_pago}
+            onChange={(value) => setFormTarifa({ ...formTarifa, dias_pago: value })}
             className="text-sm"
             placeholder="0"
+            min={0}
+            step={1}
           />
         </div>
         <div>

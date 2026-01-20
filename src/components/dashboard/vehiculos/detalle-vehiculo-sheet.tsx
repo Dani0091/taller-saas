@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
+import { DecimalInput } from '@/components/ui/decimal-input'
 import { InputScanner } from '@/components/ui/input-scanner'
 import { toast } from 'sonner'
 import Link from 'next/link'
@@ -300,12 +301,13 @@ export function DetalleVehiculoSheet({
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label>Año</Label>
-                        <Input
-                          name="año"
-                          type="number"
-                          value={formData.año || ''}
-                          onChange={handleNumericChange}
+                        <DecimalInput
+                          value={formData.año}
+                          onChange={(value) => setFormData(prev => ({ ...prev, año: value }))}
                           placeholder="2022"
+                          min={1900}
+                          max={new Date().getFullYear() + 1}
+                          allowEmpty={true}
                         />
                       </div>
                       <div>
@@ -323,18 +325,21 @@ export function DetalleVehiculoSheet({
                       <div>
                         <Label>Kilómetros</Label>
                         <div className="flex gap-1">
-                          <Input
-                            name="kilometros"
-                            type="number"
-                            value={formData.kilometros || ''}
-                            onChange={handleNumericChange}
+                          <DecimalInput
+                            value={formData.kilometros}
+                            onChange={(value) => setFormData(prev => ({ ...prev, kilometros: value }))}
                             placeholder="45000"
+                            min={0}
                             className="flex-1"
+                            allowEmpty={true}
                           />
-                          <InputScanner
-                            tipo="km"
-                            onResult={(val) => setFormData(prev => ({ ...prev, kilometros: parseInt(val) || null }))}
-                          />
+                <InputScanner
+                  tipo="km"
+                  onResult={(val) => {
+                    const num = parseInt(val.replace(/\D/g, ''))
+                    setFormData(prev => ({ ...prev, kilometros: num > 0 ? num : null }))
+                  }}
+                />
                         </div>
                       </div>
                       <div>
@@ -386,22 +391,22 @@ export function DetalleVehiculoSheet({
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label>Potencia (CV)</Label>
-                        <Input
-                          name="potencia_cv"
-                          type="number"
-                          value={formData.potencia_cv || ''}
-                          onChange={handleNumericChange}
+                        <DecimalInput
+                          value={formData.potencia_cv}
+                          onChange={(value) => setFormData(prev => ({ ...prev, potencia_cv: value }))}
                           placeholder="150"
+                          min={0}
+                          allowEmpty={true}
                         />
                       </div>
                       <div>
                         <Label>Cilindrada (cc)</Label>
-                        <Input
-                          name="cilindrada"
-                          type="number"
-                          value={formData.cilindrada || ''}
-                          onChange={handleNumericChange}
+                        <DecimalInput
+                          value={formData.cilindrada}
+                          onChange={(value) => setFormData(prev => ({ ...prev, cilindrada: value }))}
                           placeholder="1998"
+                          min={0}
+                          allowEmpty={true}
                         />
                       </div>
                     </div>
@@ -417,10 +422,13 @@ export function DetalleVehiculoSheet({
                           maxLength={17}
                           className="flex-1 font-mono text-xs"
                         />
-                        <InputScanner
-                          tipo="vin"
-                          onResult={(val) => setFormData(prev => ({ ...prev, vin: val }))}
-                        />
+            <InputScanner
+              tipo="km"
+              onResult={(val) => {
+                const num = parseInt(val.replace(/\D/g, ''))
+                setVehiculoEditado(prev => ({ ...prev, kilometros: num > 0 ? num : undefined }))
+              }}
+            />
                       </div>
                     </div>
                   </Card>

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
+import { DecimalInput } from '@/components/ui/decimal-input'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
@@ -195,14 +196,21 @@ export default function NuevoVehiculoPage() {
             </div>
             <div>
               <Label>Año</Label>
-              <Input
-                name="año"
-                type="number"
-                placeholder="2022"
-                min="1900"
-                max={new Date().getFullYear() + 1}
+              <DecimalInput
                 value={formData.año}
-                onChange={handleChange}
+                onChange={(value) => {
+                  const anio = value
+                  const anioMax = new Date().getFullYear() + 1
+                  if (anio && anio >= 1900 && anio <= anioMax) {
+                    setFormData(prev => ({ ...prev, año: anio }))
+                  } else if (anio) {
+                    toast.error(`El año debe estar entre 1900 y ${anioMax} (modelo siguiente)`)
+                  }
+                }}
+                placeholder="2022"
+                min={1900}
+                max={new Date().getFullYear() + 1}
+                allowEmpty={true}
               />
             </div>
             <div>
@@ -221,14 +229,13 @@ export default function NuevoVehiculoPage() {
             <div>
               <Label>Kilómetros</Label>
               <div className="flex gap-1">
-                <Input
-                  name="kilometros"
-                  type="number"
-                  placeholder="45000"
-                  min="0"
+                <DecimalInput
                   value={formData.kilometros}
-                  onChange={handleChange}
+                  onChange={(value) => setFormData(prev => ({ ...prev, kilometros: value }))}
+                  placeholder="45000"
                   className="flex-1"
+                  min={0}
+                  allowEmpty={true}
                 />
                 <InputScanner
                   tipo="km"
@@ -277,25 +284,23 @@ export default function NuevoVehiculoPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Potencia (CV)</Label>
-              <Input
-                name="potencia_cv"
-                type="number"
-                placeholder="120"
-                min="0"
-                step="0.1"
+              <DecimalInput
                 value={formData.potencia_cv}
-                onChange={handleChange}
+                onChange={(value) => setFormData(prev => ({ ...prev, potencia_cv: value }))}
+                placeholder="120"
+                min={0}
+                step={0.1}
+                allowEmpty={true}
               />
             </div>
             <div>
               <Label>Cilindrada (cc)</Label>
-              <Input
-                name="cilindrada"
-                type="number"
-                placeholder="1998"
-                min="0"
+              <DecimalInput
                 value={formData.cilindrada}
-                onChange={handleChange}
+                onChange={(value) => setFormData(prev => ({ ...prev, cilindrada: value }))}
+                placeholder="1998"
+                min={0}
+                allowEmpty={true}
               />
             </div>
           </div>
