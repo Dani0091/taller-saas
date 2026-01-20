@@ -847,7 +847,11 @@ export default function ConfiguracionPage() {
                   <Label className="text-xs text-gray-600 font-semibold">Número Inicial</Label>
                   <DecimalInput
                     value={formData.numero_factura_inicial}
-                    onChange={(value) => setFormData(prev => ({ ...prev, numero_factura_inicial: value }))}
+                    onChange={(value) => {
+                      if (value !== null && value !== undefined) {
+                        setFormData(prev => prev ? { ...prev, numero_factura_inicial: value } : prev)
+                      }
+                    }}
                     placeholder="1"
                     className="font-mono"
                     min={1}
@@ -979,7 +983,11 @@ export default function ConfiguracionPage() {
                       <Label className="text-sm font-semibold mb-2">Número Inicial</Label>
                       <DecimalInput
                         value={formSerie.ultimo_numero}
-                        onChange={(value) => setFormSerie({ ...formSerie, ultimo_numero: value })}
+                        onChange={(value) => {
+                          if (value !== null && value !== undefined) {
+                            setFormSerie({ ...formSerie, ultimo_numero: value })
+                          }
+                        }}
                         placeholder="0"
                         min={0}
                         step={1}
@@ -1443,7 +1451,11 @@ function TarifaEditor({
           <Label className="text-xs text-gray-600">Días pago</Label>
           <DecimalInput
             value={formTarifa.dias_pago}
-            onChange={(value) => setFormTarifa({ ...formTarifa, dias_pago: value })}
+            onChange={(value) => {
+              if (value !== null && value !== undefined) {
+                setFormTarifa({ ...formTarifa, dias_pago: value })
+              }
+            }}
             className="text-sm"
             placeholder="0"
             min={0}
