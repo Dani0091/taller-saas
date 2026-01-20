@@ -129,7 +129,6 @@ export default function NuevaFacturaPage() {
               step={0.01}
               min={0}
               allowEmpty={true}
-              required
             />
           </div>
 
@@ -143,7 +142,6 @@ export default function NuevaFacturaPage() {
               step={0.01}
               min={0}
               allowEmpty={true}
-              required
             />
           </div>
 
@@ -157,7 +155,6 @@ export default function NuevaFacturaPage() {
               step={0.01}
               min={0}
               allowEmpty={true}
-              required
             />
           </div>
 

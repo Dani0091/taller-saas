@@ -715,7 +715,11 @@ export default function ConfiguracionPage() {
                   id="tarifa_hora"
                   name="tarifa_hora"
                   value={formData.tarifa_hora}
-                  onChange={(value) => setFormData(prev => prev ? { ...prev, tarifa_hora: value } : null)}
+                  onChange={(value) => {
+                    if (value !== null && value !== undefined) {
+                      setFormData(prev => prev ? { ...prev, tarifa_hora: value } : null)
+                    }
+                  }}
                   min={0}
                   step={0.01}
                   placeholder="45.00"
@@ -735,7 +739,11 @@ export default function ConfiguracionPage() {
                   id="porcentaje_iva"
                   name="porcentaje_iva"
                   value={formData.porcentaje_iva}
-                  onChange={(value) => setFormData(prev => prev ? { ...prev, porcentaje_iva: value } : null)}
+                  onChange={(value) => {
+                    if (value !== null && value !== undefined) {
+                      setFormData(prev => prev ? { ...prev, porcentaje_iva: value } : null)
+                    }
+                  }}
                   min={0}
                   max={100}
                   step={0.01}

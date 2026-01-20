@@ -1643,7 +1643,10 @@ export function DetalleOrdenSheet({
                             />
                             <InputScanner
                               tipo="km"
-                              onResult={(val) => setVehiculoEditado(prev => ({ ...prev, kilometros: val }))}
+                              onResult={(val) => {
+                                const num = parseInt(val.replace(/\D/g, ''))
+                                setVehiculoEditado(prev => ({ ...prev, kilometros: num > 0 ? num : '' }))
+                              }}
                             />
                           </div>
                         </div>

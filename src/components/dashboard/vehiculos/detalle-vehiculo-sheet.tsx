@@ -422,16 +422,7 @@ export function DetalleVehiculoSheet({
                           min={0}
                         />
                       </div>
-                      <div>
-                        <Label>Cilindrada (cc)</Label>
-                        <DecimalInput
-                          value={formData.cilindrada}
-                          onChange={(value) => setFormData(prev => ({ ...prev, cilindrada: value }))}
-                          placeholder="1998"
-                          min={0}
-                          allowEmpty={true}
-                        />
-                      </div>
+
                     </div>
 
                     <div>
@@ -445,13 +436,12 @@ export function DetalleVehiculoSheet({
                           maxLength={17}
                           className="flex-1 font-mono text-xs"
                         />
-            <InputScanner
-              tipo="km"
-              onResult={(val) => {
-                const num = parseInt(val.replace(/\D/g, ''))
-                setVehiculoEditado(prev => ({ ...prev, kilometros: num > 0 ? num : undefined }))
-              }}
-            />
+                        <InputScanner
+                          tipo="vin"
+                          onResult={(val) => {
+                            setFormData(prev => ({ ...prev, vin: val }))
+                          }}
+                        />
                       </div>
                     </div>
                   </Card>
