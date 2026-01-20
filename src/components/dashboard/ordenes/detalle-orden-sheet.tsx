@@ -1392,10 +1392,10 @@ export function DetalleOrdenSheet({
                         <div>
                           <Label className="text-xs text-gray-600 mb-1 block">Año</Label>
                           <DecimalInput
-                            value={nuevoVehiculo.año}
+                            value={nuevoVehiculo.año ? Number(nuevoVehiculo.año) : undefined}
                             onChange={(value) => {
                               if (validarAnioVehiculo(value)) {
-                                setNuevoVehiculo(prev => ({ ...prev, año: value }))
+                                setNuevoVehiculo(prev => ({ ...prev, año: value ? String(value) : '' }))
                               }
                             }}
                             placeholder="2020"
@@ -1419,15 +1419,15 @@ export function DetalleOrdenSheet({
                           <Label className="text-xs text-gray-600 mb-1 block">Kilómetros</Label>
                           <div className="flex gap-2">
                             <DecimalInput
-                              value={nuevoVehiculo.kilometros}
-                              onChange={(value) => setNuevoVehiculo(prev => ({ ...prev, kilometros: value }))}
+                              value={nuevoVehiculo.kilometros ? Number(nuevoVehiculo.kilometros) : undefined}
+                              onChange={(value) => setNuevoVehiculo(prev => ({ ...prev, kilometros: value ? String(value) : '' }))}
                               placeholder="125000"
                               className="flex-1"
                               min={0}
                             />
                             <InputScanner
                               tipo="km"
-                              onResult={(val) => setNuevoVehiculo(prev => ({ ...prev, kilometros: val }))}
+                              onResult={(val) => setNuevoVehiculo(prev => ({ ...prev, kilometros: String(val) }))}
                             />
                           </div>
                         </div>
@@ -1608,10 +1608,10 @@ export function DetalleOrdenSheet({
                         <div>
                           <Label className="text-xs text-gray-600 mb-1 block">Año</Label>
                           <DecimalInput
-                            value={vehiculoEditado.año}
+                            value={vehiculoEditado.año ? Number(vehiculoEditado.año) : undefined}
                             onChange={(value) => {
                               if (validarAnioVehiculo(value)) {
-                                setVehiculoEditado(prev => ({ ...prev, año: value }))
+                                setVehiculoEditado(prev => ({ ...prev, año: value ? String(value) : '' }))
                               }
                             }}
                             placeholder="2020"
@@ -1635,8 +1635,8 @@ export function DetalleOrdenSheet({
                           <Label className="text-xs text-gray-600 mb-1 block">Kilómetros</Label>
                           <div className="flex gap-1">
                             <DecimalInput
-                              value={vehiculoEditado.kilometros}
-                              onChange={(value) => setVehiculoEditado(prev => ({ ...prev, kilometros: value }))}
+                              value={vehiculoEditado.kilometros ? Number(vehiculoEditado.kilometros) : undefined}
+                              onChange={(value) => setVehiculoEditado(prev => ({ ...prev, kilometros: value ? String(value) : '' }))}
                               placeholder="125000"
                               className="flex-1"
                               min={0}
@@ -1645,7 +1645,7 @@ export function DetalleOrdenSheet({
                               tipo="km"
                               onResult={(val) => {
                                 const num = parseInt(val.replace(/\D/g, ''))
-                                setVehiculoEditado(prev => ({ ...prev, kilometros: num > 0 ? num : '' }))
+                                setVehiculoEditado(prev => ({ ...prev, kilometros: num > 0 ? String(num) : '' }))
                               }}
                             />
                           </div>
@@ -2459,7 +2459,7 @@ export function DetalleOrdenSheet({
 
                           setLineas(prev => [...prev, {
                             id: `new-${Date.now()}`,
-                            tipo: piezaRapida.tipo || 'pieza',
+                            tipo: (piezaRapida.tipo || 'pieza') as TipoLinea,
                             descripcion: desc,
                             cantidad: qty,
                             precio_unitario: precio,

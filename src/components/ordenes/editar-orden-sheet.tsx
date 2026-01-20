@@ -142,8 +142,8 @@ export function EditarOrdenSheet({ orden, campo, onClose, onGuardar }: EditarOrd
                 />
               ) : (
                 <DecimalInput
-                  value={valores[field as keyof typeof valores]}
-                  onChange={(value) => setValores({ ...valores, [field]: value })}
+                  value={valores[field as keyof typeof valores] ? Number(valores[field as keyof typeof valores]) : undefined}
+                  onChange={(value) => setValores({ ...valores, [field]: value ? String(value) : '' })}
                   step={field.includes('costo') ? 0.01 : 0.5}
                   min={0}
                   placeholder="0.00"
