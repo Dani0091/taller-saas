@@ -28,7 +28,9 @@ export default function NuevaFacturaPage() {
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: (name === 'base_imponible' || name === 'iva' || name === 'total') 
+        ? (value === '' ? 0 : Number(value)) 
+        : value
     }))
   }
 

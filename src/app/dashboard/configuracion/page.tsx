@@ -406,8 +406,8 @@ export default function ConfiguracionPage() {
       [name]: isCheckbox
         ? checked
         : (name === 'tarifa_hora' || name === 'porcentaje_iva' || name === 'numero_factura_inicial'
-          ? parseFloat(value) || 0
-          : value)
+            ? (value === '' ? 0 : Number(value))
+            : value)
     } : null)
   }
 

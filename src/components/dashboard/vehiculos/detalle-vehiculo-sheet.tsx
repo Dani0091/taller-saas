@@ -301,14 +301,17 @@ export function DetalleVehiculoSheet({
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label>Año</Label>
-                        <DecimalInput
-                          value={formData.año}
-                          onChange={(value) => setFormData(prev => ({ ...prev, año: value }))}
-                          placeholder="2022"
-                          min={1900}
-                          max={new Date().getFullYear() + 1}
-                          allowEmpty={true}
-                        />
+                          <DecimalInput
+                            value={formData.año}
+                            onChange={(value) => {
+                              if (value != null) {
+                                setFormData(prev => ({ ...prev, año: value }))
+                              }
+                            }}
+                            placeholder="2020"
+                            min={1900}
+                            max={new Date().getFullYear() + 1}
+                          />
                       </div>
                       <div>
                         <Label>Color</Label>
@@ -327,11 +330,14 @@ export function DetalleVehiculoSheet({
                         <div className="flex gap-1">
                           <DecimalInput
                             value={formData.kilometros}
-                            onChange={(value) => setFormData(prev => ({ ...prev, kilometros: value }))}
-                            placeholder="45000"
-                            min={0}
+                            onChange={(value) => {
+                              if (value != null) {
+                                setFormData(prev => ({ ...prev, kilometros: value }))
+                              }
+                            }}
+                            placeholder="125000"
                             className="flex-1"
-                            allowEmpty={true}
+                            min={0}
                           />
                 <InputScanner
                   tipo="km"
@@ -393,10 +399,27 @@ export function DetalleVehiculoSheet({
                         <Label>Potencia (CV)</Label>
                         <DecimalInput
                           value={formData.potencia_cv}
-                          onChange={(value) => setFormData(prev => ({ ...prev, potencia_cv: value }))}
-                          placeholder="150"
+                          onChange={(value) => {
+                            if (value != null) {
+                              setFormData(prev => ({ ...prev, potencia_cv: value }))
+                            }
+                          }}
+                          placeholder="120"
                           min={0}
-                          allowEmpty={true}
+                          step={0.1}
+                        />
+                      </div>
+                      <div>
+                        <Label>Cilindrada (cc)</Label>
+                        <DecimalInput
+                          value={formData.cilindrada}
+                          onChange={(value) => {
+                            if (value != null) {
+                              setFormData(prev => ({ ...prev, cilindrada: value }))
+                            }
+                          }}
+                          placeholder="1998"
+                          min={0}
                         />
                       </div>
                       <div>

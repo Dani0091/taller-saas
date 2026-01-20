@@ -2274,17 +2274,21 @@ export function DetalleOrdenSheet({
                       <Label className="text-xs text-gray-600 mb-1 block">
                         {nuevaLinea.tipo === 'mano_obra' ? '💶 Precio/hora (€)' : '💶 Precio/unidad (€)'}
                       </Label>
-                      <DecimalInput
-                        value={nuevaLinea.precio_unitario}
-                        onChange={(value) => setNuevaLinea(prev => ({
-                          ...prev,
-                          precio_unitario: value
-                        }))}
-                        min={0}
-                        step={0.01}
-                        placeholder="0.00"
-                        className="text-right"
-                      />
+                          <DecimalInput
+                            value={nuevaLinea.precio_unitario}
+                            onChange={(value) => {
+                              if (value != null) {
+                                setNuevaLinea(prev => ({
+                                  ...prev,
+                                  precio_unitario: value
+                                }))
+                              }
+                            }}
+                            min={0}
+                            step={0.01}
+                            placeholder="0.00"
+                            className="text-right"
+                          />
                     </div>
                   </div>
 

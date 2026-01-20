@@ -84,7 +84,7 @@ export function EditarOrdenSheet({ orden, campo, onClose, onGuardar }: EditarOrd
       const payload: Record<string, any> = {}
       config.campos.forEach((f: string) => {
         if (f.startsWith('horas_') || f.startsWith('costo_')) {
-          payload[f] = valores[f as keyof typeof valores] ? parseFloat(valores[f as keyof typeof valores]) : null
+          payload[f] = valores[f as keyof typeof valores] ?? null
         } else {
           payload[f] = valores[f as keyof typeof valores]
         }

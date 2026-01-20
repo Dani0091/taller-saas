@@ -105,8 +105,8 @@ export default function NuevoVehiculoPage() {
           kilometros: formData.kilometros ? parseInt(formData.kilometros) : null,
           tipo_combustible: formData.tipo_combustible || null,
           carroceria: formData.carroceria || null,
-          potencia_cv: formData.potencia_cv ? parseFloat(formData.potencia_cv) : null,
-          cilindrada: formData.cilindrada ? parseInt(formData.cilindrada) : null,
+          potencia_cv: formData.potencia_cv ?? null,
+          cilindrada: formData.cilindrada ?? null,
         }),
       })
 

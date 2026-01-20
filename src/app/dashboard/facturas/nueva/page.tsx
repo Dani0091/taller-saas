@@ -732,7 +732,11 @@ export default function NuevaFacturaPage() {
                   <Label className="block text-sm font-semibold mb-2">Cantidad</Label>
                   <DecimalInput
                     value={nuevaLinea.cantidad}
-                    onChange={(value) => setNuevaLinea({ ...nuevaLinea, cantidad: value })}
+                    onChange={(value) => {
+                      if (value != null) {
+                        setNuevaLinea({ ...nuevaLinea, cantidad: value })
+                      }
+                    }}
                     className="text-center"
                     min={0.01}
                     step={0.01}
@@ -742,7 +746,11 @@ export default function NuevaFacturaPage() {
                   <Label className="block text-sm font-semibold mb-2">Precio (€)</Label>
                   <DecimalInput
                     value={nuevaLinea.precioUnitario}
-                    onChange={(value) => setNuevaLinea({ ...nuevaLinea, precioUnitario: value })}
+                    onChange={(value) => {
+                      if (value != null) {
+                        setNuevaLinea({ ...nuevaLinea, precioUnitario: value })
+                      }
+                    }}
                     placeholder="0.00"
                     min={0}
                     step={0.01}
@@ -766,8 +774,8 @@ export default function NuevaFacturaPage() {
                   <Label className="block text-sm font-semibold mb-2">Total</Label>
                   <div className="py-2 px-3 bg-white border border-green-200 rounded-lg font-bold text-right text-green-700">
                     {(() => {
-                      const cant = parseFloat(nuevaLinea.cantidad || '0')
-                      const precio = parseFloat(nuevaLinea.precioUnitario || '0')
+                      const cant = nuevaLinea.cantidad || 0
+                      const precio = nuevaLinea.precioUnitario || 0
                       const base = cant * precio
                       return base.toFixed(2)
                     })()}€
