@@ -577,10 +577,6 @@ export function DetalleOrdenSheet({
       toast.error('Añade una descripción')
       return
     }
-    if (nuevaLinea.precio_unitario <= 0) {
-      toast.error('Añade un precio válido')
-      return
-    }
 
     setLineas([...lineas, {
       id: `new-${Date.now()}`,
@@ -588,7 +584,12 @@ export function DetalleOrdenSheet({
       isNew: true
     }])
     setNuevaLinea({ tipo: 'mano_obra', descripcion: '', cantidad: 1, precio_unitario: 0 })
-    toast.success('Línea añadida')
+
+    if (nuevaLinea.precio_unitario === 0) {
+      toast.warning('⚠️ Línea añadida sin precio. Edítala después para añadir el precio.')
+    } else {
+      toast.success('Línea añadida')
+    }
   }
 
   const eliminarLinea = async (id: string) => {
@@ -597,6 +598,12 @@ export function DetalleOrdenSheet({
     }
     setLineas(lineas.filter(l => l.id !== id))
     toast.success('Línea eliminada')
+  }
+
+  const actualizarLinea = (id: string, campo: 'cantidad' | 'precio_unitario', valor: number) => {
+    setLineas(lineas.map(l =>
+      l.id === id ? { ...l, [campo]: valor } : l
+    ))
   }
 
   const handleGuardar = async () => {
@@ -681,7 +688,24 @@ export function DetalleOrdenSheet({
           })))
 
         if (lineasError) {
-          console.error('Error guardando líneas:', lineasError)
+          console.error('Error guardando líneas nuevas:', lineasError)
+        }
+      }
+
+      // Actualizar líneas existentes
+      const lineasExistentes = lineas.filter(l => !l.isNew && !l.id.startsWith('new-'))
+      for (const linea of lineasExistentes) {
+        const { error: updateError } = await supabase
+          .from('lineas_orden')
+          .update({
+            cantidad: linea.cantidad,
+            precio_unitario: linea.precio_unitario,
+            importe_total: linea.cantidad * linea.precio_unitario
+          })
+          .eq('id', linea.id)
+
+        if (updateError) {
+          console.error('Error actualizando línea:', linea.id, updateError)
         }
       }
 
@@ -2162,22 +2186,46 @@ export function DetalleOrdenSheet({
                     {lineas.map(linea => (
                       <div
                         key={linea.id}
-                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl"
+                        className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200"
                       >
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 truncate">{linea.descripcion}</p>
-                          <p className="text-sm text-gray-500">
-                            {linea.cantidad} x €{linea.precio_unitario.toFixed(2)}
-                          </p>
+                          <p className="font-medium text-gray-900 truncate mb-2">{linea.descripcion}</p>
+                          <div className="flex gap-2 items-center">
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="number"
+                                min="0.01"
+                                step="0.01"
+                                value={linea.cantidad}
+                                onChange={(e) => actualizarLinea(linea.id, 'cantidad', parseFloat(e.target.value) || 0)}
+                                className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                              />
+                              <span className="text-xs text-gray-500">x</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-gray-500">€</span>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={linea.precio_unitario}
+                                onChange={(e) => actualizarLinea(linea.id, 'precio_unitario', parseFloat(e.target.value) || 0)}
+                                className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                                placeholder="0.00"
+                              />
+                            </div>
+                          </div>
                         </div>
                         <div className="text-right">
+                          <p className="text-xs text-gray-500 mb-1">Total</p>
                           <p className="font-bold text-gray-900">
                             €{(linea.cantidad * linea.precio_unitario).toFixed(2)}
                           </p>
                         </div>
                         <button
                           onClick={() => eliminarLinea(linea.id)}
-                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg"
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Eliminar línea"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
