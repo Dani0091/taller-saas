@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     console.log(`📋 Obteniendo configuración del taller...`)
     const { data: config, error: configError } = await supabase
       .from('taller_config')
-      .select('serie_factura, numero_factura_inicial, iban, condiciones_pago, notas_factura, porcentaje_iva, precio_hora_trabajo')
+      .select('serie_factura, numero_factura_inicial, iban, condiciones_pago, notas_factura, porcentaje_iva')
       .eq('taller_id', taller_id)
       .single()
 
@@ -54,7 +54,21 @@ export async function POST(request: NextRequest) {
 
     const serieFactura = config?.serie_factura || 'FA'
     const ivaPorcentaje = config?.porcentaje_iva || 21
-    const precioHoraTrabajo = config?.precio_hora_trabajo || 0
+
+    // Intentar obtener precio_hora_trabajo (puede no existir en la BD)
+    let precioHoraTrabajo = 0
+    try {
+      const { data: configExtra } = await supabase
+        .from('taller_config')
+        .select('precio_hora_trabajo')
+        .eq('taller_id', taller_id)
+        .single()
+      precioHoraTrabajo = configExtra?.precio_hora_trabajo || 0
+    } catch (err) {
+      // La columna no existe, usar 0 como fallback
+      console.log('ℹ️  precio_hora_trabajo no disponible, usando 0€')
+    }
+
     console.log(`✅ Configuración obtenida: Serie=${serieFactura}, IVA=${ivaPorcentaje}%, Precio hora=${precioHoraTrabajo}€`)
 
     // ==================== OBTENER Y VALIDAR ORDEN ====================
