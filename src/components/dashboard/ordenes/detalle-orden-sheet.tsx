@@ -1645,7 +1645,7 @@ export function DetalleOrdenSheet({
                               tipo="km"
                               onResult={(val) => {
                                 const num = parseInt(val.replace(/\D/g, ''))
-                                setVehiculoEditado(prev => ({ ...prev, kilometros: num > 0 ? num : '' }))
+                                setVehiculoEditado(prev => ({ ...prev, kilometros: num > 0 ? num.toString() : '' }))
                               }}
                             />
                           </div>
