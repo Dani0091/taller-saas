@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { DecimalInput } from '@/components/ui/decimal-input'
+import { NumberInput } from '@/components/ui/number-input'
 import { toast } from 'sonner'
 
 interface Orden {
@@ -141,7 +141,7 @@ export function EditarOrdenSheet({ orden, campo, onClose, onGuardar }: EditarOrd
                   className="min-h-32"
                 />
               ) : (
-                <DecimalInput
+                <NumberInput
                   value={valores[field as keyof typeof valores] ? Number(valores[field as keyof typeof valores]) : undefined}
                   onChange={(value) => setValores({ ...valores, [field]: value ? String(value) : '' })}
                   step={field.includes('costo') ? 0.01 : 0.5}

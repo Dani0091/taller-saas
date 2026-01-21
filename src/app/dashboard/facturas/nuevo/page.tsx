@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { DecimalInput } from '@/components/ui/decimal-input'
+import { NumberInput } from '@/components/ui/number-input'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -121,7 +121,7 @@ export default function NuevaFacturaPage() {
 
           <div>
             <Label htmlFor="base_imponible">Base Imponible *</Label>
-            <DecimalInput
+            <NumberInput
               id="base_imponible"
               value={formData.base_imponible}
               onChange={(value) => setFormData(prev => ({ ...prev, base_imponible: value }))}
@@ -134,7 +134,7 @@ export default function NuevaFacturaPage() {
 
           <div>
             <Label htmlFor="iva">IVA (21%) *</Label>
-            <DecimalInput
+            <NumberInput
               id="iva"
               value={formData.iva}
               onChange={(value) => setFormData(prev => ({ ...prev, iva: value }))}
@@ -147,7 +147,7 @@ export default function NuevaFacturaPage() {
 
           <div>
             <Label htmlFor="total">Total *</Label>
-            <DecimalInput
+            <NumberInput
               id="total"
               value={formData.total}
               onChange={(value) => setFormData(prev => ({ ...prev, total: value }))}

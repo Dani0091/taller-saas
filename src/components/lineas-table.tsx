@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Plus, Trash2, Edit2, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
-import { DecimalInput } from '@/components/ui/decimal-input'
+import { NumberInput } from '@/components/ui/number-input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
 
@@ -126,7 +126,7 @@ export function LineasTable({
             </div>
             <div>
               <Label className="text-xs sm:text-sm">Cantidad</Label>
-              <DecimalInput
+              <NumberInput
                 value={formData.cantidad}
                 onChange={(value) => setFormData({ ...formData, cantidad: value })}
                 min={0.01}
@@ -150,7 +150,7 @@ export function LineasTable({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
             <div>
               <Label className="text-xs sm:text-sm">Precio Venta €</Label>
-              <DecimalInput
+              <NumberInput
                 value={formData.precio_unitario}
                 onChange={(value) => setFormData({ ...formData, precio_unitario: value })}
                 min={0}
@@ -162,7 +162,7 @@ export function LineasTable({
             {formData.tipo === 'mano_obra' && (
               <div>
                 <Label className="text-xs sm:text-sm">Horas</Label>
-                <DecimalInput
+                <NumberInput
                   value={formData.horas}
                   onChange={(value) => setFormData({ ...formData, horas: value })}
                   min={0}
@@ -175,7 +175,7 @@ export function LineasTable({
             {(formData.tipo === 'pieza' || formData.tipo === 'consumible') && (
               <div>
                 <Label className="text-xs sm:text-sm">Precio Coste €</Label>
-                <DecimalInput
+                <NumberInput
                   value={formData.precio_coste}
                   onChange={(value) => setFormData({ ...formData, precio_coste: value })}
                   min={0}

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { DecimalInput } from '@/components/ui/decimal-input'
+import { NumberInput } from '@/components/ui/number-input'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
@@ -196,7 +196,7 @@ export default function NuevoVehiculoPage() {
             </div>
             <div>
               <Label>Año</Label>
-              <DecimalInput
+              <NumberInput
                 value={formData.año ? Number(formData.año) : undefined}
                 onChange={(value) => {
                   const anio = value
@@ -229,7 +229,7 @@ export default function NuevoVehiculoPage() {
             <div>
               <Label>Kilómetros</Label>
               <div className="flex gap-1">
-              <DecimalInput
+              <NumberInput
                 value={formData.kilometros ? Number(formData.kilometros) : undefined}
                 onChange={(value) => setFormData(prev => ({ ...prev, kilometros: value ? Number(value) : 0 }))}
                 placeholder="45000"
@@ -284,7 +284,7 @@ export default function NuevoVehiculoPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Potencia (CV)</Label>
-              <DecimalInput
+              <NumberInput
                 value={formData.potencia_cv ? Number(formData.potencia_cv) : undefined}
                 onChange={(value) => setFormData(prev => ({ ...prev, potencia_cv: value ?? 0 }))}
                 placeholder="120"
@@ -295,7 +295,7 @@ export default function NuevoVehiculoPage() {
             </div>
             <div>
               <Label>Cilindrada (cc)</Label>
-              <DecimalInput
+              <NumberInput
                 value={formData.cilindrada ? Number(formData.cilindrada) : undefined}
                 onChange={(value) => setFormData(prev => ({ ...prev, cilindrada: value ?? 0 }))}
                 placeholder="1998"

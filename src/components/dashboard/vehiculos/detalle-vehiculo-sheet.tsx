@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
-import { DecimalInput } from '@/components/ui/decimal-input'
+import { NumberInput, createNumberChangeHandler, handleScannerNumber } from '@/components/ui/number-input'
 import { InputScanner } from '@/components/ui/input-scanner'
 import { toast } from 'sonner'
 import Link from 'next/link'
@@ -64,7 +64,7 @@ export function DetalleVehiculoSheet({
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [ordenes, setOrdenes] = useState<OrdenResumen[]>([])
 
-  const [formData, setFormData] = useState<Vehiculo>({
+  const [formData, setFormData] = useState<VehiculoFormulario>({
     id: '',
     taller_id: '',
     matricula: '',
@@ -72,15 +72,14 @@ export function DetalleVehiculoSheet({
     modelo: null,
     año: null,
     color: null,
-    kilometros: null,
+    kilometros: 0,
     tipo_combustible: null,
-    carroceria: null,
     potencia_cv: null,
     cilindrada: null,
     vin: null,
+    carroceria: null,
     bastidor_vin: null,
-    cliente_id: null,
-    notas: null,
+    cliente_id: null
   })
 
   useEffect(() => {
@@ -301,13 +300,12 @@ export function DetalleVehiculoSheet({
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label>Año</Label>
-                          <DecimalInput
+                          <NumberInput
                             value={formData.año ? Number(formData.año) : undefined}
-                            onChange={(value) => {
-                              if (value != null) {
-                                setFormData(prev => ({ ...prev, año: Number(value) }))
-                              }
-                            }}
+                            onChange={createNumberChangeHandler(setFormData, 'año', {
+                              min: 1900,
+                              max: new Date().getFullYear() + 1,
+                            })}
                             placeholder="2020"
                             min={1900}
                             max={new Date().getFullYear() + 1}
@@ -328,7 +326,7 @@ export function DetalleVehiculoSheet({
                       <div>
                         <Label>Kilómetros</Label>
                         <div className="flex gap-1">
-                          <DecimalInput
+                          <NumberInput
                             value={formData.kilometros ? Number(formData.kilometros) : undefined}
                             onChange={(value) => {
                               if (value != null) {
@@ -341,10 +339,7 @@ export function DetalleVehiculoSheet({
                           />
                 <InputScanner
                   tipo="km"
-                  onResult={(val) => {
-                    const num = parseInt(val.replace(/\D/g, ''))
-                    setFormData(prev => ({ ...prev, kilometros: num > 0 ? num : null }))
-                  }}
+                  onResult={(val) => handleScannerNumber(val, setFormData, 'kilometros')}
                 />
                         </div>
                       </div>
@@ -397,7 +392,7 @@ export function DetalleVehiculoSheet({
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <Label>Potencia (CV)</Label>
-                        <DecimalInput
+                        <NumberInput
                           value={formData.potencia_cv ? Number(formData.potencia_cv) : undefined}
                           onChange={(value) => {
                             if (value != null) {
@@ -411,13 +406,12 @@ export function DetalleVehiculoSheet({
                       </div>
                       <div>
                         <Label>Cilindrada (cc)</Label>
-                        <DecimalInput
-                          value={formData.cilindrada ? Number(formData.cilindrada) : undefined}
-                          onChange={(value) => {
-                            if (value != null) {
-                              setFormData(prev => ({ ...prev, cilindrada: Number(value) }))
-                            }
-                          }}
+                        <NumberInput
+                          value={formData.cilindrada || undefined}
+                          onChange={createNumberChangeHandler(setFormData, 'cilindrada', {
+                            min: 0,
+                            step: 1
+                          })}
                           placeholder="1998"
                           min={0}
                         />

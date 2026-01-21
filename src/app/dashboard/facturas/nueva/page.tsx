@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { DecimalInput } from '@/components/ui/decimal-input'
+import { NumberInput } from '@/components/ui/number-input'
 import { ArrowLeft, Loader2, Plus, X, Check, UserPlus, FileText } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
@@ -730,7 +730,7 @@ export default function NuevaFacturaPage() {
               <div className="grid grid-cols-4 gap-3">
                 <div>
                   <Label className="block text-sm font-semibold mb-2">Cantidad</Label>
-                  <DecimalInput
+                  <NumberInput
                     value={nuevaLinea.cantidad}
                     onChange={(value) => {
                       if (value != null) {
@@ -744,7 +744,7 @@ export default function NuevaFacturaPage() {
                 </div>
                 <div>
                   <Label className="block text-sm font-semibold mb-2">Precio (€)</Label>
-                  <DecimalInput
+                  <NumberInput
                     value={nuevaLinea.precioUnitario}
                     onChange={(value) => {
                       if (value != null) {

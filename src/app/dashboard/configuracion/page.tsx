@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { DecimalInput } from '@/components/ui/decimal-input'
+import { NumberInput } from '@/components/ui/number-input'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -711,7 +711,7 @@ export default function ConfiguracionPage() {
               </Label>
               <div className="flex items-center gap-2">
                 <span className="text-xl font-bold text-sky-600">€</span>
-                <DecimalInput
+                <NumberInput
                   id="tarifa_hora"
                   name="tarifa_hora"
                   value={formData.tarifa_hora}
@@ -735,7 +735,7 @@ export default function ConfiguracionPage() {
                 Porcentaje IVA (%)
               </Label>
               <div className="flex items-center gap-2">
-                <DecimalInput
+                <NumberInput
                   id="porcentaje_iva"
                   name="porcentaje_iva"
                   value={formData.porcentaje_iva}
@@ -853,7 +853,7 @@ export default function ConfiguracionPage() {
                 </div>
                 <div>
                   <Label className="text-xs text-gray-600 font-semibold">Número Inicial</Label>
-                  <DecimalInput
+                  <NumberInput
                     value={formData.numero_factura_inicial}
                     onChange={(value) => {
                       if (value !== null && value !== undefined) {
@@ -989,7 +989,7 @@ export default function ConfiguracionPage() {
                     </div>
                     <div>
                       <Label className="text-sm font-semibold mb-2">Número Inicial</Label>
-                      <DecimalInput
+                      <NumberInput
                         value={formSerie.ultimo_numero}
                         onChange={(value) => {
                           if (value !== null && value !== undefined) {
@@ -1408,7 +1408,7 @@ function TarifaEditor({
       <div className="grid grid-cols-2 gap-2">
         <div>
           <Label className="text-xs text-gray-600">Tarifa/hora (€)</Label>
-          <DecimalInput
+          <NumberInput
             value={formTarifa.tarifa_hora}
             onChange={(value) => setFormTarifa({ ...formTarifa, tarifa_hora: value })}
             min={0}
@@ -1418,7 +1418,7 @@ function TarifaEditor({
         </div>
         <div>
           <Label className="text-xs text-gray-600">Urgente (€)</Label>
-          <DecimalInput
+          <NumberInput
             value={formTarifa.tarifa_hora_urgente || 0}
             onChange={(value) => setFormTarifa({ ...formTarifa, tarifa_hora_urgente: value || null })}
             min={0}
@@ -1432,7 +1432,7 @@ function TarifaEditor({
       <div className="grid grid-cols-2 gap-2">
         <div>
           <Label className="text-xs text-gray-600">Dto. M.O. (%)</Label>
-          <DecimalInput
+          <NumberInput
             value={formTarifa.descuento_mano_obra_porcentaje}
             onChange={(value) => setFormTarifa({ ...formTarifa, descuento_mano_obra_porcentaje: value })}
             min={0}
@@ -1443,7 +1443,7 @@ function TarifaEditor({
         </div>
         <div>
           <Label className="text-xs text-gray-600">Dto. Piezas (%)</Label>
-          <DecimalInput
+          <NumberInput
             value={formTarifa.descuento_piezas_porcentaje}
             onChange={(value) => setFormTarifa({ ...formTarifa, descuento_piezas_porcentaje: value })}
             min={0}
@@ -1457,7 +1457,7 @@ function TarifaEditor({
       <div className="grid grid-cols-2 gap-2">
         <div>
           <Label className="text-xs text-gray-600">Días pago</Label>
-          <DecimalInput
+          <NumberInput
             value={formTarifa.dias_pago}
             onChange={(value) => {
               if (value !== null && value !== undefined) {
@@ -1472,7 +1472,7 @@ function TarifaEditor({
         </div>
         <div>
           <Label className="text-xs text-gray-600">Límite crédito (€)</Label>
-          <DecimalInput
+          <NumberInput
             value={formTarifa.limite_credito || 0}
             onChange={(value) => setFormTarifa({ ...formTarifa, limite_credito: value || null })}
             min={0}

@@ -9,17 +9,17 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { X, Save, Plus, Trash2, Loader2, FileText, ChevronDown, Check, Clock, Car, Printer, Share2, Link, Copy, UserPlus, Edit2 } from 'lucide-react'
-import { OrdenPDFViewer } from './orden-pdf-viewer'
-import { FotoUploader } from './foto-uploader'
-import { GoogleCalendarButton } from './google-calendar-button'
-import { InputScanner } from '@/components/ui/input-scanner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { DecimalInput } from '@/components/ui/decimal-input'
+import { NumberInput } from '@/components/ui/number-input'
+import type { 
+  VehiculoFormulario, 
+  VehiculoNuevoFormulario,
+  VehiculoEdicionFormulario 
+} from '@/types/formularios'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
 import { fotosToString, getFotoUrl, setFotoUrl, getFotoByKey, setFotoByKey } from '@/lib/utils'
 import { ESTADOS_ORDEN, FRACCIONES_HORA, CANTIDADES, ESTADOS_FACTURABLES, FOTOS_DIAGNOSTICO, FOTO_LABELS, type TipoFoto } from '@/lib/constants'
@@ -148,29 +148,31 @@ export function DetalleOrdenSheet({
   // Estado para crear vehículo nuevo
   const [mostrarFormVehiculo, setMostrarFormVehiculo] = useState(false)
   const [creandoVehiculo, setCreandoVehiculo] = useState(false)
-  const [nuevoVehiculo, setNuevoVehiculo] = useState({
+  const [nuevoVehiculo, setNuevoVehiculo] = useState<VehiculoNuevoFormulario>({
     matricula: '',
-    marca: '',
-    modelo: '',
-    año: 0,
-    color: '',
+    marca: null,
+    modelo: null,
+    año: new Date().getFullYear(),
+    color: null,
     kilometros: 0,
-    tipo_combustible: '',
-    vin: ''
+    tipo_combustible: null,
+    vin: null,
+    taller_id: ''
   })
 
   // Estado para editar vehículo existente
   const [editandoVehiculo, setEditandoVehiculo] = useState(false)
   const [guardandoVehiculo, setGuardandoVehiculo] = useState(false)
-  const [vehiculoEditado, setVehiculoEditado] = useState({
+  const [vehiculoEditado, setVehiculoEditado] = useState<VehiculoEdicionFormulario>({
     matricula: '',
-    marca: '',
-    modelo: '',
-    año: 0,
-    color: '',
-    kilometros: 0,
-    tipo_combustible: '',
-    vin: ''
+    marca: null,
+    modelo: null,
+    año: null,
+    color: null,
+    kilometros: null,
+    tipo_combustible: null,
+    vin: null,
+    taller_id: ''
   })
 
   // Cargar datos iniciales
@@ -526,12 +528,12 @@ export function DetalleOrdenSheet({
         v.id === formData.vehiculo_id
           ? {
               ...v,
-              matricula: vehiculoEditado.matricula.toUpperCase().replace(/\s/g, ''),
+              matricula: vehiculoEditado.matricula?.toUpperCase() || '',
               marca: vehiculoEditado.marca || null,
               modelo: vehiculoEditado.modelo || null,
-              año: vehiculoEditado.año ? parseInt(vehiculoEditado.año) : null,
+              año: vehiculoEditado.año || null,
               color: vehiculoEditado.color || null,
-              kilometros: vehiculoEditado.kilometros ? parseInt(vehiculoEditado.kilometros) : null,
+              kilometros: vehiculoEditado.kilometros || null,
               tipo_combustible: vehiculoEditado.tipo_combustible || null,
               vin: vehiculoEditado.vin || null,
             }
@@ -1391,13 +1393,13 @@ export function DetalleOrdenSheet({
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <Label className="text-xs text-gray-600 mb-1 block">Año</Label>
-                          <DecimalInput
-                            value={nuevoVehiculo.año || undefined}
-                            onChange={(value) => {
-                              if (validarAnioVehiculo(value)) {
-                                setNuevoVehiculo(prev => ({ ...prev, año: value || 0 }))
-                              }
-                            }}
+                          <NumberInput
+                            value={nuevoVehiculo.año}
+                            onChange={createNumberChangeHandler(setNuevoVehiculo, 'año', {
+                              min: 1900,
+                              max: new Date().getFullYear() + 1,
+                              allowEmpty: false
+                            })}
                             placeholder="2020"
                             min={1900}
                             max={new Date().getFullYear() + 1}
@@ -1418,17 +1420,19 @@ export function DetalleOrdenSheet({
                         <div>
                           <Label className="text-xs text-gray-600 mb-1 block">Kilómetros</Label>
                           <div className="flex gap-2">
-                            <DecimalInput
-                              value={nuevoVehiculo.kilometros || undefined}
-                              onChange={(value) =>                                 setNuevoVehiculo(prev => ({ ...prev, kilometros: value || 0 }))}
+                            <NumberInput
+                              value={nuevoVehiculo.kilometros}
+                              onChange={createNumberChangeHandler(setNuevoVehiculo, 'kilometros', {
+                                min: 0,
+                                allowEmpty: true
+                              })}
                               placeholder="125000"
                               className="flex-1"
-                              min={0}
                             />
-                            <InputScanner
-                              tipo="km"
-                              onResult={(val) => setNuevoVehiculo(prev => ({ ...prev, kilometros: val }))}
-                            />
+                              <InputScanner
+                                tipo="km"
+                                onResult={(val) => handleScannerNumber(val, setVehiculoEditado, 'kilometros')}
+                              />
                           </div>
                         </div>
                         <div>
@@ -1607,13 +1611,10 @@ export function DetalleOrdenSheet({
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <Label className="text-xs text-gray-600 mb-1 block">Año</Label>
-                          <DecimalInput
+                          <NumberInput
                             value={vehiculoEditado.año || undefined}
                             onChange={(value) => {
-                              if (validarAnioVehiculo(value)) {
-                                setVehiculoEditado(prev => ({ ...prev, año: value ? String(value) : '' }))
-                              }
-                            }}
+}
                             placeholder="2020"
                             min={1900}
                             max={new Date().getFullYear() + 1}
@@ -1634,7 +1635,7 @@ export function DetalleOrdenSheet({
                         <div>
                           <Label className="text-xs text-gray-600 mb-1 block">Kilómetros</Label>
                           <div className="flex gap-1">
-                            <DecimalInput
+                            <NumberInput
                               value={vehiculoEditado.kilometros || undefined}
                               onChange={(value) => setVehiculoEditado(prev => ({ ...prev, kilometros: value ? String(value) : '' }))}
                               placeholder="125000"
@@ -1679,8 +1680,8 @@ export function DetalleOrdenSheet({
                             className="font-mono uppercase text-xs flex-1"
                           />
                           <InputScanner
-                            tipo="vin"
-                            onResult={(val) => setVehiculoEditado(prev => ({ ...prev, vin: val }))}
+                            tipo="km"
+                            onResult={(val) => handleScannerNumber(val, setVehiculoEditado, 'kilometros')}
                           />
                         </div>
                       </div>
@@ -1755,7 +1756,7 @@ export function DetalleOrdenSheet({
                 {/* KM de entrada */}
                 <div className="mb-4">
                   <Label className="text-xs text-gray-500 mb-1 block">Kilómetros de entrada</Label>
-                  <DecimalInput
+                  <NumberInput
                     value={formData.kilometros_entrada}
                     onChange={(value) => setFormData(prev => ({
                       ...prev,
@@ -1771,7 +1772,7 @@ export function DetalleOrdenSheet({
                 {/* Coste diario de estancia */}
                 <div>
                   <Label className="text-xs text-gray-500 mb-1 block">Coste diario de estancia (€)</Label>
-                  <DecimalInput
+                  <NumberInput
                     value={formData.coste_diario_estancia ?? 0}
                     onChange={(value) => setFormData(prev => ({
                       ...prev,
@@ -2148,7 +2149,7 @@ export function DetalleOrdenSheet({
                 <div className="mt-3 pt-3 border-t">
                   <Label className="text-xs text-gray-500 mb-2 block">O introduce un valor personalizado:</Label>
                   <div className="grid grid-cols-2 gap-4">
-                    <DecimalInput
+                    <NumberInput
                       value={formData.tiempo_estimado_horas}
                       onChange={(value) => {
                         if (validarHorasTrabajo(value, 'tiempo_estimado_horas')) {
@@ -2162,10 +2163,8 @@ export function DetalleOrdenSheet({
                       className="text-center"
                       min={0}
                       max={100}
-                      step={0.25}
-                      allowEmpty={true}
                     />
-                    <DecimalInput
+                    <NumberInput
                       value={formData.tiempo_real_horas}
                       onChange={(value) => {
                         if (validarHorasTrabajo(value, 'tiempo_real_horas')) {
@@ -2179,8 +2178,6 @@ export function DetalleOrdenSheet({
                       className="text-center"
                       min={0}
                       max={100}
-                      step={0.25}
-                      allowEmpty={true}
                     />
                   </div>
                 </div>
@@ -2277,7 +2274,7 @@ export function DetalleOrdenSheet({
                       <Label className="text-xs text-gray-600 mb-1 block">
                         {nuevaLinea.tipo === 'mano_obra' ? '💶 Precio/hora (€)' : '💶 Precio/unidad (€)'}
                       </Label>
-                          <DecimalInput
+                          <NumberInput
                             value={nuevaLinea.precio_unitario}
                             onChange={(value) => {
                               if (value != null) {
@@ -2355,7 +2352,7 @@ export function DetalleOrdenSheet({
                               </span>
                             </td>
                             <td className="px-2 py-2">
-                              <DecimalInput
+                              <NumberInput
                                 value={linea.cantidad}
                                 onChange={(value) => actualizarLinea(linea.id, 'cantidad', value)}
                                 className="w-12 px-1 py-0.5 text-xs border border-gray-300 rounded text-center"
@@ -2366,7 +2363,7 @@ export function DetalleOrdenSheet({
                             <td className="px-2 py-2">
                               <div className="flex items-center gap-1">
                                 <span className="text-xs text-gray-500">€</span>
-                                <DecimalInput
+                                <NumberInput
                                   value={linea.precio_unitario}
                                   onChange={(value) => actualizarLinea(linea.id, 'precio_unitario', value)}
                                   className="w-16 px-1 py-0.5 text-xs border border-gray-300 rounded text-center"
@@ -2429,7 +2426,7 @@ export function DetalleOrdenSheet({
                         onChange={(e) => setPiezaRapida(prev => ({ ...prev, descripcion: e.target.value }))}
                         className="col-span-5 text-xs px-2 py-1 border border-gray-300 rounded"
                       />
-                      <DecimalInput
+                      <NumberInput
                         value={piezaRapida.cantidad}
                         onChange={(value) => setPiezaRapida(prev => ({ ...prev, cantidad: value }))}
                         placeholder="Cant"
@@ -2437,7 +2434,7 @@ export function DetalleOrdenSheet({
                         min={1}
                         step={piezaRapida.tipo === 'mano_obra' ? 0.25 : 1}
                       />
-                      <DecimalInput
+                      <NumberInput
                         value={piezaRapida.precio || 0}
                         onChange={(value) => setPiezaRapida(prev => ({ ...prev, precio: value }))}
                         placeholder="Precio"
