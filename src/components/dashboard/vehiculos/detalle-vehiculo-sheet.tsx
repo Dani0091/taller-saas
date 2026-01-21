@@ -302,10 +302,10 @@ export function DetalleVehiculoSheet({
                       <div>
                         <Label>Año</Label>
                           <DecimalInput
-                            value={formData.año}
+                            value={formData.año ? Number(formData.año) : undefined}
                             onChange={(value) => {
                               if (value != null) {
-                                setFormData(prev => ({ ...prev, año: value }))
+                                setFormData(prev => ({ ...prev, año: String(value) }))
                               }
                             }}
                             placeholder="2020"
@@ -329,10 +329,10 @@ export function DetalleVehiculoSheet({
                         <Label>Kilómetros</Label>
                         <div className="flex gap-1">
                           <DecimalInput
-                            value={formData.kilometros}
+                            value={formData.kilometros ? Number(formData.kilometros) : undefined}
                             onChange={(value) => {
                               if (value != null) {
-                                setFormData(prev => ({ ...prev, kilometros: value }))
+                                setFormData(prev => ({ ...prev, kilometros: String(value) }))
                               }
                             }}
                             placeholder="125000"
@@ -398,10 +398,10 @@ export function DetalleVehiculoSheet({
                       <div>
                         <Label>Potencia (CV)</Label>
                         <DecimalInput
-                          value={formData.potencia_cv}
+                          value={formData.potencia_cv ? Number(formData.potencia_cv) : undefined}
                           onChange={(value) => {
                             if (value != null) {
-                              setFormData(prev => ({ ...prev, potencia_cv: value }))
+                              setFormData(prev => ({ ...prev, potencia_cv: String(value) }))
                             }
                           }}
                           placeholder="120"
@@ -412,10 +412,10 @@ export function DetalleVehiculoSheet({
                       <div>
                         <Label>Cilindrada (cc)</Label>
                         <DecimalInput
-                          value={formData.cilindrada}
+                          value={formData.cilindrada ? Number(formData.cilindrada) : undefined}
                           onChange={(value) => {
                             if (value != null) {
-                              setFormData(prev => ({ ...prev, cilindrada: value }))
+                              setFormData(prev => ({ ...prev, cilindrada: String(value) }))
                             }
                           }}
                           placeholder="1998"
