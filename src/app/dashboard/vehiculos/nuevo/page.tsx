@@ -202,7 +202,7 @@ export default function NuevoVehiculoPage() {
                   const anio = value
                   const anioMax = new Date().getFullYear() + 1
                   if (anio && anio >= 1900 && anio <= anioMax) {
-                    setFormData(prev => ({ ...prev, año: String(anio) }))
+                    setFormData(prev => ({ ...prev, año: anio }))
                   } else if (anio) {
                     toast.error(`El año debe estar entre 1900 y ${anioMax} (modelo siguiente)`)
                   }
@@ -231,7 +231,7 @@ export default function NuevoVehiculoPage() {
               <div className="flex gap-1">
               <DecimalInput
                 value={formData.kilometros ? Number(formData.kilometros) : undefined}
-                onChange={(value) => setFormData(prev => ({ ...prev, kilometros: value ? String(value) : '' }))}
+                onChange={(value) => setFormData(prev => ({ ...prev, kilometros: value ? Number(value) : 0 }))}
                 placeholder="45000"
                 className="flex-1"
                 min={0}
@@ -286,7 +286,7 @@ export default function NuevoVehiculoPage() {
               <Label>Potencia (CV)</Label>
               <DecimalInput
                 value={formData.potencia_cv ? Number(formData.potencia_cv) : undefined}
-                onChange={(value) => setFormData(prev => ({ ...prev, potencia_cv: value ? String(value) : '' }))}
+                onChange={(value) => setFormData(prev => ({ ...prev, potencia_cv: value ?? 0 }))}
                 placeholder="120"
                 min={0}
                 step={0.1}
@@ -297,7 +297,7 @@ export default function NuevoVehiculoPage() {
               <Label>Cilindrada (cc)</Label>
               <DecimalInput
                 value={formData.cilindrada ? Number(formData.cilindrada) : undefined}
-                onChange={(value) => setFormData(prev => ({ ...prev, cilindrada: value ? String(value) : '' }))}
+                onChange={(value) => setFormData(prev => ({ ...prev, cilindrada: value ?? 0 }))}
                 placeholder="1998"
                 min={0}
                 allowEmpty={true}

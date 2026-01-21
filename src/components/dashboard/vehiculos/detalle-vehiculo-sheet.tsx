@@ -305,7 +305,7 @@ export function DetalleVehiculoSheet({
                             value={formData.año ? Number(formData.año) : undefined}
                             onChange={(value) => {
                               if (value != null) {
-                                setFormData(prev => ({ ...prev, año: String(value) }))
+                                setFormData(prev => ({ ...prev, año: Number(value) }))
                               }
                             }}
                             placeholder="2020"
@@ -332,7 +332,7 @@ export function DetalleVehiculoSheet({
                             value={formData.kilometros ? Number(formData.kilometros) : undefined}
                             onChange={(value) => {
                               if (value != null) {
-                                setFormData(prev => ({ ...prev, kilometros: String(value) }))
+                                setFormData(prev => ({ ...prev, kilometros: Number(value) }))
                               }
                             }}
                             placeholder="125000"
@@ -401,7 +401,7 @@ export function DetalleVehiculoSheet({
                           value={formData.potencia_cv ? Number(formData.potencia_cv) : undefined}
                           onChange={(value) => {
                             if (value != null) {
-                              setFormData(prev => ({ ...prev, potencia_cv: String(value) }))
+                              setFormData(prev => ({ ...prev, potencia_cv: Number(value) }))
                             }
                           }}
                           placeholder="120"
@@ -415,7 +415,7 @@ export function DetalleVehiculoSheet({
                           value={formData.cilindrada ? Number(formData.cilindrada) : undefined}
                           onChange={(value) => {
                             if (value != null) {
-                              setFormData(prev => ({ ...prev, cilindrada: String(value) }))
+                              setFormData(prev => ({ ...prev, cilindrada: Number(value) }))
                             }
                           }}
                           placeholder="1998"
