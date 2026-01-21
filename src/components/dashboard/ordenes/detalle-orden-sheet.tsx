@@ -11,7 +11,8 @@ import { createClient } from '@/lib/supabase/client'
 import { X, Save, Plus, Trash2, Loader2, FileText, ChevronDown, Check, Clock, Car, Printer, Share2, Link, Copy, UserPlus, Edit2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { NumberInput } from '@/components/ui/number-input'
+import { NumberInput, createNumberChangeHandler, handleScannerNumber } from '@/components/ui/number-input'
+import { InputScanner } from '@/components/ui/input-scanner'
 import type { 
   VehiculoFormulario, 
   VehiculoNuevoFormulario,
@@ -1614,7 +1615,8 @@ export function DetalleOrdenSheet({
                           <NumberInput
                             value={vehiculoEditado.año || undefined}
                             onChange={(value) => {
-}
+                              setVehiculoEditado(prev => ({ ...prev, año: value ? Number(value) : undefined }))
+                            }}
                             placeholder="2020"
                             min={1900}
                             max={new Date().getFullYear() + 1}
