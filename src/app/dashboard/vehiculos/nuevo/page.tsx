@@ -197,12 +197,12 @@ export default function NuevoVehiculoPage() {
             <div>
               <Label>Año</Label>
               <DecimalInput
-                value={formData.año}
+                value={formData.año ? Number(formData.año) : undefined}
                 onChange={(value) => {
                   const anio = value
                   const anioMax = new Date().getFullYear() + 1
                   if (anio && anio >= 1900 && anio <= anioMax) {
-                    setFormData(prev => ({ ...prev, año: anio }))
+                    setFormData(prev => ({ ...prev, año: String(anio) }))
                   } else if (anio) {
                     toast.error(`El año debe estar entre 1900 y ${anioMax} (modelo siguiente)`)
                   }
@@ -229,14 +229,14 @@ export default function NuevoVehiculoPage() {
             <div>
               <Label>Kilómetros</Label>
               <div className="flex gap-1">
-                <DecimalInput
-                  value={formData.kilometros}
-                  onChange={(value) => setFormData(prev => ({ ...prev, kilometros: value }))}
-                  placeholder="45000"
-                  className="flex-1"
-                  min={0}
-                  allowEmpty={true}
-                />
+              <DecimalInput
+                value={formData.kilometros ? Number(formData.kilometros) : undefined}
+                onChange={(value) => setFormData(prev => ({ ...prev, kilometros: value ? String(value) : '' }))}
+                placeholder="45000"
+                className="flex-1"
+                min={0}
+                allowEmpty={true}
+              />
                 <InputScanner
                   tipo="km"
                   onResult={(val) => setFormData(prev => ({ ...prev, kilometros: val }))}
@@ -285,8 +285,8 @@ export default function NuevoVehiculoPage() {
             <div>
               <Label>Potencia (CV)</Label>
               <DecimalInput
-                value={formData.potencia_cv}
-                onChange={(value) => setFormData(prev => ({ ...prev, potencia_cv: value }))}
+                value={formData.potencia_cv ? Number(formData.potencia_cv) : undefined}
+                onChange={(value) => setFormData(prev => ({ ...prev, potencia_cv: value ? String(value) : '' }))}
                 placeholder="120"
                 min={0}
                 step={0.1}
@@ -296,8 +296,8 @@ export default function NuevoVehiculoPage() {
             <div>
               <Label>Cilindrada (cc)</Label>
               <DecimalInput
-                value={formData.cilindrada}
-                onChange={(value) => setFormData(prev => ({ ...prev, cilindrada: value }))}
+                value={formData.cilindrada ? Number(formData.cilindrada) : undefined}
+                onChange={(value) => setFormData(prev => ({ ...prev, cilindrada: value ? String(value) : '' }))}
                 placeholder="1998"
                 min={0}
                 allowEmpty={true}
