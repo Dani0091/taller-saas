@@ -524,54 +524,40 @@ export default function ConfiguracionPage() {
 
     setSaving(true)
     try {
-      // 🔥 VALIDACIÓN DEFENSIVA ANTES DE ENVIAR A BD - Zero Data Mismatch
-      const configParaBD = {
-        taller_id: tallerId,
-        // Campos numéricos con master converter
-        tarifa_hora: masterConverter(formData.tarifa_hora, 'tarifa', { allowDecimals: true, min: 0 }),
-        porcentaje_iva: masterConverter(formData.porcentaje_iva, 'precio', { min: 0, max: 100 }),
-        // Campos opcionales con nullish coalescing
-        incluye_iva: formData.incluye_iva ?? true,
-        tarifa_con_iva: formData.tarifa_con_iva ?? true,
-        // Campos de texto con fallback
-        nombre_empresa: formData.nombre_empresa ?? '',
-        cif: formData.cif ?? '',
-        direccion: formData.direccion ?? '',
-        telefono: masterConverter(formData.telefono, 'telefono'),
-        email: formData.email ?? '',
-        logo_url: formData.logo_url ?? null,
-        // Nuevos campos de facturación
-        serie_factura: formData.serie_factura ?? 'FA',
-        numero_factura_inicial: masterConverter(formData.numero_factura_inicial, 'precio', { min: 1 }),
-        iban: masterConverter(formData.iban, 'telefono'),
-          nombre_empresa: formData.nombre_empresa,
-          cif: formData.cif,
-          direccion: formData.direccion,
-          telefono: formData.telefono,
-          email: formData.email,
-          logo_url: formData.logo_url,
-          // Nuevos campos de facturación
-          serie_factura: formData.serie_factura,
-          numero_factura_inicial: formData.numero_factura_inicial,
-          iban: formData.iban,
-          condiciones_pago: formData.condiciones_pago,
-          notas_factura: formData.notas_factura,
-          // Colores de marca
-          color_primario: formData.color_primario,
-          color_secundario: formData.color_secundario,
-        }),
-      })
+      // ✅ Estructura correcta para el fetch/update
+      const response = await fetch(`/api/taller/config/actualizar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taller_id: tallerId,
+          tarifa_hora: Number(formData.tarifa_hora) || 0,
+          porcentaje_iva: Number(formData.porcentaje_iva) || 0,
+          incluye_iva: formData.incluye_iva ?? true,
+          tarifa_con_iva: formData.tarifa_con_iva ?? true,
+          nombre_empresa: formData.nombre_empresa || '',
+          cif: formData.cif || '',
+          direccion: formData.direccion || '',
+          telefono: formData.telefono || '',
+          email: formData.email || '',
+          logo_url: formData.logo_url || null,
+          serie_factura: formData.serie_factura || 'FA',
+          numero_factura_inicial: Number(formData.numero_factura_inicial) || 1,
+          iban: formData.iban || '',
+          condiciones_pago: formData.condiciones_pago || null,
+          notas_factura: formData.notas_factura || null,
+          color_primario: formData.color_primario || null,
+          color_secundario: formData.color_secundario || null,
+        }), // Este cierra el JSON.stringify
+      }); // Este cierra el fetch
 
       if (response.ok) {
         const result = await response.json()
-        // La API devuelve { success: true, data: {...} }
         const configData = result.data || result
         const updatedConfig = {
-          ...formData, // Mantener valores actuales como base
-          ...configData, // Sobrescribir con valores de la API
-          // Asegurar valores por defecto para campos numéricos
-          tarifa_hora: configData.tarifa_hora ?? formData.tarifa_hora ?? CONFIG_DEFAULTS.tarifa_hora,
-          porcentaje_iva: configData.porcentaje_iva ?? formData.porcentaje_iva ?? CONFIG_DEFAULTS.iva_default,
+          ...formData,
+          ...configData,
+          tarifa_hora: Number(configData.tarifa_hora) || Number(formData.tarifa_hora) || CONFIG_DEFAULTS.tarifa_hora,
+          porcentaje_iva: Number(configData.porcentaje_iva) || Number(formData.porcentaje_iva) || CONFIG_DEFAULTS.iva_default,
           tarifa_con_iva: configData.tarifa_con_iva ?? true,
         }
         setConfig(updatedConfig)
