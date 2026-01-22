@@ -10,24 +10,25 @@ export interface VehiculoBase {
   matricula: string
   vin?: string | null
   bastidor_vin?: string | null
-  
+
   // Características básicas
   marca?: string | null
   modelo?: string | null
+  versión?: string | null
   año?: string | null  // Guardado como string en la BD
   color?: string | null
-  
+
   // Especificaciones técnicas
   kilometros?: string | null  // Guardado como string en la BD
   tipo_combustible?: TipoCombustible | null
   carroceria?: string | null
   potencia_cv?: string | null  // Guardado como string en la BD
   cilindrada?: string | null  // Guardado como string en la BD
-  
+
   // Relaciones
   cliente_id?: string | null
   taller_id: string
-  
+
   // Estado
   estado?: EstadoVehiculo
 }
@@ -40,13 +41,25 @@ export interface VehiculoBD extends VehiculoBase {
 
 // ==================== TIPOS DE FORMULARIO ====================
 
-export interface VehiculoFormulario extends Omit<VehiculoBase, 'taller_id'> {
+export interface VehiculoFormulario extends Omit<VehiculoBase, 'taller_id' | 'año' | 'kilometros' | 'potencia_cv' | 'cilindrada'> {
   // En el formulario, los valores numéricos pueden ser number para facilitar validaciones
   año?: number | null
   kilometros?: number | null
   potencia_cv?: number | null
   cilindrada?: number | null
 }
+
+/**
+ * Formulario de Vehículo Nuevo - Para crear desde cero
+ */
+export interface VehiculoNuevoFormulario extends Omit<VehiculoFormulario, 'id' | 'taller_id' | 'created_at' | 'updated_at'> {
+  // Hereda todo de VehiculoFormulario excepto id y taller_id
+}
+
+/**
+ * Formulario de Vehículo Edición - Para actualizar existente
+ */
+export type VehiculoEdicionFormulario = VehiculoFormulario
 
 // ==================== ENUMS Y TIPOS AUXILIARES ====================
 
@@ -175,9 +188,9 @@ export function vehiculoBDToFormulario(vehiculo: VehiculoBD): VehiculoFormulario
 }
 
 /**
- * Convierte vehículo de formulario a BD
+ * Convierte vehículo de formulario a BD (sin taller_id, que se añade aparte)
  */
-export function vehiculoFormularioToBD(formulario: VehiculoFormulario): VehiculoBase {
+export function vehiculoFormularioToBD(formulario: VehiculoFormulario): Omit<VehiculoBase, 'taller_id'> {
   return {
     ...formulario,
     año: formulario.año ? String(formulario.año) : null,
@@ -208,13 +221,4 @@ export interface VehiculoUpdateRequest extends Partial<VehiculoCreateRequest> {
 }
 
 // ==================== EXPORTS ====================
-
-export type {
-  VehiculoBase,
-  VehiculoBD,
-  VehiculoFormulario,
-  VehiculoValidations,
-  VehiculoAPIResponse,
-  VehiculoCreateRequest,
-  VehiculoUpdateRequest
-}
+// NOTA: Todos los tipos ya están exportados con la palabra clave 'export'

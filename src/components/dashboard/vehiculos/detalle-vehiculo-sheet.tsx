@@ -12,6 +12,7 @@ import { NumberInput, createNumberChangeHandler, handleScannerNumber } from '@/c
 import { InputScanner } from '@/components/ui/input-scanner'
 import { toast } from 'sonner'
 import Link from 'next/link'
+import type { VehiculoFormulario, VehiculoBD } from '@/types/vehiculo'
 
 interface Vehiculo {
   id: string
@@ -64,7 +65,7 @@ export function DetalleVehiculoSheet({
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [ordenes, setOrdenes] = useState<OrdenResumen[]>([])
 
-  const [formData, setFormData] = useState<VehiculoFormulario>({
+  const [formData, setFormData] = useState<Partial<VehiculoBD>>({
     id: '',
     taller_id: '',
     matricula: '',
@@ -72,7 +73,7 @@ export function DetalleVehiculoSheet({
     modelo: null,
     año: null,
     color: null,
-    kilometros: 0,
+    kilometros: null,
     tipo_combustible: null,
     potencia_cv: null,
     cilindrada: null,
@@ -302,10 +303,11 @@ export function DetalleVehiculoSheet({
                         <Label>Año</Label>
                           <NumberInput
                             value={formData.año ? Number(formData.año) : undefined}
-                            onChange={createNumberChangeHandler(setFormData, 'año', {
-                              min: 1900,
-                              max: new Date().getFullYear() + 1,
-                            })}
+                            onChange={(value) => {
+                              if (value != null) {
+                                setFormData(prev => ({ ...prev, año: String(value) }))
+                              }
+                            }}
                             placeholder="2020"
                             min={1900}
                             max={new Date().getFullYear() + 1}
@@ -330,7 +332,7 @@ export function DetalleVehiculoSheet({
                             value={formData.kilometros ? Number(formData.kilometros) : undefined}
                             onChange={(value) => {
                               if (value != null) {
-                                setFormData(prev => ({ ...prev, kilometros: Number(value) }))
+                                setFormData(prev => ({ ...prev, kilometros: String(value) }))
                               }
                             }}
                             placeholder="125000"
@@ -396,7 +398,7 @@ export function DetalleVehiculoSheet({
                           value={formData.potencia_cv ? Number(formData.potencia_cv) : undefined}
                           onChange={(value) => {
                             if (value != null) {
-                              setFormData(prev => ({ ...prev, potencia_cv: Number(value) }))
+                              setFormData(prev => ({ ...prev, potencia_cv: String(value) }))
                             }
                           }}
                           placeholder="120"
@@ -407,11 +409,12 @@ export function DetalleVehiculoSheet({
                       <div>
                         <Label>Cilindrada (cc)</Label>
                         <NumberInput
-                          value={formData.cilindrada || undefined}
-                          onChange={createNumberChangeHandler(setFormData, 'cilindrada', {
-                            min: 0,
-                            step: 1
-                          })}
+                          value={formData.cilindrada ? Number(formData.cilindrada) : undefined}
+                          onChange={(value) => {
+                            if (value != null) {
+                              setFormData(prev => ({ ...prev, cilindrada: String(value) }))
+                            }
+                          }}
                           placeholder="1998"
                           min={0}
                         />

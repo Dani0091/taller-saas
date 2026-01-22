@@ -3,6 +3,7 @@
  * @description Extracción de lógica de cálculos del monstro de 1600 líneas
  */
 
+import { useState, useCallback, useMemo } from 'react'
 import { LineaOrden } from '@/types/workshop'
 
 // ==================== HOOKS DE CÁLCULOS ====================

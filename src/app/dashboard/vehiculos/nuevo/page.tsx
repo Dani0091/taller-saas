@@ -191,7 +191,7 @@ export default function NuevoVehiculoPage() {
               <Input
                 name="marca"
                 placeholder="BMW"
-                value={formData.marca}
+                value={formData.marca ?? ''}
                 onChange={handleChange}
               />
             </div>
@@ -200,7 +200,7 @@ export default function NuevoVehiculoPage() {
               <Input
                 name="modelo"
                 placeholder="320i"
-                value={formData.modelo}
+                value={formData.modelo ?? ''}
                 onChange={handleChange}
               />
             </div>
@@ -213,21 +213,21 @@ export default function NuevoVehiculoPage() {
               <Input
                 name="versión"
                 placeholder="Sport, Luxury, etc"
-                value={formData.versión}
+                value={formData.versión ?? ''}
                 onChange={handleChange}
               />
             </div>
             <div>
               <Label>Año</Label>
               <NumberInput
-                value={formData.año}
+                value={formData.año ?? undefined}
                 onChange={(value) => {
                   const anioMax = new Date().getFullYear() + 1
                   const añoValidado = sanitizeAño(value, anioMax)
-                  
+
                   if (añoValidado !== undefined) {
-                    setFormData(prev => ({ ...prev, año: String(añoValidado) }))
-                  } else if (value !== null && value !== undefined && value !== '') {
+                    setFormData(prev => ({ ...prev, año: añoValidado }))
+                  } else if (value !== null && value !== undefined) {
                     toast.error(VehiculoValidationRules.año.message)
                   }
                 }}
@@ -242,7 +242,7 @@ export default function NuevoVehiculoPage() {
               <Input
                 name="color"
                 placeholder="Gris, Blanco, Negro"
-                value={formData.color}
+                value={formData.color ?? ''}
                 onChange={handleChange}
               />
             </div>
@@ -254,7 +254,7 @@ export default function NuevoVehiculoPage() {
               <Label>Kilómetros</Label>
               <div className="flex gap-1">
               <NumberInput
-                value={formData.kilometros}
+                value={formData.kilometros ?? undefined}
                 onChange={createNumericHandler(setFormData, 'kilometros', undefined)}
                 placeholder="45000"
                 className="flex-1"
@@ -274,7 +274,7 @@ export default function NuevoVehiculoPage() {
               <Label>Combustible</Label>
               <select
                 name="tipo_combustible"
-                value={formData.tipo_combustible}
+                value={formData.tipo_combustible ?? ''}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
               >
@@ -290,7 +290,7 @@ export default function NuevoVehiculoPage() {
               <Label>Carrocería</Label>
               <select
                 name="carroceria"
-                value={formData.carroceria}
+                value={formData.carroceria ?? ''}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
               >
@@ -312,7 +312,7 @@ export default function NuevoVehiculoPage() {
             <div>
               <Label>Potencia (CV)</Label>
               <NumberInput
-                value={formData.potencia_cv}
+                value={formData.potencia_cv ?? undefined}
                 onChange={createNumericHandler(setFormData, 'potencia_cv', undefined)}
                 placeholder="120"
                 min={0}
@@ -323,7 +323,7 @@ export default function NuevoVehiculoPage() {
             <div>
               <Label>Cilindrada (cc)</Label>
               <NumberInput
-                value={formData.cilindrada}
+                value={formData.cilindrada ?? undefined}
                 onChange={createNumericHandler(setFormData, 'cilindrada', undefined)}
                 placeholder="1998"
                 min={0}

@@ -13,17 +13,21 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { NumberInput, createNumberChangeHandler, handleScannerNumber } from '@/components/ui/number-input'
 import { InputScanner } from '@/components/ui/input-scanner'
-import type { 
-  VehiculoFormulario, 
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu'
+import type {
+  VehiculoFormulario,
   VehiculoNuevoFormulario,
-  VehiculoEdicionFormulario 
-} from '@/types/formularios'
+  VehiculoEdicionFormulario
+} from '@/types/vehiculo'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { fotosToString, getFotoUrl, setFotoUrl, getFotoByKey, setFotoByKey } from '@/lib/utils'
 import { ESTADOS_ORDEN, FRACCIONES_HORA, CANTIDADES, ESTADOS_FACTURABLES, FOTOS_DIAGNOSTICO, FOTO_LABELS, type TipoFoto } from '@/lib/constants'
+import { FotoUploader } from './foto-uploader'
+import { GoogleCalendarButton } from './google-calendar-button'
+import { OrdenPDFViewer } from './orden-pdf-viewer'
 
 interface Orden {
   id?: string
@@ -157,8 +161,7 @@ export function DetalleOrdenSheet({
     color: null,
     kilometros: 0,
     tipo_combustible: null,
-    vin: null,
-    taller_id: ''
+    vin: null
   })
 
   // Estado para editar vehículo existente
@@ -172,8 +175,7 @@ export function DetalleOrdenSheet({
     color: null,
     kilometros: null,
     tipo_combustible: null,
-    vin: null,
-    taller_id: ''
+    vin: null
   })
 
   // Cargar datos iniciales
@@ -447,9 +449,9 @@ export function DetalleOrdenSheet({
           matricula: nuevoVehiculo.matricula.toUpperCase().replace(/\s/g, ''),
           marca: nuevoVehiculo.marca || null,
           modelo: nuevoVehiculo.modelo || null,
-          año: nuevoVehiculo.año ? parseInt(nuevoVehiculo.año) : null,
+          año: nuevoVehiculo.año ?? null,
           color: nuevoVehiculo.color || null,
-          kilometros: nuevoVehiculo.kilometros ? parseInt(nuevoVehiculo.kilometros) : null,
+          kilometros: nuevoVehiculo.kilometros ?? null,
           tipo_combustible: nuevoVehiculo.tipo_combustible || null,
           vin: nuevoVehiculo.vin || null,
         })
@@ -465,13 +467,13 @@ export function DetalleOrdenSheet({
       // Limpiar formulario
       setNuevoVehiculo({
         matricula: '',
-        marca: '',
-        modelo: '',
-        año: '',
-        color: '',
-        kilometros: '',
-        tipo_combustible: '',
-        vin: ''
+        marca: null,
+        modelo: null,
+        año: new Date().getFullYear(),
+        color: null,
+        kilometros: 0,
+        tipo_combustible: null,
+        vin: null
       })
       setMostrarFormVehiculo(false)
       toast.success('Vehículo creado correctamente')
@@ -658,7 +660,8 @@ export function DetalleOrdenSheet({
   }
 
   // Validar rangos de tiempo
-  const validarHorasTrabajo = (horas: number, campo: string) => {
+  const validarHorasTrabajo = (horas: number | null | undefined, campo: string) => {
+    if (horas === null || horas === undefined) return true
     if (horas < 0) {
       toast.error('Las horas no pueden ser negativas')
       return false
@@ -1375,7 +1378,7 @@ export function DetalleOrdenSheet({
                         <div>
                           <Label className="text-xs text-gray-600 mb-1 block">Marca</Label>
                           <Input
-                            value={nuevoVehiculo.marca}
+                            value={nuevoVehiculo.marca ?? ""}
                             onChange={(e) => setNuevoVehiculo(prev => ({ ...prev, marca: e.target.value }))}
                             placeholder="Ford, BMW..."
                           />
@@ -1383,7 +1386,7 @@ export function DetalleOrdenSheet({
                         <div>
                           <Label className="text-xs text-gray-600 mb-1 block">Modelo</Label>
                           <Input
-                            value={nuevoVehiculo.modelo}
+                            value={nuevoVehiculo.modelo ?? ""}
                             onChange={(e) => setNuevoVehiculo(prev => ({ ...prev, modelo: e.target.value }))}
                             placeholder="Focus, 320i..."
                           />
@@ -1409,7 +1412,7 @@ export function DetalleOrdenSheet({
                         <div>
                           <Label className="text-xs text-gray-600 mb-1 block">Color</Label>
                           <Input
-                            value={nuevoVehiculo.color}
+                            value={nuevoVehiculo.color ?? ""}
                             onChange={(e) => setNuevoVehiculo(prev => ({ ...prev, color: e.target.value }))}
                             placeholder="Blanco, Negro..."
                           />
@@ -1439,8 +1442,8 @@ export function DetalleOrdenSheet({
                         <div>
                           <Label className="text-xs text-gray-600 mb-1 block">Combustible</Label>
                           <select
-                            value={nuevoVehiculo.tipo_combustible}
-                            onChange={(e) => setNuevoVehiculo(prev => ({ ...prev, tipo_combustible: e.target.value }))}
+                            value={nuevoVehiculo.tipo_combustible ?? ""}
+                            onChange={(e) => setNuevoVehiculo(prev => ({ ...prev, tipo_combustible: e.target.value as any }))}
                             className="w-full px-3 py-2 border rounded-lg text-sm"
                           >
                             <option value="">Seleccionar...</option>
@@ -1459,7 +1462,7 @@ export function DetalleOrdenSheet({
                         <Label className="text-xs text-gray-600 mb-1 block">Bastidor (VIN)</Label>
                         <div className="flex gap-2">
                           <Input
-                            value={nuevoVehiculo.vin}
+                            value={nuevoVehiculo.vin ?? ""}
                             onChange={(e) => setNuevoVehiculo(prev => ({ ...prev, vin: e.target.value.toUpperCase() }))}
                             placeholder="WVWZZZ3CZWE123456"
                             className="font-mono uppercase text-xs flex-1"
@@ -1593,7 +1596,7 @@ export function DetalleOrdenSheet({
                         <div>
                           <Label className="text-xs text-gray-600 mb-1 block">Marca</Label>
                           <Input
-                            value={vehiculoEditado.marca}
+                            value={vehiculoEditado.marca ?? ""}
                             onChange={(e) => setVehiculoEditado(prev => ({ ...prev, marca: e.target.value }))}
                             placeholder="Ford, BMW..."
                           />
@@ -1601,7 +1604,7 @@ export function DetalleOrdenSheet({
                         <div>
                           <Label className="text-xs text-gray-600 mb-1 block">Modelo</Label>
                           <Input
-                            value={vehiculoEditado.modelo}
+                            value={vehiculoEditado.modelo ?? ""}
                             onChange={(e) => setVehiculoEditado(prev => ({ ...prev, modelo: e.target.value }))}
                             placeholder="Focus, 320i..."
                           />
@@ -1613,9 +1616,9 @@ export function DetalleOrdenSheet({
                         <div>
                           <Label className="text-xs text-gray-600 mb-1 block">Año</Label>
                           <NumberInput
-                            value={vehiculoEditado.año || undefined}
+                            value={vehiculoEditado.año ?? undefined}
                             onChange={(value) => {
-                              setVehiculoEditado(prev => ({ ...prev, año: value ? Number(value) : undefined }))
+                              setVehiculoEditado(prev => ({ ...prev, año: value ?? null }))
                             }}
                             placeholder="2020"
                             min={1900}
@@ -1625,7 +1628,7 @@ export function DetalleOrdenSheet({
                         <div>
                           <Label className="text-xs text-gray-600 mb-1 block">Color</Label>
                           <Input
-                            value={vehiculoEditado.color}
+                            value={vehiculoEditado.color ?? ""}
                             onChange={(e) => setVehiculoEditado(prev => ({ ...prev, color: e.target.value }))}
                             placeholder="Blanco, Negro..."
                           />
@@ -1638,8 +1641,8 @@ export function DetalleOrdenSheet({
                           <Label className="text-xs text-gray-600 mb-1 block">Kilómetros</Label>
                           <div className="flex gap-1">
                             <NumberInput
-                              value={vehiculoEditado.kilometros || undefined}
-                              onChange={(value) => setVehiculoEditado(prev => ({ ...prev, kilometros: value ? String(value) : '' }))}
+                              value={vehiculoEditado.kilometros ?? undefined}
+                              onChange={(value) => setVehiculoEditado(prev => ({ ...prev, kilometros: value ?? null }))}
                               placeholder="125000"
                               className="flex-1"
                               min={0}
@@ -1648,7 +1651,7 @@ export function DetalleOrdenSheet({
                               tipo="km"
                               onResult={(val) => {
                                 const num = parseInt(val.replace(/\D/g, ''))
-                                setVehiculoEditado(prev => ({ ...prev, kilometros: num > 0 ? num.toString() : '' }))
+                                setVehiculoEditado(prev => ({ ...prev, kilometros: num > 0 ? num : null }))
                               }}
                             />
                           </div>
@@ -1656,8 +1659,8 @@ export function DetalleOrdenSheet({
                         <div>
                           <Label className="text-xs text-gray-600 mb-1 block">Combustible</Label>
                           <select
-                            value={vehiculoEditado.tipo_combustible}
-                            onChange={(e) => setVehiculoEditado(prev => ({ ...prev, tipo_combustible: e.target.value }))}
+                            value={vehiculoEditado.tipo_combustible ?? ""}
+                            onChange={(e) => setVehiculoEditado(prev => ({ ...prev, tipo_combustible: e.target.value as any }))}
                             className="w-full px-3 py-2 border rounded-lg text-sm"
                           >
                             <option value="">Seleccionar...</option>
@@ -1676,7 +1679,7 @@ export function DetalleOrdenSheet({
                         <Label className="text-xs text-gray-600 mb-1 block">Bastidor (VIN)</Label>
                         <div className="flex gap-2">
                           <Input
-                            value={vehiculoEditado.vin}
+                            value={vehiculoEditado.vin ?? ""}
                             onChange={(e) => setVehiculoEditado(prev => ({ ...prev, vin: e.target.value.toUpperCase() }))}
                             placeholder="WVWZZZ3CZWE123456"
                             className="font-mono uppercase text-xs flex-1"
@@ -1762,7 +1765,7 @@ export function DetalleOrdenSheet({
                     value={formData.kilometros_entrada}
                     onChange={(value) => setFormData(prev => ({
                       ...prev,
-                      kilometros_entrada: value
+                      kilometros_entrada: value ?? undefined
                     }))}
                     placeholder="Ej: 145000"
                     className="font-mono"
@@ -2157,7 +2160,7 @@ export function DetalleOrdenSheet({
                         if (validarHorasTrabajo(value, 'tiempo_estimado_horas')) {
                           setFormData(prev => ({
                             ...prev,
-                            tiempo_estimado_horas: value
+                            tiempo_estimado_horas: value ?? undefined
                           }))
                         }
                       }}
@@ -2172,7 +2175,7 @@ export function DetalleOrdenSheet({
                         if (validarHorasTrabajo(value, 'tiempo_real_horas')) {
                           setFormData(prev => ({
                             ...prev,
-                            tiempo_real_horas: value
+                            tiempo_real_horas: value ?? undefined
                           }))
                         }
                       }}

@@ -4,115 +4,15 @@
  * @note Si necesitas un tipo mixto (string | number), usa union types en la interfaz
  */
 
+import { useState, useCallback } from 'react'
+
 // ============================================================================
 // INTERFACES DE FORMULARIOS CENTRALIZADAS
 // ============================================================================
 
-/**
- * Formulario de Vehículo - Tipos estrictos para consistencia
- * Base de datos usa numbers, formularios deben manejar números
- */
-export interface VehiculoFormulario {
-  matricula: string
-  marca: string | null
-  modelo: string | null
-  año: number
-  color: string | null
-  kilometros: number
-  tipo_combustible: string | null
-  potencia_cv: number | null
-  cilindrada: number | null
-  vin: string | null
-  carroceria: string | null
-}
+// VehiculoFormulario movido a @/types/vehiculo para evitar duplicación
+// Importa desde allí si necesitas tipos de vehículos
 
-/**
- * Formulario de Cliente - Tipos consistentes
- */
-export interface ClienteFormulario {
-  nombre: string
-  apellidos: string
-  nif: string
-  email: string | null
-  telefono: string | null
-  direccion: string | null
-  poblacion: string | null
-  provincia: string | null
-  cod_postal: string | null
-  iban: string | null
-}
-
-/**
- * Formulario de Orden de Reparación - Tipos específicos para órdenes
- */
-export interface OrdenFormulario {
-  estado: string
-  cliente_id: string | null
-  vehiculo_id: string | null
-  descripcion_problema: string
-  diagnostico: string
-  trabajos_realizados: string
-  notas: string
-  presupuesto_aprobado_por_cliente: boolean
-  tiempo_estimado_horas: number
-  tiempo_real_horas: number
-  subtotal_mano_obra: number
-  subtotal_piezas: number
-  iva_amount: number
-  total_con_iva: number
-  fotos_entrada: string
-  fotos_salida: string
-  fotos_diagnostico: string
-  nivel_combustible: string | null
-  renuncia_presupuesto: boolean
-  accion_imprevisto: string
-  recoger_piezas: boolean
-  danos_carroceria: boolean
-  coste_diario_estancia: number | null
-  kilometros_entrada: number | null
-}
-
-/**
- * Formulario de Factura - Tipos financieros estrictos
- */
-export interface FacturaFormulario {
-  numero_factura: string
-  cliente_id: string | null
-  serie_factura: string | null
-  base_imponible: number
-   iva: number
-  total: number
-  metodo_pago: string | null
-  fecha_emision: string
-  fecha_vencimiento: string
-  notas_factura: string | null
-  condiciones_pago: string | null
-  persona_contacto: string | null
-  telefono_contacto: string | null
-}
-
-/**
- * Formulario de Configuración del Taller - Tipos específicos
- */
-export interface ConfiguracionFormulario {
-  tarifa_hora: number
-  incluye_iva: boolean
-  porcentaje_iva: number
-  tarifa_con_iva: boolean
-  nombre_empresa: string | null
-  cif: string | null
-  direccion: string | null
-  telefono: string | null
-  email: string | null
-  logo_url: string | null
-  serie_factura: string | null
-  numero_factura_inicial: number | null
-  iban: string | null
-  condiciones_pago: string | null
-  notas_factura: string | null
-  color_primario: string | null
-  color_secundario: string | null
-}
 
 /**
  * Tipos genéricos para formularios con validación
@@ -140,20 +40,7 @@ export interface EstadoFormulario<T> {
 // ============================================================================
 
 export const VALORES_POR_DEFECTO = {
-  vehiculo: {
-    matricula: '',
-    marca: null,
-    modelo: null,
-    año: new Date().getFullYear(),
-    color: null,
-    kilometros: 0,
-    tipo_combustible: null,
-    potencia_cv: null,
-    cilindrada: null,
-    vin: null,
-    carroceria: null,
-    taller_id: ''
-  } as VehiculoFormulario,
+  // vehiculo: movido a @/types/vehiculo como VehiculoDefaults
   
   orden: {
     estado: 'recibido',
@@ -222,15 +109,7 @@ export const VALORES_POR_DEFECTO = {
 // ============================================================================
 // EXPORTACIONES POR CONVENIENCIA
 // ============================================================================
-
-export type { 
-  VehiculoFormulario,
-  ClienteFormulario, 
-  OrdenFormulario, 
-  FacturaFormulario, 
-  ConfiguracionFormulario,
-  VALORES_POR_DEFECTO
-} from './formularios'
+// Nota: VehiculoFormulario se exporta desde @/types/vehiculo (fuente de verdad)
 
 // ============================================================================
 // TIPOS GENÉRICOS DE VALIDACIÓN
@@ -238,10 +117,22 @@ export type {
 
 export type TipoDatoCampo = 'string' | 'number' | 'boolean' | 'date'
 
-export interface DatoValidado<T = {
-  valor: T
+export interface DatoValidado<T = any> {
+  valor: T | null
   esValido: boolean
   mensaje?: string
+}
+
+/**
+ * Opciones extendidas para actualización de campos
+ */
+export interface OpcionesActualizacionCampo extends ValidacionCampo {
+  validateOnChange?: boolean
+  allowEmpty?: boolean
+  tipo?: TipoDatoCampo
+  onBlur?: () => void
+  onDirty?: boolean
+  onUpdate?: (updates: Partial<Record<string, any>>) => void
 }
 
 /**
@@ -267,23 +158,23 @@ export function validarCampo<T>(
   if (tipo === 'boolean' && typeof valor === 'string') {
     const valorBool = valor.toLowerCase()
     if (valorBool === 'true' || valorBool === 'false') {
-      return { valor: valorBool === 'true', esValido: true }
+      return { valor: (valorBool === 'true') as T, esValido: true }
     }
-    return { valor: false, esValido: false, mensaje: 'Se espera "true" o "false"' }
+    return { valor: false as T, esValido: false, mensaje: 'Se espera "true" o "false"' }
   }
 
   // Para fechas, acepta strings ISO 8601
   if (tipo === 'date' && typeof valor === 'string') {
     const fecha = new Date(valor)
       const fechaValida = !isNaN(fecha.getTime())
-      return { 
-        valor: fechaValida ? fecha : null, 
+      return {
+        valor: (fechaValida ? fecha : null) as T | null,
         esValido: fechaValida
       }
     }
 
   // Por defecto, es válido
-  return { valor, esValido: true }
+  return { valor: valor as T, esValido: true }
 }
 
 // ============================================================================
@@ -352,20 +243,18 @@ export const validarRango = (valor: number, min?: number, max?: number): DatoVal
  */
 export const crearManejadorDeCambios = (
   initialState: any,
-  onUpdate?: () => void
+  onUpdate?: (updates: Partial<Record<string, any>>) => void,
   debounceMs = 300
 ) => {
   let timeoutId: NodeJS.Timeout | null
 
   const actualizarEstado = (updates: Partial<Record<string, any>>) => {
-    if (onUpdate) onUpdate(updates)
-    
     if (timeoutId) {
       clearTimeout(timeoutId)
     }
 
     timeoutId = setTimeout(() => {
-      onUpdate(updates)
+      if (onUpdate) onUpdate(updates)
     }, debounceMs)
   }
 
@@ -393,7 +282,7 @@ export function useFormulario<T extends Record<string, any>>(
   const actualizarCampo = useCallback((
     campo: string,
     valor: any,
-    opciones?: ValidacionCampo
+    opciones?: OpcionesActualizacionCampo
   ) => {
     if (opciones?.validateOnChange && !opciones.allowEmpty && valor === null) {
       setFormData(prev => ({ ...prev, [campo]: null }))
@@ -407,7 +296,7 @@ export function useFormulario<T extends Record<string, any>>(
     // Para números, validar conversión segura
     const validado = validarCampo(valor, opciones?.tipo || 'string')
     if (!validado.esValido) {
-      setErrors(prev => ({ ...prev, [campo]: validado.mensaje }))
+      setErrors(prev => ({ ...prev, [campo]: validado.mensaje ?? '' }))
       return
     }
 
@@ -448,54 +337,8 @@ export function useFormulario<T extends Record<string, any>>(
 }
 
 // ============================================================================
-// INTERFACES DE FORMULARIOS CENTRALIZADAS
+// NOTA: VehiculoFormulario y sus variantes están en @/types/vehiculo
 // ============================================================================
-
-/**
- * Formulario de Vehículo - Tipos estrictos para consistencia
- * Base de datos usa numbers, formularios deben manejar números
- */
-export interface VehiculoFormulario {
-  matricula: string
-  marca: string | null
-  modelo: string | null
-  año: number
-  color: string | null
-  kilometros: number
-  tipo_combustible: string | null
-  potencia_cv: number | null
-  cilindrada: number | null
-  vin: string | null
-  carroceria: string | null
-}
-
-/**
- * Formulario de Cliente - Tipos consistentes
- */
-export interface ClienteFormulario {
-  nombre: string
-  apellidos: string
-  nif: string
-  email: string | null
-  telefono: string | null
-  direccion: string | null
-  poblacion: string | null
-  provincia: string | null
-  cod_postal: string | null
-  iban: string | null
-}
-
-/**
- * Formulario de Vehículo Nuevo - Para crear desde cero
- */
-export interface VehiculoNuevoFormulario extends Omit<VehiculoFormulario, 'id' | 'taller_id'> {
-  // Hereda todo de VehiculoFormulario excepto id y taller_id
-}
-
-/**
- * Formulario de Vehículo Edición - Para actualizar existente
- */
-export type VehiculoEdicionFormulario = VehiculoFormulario
 
 // ============================================================================
 // TIPOS DE ORDENES DE TRABAJO
@@ -599,87 +442,7 @@ export interface ConfiguracionFormulario {
 // UTILIDADES DE TIPOS
 // ============================================================================
 
-/**
- * Valores por defecto para formularios
- */
-export const VALORES_POR_DEFECTO = {
-  vehiculo: {
-    matricula: '',
-    marca: null,
-    modelo: null,
-    año: new Date().getFullYear(),
-    color: null,
-    kilometros: 0,
-    tipo_combustible: null,
-    potencia_cv: null,
-    cilindrada: null,
-    vin: null,
-    carroceria: null
-  } as VehiculoFormulario,
-  
-  orden: {
-    estado: 'recibido',
-    cliente_id: null,
-    vehiculo_id: null,
-    descripcion_problema: '',
-    diagnostico: '',
-    trabajos_realizados: '',
-    notas: '',
-    presupuesto_aprobado_por_cliente: false,
-    tiempo_estimado_horas: 0,
-    tiempo_real_horas: 0,
-    subtotal_mano_obra: 0,
-    subtotal_piezas: 0,
-    iva_amount: 0,
-    total_con_iva: 0,
-    fotos_entrada: '',
-    fotos_salida: '',
-    fotos_diagnostico: '',
-    nivel_combustible: null,
-    renuncia_presupuesto: false,
-    accion_imprevisto: 'avisar',
-    recoger_piezas: false,
-    danos_carroceria: false,
-    coste_diario_estancia: null,
-    kilometros_entrada: 0,
-  } as OrdenFormulario,
-  
-  factura: {
-    numero_factura: '',
-    cliente_id: null,
-    serie_factura: null,
-    base_imponible: 0,
-    iva: 0,
-    total: 0,
-    metodo_pago: null,
-    fecha_emision: new Date().toISOString().split('T')[0],
-    fecha_vencimiento: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    notas_factura: null,
-    condiciones_pago: null,
-    persona_contacto: null,
-    telefono_contacto: null,
-  } as FacturaFormulario,
-  
-  configuracion: {
-    tarifa_hora: 45,
-    incluye_iva: true,
-    porcentaje_iva: 21,
-    tarifa_con_iva: false,
-    nombre_empresa: null,
-    cif: null,
-    direccion: null,
-    telefono: null,
-    email: null,
-    logo_url: null,
-    serie_factura: 'FA',
-    numero_factura_inicial: 1,
-    iban: null,
-    condiciones_pago: null,
-    notas_factura: null,
-    color_primario: '#3b82f6',
-    color_secundario: '#10b981',
-  } as ConfiguracionFormulario,
-} as const;
+// VALORES_POR_DEFECTO duplicado eliminado - ver línea 112
 
 // ============================================================================
 // TIPOS GENÉRICOS
@@ -690,7 +453,7 @@ export const VALORES_POR_DEFECTO = {
  */
 export interface FormularioConID<T> {
   id?: string | number | null
-  [key: string]: T;
+  [key: string]: T | string | number | null | undefined
 }
 
 /**
@@ -718,15 +481,5 @@ export interface ValidacionNumerica {
 // EXPORTS POR CONVENIENCIA
 // ============================================================================
 
-export type { 
-  VehiculoFormulario, 
-  ClienteFormulario, 
-  OrdenFormulario, 
-  FacturaFormulario, 
-  ConfiguracionFormulario,
-  VehiculoNuevoFormulario,
-  VehiculoEdicionFormulario,
-  OrdenNuevoFormulario,
-  FacturaNuevoFormulario,
-  VALORES_POR_DEFECTO
-} from './database.types';
+// NOTA: Todos los tipos ya están exportados con la palabra clave 'export'
+// VehiculoFormulario y variantes: import desde @/types/vehiculo
