@@ -10,24 +10,24 @@ export interface VehiculoBase {
   matricula: string
   vin?: string | null
   bastidor_vin?: string | null
-  
+
   // Características básicas
   marca?: string | null
   modelo?: string | null
-  año?: string | null  // Guardado como string en la BD
+  año?: number | null  // ✅ CORRECCIÓN: Guardado como number en la BD según master-converter
   color?: string | null
-  
+
   // Especificaciones técnicas
-  kilometros?: string | null  // Guardado como string en la BD
+  kilometros?: number | null  // ✅ CORRECCIÓN: Guardado como number en la BD según master-converter
   tipo_combustible?: TipoCombustible | null
   carroceria?: string | null
-  potencia_cv?: string | null  // Guardado como string en la BD
-  cilindrada?: string | null  // Guardado como string en la BD
-  
+  potencia_cv?: number | null  // ✅ CORRECCIÓN: Guardado como number en la BD según master-converter
+  cilindrada?: number | null  // ✅ CORRECCIÓN: Guardado como number en la BD según master-converter
+
   // Relaciones
   cliente_id?: string | null
   taller_id: string
-  
+
   // Estado
   estado?: EstadoVehiculo
 }
@@ -40,12 +40,10 @@ export interface VehiculoBD extends VehiculoBase {
 
 // ==================== TIPOS DE FORMULARIO ====================
 
+// ✅ SIMPLIFICACIÓN: VehiculoFormulario ahora es igual a VehiculoBase (sin taller_id)
+// Ya no necesitamos sobrescribir tipos porque todo es number | null
 export interface VehiculoFormulario extends Omit<VehiculoBase, 'taller_id'> {
-  // En el formulario, los valores numéricos pueden ser number para facilitar validaciones
-  año?: number | null
-  kilometros?: number | null
-  potencia_cv?: number | null
-  cilindrada?: number | null
+  // Todos los tipos ya vienen correctamente de VehiculoBase
 }
 
 // ==================== ENUMS Y TIPOS AUXILIARES ====================
@@ -162,33 +160,25 @@ export const ESTADOS_VEHICULO_OPTIONS: { value: EstadoVehiculo; label: string }[
 // ==================== UTILIDADES DE CONVERSIÓN ====================
 
 /**
- * Convierte vehículo de BD a formulario
+ * ✅ SIMPLIFICACIÓN: Ya no necesitamos conversiones porque BD y Formulario usan los mismos tipos
+ * Convertir de BD a formulario es directo
  */
 export function vehiculoBDToFormulario(vehiculo: VehiculoBD): VehiculoFormulario {
   return {
-    ...vehiculo,
-    año: vehiculo.año ? toDbNumber(vehiculo.año) : null,
-    kilometros: vehiculo.kilometros ? toDbNumber(vehiculo.kilometros) : null,
-    potencia_cv: vehiculo.potencia_cv ? toDbNumber(vehiculo.potencia_cv) : null,
-    cilindrada: vehiculo.cilindrada ? toDbNumber(vehiculo.cilindrada) : null
+    ...vehiculo
   }
 }
 
 /**
- * Convierte vehículo de formulario a BD
+ * ✅ SIMPLIFICACIÓN: Convertir de formulario a BD también es directo
+ * Solo necesitamos agregar taller_id que falta en VehiculoFormulario
  */
-export function vehiculoFormularioToBD(formulario: VehiculoFormulario): VehiculoBase {
+export function vehiculoFormularioToBD(formulario: VehiculoFormulario, tallerId: string): VehiculoBase {
   return {
     ...formulario,
-    año: formulario.año ? String(formulario.año) : null,
-    kilometros: formulario.kilometros ? String(formulario.kilometros) : null,
-    potencia_cv: formulario.potencia_cv ? String(formulario.potencia_cv) : null,
-    cilindrada: formulario.cilindrada ? String(formulario.cilindrada) : null
+    taller_id: tallerId
   }
 }
-
-// Importar funciones de conversión
-import { toDbNumber } from '@/lib/utils/converters'
 
 // ==================== INTERFACES PARA API ====================
 

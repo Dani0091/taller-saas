@@ -1,7 +1,5 @@
 'use client'
 
-'use client'
-
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -120,15 +118,14 @@ export default function NuevoVehiculoPage() {
         return
       }
 
-      // Conversión robusta usando utilidades de conversión Senior Level
-      const vehiculoParaBD = vehiculoFormularioToBD(formData)
-      
+      // ✅ CORRECCIÓN: vehiculoFormularioToBD ahora requiere tallerId como segundo parámetro
+      const vehiculoParaBD = vehiculoFormularioToBD(formData, tallerId)
+
       const response = await fetch('/api/vehiculos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...vehiculoParaBD,
-          taller_id: tallerId,
           cliente_id: formData.cliente_id || null,
         }),
       })
@@ -224,9 +221,9 @@ export default function NuevoVehiculoPage() {
                 onChange={(value) => {
                   const anioMax = new Date().getFullYear() + 1
                   const añoValidado = sanitizeAño(value, anioMax)
-                  
+
                   if (añoValidado !== undefined) {
-                    setFormData(prev => ({ ...prev, año: String(añoValidado) }))
+                    setFormData(prev => ({ ...prev, año: añoValidado }))  // ✅ CORRECCIÓN: mantener como number
                   } else if (value !== null && value !== undefined && value !== '') {
                     toast.error(VehiculoValidationRules.año.message)
                   }

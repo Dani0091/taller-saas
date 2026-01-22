@@ -112,95 +112,8 @@ const SERIE_DEFAULTS: SerieConfig = {
   activa: true,
 }
 
-interface TarifaConfig {
-  id?: string
-  tipo_cliente: string
-  tarifa_hora: number  // Siempre number
-  tarifa_hora_urgente: number | null
-  descuento_piezas_porcentaje: number  // Siempre number
-  descuento_mano_obra_porcentaje: number  // Siempre number
-  dias_pago: number  // Siempre number
-  limite_credito: number | null
-  activo: boolean
-}
-
-interface SerieConfig {
-  id?: string
-  nombre: string
-  prefijo: string
-  ultimo_numero: number  // Siempre number
-  activa: boolean
-}
-
-// Valores por defecto para prevenir undefined
-const CONFIG_DEFAULTS: ConfigTaller = {
-  taller_id: '',
-  nombre_taller: '',
-  nif: '',
-  telefono: '',
-  email: '',
-  direccion: '',
-  codigo_postal: '',
-  ciudad: '',
-  provincia: '',
-  pais: 'España',
-  logo_url: null,
-  firma_url: null,
-  tarifa_hora: 45.00,  // Por defecto 45€
-  iva_default: 21.00,  // Por defecto 21%
-  porcentaje_anticipo: null,
-  plazo_pago_dias: null,
-  moneda: 'EUR',
-  idioma: 'es',
-  formato_fecha: 'dd/MM/yyyy',
-  iban: null,
-  condiciones_pago: null,
-  notas_factura: null,
-  color_primario: null,
-  color_secundario: null,
-}
-
-const TARIFA_DEFAULTS: TarifaConfig = {
-  tipo_cliente: '',
-  tarifa_hora: 45.00,
-  tarifa_hora_urgente: null,
-  descuento_piezas_porcentaje: 0,
-  descuento_mano_obra_porcentaje: 0,
-  dias_pago: 30,
-  limite_credito: null,
-  activo: true,
-}
-
-const SERIE_DEFAULTS: SerieConfig = {
-  nombre: '',
-  prefijo: '',
-  ultimo_numero: 0,
-  activa: true,
-}
-
-interface Tarifa {
-  id?: string
-  tipo_cliente: string
-  tarifa_hora: number
-  tarifa_hora_urgente: number | null
-  descuento_piezas_porcentaje: number
-  descuento_mano_obra_porcentaje: number
-  dias_pago: number
-  limite_credito: number | null
-  activo: boolean
-}
-
-interface SerieFacturacion {
-  id: string
-  taller_id: string
-  nombre: string
-  prefijo: string
-  ultimo_numero: number
-  activa: boolean // ✅ CAMPO AÑADIDO - UNIFICACIÓN CON SerieConfig
-}
-
-// ✅ UNIFICACIÓN DE TIPOS - Ambas interfaces ahora son iguales
-type SerieConfig = SerieFacturacion
+// ==================== ELIMINADAS DECLARACIONES DUPLICADAS ====================
+// Las interfaces TarifaConfig, SerieConfig y constantes ya están definidas arriba
 
 const TIPOS_CLIENTE = [
   { value: 'particular', label: 'Particular', icon: '👤', desc: 'Clientes individuales' },
@@ -208,30 +121,6 @@ const TIPOS_CLIENTE = [
   { value: 'autonomo', label: 'Autónomo', icon: '💼', desc: 'Trabajadores autónomos' },
   { value: 'flota', label: 'Flota', icon: '🚗', desc: 'Gestores de flotas' },
 ]
-
-interface Config {
-  id: string | null
-  taller_id: string
-  tarifa_hora: number
-  incluye_iva: boolean
-  porcentaje_iva: number
-  tarifa_con_iva: boolean
-  nombre_empresa: string | null
-  cif: string | null
-  direccion: string | null
-  telefono: string | null
-  email: string | null
-  logo_url: string | null
-  // Configuración de facturación
-  serie_factura: string | null
-  numero_factura_inicial: number | null
-  iban: string | null
-  condiciones_pago: string | null
-  notas_factura: string | null
-  // Colores de marca
-  color_primario: string | null
-  color_secundario: string | null
-}
 
 export default function ConfiguracionPage() {
   const [config, setConfig] = useState<ConfigTaller | null>(null)

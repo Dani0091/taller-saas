@@ -149,30 +149,30 @@ export function DetalleOrdenSheet({
   // Estado para crear vehículo nuevo
   const [mostrarFormVehiculo, setMostrarFormVehiculo] = useState(false)
   const [creandoVehiculo, setCreandoVehiculo] = useState(false)
-  const [nuevoVehiculo, setNuevoVehiculo] = useState<VehiculoNuevoFormulario>({
+  const [nuevoVehiculo, setNuevoVehiculo] = useState({
     matricula: '',
-    marca: null,
-    modelo: null,
-    año: new Date().getFullYear(),
-    color: null,
-    kilometros: 0,
-    tipo_combustible: null,
-    vin: null,
+    marca: null as string | null,
+    modelo: null as string | null,
+    año: new Date().getFullYear() as number | null,  // ✅ number | null
+    color: null as string | null,
+    kilometros: 0 as number | null,  // ✅ number | null
+    tipo_combustible: null as string | null,
+    vin: null as string | null,
     taller_id: ''
   })
 
   // Estado para editar vehículo existente
   const [editandoVehiculo, setEditandoVehiculo] = useState(false)
   const [guardandoVehiculo, setGuardandoVehiculo] = useState(false)
-  const [vehiculoEditado, setVehiculoEditado] = useState<VehiculoEdicionFormulario>({
+  const [vehiculoEditado, setVehiculoEditado] = useState({
     matricula: '',
-    marca: null,
-    modelo: null,
-    año: null,
-    color: null,
-    kilometros: null,
-    tipo_combustible: null,
-    vin: null,
+    marca: null as string | null,
+    modelo: null as string | null,
+    año: null as number | null,  // ✅ number | null
+    color: null as string | null,
+    kilometros: null as number | null,  // ✅ number | null
+    tipo_combustible: null as string | null,
+    vin: null as string | null,
     taller_id: ''
   })
 
@@ -447,9 +447,9 @@ export function DetalleOrdenSheet({
           matricula: nuevoVehiculo.matricula.toUpperCase().replace(/\s/g, ''),
           marca: nuevoVehiculo.marca || null,
           modelo: nuevoVehiculo.modelo || null,
-          año: nuevoVehiculo.año ? parseInt(nuevoVehiculo.año) : null,
+          año: nuevoVehiculo.año || null,  // ✅ Ya es number | null, no necesita parseInt
           color: nuevoVehiculo.color || null,
-          kilometros: nuevoVehiculo.kilometros ? parseInt(nuevoVehiculo.kilometros) : null,
+          kilometros: nuevoVehiculo.kilometros || null,  // ✅ Ya es number | null, no necesita parseInt
           tipo_combustible: nuevoVehiculo.tipo_combustible || null,
           vin: nuevoVehiculo.vin || null,
         })
@@ -465,13 +465,14 @@ export function DetalleOrdenSheet({
       // Limpiar formulario
       setNuevoVehiculo({
         matricula: '',
-        marca: '',
-        modelo: '',
-        año: '',
-        color: '',
-        kilometros: '',
-        tipo_combustible: '',
-        vin: ''
+        marca: null,
+        modelo: null,
+        año: new Date().getFullYear(),  // ✅ Resetear a año actual como number
+        color: null,
+        kilometros: null,  // ✅ Resetear a null
+        tipo_combustible: null,
+        vin: null,
+        taller_id: tallerId || ''
       })
       setMostrarFormVehiculo(false)
       toast.success('Vehículo creado correctamente')
@@ -490,13 +491,14 @@ export function DetalleOrdenSheet({
 
     setVehiculoEditado({
       matricula: vehiculo.matricula || '',
-      marca: vehiculo.marca || '',
-      modelo: vehiculo.modelo || '',
-      año: vehiculo.año?.toString() || '',
-      color: vehiculo.color || '',
-      kilometros: vehiculo.kilometros?.toString() || '',
-      tipo_combustible: vehiculo.tipo_combustible || '',
-      vin: vehiculo.vin || vehiculo.bastidor_vin || ''
+      marca: vehiculo.marca || null,
+      modelo: vehiculo.modelo || null,
+      año: vehiculo.año || null,  // ✅ Mantener como number | null
+      color: vehiculo.color || null,
+      kilometros: vehiculo.kilometros || null,  // ✅ Mantener como number | null
+      tipo_combustible: vehiculo.tipo_combustible || null,
+      vin: vehiculo.vin || vehiculo.bastidor_vin || null,
+      taller_id: tallerId || ''
     })
     setEditandoVehiculo(true)
   }
@@ -1615,11 +1617,12 @@ export function DetalleOrdenSheet({
                           <NumberInput
                             value={vehiculoEditado.año || undefined}
                             onChange={(value) => {
-                              setVehiculoEditado(prev => ({ ...prev, año: value ? Number(value) : undefined }))
+                              setVehiculoEditado(prev => ({ ...prev, año: value || null }))  // ✅ Ya es number | null
                             }}
                             placeholder="2020"
                             min={1900}
                             max={new Date().getFullYear() + 1}
+                            allowEmpty={true}
                           />
                         </div>
                         <div>
@@ -1639,16 +1642,17 @@ export function DetalleOrdenSheet({
                           <div className="flex gap-1">
                             <NumberInput
                               value={vehiculoEditado.kilometros || undefined}
-                              onChange={(value) => setVehiculoEditado(prev => ({ ...prev, kilometros: value ? String(value) : '' }))}
+                              onChange={(value) => setVehiculoEditado(prev => ({ ...prev, kilometros: value || null }))}  // ✅ Ya es number | null
                               placeholder="125000"
                               className="flex-1"
                               min={0}
+                              allowEmpty={true}
                             />
                             <InputScanner
                               tipo="km"
                               onResult={(val) => {
                                 const num = parseInt(val.replace(/\D/g, ''))
-                                setVehiculoEditado(prev => ({ ...prev, kilometros: num > 0 ? num.toString() : '' }))
+                                setVehiculoEditado(prev => ({ ...prev, kilometros: num > 0 ? num : null }))  // ✅ Mantener como number | null
                               }}
                             />
                           </div>

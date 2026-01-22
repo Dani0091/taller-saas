@@ -400,7 +400,7 @@ export const SCHEMAS = {
   factura: {
     base_imponible: 'base_imponible' as const,
     iva_amount: 'iva_amount' as const,
-    total_con_iva: 'total_con_ira' as const,
+    total_con_iva: 'total_con_iva' as const,
   },
 
   linea_orden: {

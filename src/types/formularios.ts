@@ -9,16 +9,16 @@
 // ============================================================================
 
 /**
- * Formulario de Vehículo - Tipos estrictos para consistencia
- * Base de datos usa numbers, formularios deben manejar números
+ * ✅ CORRECCIÓN: Formulario de Vehículo - Tipos alineados con master-converter
+ * año, kilometros, potencia_cv, cilindrada deben ser number | null según DatabaseSchema
  */
 export interface VehiculoFormulario {
   matricula: string
   marca: string | null
   modelo: string | null
-  año: number
+  año: number | null  // ✅ Cambiado a number | null
   color: string | null
-  kilometros: number
+  kilometros: number | null  // ✅ Cambiado a number | null
   tipo_combustible: string | null
   potencia_cv: number | null
   cilindrada: number | null
@@ -144,15 +144,14 @@ export const VALORES_POR_DEFECTO = {
     matricula: '',
     marca: null,
     modelo: null,
-    año: new Date().getFullYear(),
+    año: new Date().getFullYear() as number | null,  // ✅ Año actual como default
     color: null,
-    kilometros: 0,
+    kilometros: null,  // ✅ null por defecto
     tipo_combustible: null,
     potencia_cv: null,
     cilindrada: null,
     vin: null,
-    carroceria: null,
-    taller_id: ''
+    carroceria: null
   } as VehiculoFormulario,
   
   orden: {
@@ -238,7 +237,7 @@ export type {
 
 export type TipoDatoCampo = 'string' | 'number' | 'boolean' | 'date'
 
-export interface DatoValidado<T = {
+export interface DatoValidado<T = any> {
   valor: T
   esValido: boolean
   mensaje?: string
@@ -352,7 +351,7 @@ export const validarRango = (valor: number, min?: number, max?: number): DatoVal
  */
 export const crearManejadorDeCambios = (
   initialState: any,
-  onUpdate?: () => void
+  onUpdate?: () => void,
   debounceMs = 300
 ) => {
   let timeoutId: NodeJS.Timeout | null
@@ -448,87 +447,22 @@ export function useFormulario<T extends Record<string, any>>(
 }
 
 // ============================================================================
-// INTERFACES DE FORMULARIOS CENTRALIZADAS
+// ✅ INTERFACES ADICIONALES - Formularios específicos
 // ============================================================================
-
-/**
- * Formulario de Vehículo - Tipos estrictos para consistencia
- * Base de datos usa numbers, formularios deben manejar números
- */
-export interface VehiculoFormulario {
-  matricula: string
-  marca: string | null
-  modelo: string | null
-  año: number
-  color: string | null
-  kilometros: number
-  tipo_combustible: string | null
-  potencia_cv: number | null
-  cilindrada: number | null
-  vin: string | null
-  carroceria: string | null
-}
-
-/**
- * Formulario de Cliente - Tipos consistentes
- */
-export interface ClienteFormulario {
-  nombre: string
-  apellidos: string
-  nif: string
-  email: string | null
-  telefono: string | null
-  direccion: string | null
-  poblacion: string | null
-  provincia: string | null
-  cod_postal: string | null
-  iban: string | null
-}
 
 /**
  * Formulario de Vehículo Nuevo - Para crear desde cero
  */
 export interface VehiculoNuevoFormulario extends Omit<VehiculoFormulario, 'id' | 'taller_id'> {
   // Hereda todo de VehiculoFormulario excepto id y taller_id
+  taller_id?: string  // Opcional para inicialización
 }
 
 /**
  * Formulario de Vehículo Edición - Para actualizar existente
  */
-export type VehiculoEdicionFormulario = VehiculoFormulario
-
-// ============================================================================
-// TIPOS DE ORDENES DE TRABAJO
-// ============================================================================
-
-/**
- * Formulario de Orden de Reparación - Tipos específicos para órdenes
- */
-export interface OrdenFormulario {
-  estado: string
-  cliente_id: string | null
-  vehiculo_id: string | null
-  descripcion_problema: string
-  diagnostico: string
-  trabajos_realizados: string
-  notas: string
-  presupuesto_aprobado_por_cliente: boolean
-  tiempo_estimado_horas: number
-  tiempo_real_horas: number
-  subtotal_mano_obra: number
-  subtotal_piezas: number
-  iva_amount: number
-  total_con_iva: number
-  fotos_entrada: string
-  fotos_salida: string
-  fotos_diagnostico: string
-  nivel_combustible: string | null
-  renuncia_presupuesto: boolean
-  accion_imprevisto: string
-  recoger_piezas: boolean
-  danos_carroceria: boolean
-  coste_diario_estancia: number | null
-  kilometros_entrada: number | null
+export type VehiculoEdicionFormulario = Omit<VehiculoFormulario, 'taller_id'> & {
+  taller_id?: string  // Opcional para edición
 }
 
 /**
@@ -536,29 +470,6 @@ export interface OrdenFormulario {
  */
 export interface OrdenNuevoFormulario extends Omit<OrdenFormulario, 'id' | 'numero_orden'> {
   // Hereda todo de OrdenFormulario excepto id y numero_orden
-}
-
-// ============================================================================
-// TIPOS DE FACTURACIÓN
-// ============================================================================
-
-/**
- * Formulario de Factura - Tipos financieros estrictos
- */
-export interface FacturaFormulario {
-  numero_factura: string
-  cliente_id: string | null
-  serie_factura: string | null
-  base_imponible: number
-  iva: number
-  total: number
-  metodo_pago: string | null
-  fecha_emision: string
-  fecha_vencimiento: string
-  notas_factura: string | null
-  condiciones_pago: string | null
-  persona_contacto: string | null
-  telefono_contacto: string | null
 }
 
 /**
@@ -569,117 +480,8 @@ export interface FacturaNuevoFormulario extends Omit<FacturaFormulario, 'id'> {
 }
 
 // ============================================================================
-// TIPOS DE CONFIGURACIÓN DEL TALLER
+// ✅ VALORES POR DEFECTO - No duplicados
 // ============================================================================
-
-/**
- * Formulario de Configuración del Taller - Tipos específicos
- */
-export interface ConfiguracionFormulario {
-  tarifa_hora: number
-  incluye_iva: boolean
-  porcentaje_iva: number
-  tarifa_con_iva: boolean
-  nombre_empresa: string | null
-  cif: string | null
-  direccion: string | null
-  telefono: string | null
-  email: string | null
-  logo_url: string | null
-  serie_factura: string | null
-  numero_factura_inicial: number | null
-  iban: string | null
-  condiciones_pago: string | null
-  notas_factura: string | null
-  color_primario: string | null
-  color_secundario: string | null
-}
-
-// ============================================================================
-// UTILIDADES DE TIPOS
-// ============================================================================
-
-/**
- * Valores por defecto para formularios
- */
-export const VALORES_POR_DEFECTO = {
-  vehiculo: {
-    matricula: '',
-    marca: null,
-    modelo: null,
-    año: new Date().getFullYear(),
-    color: null,
-    kilometros: 0,
-    tipo_combustible: null,
-    potencia_cv: null,
-    cilindrada: null,
-    vin: null,
-    carroceria: null
-  } as VehiculoFormulario,
-  
-  orden: {
-    estado: 'recibido',
-    cliente_id: null,
-    vehiculo_id: null,
-    descripcion_problema: '',
-    diagnostico: '',
-    trabajos_realizados: '',
-    notas: '',
-    presupuesto_aprobado_por_cliente: false,
-    tiempo_estimado_horas: 0,
-    tiempo_real_horas: 0,
-    subtotal_mano_obra: 0,
-    subtotal_piezas: 0,
-    iva_amount: 0,
-    total_con_iva: 0,
-    fotos_entrada: '',
-    fotos_salida: '',
-    fotos_diagnostico: '',
-    nivel_combustible: null,
-    renuncia_presupuesto: false,
-    accion_imprevisto: 'avisar',
-    recoger_piezas: false,
-    danos_carroceria: false,
-    coste_diario_estancia: null,
-    kilometros_entrada: 0,
-  } as OrdenFormulario,
-  
-  factura: {
-    numero_factura: '',
-    cliente_id: null,
-    serie_factura: null,
-    base_imponible: 0,
-    iva: 0,
-    total: 0,
-    metodo_pago: null,
-    fecha_emision: new Date().toISOString().split('T')[0],
-    fecha_vencimiento: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    notas_factura: null,
-    condiciones_pago: null,
-    persona_contacto: null,
-    telefono_contacto: null,
-  } as FacturaFormulario,
-  
-  configuracion: {
-    tarifa_hora: 45,
-    incluye_iva: true,
-    porcentaje_iva: 21,
-    tarifa_con_iva: false,
-    nombre_empresa: null,
-    cif: null,
-    direccion: null,
-    telefono: null,
-    email: null,
-    logo_url: null,
-    serie_factura: 'FA',
-    numero_factura_inicial: 1,
-    iban: null,
-    condiciones_pago: null,
-    notas_factura: null,
-    color_primario: '#3b82f6',
-    color_secundario: '#10b981',
-  } as ConfiguracionFormulario,
-} as const;
 
 // ============================================================================
 // TIPOS GENÉRICOS
