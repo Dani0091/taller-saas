@@ -12,6 +12,105 @@ import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { GoogleCalendarConnection } from '@/components/dashboard/configuracion/google-calendar-connection'
 
+// Importaciones Senior Level para Data Mismatch
+import { masterConverter, useMasterConverter, SCHEMAS, validateForDatabase } from '@/lib/utils/master-converter'
+
+// ==================== INTERFACES EXPLÍCITAS PARA TIPO SEGURO ====================
+
+interface ConfigTaller {
+  id?: string
+  taller_id: string
+  nombre_taller: string
+  nif: string
+  telefono: string
+  email: string
+  direccion: string
+  codigo_postal: string
+  ciudad: string
+  provincia: string
+  pais: string
+  logo_url: string | null
+  firma_url: string | null
+  tarifa_hora: number  // Siempre number, nunca string
+  iva_default: number  // Siempre number, nunca string
+  porcentaje_anticipo: number | null
+  plazo_pago_dias: number | null
+  moneda: string
+  idioma: string
+  formato_fecha: string
+  iban: string | null
+  condiciones_pago: string | null
+  notas_factura: string | null
+  color_primario: string | null
+  color_secundario: string | null
+}
+
+interface TarifaConfig {
+  id?: string
+  tipo_cliente: string
+  tarifa_hora: number  // Siempre number
+  tarifa_hora_urgente: number | null
+  descuento_piezas_porcentaje: number  // Siempre number
+  descuento_mano_obra_porcentaje: number  // Siempre number
+  dias_pago: number  // Siempre number
+  limite_credito: number | null
+  activo: boolean
+}
+
+interface SerieConfig {
+  id?: string
+  nombre: string
+  prefijo: string
+  ultimo_numero: number  // Siempre number
+  activa: boolean
+}
+
+// Valores por defecto para prevenir undefined
+const CONFIG_DEFAULTS: ConfigTaller = {
+  taller_id: '',
+  nombre_taller: '',
+  nif: '',
+  telefono: '',
+  email: '',
+  direccion: '',
+  codigo_postal: '',
+  ciudad: '',
+  provincia: '',
+  pais: 'España',
+  logo_url: null,
+  firma_url: null,
+  tarifa_hora: 45.00,  // Por defecto 45€
+  iva_default: 21.00,  // Por defecto 21%
+  porcentaje_anticipo: null,
+  plazo_pago_dias: null,
+  moneda: 'EUR',
+  idioma: 'es',
+  formato_fecha: 'dd/MM/yyyy',
+  iban: null,
+  condiciones_pago: null,
+  notas_factura: null,
+  color_primario: null,
+  color_secundario: null,
+}
+
+const TARIFA_DEFAULTS: TarifaConfig = {
+  tipo_cliente: '',
+  tarifa_hora: 45.00,
+  tarifa_hora_urgente: null,
+  descuento_piezas_porcentaje: 0,
+  descuento_mano_obra_porcentaje: 0,
+  dias_pago: 30,
+  limite_credito: null,
+  activo: true,
+}
+
+const SERIE_DEFAULTS: SerieConfig = {
+  nombre: '',
+  prefijo: '',
+  ultimo_numero: 0,
+  activa: true,
+}
+
 interface Tarifa {
   id?: string
   tipo_cliente: string
@@ -64,25 +163,28 @@ interface Config {
 }
 
 export default function ConfiguracionPage() {
-  const [config, setConfig] = useState<Config | null>(null)
+  const [config, setConfig] = useState<ConfigTaller | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [formData, setFormData] = useState<Config | null>(null)
+  const [formData, setFormData] = useState<ConfigTaller | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [tallerId, setTallerId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Estado para tarifas por tipo de cliente
-  const [tarifas, setTarifas] = useState<Tarifa[]>([])
+  // Estado para tarifas por tipo de cliente - Tipado explícito
+  const [tarifas, setTarifas] = useState<TarifaConfig[]>([])
   const [tarifaEditando, setTarifaEditando] = useState<string | null>(null)
   const [guardandoTarifa, setGuardandoTarifa] = useState<string | null>(null)
 
-  // Estado para series de facturación
-  const [series, setSeries] = useState<SerieFacturacion[]>([])
+  // Estado para series de facturación - Tipado explícito
+  const [series, setSeries] = useState<SerieConfig[]>([])
   const [cargandoSeries, setCargandoSeries] = useState(false)
   const [mostrarFormSerie, setMostrarFormSerie] = useState(false)
-  const [serieEditando, setSerieEditando] = useState<SerieFacturacion | null>(null)
-  const [formSerie, setFormSerie] = useState({ nombre: '', prefijo: '', ultimo_numero: 0 })
+  const [serieEditando, setSerieEditando] = useState<SerieConfig | null>(null)
+  const [formSerie, setFormSerie] = useState<SerieConfig>(SERIE_DEFAULTS)
+
+  // Estado para tarifa individual - Tipado explícito para prevenir errores
+  const [formTarifa, setFormTarifa] = useState<TarifaConfig>(TARIFA_DEFAULTS)
 
   // Obtener taller_id del usuario autenticado
   useEffect(() => {
@@ -145,7 +247,7 @@ export default function ConfiguracionPage() {
     const tarifa = tarifas.find(t => t.tipo_cliente === tipo)
     return tarifa || {
       tipo_cliente: tipo,
-      tarifa_hora: formData?.tarifa_hora || 45,
+      tarifa_hora: formData?.tarifa_hora ?? CONFIG_DEFAULTS.tarifa_hora,
       tarifa_hora_urgente: null,
       descuento_piezas_porcentaje: 0,
       descuento_mano_obra_porcentaje: 0,
@@ -369,13 +471,13 @@ export default function ConfiguracionPage() {
       const configData = {
         ...data,
         tarifa_con_iva: data.tarifa_con_iva !== undefined ? data.tarifa_con_iva : true,
-        tarifa_hora: data.tarifa_hora || 45.00,
-        incluye_iva: data.incluye_iva !== undefined ? data.incluye_iva : true,
-        porcentaje_iva: data.porcentaje_iva || 21.00,
-        logo_url: data.logo_url || null,
+        tarifa_hora: data.tarifa_hora ?? CONFIG_DEFAULTS.tarifa_hora,
+        incluye_iva: data.incluye_iva ?? true,
+        porcentaje_iva: data.porcentaje_iva ?? CONFIG_DEFAULTS.iva_default,
+        logo_url: data.logo_url ?? null,
         // Nuevos campos de facturación
-        serie_factura: data.serie_factura || 'FA',
-        numero_factura_inicial: data.numero_factura_inicial || 1,
+        serie_factura: data.serie_factura ?? 'FA',
+        numero_factura_inicial: data.numero_factura_inicial ?? 1,
         iban: data.iban || null,
         condiciones_pago: data.condiciones_pago || null,
         notas_factura: data.notas_factura || null,
@@ -422,15 +524,26 @@ export default function ConfiguracionPage() {
 
     setSaving(true)
     try {
-      const response = await fetch(`/api/taller/config/actualizar`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          taller_id: tallerId,
-          tarifa_hora: formData.tarifa_hora,
-          incluye_iva: formData.incluye_iva,
-          porcentaje_iva: formData.porcentaje_iva,
-          tarifa_con_iva: formData.tarifa_con_iva,
+      // 🔥 VALIDACIÓN DEFENSIVA ANTES DE ENVIAR A BD - Zero Data Mismatch
+      const configParaBD = {
+        taller_id: tallerId,
+        // Campos numéricos con master converter
+        tarifa_hora: masterConverter(formData.tarifa_hora, 'tarifa', { allowDecimals: true, min: 0 }),
+        porcentaje_iva: masterConverter(formData.porcentaje_iva, 'precio', { min: 0, max: 100 }),
+        // Campos opcionales con nullish coalescing
+        incluye_iva: formData.incluye_iva ?? true,
+        tarifa_con_iva: formData.tarifa_con_iva ?? true,
+        // Campos de texto con fallback
+        nombre_empresa: formData.nombre_empresa ?? '',
+        cif: formData.cif ?? '',
+        direccion: formData.direccion ?? '',
+        telefono: masterConverter(formData.telefono, 'telefono'),
+        email: formData.email ?? '',
+        logo_url: formData.logo_url ?? null,
+        // Nuevos campos de facturación
+        serie_factura: formData.serie_factura ?? 'FA',
+        numero_factura_inicial: masterConverter(formData.numero_factura_inicial, 'precio', { min: 1 }),
+        iban: masterConverter(formData.iban, 'telefono'),
           nombre_empresa: formData.nombre_empresa,
           cif: formData.cif,
           direccion: formData.direccion,
@@ -457,9 +570,9 @@ export default function ConfiguracionPage() {
           ...formData, // Mantener valores actuales como base
           ...configData, // Sobrescribir con valores de la API
           // Asegurar valores por defecto para campos numéricos
-          tarifa_hora: configData.tarifa_hora ?? formData.tarifa_hora ?? 45.00,
-          porcentaje_iva: configData.porcentaje_iva ?? formData.porcentaje_iva ?? 21.00,
-          tarifa_con_iva: configData.tarifa_con_iva !== undefined ? configData.tarifa_con_iva : true,
+          tarifa_hora: configData.tarifa_hora ?? formData.tarifa_hora ?? CONFIG_DEFAULTS.tarifa_hora,
+          porcentaje_iva: configData.porcentaje_iva ?? formData.porcentaje_iva ?? CONFIG_DEFAULTS.iva_default,
+          tarifa_con_iva: configData.tarifa_con_iva ?? true,
         }
         setConfig(updatedConfig)
         setFormData(updatedConfig)
@@ -992,9 +1105,8 @@ export default function ConfiguracionPage() {
                       <NumberInput
                         value={formSerie.ultimo_numero}
                         onChange={(value) => {
-                          if (value !== null && value !== undefined) {
-                            setFormSerie({ ...formSerie, ultimo_numero: value })
-                          }
+                          const numeroConvertido = masterConverter(value, 'precio', { min: 0 })
+                          setFormSerie({ ...formSerie, ultimo_numero: numeroConvertido })
                         }}
                         placeholder="0"
                         min={0}
@@ -1410,7 +1522,10 @@ function TarifaEditor({
           <Label className="text-xs text-gray-600">Tarifa/hora (€)</Label>
           <NumberInput
             value={formTarifa.tarifa_hora}
-            onChange={(value) => setFormTarifa({ ...formTarifa, tarifa_hora: value ?? 0 })}
+            onChange={(value) => {
+              const precioConvertido = masterConverter(value, 'tarifa', { allowDecimals: true, min: 0 })
+              setFormTarifa({ ...formTarifa, tarifa_hora: precioConvertido })
+            }}
             min={0}
             step={0.01}
             className="text-sm"
@@ -1420,7 +1535,10 @@ function TarifaEditor({
           <Label className="text-xs text-gray-600">Urgente (€)</Label>
           <NumberInput
             value={formTarifa.tarifa_hora_urgente || 0}
-            onChange={(value) => setFormTarifa({ ...formTarifa, tarifa_hora_urgente: value || null })}
+            onChange={(value) => {
+              const precioConvertido = masterConverter(value, 'tarifa', { allowDecimals: true, min: 0 })
+              setFormTarifa({ ...formTarifa, tarifa_hora_urgente: precioConvertido || null })
+            }}
             min={0}
             step={0.01}
             className="text-sm"
@@ -1434,7 +1552,10 @@ function TarifaEditor({
           <Label className="text-xs text-gray-600">Dto. M.O. (%)</Label>
           <NumberInput
             value={formTarifa.descuento_mano_obra_porcentaje}
-            onChange={(value) => setFormTarifa({ ...formTarifa, descuento_mano_obra_porcentaje: value ?? 0 })}
+            onChange={(value) => {
+              const porcentajeConvertido = masterConverter(value, 'precio', { min: 0, max: 100 })
+              setFormTarifa({ ...formTarifa, descuento_mano_obra_porcentaje: porcentajeConvertido })
+            }}
             min={0}
             max={100}
             step={1}
@@ -1445,7 +1566,10 @@ function TarifaEditor({
           <Label className="text-xs text-gray-600">Dto. Piezas (%)</Label>
           <NumberInput
             value={formTarifa.descuento_piezas_porcentaje}
-            onChange={(value) => setFormTarifa({ ...formTarifa, descuento_piezas_porcentaje: value ?? 0 })}
+            onChange={(value) => {
+              const porcentajeConvertido = masterConverter(value, 'precio', { min: 0, max: 100 })
+              setFormTarifa({ ...formTarifa, descuento_piezas_porcentaje: porcentajeConvertido })
+            }}
             min={0}
             max={100}
             step={1}
@@ -1474,7 +1598,10 @@ function TarifaEditor({
           <Label className="text-xs text-gray-600">Límite crédito (€)</Label>
           <NumberInput
             value={formTarifa.limite_credito || 0}
-            onChange={(value) => setFormTarifa({ ...formTarifa, limite_credito: value || null })}
+            onChange={(value) => {
+              const creditoConvertido = masterConverter(value, 'tarifa', { allowDecimals: true, min: 0 })
+              setFormTarifa({ ...formTarifa, limite_credito: creditoConvertido || null })
+            }}
             min={0}
             step={100}
             className="text-sm"

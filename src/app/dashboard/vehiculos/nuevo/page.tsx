@@ -1,5 +1,7 @@
 'use client'
 
+'use client'
+
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -13,25 +15,30 @@ import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { InputScanner } from '@/components/ui/input-scanner'
 
+// Importaciones de conversión y tipos (Senior Level Architecture)
+import { 
+  toDbString, 
+  toDbNumber, 
+  createNumericHandler, 
+  createTextHandler,
+  sanitizeMatricula,
+  sanitizeKilometros,
+  sanitizeAño 
+} from '@/lib/utils/converters'
+import { 
+  VehiculoFormulario, 
+  VehiculoDefaults, 
+  VehiculoValidationRules,
+  vehiculoFormularioToBD,
+  TIPOS_COMBUSTIBLE_OPTIONS 
+} from '@/types/vehiculo'
+
 export default function NuevoVehiculoPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [tallerId, setTallerId] = useState<string | null>(null)
   const [loadingAuth, setLoadingAuth] = useState(true)
-  const [formData, setFormData] = useState({
-    cliente_id: '',
-    matricula: '',
-    marca: '',
-    modelo: '',
-    versión: '',
-    año: '',
-    color: '',
-    kilometros: '',
-    tipo_combustible: '',
-    carroceria: '',
-    potencia_cv: '',
-    cilindrada: '',
-  })
+  const [formData, setFormData] = useState<VehiculoFormulario>(VehiculoDefaults)
 
   // Obtener taller_id del usuario autenticado
   useEffect(() => {
@@ -71,7 +78,29 @@ export default function NuevoVehiculoPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    
+    // Sanitización específica por campo usando utilidades senior
+    let sanitizedValue = value
+    
+    switch (name) {
+      case 'matricula':
+        sanitizedValue = sanitizeMatricula(value)
+        break
+      case 'marca':
+      case 'modelo':
+      case 'color':
+      case 'carroceria':
+        sanitizedValue = toDbString(value, '')
+        break
+      case 'vin':
+      case 'bastidor_vin':
+        sanitizedValue = toDbString(value, '').toUpperCase()
+        break
+      default:
+        sanitizedValue = toDbString(value, '')
+    }
+    
+    setFormData(prev => ({ ...prev, [name]: sanitizedValue }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -91,22 +120,16 @@ export default function NuevoVehiculoPage() {
         return
       }
 
+      // Conversión robusta usando utilidades de conversión Senior Level
+      const vehiculoParaBD = vehiculoFormularioToBD(formData)
+      
       const response = await fetch('/api/vehiculos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          ...vehiculoParaBD,
           taller_id: tallerId,
           cliente_id: formData.cliente_id || null,
-          matricula: formData.matricula,
-          marca: formData.marca || null,
-          modelo: formData.modelo || null,
-          año: formData.año ? parseInt(formData.año) : null,
-          color: formData.color || null,
-          kilometros: formData.kilometros ? parseInt(formData.kilometros) : null,
-          tipo_combustible: formData.tipo_combustible || null,
-          carroceria: formData.carroceria || null,
-          potencia_cv: formData.potencia_cv ?? null,
-          cilindrada: formData.cilindrada ?? null,
         }),
       })
 
@@ -197,14 +220,15 @@ export default function NuevoVehiculoPage() {
             <div>
               <Label>Año</Label>
               <NumberInput
-                value={formData.año ? Number(formData.año) : undefined}
+                value={formData.año}
                 onChange={(value) => {
-                  const anio = value
                   const anioMax = new Date().getFullYear() + 1
-                  if (anio && anio >= 1900 && anio <= anioMax) {
-                    setFormData(prev => ({ ...prev, año: anio }))
-                  } else if (anio) {
-                    toast.error(`El año debe estar entre 1900 y ${anioMax} (modelo siguiente)`)
+                  const añoValidado = sanitizeAño(value, anioMax)
+                  
+                  if (añoValidado !== undefined) {
+                    setFormData(prev => ({ ...prev, año: String(añoValidado) }))
+                  } else if (value !== null && value !== undefined && value !== '') {
+                    toast.error(VehiculoValidationRules.año.message)
                   }
                 }}
                 placeholder="2022"
@@ -230,8 +254,8 @@ export default function NuevoVehiculoPage() {
               <Label>Kilómetros</Label>
               <div className="flex gap-1">
               <NumberInput
-                value={formData.kilometros ? Number(formData.kilometros) : undefined}
-                onChange={(value) => setFormData(prev => ({ ...prev, kilometros: value ? Number(value) : 0 }))}
+                value={formData.kilometros}
+                onChange={createNumericHandler(setFormData, 'kilometros', undefined)}
                 placeholder="45000"
                 className="flex-1"
                 min={0}
@@ -239,7 +263,10 @@ export default function NuevoVehiculoPage() {
               />
                 <InputScanner
                   tipo="km"
-                  onResult={(val) => setFormData(prev => ({ ...prev, kilometros: val }))}
+                  onResult={(val) => {
+                    const kmSanitizados = sanitizeKilometros(val)
+                    setFormData(prev => ({ ...prev, kilometros: kmSanitizados > 0 ? kmSanitizados : prev.kilometros }))
+                  }}
                 />
               </div>
             </div>
@@ -285,8 +312,8 @@ export default function NuevoVehiculoPage() {
             <div>
               <Label>Potencia (CV)</Label>
               <NumberInput
-                value={formData.potencia_cv ? Number(formData.potencia_cv) : undefined}
-                onChange={(value) => setFormData(prev => ({ ...prev, potencia_cv: value ?? 0 }))}
+                value={formData.potencia_cv}
+                onChange={createNumericHandler(setFormData, 'potencia_cv', undefined)}
                 placeholder="120"
                 min={0}
                 step={0.1}
@@ -296,8 +323,8 @@ export default function NuevoVehiculoPage() {
             <div>
               <Label>Cilindrada (cc)</Label>
               <NumberInput
-                value={formData.cilindrada ? Number(formData.cilindrada) : undefined}
-                onChange={(value) => setFormData(prev => ({ ...prev, cilindrada: value ?? 0 }))}
+                value={formData.cilindrada}
+                onChange={createNumericHandler(setFormData, 'cilindrada', undefined)}
                 placeholder="1998"
                 min={0}
                 allowEmpty={true}
