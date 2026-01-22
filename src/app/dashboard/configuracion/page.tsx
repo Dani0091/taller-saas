@@ -1410,7 +1410,7 @@ function TarifaEditor({
           <Label className="text-xs text-gray-600">Tarifa/hora (€)</Label>
           <NumberInput
             value={formTarifa.tarifa_hora}
-            onChange={(value) => setFormTarifa({ ...formTarifa, tarifa_hora: value })}
+            onChange={(value) => setFormTarifa({ ...formTarifa, tarifa_hora: value ?? 0 })}
             min={0}
             step={0.01}
             className="text-sm"
@@ -1434,7 +1434,7 @@ function TarifaEditor({
           <Label className="text-xs text-gray-600">Dto. M.O. (%)</Label>
           <NumberInput
             value={formTarifa.descuento_mano_obra_porcentaje}
-            onChange={(value) => setFormTarifa({ ...formTarifa, descuento_mano_obra_porcentaje: value })}
+            onChange={(value) => setFormTarifa({ ...formTarifa, descuento_mano_obra_porcentaje: value ?? 0 })}
             min={0}
             max={100}
             step={1}
@@ -1445,7 +1445,7 @@ function TarifaEditor({
           <Label className="text-xs text-gray-600">Dto. Piezas (%)</Label>
           <NumberInput
             value={formTarifa.descuento_piezas_porcentaje}
-            onChange={(value) => setFormTarifa({ ...formTarifa, descuento_piezas_porcentaje: value })}
+            onChange={(value) => setFormTarifa({ ...formTarifa, descuento_piezas_porcentaje: value ?? 0 })}
             min={0}
             max={100}
             step={1}

@@ -128,7 +128,7 @@ export function LineasTable({
               <Label className="text-xs sm:text-sm">Cantidad</Label>
               <NumberInput
                 value={formData.cantidad}
-                onChange={(value) => setFormData({ ...formData, cantidad: value })}
+                onChange={(value) => setFormData({ ...formData, cantidad: value ?? 1 })}
                 min={0.01}
                 step={1}
                 placeholder="1"
@@ -152,7 +152,7 @@ export function LineasTable({
               <Label className="text-xs sm:text-sm">Precio Venta €</Label>
               <NumberInput
                 value={formData.precio_unitario}
-                onChange={(value) => setFormData({ ...formData, precio_unitario: value })}
+                onChange={(value) => setFormData({ ...formData, precio_unitario: value ?? 0 })}
                 min={0}
                 step={0.01}
                 placeholder="0.00"
@@ -164,7 +164,7 @@ export function LineasTable({
                 <Label className="text-xs sm:text-sm">Horas</Label>
                 <NumberInput
                   value={formData.horas}
-                  onChange={(value) => setFormData({ ...formData, horas: value })}
+                  onChange={(value) => setFormData({ ...formData, horas: value ?? 0 })}
                   min={0}
                   step={0.25}
                   placeholder="0.00"
@@ -177,7 +177,7 @@ export function LineasTable({
                 <Label className="text-xs sm:text-sm">Precio Coste €</Label>
                 <NumberInput
                   value={formData.precio_coste}
-                  onChange={(value) => setFormData({ ...formData, precio_coste: value })}
+                  onChange={(value) => setFormData({ ...formData, precio_coste: value ?? 0 })}
                   min={0}
                   step={0.01}
                   placeholder="0.00"

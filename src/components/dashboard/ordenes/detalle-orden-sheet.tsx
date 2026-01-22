@@ -2356,7 +2356,7 @@ export function DetalleOrdenSheet({
                             <td className="px-2 py-2">
                               <NumberInput
                                 value={linea.cantidad}
-                                onChange={(value) => actualizarLinea(linea.id, 'cantidad', value)}
+                                onChange={(value) => actualizarLinea(linea.id, 'cantidad', value ?? 0)}
                                 className="w-12 px-1 py-0.5 text-xs border border-gray-300 rounded text-center"
                                 min={0.01}
                                 step={linea.tipo === 'mano_obra' ? 0.25 : 1}
@@ -2367,7 +2367,7 @@ export function DetalleOrdenSheet({
                                 <span className="text-xs text-gray-500">€</span>
                                 <NumberInput
                                   value={linea.precio_unitario}
-                                  onChange={(value) => actualizarLinea(linea.id, 'precio_unitario', value)}
+                                  onChange={(value) => actualizarLinea(linea.id, 'precio_unitario', value ?? 0)}
                                   className="w-16 px-1 py-0.5 text-xs border border-gray-300 rounded text-center"
                                   placeholder="0.00"
                                   min={0}
@@ -2430,7 +2430,7 @@ export function DetalleOrdenSheet({
                       />
                       <NumberInput
                         value={piezaRapida.cantidad}
-                        onChange={(value) => setPiezaRapida(prev => ({ ...prev, cantidad: value }))}
+                        onChange={(value) => setPiezaRapida(prev => ({ ...prev, cantidad: value ?? 1 }))}
                         placeholder="Cant"
                         className="col-span-1 text-xs"
                         min={1}
@@ -2438,7 +2438,7 @@ export function DetalleOrdenSheet({
                       />
                       <NumberInput
                         value={piezaRapida.precio || 0}
-                        onChange={(value) => setPiezaRapida(prev => ({ ...prev, precio: value }))}
+                        onChange={(value) => setPiezaRapida(prev => ({ ...prev, precio: value ?? 0 }))}
                         placeholder="Precio"
                         className="col-span-2 text-xs"
                         min={0}
