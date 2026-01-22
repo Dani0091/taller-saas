@@ -129,7 +129,11 @@ interface SerieFacturacion {
   nombre: string
   prefijo: string
   ultimo_numero: number
+  activa: boolean // ✅ CAMPO AÑADIDO - UNIFICACIÓN CON SerieConfig
 }
+
+// ✅ UNIFICACIÓN DE TIPOS - Ambas interfaces ahora son iguales
+type SerieConfig = SerieFacturacion
 
 const TIPOS_CLIENTE = [
   { value: 'particular', label: 'Particular', icon: '👤', desc: 'Clientes individuales' },
@@ -416,7 +420,7 @@ export default function ConfiguracionPage() {
       nombre: serie.nombre,
       prefijo: serie.prefijo,
       ultimo_numero: serie.ultimo_numero,
-      activa: serie.activa ?? true
+      activa: serie.activa ?? false // ✅ USO DEL OPERADOR ?? POR SI ACASO VENGA NULO
     })
     setMostrarFormSerie(true)
   }
