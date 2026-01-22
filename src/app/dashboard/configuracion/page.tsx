@@ -13,36 +13,103 @@ import { createClient } from '@/lib/supabase/client'
 import { GoogleCalendarConnection } from '@/components/dashboard/configuracion/google-calendar-connection'
 
 // Importaciones Senior Level para Data Mismatch
-import { masterConverter, useMasterConverter, SCHEMAS, validateForDatabase } from '@/lib/utils/master-converter'
+import { masterConverter } from '@/lib/utils/master-converter'
 
-// ==================== INTERFACES EXPLÍCITAS PARA TIPO SEGURO ====================
+// ==================== INTERFACES UNIFICADAS - FUENTE ÚNICA DE VERDAD ====================
 
 interface ConfigTaller {
   id?: string
   taller_id: string
-  nombre_taller: string
-  nif: string
+  nombre_taller?: string
+  nombre_empresa?: string
+  nif?: string
   telefono: string
   email: string
-  direccion: string
-  codigo_postal: string
-  ciudad: string
-  provincia: string
-  pais: string
-  logo_url: string | null
-  firma_url: string | null
-  tarifa_hora: number  // Siempre number, nunca string
-  iva_default: number  // Siempre number, nunca string
-  porcentaje_anticipo: number | null
-  plazo_pago_dias: number | null
-  moneda: string
-  idioma: string
-  formato_fecha: string
-  iban: string | null
-  condiciones_pago: string | null
-  notas_factura: string | null
-  color_primario: string | null
-  color_secundario: string | null
+  direccion?: string
+  codigo_postal?: string
+  ciudad?: string
+  provincia?: string
+  pais?: string
+  logo_url?: string | null
+  firma_url?: string | null
+  tarifa_hora: number
+  iva_default?: number
+  porcentaje_anticipo?: number | null
+  plazo_pago_dias?: number | null
+  moneda?: string
+  idioma?: string
+  formato_fecha?: string
+  iban?: string | null
+  condiciones_pago?: string | null
+  notas_factura?: string | null
+  color_primario?: string | null
+  color_secundario?: string | null
+  serie_factura?: string | null
+  numero_factura_inicial?: number | null
+}
+
+interface TarifaConfig {
+  id?: string
+  tipo_cliente: string
+  tarifa_hora: number
+  tarifa_hora_urgente: number | null
+  descuento_piezas_porcentaje: number
+  descuento_mano_obra_porcentaje: number
+  dias_pago: number
+  limite_credito: number | null
+  activo: boolean
+}
+
+interface SerieConfig {
+  id?: string
+  taller_id?: string
+  nombre: string
+  prefijo: string
+  ultimo_numero: number
+  activa: boolean
+}
+
+// ==================== ALIAS PARA COMPATIBILIDAD ====================
+// Mantenemos compatibilidad con el código existente
+type Tarifa = TarifaConfig
+type SerieFacturacion = SerieConfig
+
+// ==================== VALORES POR DEFECTO UNIFICADOS ====================
+const CONFIG_DEFAULTS: ConfigTaller = {
+  taller_id: '',
+  telefono: '',
+  email: '',
+  pais: 'España',
+  logo_url: null,
+  firma_url: null,
+  tarifa_hora: 45.00,
+  iva_default: 21.00,
+  moneda: 'EUR',
+  idioma: 'es',
+  formato_fecha: 'dd/MM/yyyy',
+  iban: null,
+  condiciones_pago: null,
+  notas_factura: null,
+  color_primario: null,
+  color_secundario: null,
+}
+
+const TARIFA_DEFAULTS: TarifaConfig = {
+  tipo_cliente: '',
+  tarifa_hora: 45.00,
+  tarifa_hora_urgente: null,
+  descuento_piezas_porcentaje: 0,
+  descuento_mano_obra_porcentaje: 0,
+  dias_pago: 30,
+  limite_credito: null,
+  activo: true,
+}
+
+const SERIE_DEFAULTS: SerieConfig = {
+  nombre: '',
+  prefijo: '',
+  ultimo_numero: 0,
+  activa: true,
 }
 
 interface TarifaConfig {
@@ -334,7 +401,8 @@ export default function ConfiguracionPage() {
           taller_id: tallerId,
           nombre: formSerie.nombre,
           prefijo: formSerie.prefijo.toUpperCase(),
-          ultimo_numero: formSerie.ultimo_numero || 0
+          ultimo_numero: formSerie.ultimo_numero || 0,
+          activa: true // ✅ CAMPO AÑADIDO - REGLA DEL OBJETO COMPLETO
         })
       })
 
@@ -346,7 +414,7 @@ export default function ConfiguracionPage() {
         toast.success('Serie creada correctamente')
         fetchSeries()
         setMostrarFormSerie(false)
-        setFormSerie({ nombre: '', prefijo: '', ultimo_numero: 0, activa: false })
+        setFormSerie(SERIE_DEFAULTS) // ✅ USAR DEFAULTS - REGLA DEL OBJETO COMPLETO
       }
     } catch (error) {
       console.error('Error creando serie:', error)
@@ -364,12 +432,13 @@ export default function ConfiguracionPage() {
       const response = await fetch('/api/series/actualizar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: serieEditando.id,
-          nombre: formSerie.nombre,
-          prefijo: formSerie.prefijo.toUpperCase(),
-          ultimo_numero: formSerie.ultimo_numero
-        })
+          body: JSON.stringify({
+            id: serieEditando.id,
+            nombre: formSerie.nombre,
+            prefijo: formSerie.prefijo.toUpperCase(),
+            ultimo_numero: formSerie.ultimo_numero,
+            activa: serieEditando?.activa ?? true // ✅ CAMPO AÑADIDO - REGLA DEL OBJETO COMPLETO
+          })
       })
 
       const data = await response.json()
@@ -452,14 +521,16 @@ export default function ConfiguracionPage() {
     reader.onload = (event) => {
       const base64 = event.target?.result as string
       setLogoPreview(base64)
-      setFormData(prev => prev ? { ...prev, logo_url: base64 } : null)
+      // ✅ USO DEL OPERADOR ENCADENADO OPCIONAL - PREVIENE CRASHES
+      setFormData(prev => prev ? { ...prev, logo_url: base64 } : prev)
     }
     reader.readAsDataURL(file)
   }
 
   const handleRemoveLogo = () => {
     setLogoPreview(null)
-    setFormData(prev => prev ? { ...prev, logo_url: null } : null)
+    // ✅ USO DEL OPERADOR ?? - PREVIENE CRASHES SI PREV ES NULL
+    setFormData(prev => prev ? { ...prev, logo_url: null } : prev)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
@@ -518,8 +589,9 @@ export default function ConfiguracionPage() {
     } : null)
   }
 
-  const handleRadioChange = (value: boolean) => {
-    setFormData(prev => prev ? { ...prev, tarifa_con_iva: value } : null)
+const handleRadioChange = (value: boolean) => {
+    // ✅ USO DEL OPERADOR ?? - PREVIENE CRASHES SI PREV ES NULL
+    setFormData(prev => prev ? { ...prev, tarifa_con_iva: value } : prev)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
