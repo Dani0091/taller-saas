@@ -342,7 +342,7 @@ export default function ConfiguracionPage() {
         toast.success('Serie creada correctamente')
         fetchSeries()
         setMostrarFormSerie(false)
-        setFormSerie({ nombre: '', prefijo: '', ultimo_numero: 0 })
+        setFormSerie({ nombre: '', prefijo: '', ultimo_numero: 0, activa: false })
       }
     } catch (error) {
       console.error('Error creando serie:', error)
@@ -376,7 +376,7 @@ export default function ConfiguracionPage() {
         toast.success('Serie actualizada correctamente')
         fetchSeries()
         setSerieEditando(null)
-        setFormSerie({ nombre: '', prefijo: '', ultimo_numero: 0 })
+        setFormSerie({ nombre: '', prefijo: '', ultimo_numero: 0, activa: false })
       }
     } catch (error) {
       console.error('Error actualizando serie:', error)
@@ -415,7 +415,8 @@ export default function ConfiguracionPage() {
     setFormSerie({
       nombre: serie.nombre,
       prefijo: serie.prefijo,
-      ultimo_numero: serie.ultimo_numero
+      ultimo_numero: serie.ultimo_numero,
+      activa: serie.activa ?? true
     })
     setMostrarFormSerie(true)
   }
@@ -423,7 +424,7 @@ export default function ConfiguracionPage() {
   const handleCancelarFormSerie = () => {
     setMostrarFormSerie(false)
     setSerieEditando(null)
-    setFormSerie({ nombre: '', prefijo: '', ultimo_numero: 0 })
+    setFormSerie({ nombre: '', prefijo: '', ultimo_numero: 0, activa: false })
   }
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
