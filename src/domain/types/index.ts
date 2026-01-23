@@ -50,6 +50,31 @@ export enum AccionImprevisto {
   HACER_Y_FACTURAR = 'hacer_y_facturar'
 }
 
+// ==================== ENUMS DE FACTURAS ====================
+
+export enum EstadoFactura {
+  BORRADOR = 'borrador',
+  EMITIDA = 'emitida',
+  PAGADA = 'pagada',
+  ANULADA = 'anulada',
+  VENCIDA = 'vencida'
+}
+
+export enum TipoFactura {
+  FACTURA = 'factura',
+  PRESUPUESTO = 'presupuesto',
+  RECTIFICATIVA = 'rectificativa',
+  ABONO = 'abono',
+  PROFORMA = 'proforma'
+}
+
+export enum EstadoVerifactu {
+  PENDIENTE = 'pendiente',
+  ACEPTADA = 'aceptada',
+  RECHAZADA = 'rechazada',
+  ERROR = 'error'
+}
+
 // ==================== INTERFACES BASE ====================
 
 /**
