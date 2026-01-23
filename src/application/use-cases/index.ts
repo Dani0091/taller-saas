@@ -6,3 +6,4 @@
 export * from './ordenes'
 export * from './facturas'
 export * from './clientes'
+export * from './vehiculos'
