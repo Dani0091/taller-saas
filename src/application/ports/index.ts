@@ -5,3 +5,4 @@
 
 export * from './orden.repository.interface'
 export * from './factura.repository.interface'
+export * from './cliente.repository.interface'
