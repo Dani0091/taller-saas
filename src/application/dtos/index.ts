@@ -5,3 +5,4 @@
 
 export * from './orden.dto'
 export * from './factura.dto'
+export * from './cliente.dto'
