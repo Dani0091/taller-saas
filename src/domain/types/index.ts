@@ -99,6 +99,22 @@ export enum EstadoVerifactu {
   ERROR = 'error'
 }
 
+// ==================== ENUMS DE CITAS ====================
+
+export enum TipoCita {
+  CITA = 'cita',
+  ITV = 'itv',
+  REVISION = 'revision',
+  ENTREGA = 'entrega'
+}
+
+export enum EstadoCita {
+  PENDIENTE = 'pendiente',
+  CONFIRMADA = 'confirmada',
+  COMPLETADA = 'completada',
+  CANCELADA = 'cancelada'
+}
+
 // ==================== INTERFACES BASE ====================
 
 /**
