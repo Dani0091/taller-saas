@@ -4,3 +4,4 @@
  */
 
 export * from './ordenes'
+export * from './facturas'

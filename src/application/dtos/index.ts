@@ -4,3 +4,4 @@
  */
 
 export * from './orden.dto'
+export * from './factura.dto'
