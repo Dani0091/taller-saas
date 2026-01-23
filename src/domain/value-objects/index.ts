@@ -12,6 +12,7 @@ export { Email } from './Email.vo'
 export { Matricula } from './Matricula.vo'
 export { Telefono } from './Telefono.vo'
 export { Kilometraje } from './Kilometraje.vo'
+export { IBAN } from './IBAN.vo'
 
 // Value Objects de Facturas
 export { NIF } from './NIF.vo'

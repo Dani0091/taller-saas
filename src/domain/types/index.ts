@@ -44,6 +44,23 @@ export enum EstadoCliente {
   INACTIVO = 'inactivo'
 }
 
+export enum TipoCliente {
+  PARTICULAR = 'particular',
+  EMPRESA = 'empresa',
+  AUTONOMO = 'autonomo',
+  FLOTA = 'flota',
+  RENTING = 'renting'
+}
+
+export enum FormaPago {
+  EFECTIVO = 'efectivo',
+  TARJETA = 'tarjeta',
+  TRANSFERENCIA = 'transferencia',
+  DOMICILIACION = 'domiciliacion',
+  FINANCIACION = 'financiacion',
+  CREDITO = 'credito'
+}
+
 export enum AccionImprevisto {
   AVISAR = 'avisar',
   NO_HACER_NADA = 'no_hacer_nada',

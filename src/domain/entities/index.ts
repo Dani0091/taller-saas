@@ -10,3 +10,6 @@ export { LineaOrdenEntity } from './LineaOrden.entity'
 // Entities de Facturas
 export { FacturaEntity } from './Factura.entity'
 export { LineaFacturaEntity } from './LineaFactura.entity'
+
+// Entities de Clientes
+export { ClienteEntity } from './Cliente.entity'
