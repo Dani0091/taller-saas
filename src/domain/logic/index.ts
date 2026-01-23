@@ -5,3 +5,4 @@
 
 export * from './calcular-iva'
 export * from './generar-numero-orden'
+export * from './generar-numero-factura'
