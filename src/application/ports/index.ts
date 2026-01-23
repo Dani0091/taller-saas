@@ -4,3 +4,4 @@
  */
 
 export * from './orden.repository.interface'
+export * from './factura.repository.interface'

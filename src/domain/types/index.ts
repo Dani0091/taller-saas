@@ -61,17 +61,24 @@ export enum EstadoFactura {
 }
 
 export enum TipoFactura {
-  FACTURA = 'factura',
-  PRESUPUESTO = 'presupuesto',
+  NORMAL = 'normal',
   RECTIFICATIVA = 'rectificativa',
-  ABONO = 'abono',
+  SIMPLIFICADA = 'simplificada',
   PROFORMA = 'proforma'
+}
+
+export enum TipoLineaFactura {
+  MANO_OBRA = 'mano_obra',
+  PIEZA = 'pieza',
+  SUPLIDO = 'suplido',
+  DESCUENTO = 'descuento',
+  OTRO = 'otro'
 }
 
 export enum EstadoVerifactu {
   PENDIENTE = 'pendiente',
-  ACEPTADA = 'aceptada',
-  RECHAZADA = 'rechazada',
+  PROCESANDO = 'procesando',
+  FIRMADO = 'firmado',
   ERROR = 'error'
 }
 
