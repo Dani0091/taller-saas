@@ -133,6 +133,9 @@ export interface CitaListadoDTO {
   isHoy: boolean
   tieneCliente: boolean
   tieneVehiculo: boolean
+  // Datos relacionados para UI (computed fields)
+  clienteNombre?: string
+  vehiculoMatricula?: string
 }
 
 /**

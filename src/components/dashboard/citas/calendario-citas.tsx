@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react'
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, isToday, parseISO } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Clock, User, Car, Download, List } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Clock, User, Car, Download, List, Loader2, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
-import type { Cita } from '@/types/citas'
+import { listarCitasAction } from '@/actions/citas'
+import type { CitaListadoDTO } from '@/application/dtos/cita.dto'
 import { ESTADOS_CITA, TIPOS_CITA } from '@/types/citas'
 import { generarICSMultiple, descargarICS } from '@/lib/calendar/export'
 
@@ -15,13 +16,14 @@ type VistaCalendario = 'mes' | 'semana' | 'dia'
 
 interface CalendarioCitasProps {
   onNuevaCita?: (fecha: Date) => void
-  onEditarCita?: (cita: Cita) => void
+  onEditarCita?: (citaId: string) => void
 }
 
 export function CalendarioCitas({ onNuevaCita, onEditarCita }: CalendarioCitasProps) {
   const [mesActual, setMesActual] = useState(new Date())
-  const [citas, setCitas] = useState<Cita[]>([])
+  const [citas, setCitas] = useState<CitaListadoDTO[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [diaSeleccionado, setDiaSeleccionado] = useState<Date | null>(null)
   const [vista, setVista] = useState<VistaCalendario>('mes')
 
@@ -33,19 +35,26 @@ export function CalendarioCitas({ onNuevaCita, onEditarCita }: CalendarioCitasPr
   const cargarCitas = async () => {
     try {
       setLoading(true)
+      setError(null)
       const inicio = startOfMonth(mesActual)
       const fin = endOfMonth(mesActual)
 
-      const res = await fetch(
-        `/api/citas?desde=${inicio.toISOString()}&hasta=${fin.toISOString()}`
-      )
-      const data = await res.json()
+      // Usar Server Action blindada en lugar de API route
+      const resultado = await listarCitasAction({
+        fechaDesde: inicio.toISOString(),
+        fechaHasta: fin.toISOString(),
+        page: 1,
+        pageSize: 1000 // Cargar todas las citas del mes
+      })
 
-      if (data.citas) {
-        setCitas(data.citas)
+      if (!resultado.success) {
+        throw new Error(resultado.error)
       }
-    } catch (error) {
-      console.error('Error cargando citas:', error)
+
+      setCitas(resultado.data.data)
+    } catch (err: any) {
+      console.error('Error cargando citas:', err)
+      setError(err.message || 'Error al cargar citas')
       toast.error('Error al cargar citas')
     } finally {
       setLoading(false)
@@ -101,7 +110,7 @@ export function CalendarioCitas({ onNuevaCita, onEditarCita }: CalendarioCitasPr
 
   const getCitasDelDia = (dia: Date) => {
     return citas.filter(cita =>
-      isSameDay(parseISO(cita.fecha_inicio), dia)
+      isSameDay(parseISO(cita.fechaInicio), dia)
     )
   }
 
@@ -123,9 +132,9 @@ export function CalendarioCitas({ onNuevaCita, onEditarCita }: CalendarioCitasPr
     const citasExport = citas.map(c => ({
       titulo: c.titulo,
       descripcion: c.descripcion || undefined,
-      fecha_inicio: c.fecha_inicio,
-      fecha_fin: c.fecha_fin || undefined,
-      todo_el_dia: c.todo_el_dia
+      fecha_inicio: c.fechaInicio,
+      fecha_fin: c.fechaFin || undefined,
+      todo_el_dia: c.todoElDia
     }))
 
     const ics = generarICSMultiple(citasExport)
@@ -202,8 +211,22 @@ export function CalendarioCitas({ onNuevaCita, onEditarCita }: CalendarioCitasPr
           </div>
         </CardHeader>
         <CardContent className="px-2 sm:px-6">
-          {/* Vista Día - Lista de citas */}
-          {vista === 'dia' ? (
+          {/* Error State */}
+          {error ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
+              <p className="text-red-600 font-medium mb-2">Error al cargar citas</p>
+              <p className="text-gray-500 text-sm mb-4">{error}</p>
+              <Button onClick={() => { setError(null); cargarCitas(); }}>
+                Reintentar
+              </Button>
+            </div>
+          ) : loading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-sky-600" />
+            </div>
+          ) : /* Vista Día - Lista de citas */
+          vista === 'dia' ? (
             <div className="space-y-2">
               <div className="flex items-center justify-between py-2 border-b">
                 <span className="font-medium">{format(mesActual, "EEEE d", { locale: es })}</span>
@@ -219,7 +242,7 @@ export function CalendarioCitas({ onNuevaCita, onEditarCita }: CalendarioCitasPr
                 </div>
               ) : (
                 getCitasDelDia(mesActual).map(cita => (
-                  <CitaCard key={cita.id} cita={cita} onClick={() => onEditarCita?.(cita)} />
+                  <CitaCard key={cita.id} cita={cita} onClick={() => onEditarCita?.(cita.id)} />
                 ))
               )}
             </div>
@@ -334,7 +357,7 @@ export function CalendarioCitas({ onNuevaCita, onEditarCita }: CalendarioCitasPr
           ) : (
             <div className="space-y-2">
               {citasDelDiaSeleccionado.map(cita => (
-                <CitaCard key={cita.id} cita={cita} onClick={() => onEditarCita?.(cita)} />
+                <CitaCard key={cita.id} cita={cita} onClick={() => onEditarCita?.(cita.id)} />
               ))}
             </div>
           )}
@@ -345,8 +368,9 @@ export function CalendarioCitas({ onNuevaCita, onEditarCita }: CalendarioCitasPr
 }
 
 // Componente reutilizable para mostrar una cita
-function CitaCard({ cita, onClick }: { cita: Cita; onClick?: () => void }) {
+function CitaCard({ cita, onClick }: { cita: CitaListadoDTO; onClick?: () => void }) {
   const estadoCita = ESTADOS_CITA.find(e => e.value === cita.estado)
+  const tipoCita = TIPOS_CITA.find(t => t.value === cita.tipo)
 
   return (
     <div
@@ -361,26 +385,34 @@ function CitaCard({ cita, onClick }: { cita: Cita; onClick?: () => void }) {
           {/* Hora */}
           <div className="flex items-center gap-1 text-xs text-gray-500 mt-1">
             <Clock className="w-3 h-3" />
-            {cita.todo_el_dia
+            {cita.todoElDia
               ? 'Todo el día'
-              : format(parseISO(cita.fecha_inicio), 'HH:mm')}
+              : format(parseISO(cita.fechaInicio), 'HH:mm')}
+            {cita.duracionMinutos && !cita.todoElDia && (
+              <span className="text-gray-400">({cita.duracionMinutos} min)</span>
+            )}
           </div>
 
-          {/* Cliente */}
-          {cita.cliente && (
-            <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
-              <User className="w-3 h-3" />
-              {cita.cliente.nombre}
+          {/* Tipo de cita */}
+          {tipoCita && (
+            <div className="flex items-center gap-1 text-xs text-gray-600 mt-0.5">
+              <span>{tipoCita.label}</span>
             </div>
           )}
 
-          {/* Vehículo */}
-          {cita.vehiculo && (
-            <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
-              <Car className="w-3 h-3" />
-              {cita.vehiculo.matricula}
-            </div>
-          )}
+          {/* Indicadores */}
+          <div className="flex items-center gap-2 mt-1">
+            {cita.tieneCliente && (
+              <div className="flex items-center gap-1 text-xs text-gray-500">
+                <User className="w-3 h-3" />
+              </div>
+            )}
+            {cita.tieneVehiculo && (
+              <div className="flex items-center gap-1 text-xs text-gray-500">
+                <Car className="w-3 h-3" />
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Estado */}
