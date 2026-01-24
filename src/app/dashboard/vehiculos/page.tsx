@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { Plus, Search, Filter, Menu, Loader2, AlertCircle, Car, User, Fuel, Calendar, Gauge } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -10,20 +9,8 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { DetalleVehiculoSheet } from '@/components/dashboard/vehiculos/detalle-vehiculo-sheet'
 import { toast } from 'sonner'
-
-interface Vehiculo {
-  id: string
-  matricula: string
-  marca: string | null
-  modelo: string | null
-  año: number | null
-  color: string | null
-  kilometros: number | null
-  tipo_combustible: string | null
-  carroceria: string | null
-  cliente_id: string | null
-  clientes?: { nombre: string; apellidos?: string } | null
-}
+import { listarVehiculosAction } from '@/actions/vehiculos'
+import type { VehiculoListadoDTO } from '@/application/dtos/vehiculo.dto'
 
 const COMBUSTIBLE_CONFIG: Record<string, { label: string; color: string; icon: string }> = {
   gasolina: { label: 'Gasolina', color: 'bg-red-100 text-red-800', icon: '⛽' },
@@ -40,8 +27,7 @@ const COMBUSTIBLE_CONFIG: Record<string, { label: string; color: string; icon: s
 const FILTROS_COMBUSTIBLE = ['todos', 'gasolina', 'diésel', 'híbrido', 'eléctrico', 'GLP']
 
 export default function VehiculosPage() {
-  const supabase = createClient()
-  const [vehiculos, setVehiculos] = useState<Vehiculo[]>([])
+  const [vehiculos, setVehiculos] = useState<VehiculoListadoDTO[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filtroActivo, setFiltroActivo] = useState('todos')
@@ -62,45 +48,18 @@ export default function VehiculosPage() {
       setLoading(true)
       setError(null)
 
-      // 1. Obtener sesión y taller_id
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.user?.email) {
-        setError('No autenticado')
-        return
+      // Usar Server Action blindada en lugar de Supabase directo
+      const resultado = await listarVehiculosAction({
+        incluirEliminados: false,
+        page: 1,
+        pageSize: 100
+      })
+
+      if (!resultado.success) {
+        throw new Error(resultado.error)
       }
 
-      const { data: usuario, error: usuarioError } = await supabase
-        .from('usuarios')
-        .select('taller_id')
-        .eq('email', session.user.email)
-        .single()
-
-      if (usuarioError || !usuario?.taller_id) {
-        setError('Usuario no encontrado o sin taller asignado')
-        return
-      }
-
-      // 2. Obtener vehículos del taller con datos del cliente
-      const { data, error: vehiculosError } = await supabase
-        .from('vehiculos')
-        .select(`
-          id,
-          matricula,
-          marca,
-          modelo,
-          año,
-          color,
-          kilometros,
-          tipo_combustible,
-          carroceria,
-          cliente_id,
-          clientes(nombre, apellidos)
-        `)
-        .eq('taller_id', usuario.taller_id)
-        .order('updated_at', { ascending: false })
-
-      if (vehiculosError) throw vehiculosError
-      setVehiculos((data as unknown as Vehiculo[]) || [])
+      setVehiculos(resultado.data.data)
     } catch (err: any) {
       console.error('Error cargando vehículos:', err)
       setError(err.message || 'Error al cargar vehículos')
@@ -113,19 +72,16 @@ export default function VehiculosPage() {
   const vehiculosFiltrados = vehiculos.filter(vehiculo => {
     // Filtro por combustible
     const pasaFiltro = filtroActivo === 'todos' ||
-      vehiculo.tipo_combustible?.toLowerCase() === filtroActivo.toLowerCase()
+      vehiculo.tipoCombustible?.toLowerCase() === filtroActivo.toLowerCase()
 
     // Búsqueda
-    const clienteNombre = vehiculo.clientes?.nombre || ''
-    const clienteApellidos = vehiculo.clientes?.apellidos || ''
     const searchLower = busqueda.toLowerCase()
 
     const pasaBusqueda =
       vehiculo.matricula.toLowerCase().includes(searchLower) ||
       (vehiculo.marca?.toLowerCase() || '').includes(searchLower) ||
       (vehiculo.modelo?.toLowerCase() || '').includes(searchLower) ||
-      clienteNombre.toLowerCase().includes(searchLower) ||
-      clienteApellidos.toLowerCase().includes(searchLower)
+      (vehiculo.clienteNombre || '').toLowerCase().includes(searchLower)
 
     return pasaFiltro && pasaBusqueda
   })
@@ -222,8 +178,8 @@ export default function VehiculosPage() {
         ) : (
           <div className="space-y-3">
             {vehiculosFiltrados.map(vehiculo => {
-              const combustibleConfig = COMBUSTIBLE_CONFIG[vehiculo.tipo_combustible?.toLowerCase() || ''] ||
-                { label: vehiculo.tipo_combustible || 'N/A', color: 'bg-gray-100 text-gray-600', icon: '🚗' }
+              const combustibleConfig = COMBUSTIBLE_CONFIG[vehiculo.tipoCombustible?.toLowerCase() || ''] ||
+                { label: vehiculo.tipoCombustible || 'N/A', color: 'bg-gray-100 text-gray-600', icon: '🚗' }
 
               return (
                 <Card
@@ -235,8 +191,7 @@ export default function VehiculosPage() {
                     <div className="flex-1 min-w-0">
                       <div className="font-bold text-gray-900 text-lg">{vehiculo.matricula}</div>
                       <div className="text-sm text-gray-700">
-                        {vehiculo.marca} {vehiculo.modelo}
-                        {vehiculo.año && <span className="text-gray-500"> ({vehiculo.año})</span>}
+                        {vehiculo.descripcionCompleta}
                       </div>
                     </div>
                     <Badge className={combustibleConfig.color}>
@@ -245,10 +200,10 @@ export default function VehiculosPage() {
                   </div>
 
                   {/* Cliente */}
-                  {vehiculo.clientes && (
+                  {vehiculo.tieneCliente && vehiculo.clienteNombre && (
                     <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                       <User className="w-3.5 h-3.5" />
-                      <span>{vehiculo.clientes.nombre} {vehiculo.clientes.apellidos || ''}</span>
+                      <span>{vehiculo.clienteNombre}</span>
                     </div>
                   )}
 
@@ -272,7 +227,7 @@ export default function VehiculosPage() {
                     {vehiculo.kilometros && (
                       <div className="flex items-center gap-1">
                         <Gauge className="w-3.5 h-3.5" />
-                        {vehiculo.kilometros.toLocaleString()} km
+                        {vehiculo.kilometrosFormateados}
                       </div>
                     )}
                     {vehiculo.carroceria && (
