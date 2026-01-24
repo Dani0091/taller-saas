@@ -1,7 +1,15 @@
+/**
+ * @fileoverview Formulario de Cliente - SANEADO
+ * @description Sheet para crear nuevo cliente
+ *
+ * ✅ SANEADO: Sin createClient, sin consultas SQL directas
+ * ✅ Usa crearClienteAction (Server Action blindada)
+ * ✅ NO obtiene taller_id manualmente (lo hace la Server Action)
+ */
+
 'use client'
 
-import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useState } from 'react'
 import { X, Save, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,12 +17,30 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { ClienteFormData } from '@/types/cliente'
+import { crearClienteAction } from '@/actions/clientes'
 import { validarDocumentoIdentidad, validarEmail } from '@/lib/validaciones'
 
 interface FormClienteSheetProps {
   onClose: () => void
   onActualizar: () => void
+}
+
+interface ClienteFormData {
+  nombre: string
+  primerApellido?: string
+  segundoApellido?: string
+  nif: string
+  email?: string
+  telefono?: string
+  direccion?: string
+  ciudad?: string
+  provincia?: string
+  codigoPostal?: string
+  pais?: string
+  notas?: string
+  tipoCliente?: 'personal' | 'empresa'
+  formaPago?: 'transferencia' | 'efectivo' | 'tarjeta' | 'cheque'
+  iban?: string
 }
 
 const PROVINCIAS_ES = [
@@ -35,25 +61,24 @@ const FORMAS_PAGO = [
 ]
 
 export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProps) {
-  const supabase = createClient()
   const [guardando, setGuardando] = useState(false)
-  const [tallerId, setTallerId] = useState<string>('')
   const [errores, setErrores] = useState<Record<string, string>>({})
   const [formData, setFormData] = useState<ClienteFormData>({
     nombre: '',
-    primer_apellido: '',
-    segundo_apellido: '',
+    primerApellido: '',
+    segundoApellido: '',
     nif: '',
     email: '',
     telefono: '',
     direccion: '',
     ciudad: '',
     provincia: '',
-    codigo_postal: '',
+    codigoPostal: '',
     pais: 'ES',
     notas: '',
-    tipo_cliente: 'personal',
-    forma_pago: 'transferencia'
+    tipoCliente: 'personal',
+    formaPago: 'transferencia',
+    iban: ''
   })
 
   // Validar NIF en tiempo real
@@ -80,35 +105,6 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
       setErrores(prev => ({ ...prev, email: 'Formato de email inválido' }))
     } else {
       setErrores(prev => ({ ...prev, email: '' }))
-    }
-  }
-
-  useEffect(() => {
-    obtenerTallerId()
-  }, [])
-
-  const obtenerTallerId = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.user) {
-        toast.error('No autenticado')
-        return
-      }
-
-      const { data: usuario, error } = await supabase
-        .from('usuarios')
-        .select('taller_id')
-        .eq('email', session.user.email)
-        .single()
-
-      if (error || !usuario) {
-        toast.error('No se pudo obtener taller')
-        return
-      }
-
-      setTallerId(usuario.taller_id)
-    } catch (error) {
-      toast.error('Error obtener taller')
     }
   }
 
@@ -139,31 +135,39 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
       return
     }
 
-    if (!tallerId) {
-      toast.error('Taller no cargado')
-      return
-    }
-
     try {
       setGuardando(true)
-      const res = await fetch('/api/clientes/crear', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          taller_id: tallerId
-        })
+
+      // ✅ CORRECTO: Usar Server Action en lugar de fetch a API route
+      // ✅ NO enviamos taller_id (la Server Action lo obtiene del servidor)
+      const resultado = await crearClienteAction({
+        nombre: formData.nombre,
+        primerApellido: formData.primerApellido,
+        segundoApellido: formData.segundoApellido,
+        nif: formData.nif,
+        email: formData.email,
+        telefono: formData.telefono,
+        direccion: formData.direccion,
+        ciudad: formData.ciudad,
+        provincia: formData.provincia,
+        codigoPostal: formData.codigoPostal,
+        pais: formData.pais || 'ES',
+        notas: formData.notas,
+        tipoCliente: formData.tipoCliente || 'personal',
+        formaPago: formData.formaPago || 'transferencia',
+        iban: formData.iban
       })
 
-      const data = await res.json()
-      if (!data.success) throw new Error(data.error)
+      if (!resultado.success) {
+        throw new Error(resultado.error)
+      }
 
-      toast.success('✅ Cliente creado')
+      toast.success('✅ Cliente creado correctamente')
       onActualizar()
       onClose()
     } catch (error: any) {
-      console.error('Error:', error)
-      toast.error(error.message)
+      console.error('Error creando cliente:', error)
+      toast.error(error.message || 'Error al crear cliente')
     } finally {
       setGuardando(false)
     }
@@ -197,16 +201,16 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
                   <Label className="text-xs font-semibold">Primer Apellido</Label>
                   <Input
                     placeholder="Primer apellido"
-                    value={formData.primer_apellido || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, primer_apellido: e.target.value }))}
+                    value={formData.primerApellido || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, primerApellido: e.target.value }))}
                   />
                 </div>
                 <div>
                   <Label className="text-xs font-semibold">Segundo Apellido</Label>
                   <Input
                     placeholder="Segundo apellido"
-                    value={formData.segundo_apellido || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, segundo_apellido: e.target.value }))}
+                    value={formData.segundoApellido || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, segundoApellido: e.target.value }))}
                   />
                 </div>
               </div>
@@ -240,8 +244,8 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
               <div>
                 <Label className="text-xs font-semibold">Tipo de cliente</Label>
                 <select
-                  value={formData.tipo_cliente}
-                  onChange={(e) => setFormData(prev => ({ ...prev, tipo_cliente: e.target.value as any }))}
+                  value={formData.tipoCliente}
+                  onChange={(e) => setFormData(prev => ({ ...prev, tipoCliente: e.target.value as any }))}
                   className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="personal">Particular</option>
@@ -265,17 +269,27 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
               </div>
               <div>
                 <Label className="text-xs font-semibold">Email</Label>
-                <Input
-                  type="email"
-                  placeholder="email@example.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                />
+                <div className="relative">
+                  <Input
+                    type="email"
+                    placeholder="email@example.com"
+                    value={formData.email}
+                    onChange={(e) => {
+                      const valor = e.target.value
+                      setFormData(prev => ({ ...prev, email: valor }))
+                      validarCampoEmail(valor)
+                    }}
+                    className={errores.email ? 'border-red-500' : ''}
+                  />
+                </div>
+                {errores.email && (
+                  <p className="text-xs text-red-500 mt-1">{errores.email}</p>
+                )}
               </div>
             </div>
           </Card>
 
-          {/* DIRECCIÓN - VERIFACTU */}
+          {/* DIRECCIÓN */}
           <Card className="p-4 border-l-4 border-l-orange-600">
             <h3 className="font-bold mb-3">📍 Dirección Fiscal</h3>
             <div className="space-y-3">
@@ -292,8 +306,8 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
                   <Label className="text-xs font-semibold">Código Postal</Label>
                   <Input
                     placeholder="28001"
-                    value={formData.codigo_postal}
-                    onChange={(e) => setFormData(prev => ({ ...prev, codigo_postal: e.target.value }))}
+                    value={formData.codigoPostal}
+                    onChange={(e) => setFormData(prev => ({ ...prev, codigoPostal: e.target.value }))}
                   />
                 </div>
                 <div>
@@ -328,8 +342,8 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
               <div>
                 <Label className="text-xs font-semibold">Forma de pago</Label>
                 <select
-                  value={formData.forma_pago || 'transferencia'}
-                  onChange={(e) => setFormData(prev => ({ ...prev, forma_pago: e.target.value as any }))}
+                  value={formData.formaPago || 'transferencia'}
+                  onChange={(e) => setFormData(prev => ({ ...prev, formaPago: e.target.value as any }))}
                   className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
                   {FORMAS_PAGO.map(f => (
@@ -362,7 +376,7 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
           {/* BOTÓN GUARDAR */}
           <Button
             onClick={handleGuardar}
-            disabled={guardando || !tallerId}
+            disabled={guardando}
             className="w-full py-6 text-lg font-bold gap-2 bg-blue-600 hover:bg-blue-700"
           >
             {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
