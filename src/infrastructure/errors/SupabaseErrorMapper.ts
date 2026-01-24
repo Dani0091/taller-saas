@@ -102,12 +102,48 @@ export class SupabaseErrorMapper {
    * Intenta extraer el nombre del campo del mensaje
    */
   private static handleUniqueViolation(message: string): ConflictError {
-    // Intentar extraer el campo del mensaje
-    // Ejemplo: "duplicate key value violates unique constraint "clientes_email_key""
-    const fieldMatch = message.match(/clientes_(\w+)_key/)
-    const field = fieldMatch ? fieldMatch[1] : 'campo único'
+    // Extraer tabla y campo del constraint
+    // Ejemplo: "duplicate key value violates unique constraint "clientes_nif_taller_id_key""
+    const lowerMessage = message.toLowerCase()
 
-    return new ConflictError('registro', field, 'valor duplicado')
+    // Casos específicos del taller
+    if (lowerMessage.includes('clientes_nif') || (lowerMessage.includes('clientes') && lowerMessage.includes('nif'))) {
+      return new ConflictError('un cliente', 'NIF', 'este NIF')
+    }
+
+    if (lowerMessage.includes('vehiculos_matricula') || (lowerMessage.includes('vehiculos') && lowerMessage.includes('matricula'))) {
+      return new ConflictError('un vehículo', 'matrícula', 'esta matrícula')
+    }
+
+    if (lowerMessage.includes('ordenes') && lowerMessage.includes('numero')) {
+      return new ConflictError('una orden', 'número de orden', 'este número')
+    }
+
+    if (lowerMessage.includes('facturas') && lowerMessage.includes('numero')) {
+      return new ConflictError('una factura', 'número de factura', 'este número')
+    }
+
+    if (lowerMessage.includes('email')) {
+      return new ConflictError('un registro', 'email', 'este email')
+    }
+
+    if (lowerMessage.includes('iban')) {
+      return new ConflictError('un cliente', 'IBAN', 'este IBAN')
+    }
+
+    if (lowerMessage.includes('vin')) {
+      return new ConflictError('un vehículo', 'VIN', 'este VIN')
+    }
+
+    // Extracción genérica
+    const fieldMatch = message.match(/(\w+)_(\w+)_key/)
+    if (fieldMatch) {
+      const table = fieldMatch[1]
+      const field = fieldMatch[2]
+      return new ConflictError(`un ${table}`, field, 'valor duplicado')
+    }
+
+    return new ConflictError('registro', 'campo único', 'valor duplicado')
   }
 
   /**
@@ -115,10 +151,34 @@ export class SupabaseErrorMapper {
    */
   private static handleForeignKeyViolation(message: string): DependencyError {
     // Intentar identificar la tabla dependiente
+    const lowerMessage = message.toLowerCase()
+
+    // Casos específicos del taller
+    if (lowerMessage.includes('ordenes') || lowerMessage.includes('orders')) {
+      return new DependencyError('el registro', 'órdenes de reparación')
+    }
+
+    if (lowerMessage.includes('facturas') || lowerMessage.includes('invoices')) {
+      return new DependencyError('el registro', 'facturas')
+    }
+
+    if (lowerMessage.includes('vehiculos') || lowerMessage.includes('vehicles')) {
+      return new DependencyError('el registro', 'vehículos')
+    }
+
+    if (lowerMessage.includes('clientes') || lowerMessage.includes('customers')) {
+      return new DependencyError('el registro', 'clientes')
+    }
+
+    if (lowerMessage.includes('lineas')) {
+      return new DependencyError('el registro', 'líneas asociadas')
+    }
+
+    // Extracción genérica
     const tableMatch = message.match(/on table "(\w+)"/)
     const table = tableMatch ? tableMatch[1] : 'recursos'
 
-    return new DependencyError('registro', table)
+    return new DependencyError('el registro', table)
   }
 
   /**

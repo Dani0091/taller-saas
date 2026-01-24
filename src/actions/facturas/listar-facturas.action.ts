@@ -1,35 +1,30 @@
-/**
- * @fileoverview Server Action: Listar Facturas
- * @description Server Action para listar facturas con filtros
- */
-
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
 import { ListarFacturasUseCase } from '@/application/use-cases'
 import { SupabaseFacturaRepository } from '@/infrastructure/repositories/supabase/factura.repository'
+import { FiltrosFacturaSchema } from '@/application/dtos/factura.dto'
+import { SupabaseErrorMapper } from '@/infrastructure/errors/SupabaseErrorMapper'
+import { AppError } from '@/domain/errors/AppError'
 import type { FiltrosFacturaDTO, FacturasPaginadasDTO } from '@/application/dtos'
 
-type ActionResult<T> =
-  | { success: true; data: T }
-  | { success: false; error: string }
+type ActionResult<T> = { success: true; data: T } | { success: false; error: string }
 
 /**
- * Server Action: Lista facturas con filtros y paginación
+ * Server Action: Listar Facturas
+ * Patrón blindado: Auth → Validación → Use Case → Error Mapping
  */
 export async function listarFacturasAction(
-  filtros: FiltrosFacturaDTO
+  filtros?: FiltrosFacturaDTO
 ): Promise<ActionResult<FacturasPaginadasDTO>> {
   try {
-    // 1. Obtener cliente de Supabase
+    // 1. AUTENTICACIÓN
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
-
     if (authError || !user) {
       return { success: false, error: 'No autenticado' }
     }
 
-    // 2. Obtener datos del usuario
     const { data: usuario, error: usuarioError } = await supabase
       .from('usuarios')
       .select('id, taller_id')
@@ -40,21 +35,28 @@ export async function listarFacturasAction(
       return { success: false, error: 'Usuario no encontrado' }
     }
 
-    // 3. Crear repositorio e instanciar Use Case
+    // 2. VALIDACIÓN DE DTO (primera capa de defensa)
+    const filtrosValidados = filtros || {}
+    const validacion = FiltrosFacturaSchema.safeParse(filtrosValidados)
+    if (!validacion.success) {
+      const errores = validacion.error.errors.map(e => `${e.path.join('.')}: ${e.message}`)
+      return { success: false, error: `Filtros inválidos: ${errores.join(', ')}` }
+    }
+
+    // 3. EJECUTAR USE CASE
     const facturaRepository = new SupabaseFacturaRepository()
     const useCase = new ListarFacturasUseCase(facturaRepository)
+    const resultado = await useCase.execute(validacion.data, usuario.taller_id)
 
-    // 4. Ejecutar Use Case
-    const resultado = await useCase.execute(filtros, usuario.taller_id)
-
-    // 5. Retornar resultado
     return { success: true, data: resultado }
 
   } catch (error: any) {
-    console.error('Error en listarFacturasAction:', error)
-    return {
-      success: false,
-      error: error.message || 'Error al listar facturas'
+    // 4. ERROR MAPPING (traducir errores técnicos a mensajes de usuario)
+    if (error instanceof AppError) {
+      return { success: false, error: error.message }
     }
+
+    const domainError = SupabaseErrorMapper.toDomainError(error)
+    return { success: false, error: domainError.message }
   }
 }

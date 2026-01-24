@@ -2,22 +2,23 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { EmitirFacturaUseCase } from '@/application/use-cases'
-import { SupabaseFacturaRepository } from '@/infrastructure/repositories/supabase/factura.repository'
-import { EmitirFacturaSchema } from '@/application/dtos/factura.dto'
+import { CambiarEstadoOrdenUseCase } from '@/application/use-cases/ordenes'
+import { SupabaseOrdenRepository } from '@/infrastructure/repositories/supabase/orden.repository'
+import { CambiarEstadoOrdenSchema } from '@/application/dtos/orden.dto'
 import { SupabaseErrorMapper } from '@/infrastructure/errors/SupabaseErrorMapper'
 import { AppError } from '@/domain/errors/AppError'
-import type { EmitirFacturaDTO, FacturaResponseDTO } from '@/application/dtos'
+import type { CambiarEstadoOrdenDTO, OrdenResponseDTO } from '@/application/dtos/orden.dto'
 
 type ActionResult<T> = { success: true; data: T } | { success: false; error: string }
 
 /**
- * Server Action: Emitir Factura
+ * Server Action: Cambiar Estado de Orden
  * Patrón blindado: Auth → Validación → Use Case → Error Mapping
  */
-export async function emitirFacturaAction(
-  dto: EmitirFacturaDTO
-): Promise<ActionResult<FacturaResponseDTO>> {
+export async function cambiarEstadoOrdenAction(
+  id: string,
+  dto: CambiarEstadoOrdenDTO
+): Promise<ActionResult<OrdenResponseDTO>> {
   try {
     // 1. AUTENTICACIÓN
     const supabase = await createClient()
@@ -37,23 +38,28 @@ export async function emitirFacturaAction(
     }
 
     // 2. VALIDACIÓN DE DTO (primera capa de defensa)
-    const validacion = EmitirFacturaSchema.safeParse(dto)
+    const validacion = CambiarEstadoOrdenSchema.safeParse(dto)
     if (!validacion.success) {
       const errores = validacion.error.errors.map(e => `${e.path.join('.')}: ${e.message}`)
       return { success: false, error: `Datos inválidos: ${errores.join(', ')}` }
     }
 
     // 3. EJECUTAR USE CASE
-    const facturaRepository = new SupabaseFacturaRepository()
-    const useCase = new EmitirFacturaUseCase(facturaRepository)
-    const factura = await useCase.execute(validacion.data, usuario.taller_id, usuario.id)
+    const ordenRepository = new SupabaseOrdenRepository()
+    const useCase = new CambiarEstadoOrdenUseCase(ordenRepository)
+    const ordenActualizada = await useCase.execute(
+      id,
+      validacion.data,
+      usuario.taller_id,
+      usuario.id
+    )
 
     // 4. REVALIDAR CACHE
-    revalidatePath('/facturas')
-    revalidatePath(`/facturas/${factura.id}`)
+    revalidatePath('/ordenes')
+    revalidatePath(`/ordenes/${id}`)
     revalidatePath('/dashboard')
 
-    return { success: true, data: factura }
+    return { success: true, data: ordenActualizada }
 
   } catch (error: any) {
     // 5. ERROR MAPPING (traducir errores técnicos a mensajes de usuario)

@@ -1,19 +1,18 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
-import { ObtenerVehiculoUseCase } from '@/application/use-cases/vehiculos'
-import { SupabaseVehiculoRepository } from '@/infrastructure/repositories/supabase/vehiculo.repository'
+import { ObtenerOrdenUseCase } from '@/application/use-cases/ordenes'
+import { SupabaseOrdenRepository } from '@/infrastructure/repositories/supabase/orden.repository'
 import { SupabaseErrorMapper } from '@/infrastructure/errors/SupabaseErrorMapper'
 import { AppError } from '@/domain/errors/AppError'
-import type { VehiculoResponseDTO } from '@/application/dtos/vehiculo.dto'
+import type { OrdenResponseDTO } from '@/application/dtos/orden.dto'
 
 type ActionResult<T> = { success: true; data: T } | { success: false; error: string }
 
 /**
- * Server Action: Obtener Vehículo
- * Patrón blindado: Auth → Validación → Use Case → Error Mapping
+ * Server Action: Obtener Orden
  */
-export async function obtenerVehiculoAction(id: string): Promise<ActionResult<VehiculoResponseDTO>> {
+export async function obtenerOrdenAction(id: string): Promise<ActionResult<OrdenResponseDTO>> {
   try {
     // 1. AUTENTICACIÓN
     const supabase = await createClient()
@@ -33,14 +32,14 @@ export async function obtenerVehiculoAction(id: string): Promise<ActionResult<Ve
     }
 
     // 2. EJECUTAR USE CASE
-    const vehiculoRepository = new SupabaseVehiculoRepository()
-    const useCase = new ObtenerVehiculoUseCase(vehiculoRepository)
-    const vehiculo = await useCase.execute(id, usuario.taller_id)
+    const ordenRepository = new SupabaseOrdenRepository()
+    const useCase = new ObtenerOrdenUseCase(ordenRepository)
+    const orden = await useCase.execute(id, usuario.taller_id)
 
-    return { success: true, data: vehiculo }
+    return { success: true, data: orden }
 
   } catch (error: any) {
-    // 3. ERROR MAPPING (traducir errores técnicos a mensajes de usuario)
+    // 3. ERROR MAPPING
     if (error instanceof AppError) {
       return { success: false, error: error.message }
     }

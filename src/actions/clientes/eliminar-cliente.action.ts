@@ -4,24 +4,57 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { EliminarClienteUseCase } from '@/application/use-cases'
 import { SupabaseClienteRepository } from '@/infrastructure/repositories/supabase/cliente.repository'
+import { SupabaseErrorMapper } from '@/infrastructure/errors/SupabaseErrorMapper'
+import { AppError } from '@/domain/errors/AppError'
 
 type ActionResult<void> = { success: true } | { success: false; error: string }
 
+/**
+ * Server Action: Eliminar Cliente
+ * Patrón blindado: Auth → Validación → Use Case → Error Mapping
+ */
 export async function eliminarClienteAction(id: string): Promise<ActionResult<void>> {
   try {
+    // 1. AUTENTICACIÓN
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { success: false, error: 'No autenticado' }
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      return { success: false, error: 'No autenticado' }
+    }
 
-    const { data: usuario } = await supabase.from('usuarios').select('id, taller_id').eq('auth_id', user.id).single()
-    if (!usuario) return { success: false, error: 'Usuario no encontrado' }
+    const { data: usuario, error: usuarioError } = await supabase
+      .from('usuarios')
+      .select('id, taller_id')
+      .eq('auth_id', user.id)
+      .single()
 
-    const useCase = new EliminarClienteUseCase(new SupabaseClienteRepository())
+    if (usuarioError || !usuario) {
+      return { success: false, error: 'Usuario no encontrado' }
+    }
+
+    // 2. VALIDACIÓN BÁSICA DE ID
+    if (!id || id.trim().length === 0) {
+      return { success: false, error: 'El ID del cliente es obligatorio' }
+    }
+
+    // 3. EJECUTAR USE CASE
+    const clienteRepository = new SupabaseClienteRepository()
+    const useCase = new EliminarClienteUseCase(clienteRepository)
     await useCase.execute(id, usuario.taller_id, usuario.id)
 
+    // 4. REVALIDAR CACHE
     revalidatePath('/clientes')
+    revalidatePath('/dashboard')
+
     return { success: true }
+
   } catch (error: any) {
-    return { success: false, error: error.message || 'Error al eliminar el cliente' }
+    // 5. ERROR MAPPING (traducir errores técnicos a mensajes de usuario)
+    if (error instanceof AppError) {
+      return { success: false, error: error.message }
+    }
+
+    const domainError = SupabaseErrorMapper.toDomainError(error)
+    return { success: false, error: domainError.message }
   }
 }
