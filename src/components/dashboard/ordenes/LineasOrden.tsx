@@ -1,6 +1,10 @@
 /**
- * @fileoverview Component "Dumb" - Líneas de Orden
+ * @fileoverview Component "Dumb" - Líneas de Orden - SANEADO
  * @description Maneja la visualización y edición de líneas de manera independiente
+ *
+ * ✅ SANEADO: Sin cálculos de totales
+ * ❌ ELIMINADO: Cálculo de (cantidad * precio_unitario)
+ * ✅ Solo muestra inputs, NO calcula
  */
 
 'use client'
@@ -40,7 +44,7 @@ export function LineasOrden({ lineas, puedeEditar, onAgregar, onEliminar, onActu
   ]
 
   const handleAgregarLinea = async () => {
-    if (!nuevaLinea.descripcion || !nuevaLinea.cantidad || !nuevaLinea.precio_unitario) {
+    if (!nuevaLinea.descripcion || !nuevaLinea.cantidad || nuevaLinea.precio_unitario === undefined) {
       return
     }
 
@@ -88,7 +92,7 @@ export function LineasOrden({ lineas, puedeEditar, onAgregar, onEliminar, onActu
   return (
     <Card className="p-4">
       <h3 className="text-sm font-semibold mb-4">Elementos de Facturación</h3>
-      
+
       {/* Líneas existentes */}
       <div className="space-y-2 mb-4">
         {lineas.map((linea) => (
@@ -96,7 +100,7 @@ export function LineasOrden({ lineas, puedeEditar, onAgregar, onEliminar, onActu
             <span className="text-sm font-medium">
               {getTipoIcon(linea.tipo)} {getTipoLabel(linea.tipo)}
             </span>
-            
+
             <Input
               value={linea.descripcion}
               onChange={(e) => handleActualizarLinea(linea.id!, 'descripcion', e.target.value)}
@@ -104,7 +108,7 @@ export function LineasOrden({ lineas, puedeEditar, onAgregar, onEliminar, onActu
               className="flex-1 text-sm"
               disabled={!puedeEditar}
             />
-            
+
             <NumberInput
               value={linea.cantidad}
               onChange={(value) => handleActualizarLinea(linea.id!, 'cantidad', value ?? 1)}
@@ -114,7 +118,7 @@ export function LineasOrden({ lineas, puedeEditar, onAgregar, onEliminar, onActu
               step={linea.tipo === 'mano_obra' ? 0.25 : 1}
               disabled={!puedeEditar}
             />
-            
+
             <NumberInput
               value={linea.precio_unitario}
               onChange={(value) => handleActualizarLinea(linea.id!, 'precio_unitario', value ?? 0)}
@@ -124,11 +128,10 @@ export function LineasOrden({ lineas, puedeEditar, onAgregar, onEliminar, onActu
               step={0.01}
               disabled={!puedeEditar}
             />
-            
-            <span className="text-sm font-medium text-gray-600 min-w-[60px] text-right">
-              €{((linea.cantidad || 0) * (linea.precio_unitario || 0)).toFixed(2)}
-            </span>
-            
+
+            {/* ✅ ELIMINADO: Cálculo de total (cantidad * precio_unitario)
+                Los totales deben venir de OrdenEntity.toDTO() */}
+
             {puedeEditar && (
               <Button
                 size="sm"
@@ -158,14 +161,14 @@ export function LineasOrden({ lineas, puedeEditar, onAgregar, onEliminar, onActu
                 </option>
               ))}
             </select>
-            
+
             <Input
               value={nuevaLinea.descripcion || ''}
               onChange={(e) => setNuevaLinea(prev => ({ ...prev, descripcion: e.target.value }))}
               placeholder="Descripción"
               className="flex-1 text-sm"
             />
-            
+
             <NumberInput
               value={nuevaLinea.cantidad}
               onChange={(value) => setNuevaLinea(prev => ({ ...prev, cantidad: value ?? 1 }))}
@@ -174,7 +177,7 @@ export function LineasOrden({ lineas, puedeEditar, onAgregar, onEliminar, onActu
               min={0.01}
               step={nuevaLinea.tipo === 'mano_obra' ? 0.25 : 1}
             />
-            
+
             <NumberInput
               value={nuevaLinea.precio_unitario}
               onChange={(value) => setNuevaLinea(prev => ({ ...prev, precio_unitario: value ?? 0 }))}
@@ -183,7 +186,7 @@ export function LineasOrden({ lineas, puedeEditar, onAgregar, onEliminar, onActu
               min={0}
               step={0.01}
             />
-            
+
             <Button
               size="sm"
               onClick={handleAgregarLinea}

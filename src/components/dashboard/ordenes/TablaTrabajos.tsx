@@ -1,18 +1,21 @@
 /**
- * @fileoverview Componente TablaTrabajos - Preparación para MAÑANA
- * @description Tabla optimizada para líneas de factura y mano de obra
+ * @fileoverview Componente TablaTrabajos - SANEADO
+ * @description Tabla para entrada de líneas de orden (solo INPUT, sin cálculos)
+ *
+ * ✅ SANEADO: Sin cálculos matemáticos, sin hooks de cálculo
+ * ❌ ELIMINADO: useOrderCalculations, cálculos de IVA, totales
+ * ✅ Solo muestra precios unitarios, NO calcula totales
  */
 
 'use client'
 
 import { useState } from 'react'
-import { Plus, Trash2, Edit2, Copy, Clock, Wrench, Package, Zap, DollarSign } from 'lucide-react'
+import { Plus, Trash2, Edit2, Copy, Wrench, Package, Zap, DollarSign, Clock } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { NumberInput } from '@/components/ui/number-input'
 import { Badge } from '@/components/ui/badge'
-import { useOrderCalculations, useLineManagement } from '@/hooks/useOrderCalculations'
 import type { LineaOrden, TipoLinea } from '@/types/workshop'
 
 interface TablaTrabajosProps {
@@ -24,6 +27,10 @@ interface TablaTrabajosProps {
   compact?: boolean
 }
 
+/**
+ * Tabla para gestionar líneas de orden
+ * IMPORTANTE: Este componente NO calcula totales. Solo permite entrada de datos.
+ */
 export function TablaTrabajos({
   lineas,
   onAgregarLinea,
@@ -42,8 +49,6 @@ export function TablaTrabajos({
     estado: 'presupuestado'
   })
 
-  const calculos = useOrderCalculations(lineas)
-
   const tiposLinea: { value: TipoLinea; label: string; icon: React.ReactNode }[] = [
     { value: 'mano_obra', label: 'Mano de Obra', icon: <Wrench className="h-3 w-3" /> },
     { value: 'pieza', label: 'Pieza', icon: <Package className="h-3 w-3" /> },
@@ -57,7 +62,7 @@ export function TablaTrabajos({
   }
 
   const handleAgregarLinea = () => {
-    if (!nuevaLinea.descripcion || !nuevaLinea.cantidad || !nuevaLinea.precio_unitario) {
+    if (!nuevaLinea.descripcion || !nuevaLinea.cantidad || nuevaLinea.precio_unitario === undefined) {
       return
     }
 
@@ -78,7 +83,7 @@ export function TablaTrabajos({
         <h3 className={`font-semibold ${compact ? 'text-sm' : ''}`}>
           Trabajos y Conceptos
         </h3>
-        
+
         <div className="flex items-center gap-4">
           {!readonly && (
             <Button
@@ -89,7 +94,7 @@ export function TablaTrabajos({
               Agregar
             </Button>
           )}
-          
+
           <div className="text-sm text-gray-600">
             <span className="font-medium">{lineas.length}</span> líneas
           </div>
@@ -104,15 +109,15 @@ export function TablaTrabajos({
               <label className="block text-sm font-medium mb-1">Tipo</label>
               <select
                 value={nuevaLinea.tipo}
-                onChange={(e) => setNuevaLinea(prev => ({ 
-                  ...prev, 
-                  tipo: e.target.value as TipoLinea 
+                onChange={(e) => setNuevaLinea(prev => ({
+                  ...prev,
+                  tipo: e.target.value as TipoLinea
                 }))}
                 className="w-full px-3 py-2 border rounded"
               >
                 {tiposLinea.map(tipo => (
                   <option key={tipo.value} value={tipo.value}>
-                    {tipo.icon} {tipo.label}
+                    {tipo.label}
                   </option>
                 ))}
               </select>
@@ -122,9 +127,9 @@ export function TablaTrabajos({
               <label className="block text-sm font-medium mb-1">Descripción</label>
               <Input
                 value={nuevaLinea.descripcion || ''}
-                onChange={(e) => setNuevaLinea(prev => ({ 
-                  ...prev, 
-                  descripcion: e.target.value 
+                onChange={(e) => setNuevaLinea(prev => ({
+                  ...prev,
+                  descripcion: e.target.value
                 }))}
                 placeholder="Descripción del trabajo/pieza"
               />
@@ -134,9 +139,9 @@ export function TablaTrabajos({
               <label className="block text-sm font-medium mb-1">Cantidad</label>
               <NumberInput
                 value={nuevaLinea.cantidad || 1}
-                onChange={(value) => setNuevaLinea(prev => ({ 
-                  ...prev, 
-                  cantidad: value ?? 1 
+                onChange={(value) => setNuevaLinea(prev => ({
+                  ...prev,
+                  cantidad: value ?? 1
                 }))}
                 min={0.01}
                 step={nuevaLinea.tipo === 'mano_obra' ? 0.25 : 1}
@@ -147,9 +152,9 @@ export function TablaTrabajos({
               <label className="block text-sm font-medium mb-1">Precio/Unidad</label>
               <NumberInput
                 value={nuevaLinea.precio_unitario || 0}
-                onChange={(value) => setNuevaLinea(prev => ({ 
-                  ...prev, 
-                  precio_unitario: value ?? 0 
+                onChange={(value) => setNuevaLinea(prev => ({
+                  ...prev,
+                  precio_unitario: value ?? 0
                 }))}
                 min={0}
                 step={0.01}
@@ -186,15 +191,13 @@ export function TablaTrabajos({
                 <th className="text-left py-2">Descripción</th>
                 <th className="text-right py-2">Cantidad</th>
                 <th className="text-right py-2">Precio/U</th>
-                <th className="text-right py-2">Total</th>
                 {!readonly && <th className="text-center py-2">Acciones</th>}
               </tr>
             </thead>
             <tbody>
               {lineas.map((linea) => {
                 const tipoInfo = getTipoInfo(linea.tipo)
-                const total = (linea.cantidad || 0) * (linea.precio_unitario || 0)
-                
+
                 return (
                   <tr key={linea.id} className="border-b hover:bg-gray-50">
                     <td className="py-3">
@@ -202,7 +205,7 @@ export function TablaTrabajos({
                         {tipoInfo.icon} {tipoInfo.label}
                       </Badge>
                     </td>
-                    
+
                     <td className="py-3">
                       {editandoId === linea.id ? (
                         <Input
@@ -217,7 +220,7 @@ export function TablaTrabajos({
                         <span>{linea.descripcion}</span>
                       )}
                     </td>
-                    
+
                     <td className="text-right py-3">
                       {editandoId === linea.id ? (
                         <NumberInput
@@ -233,7 +236,7 @@ export function TablaTrabajos({
                         <span>{linea.cantidad}</span>
                       )}
                     </td>
-                    
+
                     <td className="text-right py-3">
                       {editandoId === linea.id ? (
                         <NumberInput
@@ -249,11 +252,7 @@ export function TablaTrabajos({
                         <span>€{(linea.precio_unitario || 0).toFixed(2)}</span>
                       )}
                     </td>
-                    
-                    <td className="text-right py-3 font-medium">
-                      €{total.toFixed(2)}
-                    </td>
-                    
+
                     {!readonly && (
                       <td className="text-center py-3">
                         <div className="flex items-center justify-center gap-1">
@@ -315,29 +314,8 @@ export function TablaTrabajos({
         </div>
       )}
 
-      {/* Resumen de cálculos */}
-      {!compact && (
-        <div className="mt-6 pt-6 border-t">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-            <div>
-              <span className="text-gray-500">Mano de Obra:</span>
-              <div className="font-medium">€{calculos.subtotales.mano_obra.toFixed(2)}</div>
-            </div>
-            <div>
-              <span className="text-gray-500">Piezas:</span>
-              <div className="font-medium">€{calculos.subtotales.piezas.toFixed(2)}</div>
-            </div>
-            <div>
-              <span className="text-gray-500">IVA (21%):</span>
-              <div className="font-medium">€{calculos.iva.cantidad.toFixed(2)}</div>
-            </div>
-            <div>
-              <span className="text-gray-500">Total:</span>
-              <div className="font-bold text-lg">€{calculos.total.con_iva.toFixed(2)}</div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ✅ ELIMINADA: Sección de resumen con cálculos de IVA, subtotales, etc.
+          Los totales deben venir de OrdenEntity.toDTO() */}
     </Card>
   )
 }
