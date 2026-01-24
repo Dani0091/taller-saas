@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { Plus, Search, Filter, Menu, Loader2, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -10,26 +9,8 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { DetalleOrdenSheet } from '@/components/dashboard/ordenes/detalle-orden-sheet'
 import { toast } from 'sonner'
-
-interface Orden {
-  id: string
-  numero_orden: string
-  estado: string
-  cliente_id: string
-  clientes?: { nombre: string }
-  vehiculo_id: string
-  vehiculos?: { marca: string; modelo: string; matricula: string }
-  descripcion_problema: string
-  diagnostico?: string
-  tiempo_estimado_horas?: number
-  tiempo_real_horas?: number
-  subtotal_mano_obra?: number
-  subtotal_piezas?: number
-  total_con_iva?: number
-  iva_amount?: number
-  fecha_entrada: string
-  presupuesto_aprobado_por_cliente: boolean
-}
+import { listarOrdenesAction } from '@/actions/ordenes'
+import type { OrdenListItemDTO } from '@/application/dtos/orden.dto'
 
 const ESTADO_CONFIG = {
   recibido: { label: 'Recibido', color: 'bg-blue-100 text-blue-800', icon: '📋', badge: 'bg-blue-500' },
@@ -45,9 +26,9 @@ const ESTADO_CONFIG = {
 const FILTROS = ['todos', 'recibido', 'diagnostico', 'presupuestado', 'aprobado', 'en_reparacion', 'completado', 'entregado', 'cancelado']
 
 export default function OrdenesPage() {
-  const supabase = createClient()
-  const [ordenes, setOrdenes] = useState<Orden[]>([])
+  const [ordenes, setOrdenes] = useState<OrdenListItemDTO[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [filtroActivo, setFiltroActivo] = useState('todos')
   const [busqueda, setBusqueda] = useState('')
   const [mostrarMenu, setMostrarMenu] = useState(false)
@@ -61,56 +42,23 @@ export default function OrdenesPage() {
   const cargarOrdenes = async () => {
     try {
       setLoading(true)
-      
-      // 1. Obtener sesión y taller_id
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.user) {
-        toast.error('No autenticado')
-        return
+      setError(null)
+
+      // Usar Server Action blindada en lugar de Supabase directo
+      const resultado = await listarOrdenesAction({
+        page: 1,
+        pageSize: 100
+      })
+
+      if (!resultado.success) {
+        throw new Error(resultado.error)
       }
 
-      const { data: usuario, error: usuarioError } = await supabase
-        .from('usuarios')
-        .select('taller_id')
-        .eq('email', session.user.email)
-        .single()
-
-      if (usuarioError || !usuario) {
-        toast.error('Usuario no encontrado')
-        return
-      }
-
-      // 2. Obtener órdenes del taller
-      const { data, error } = await supabase
-        .from('ordenes_reparacion')
-        .select(`
-          id,
-          numero_orden,
-          estado,
-          cliente_id,
-          clientes(nombre),
-          vehiculo_id,
-          vehiculos(marca, modelo, matricula),
-          descripcion_problema,
-          diagnostico,
-          tiempo_estimado_horas,
-          tiempo_real_horas,
-          subtotal_mano_obra,
-          subtotal_piezas,
-          total_con_iva,
-          iva_amount,
-          fecha_entrada,
-          presupuesto_aprobado_por_cliente
-        `)
-        .eq('taller_id', usuario.taller_id)
-        .order('fecha_entrada', { ascending: false })
-
-      if (error) throw error
-      // Cast necesario porque Supabase infiere tipos de relaciones como arrays
-      setOrdenes((data as unknown as Orden[]) || [])
-      console.log('✅ Órdenes cargadas:', data?.length)
-    } catch (error: any) {
-      toast.error(error.message)
+      setOrdenes(resultado.data.data)
+    } catch (err: any) {
+      console.error('Error cargando órdenes:', err)
+      setError(err.message || 'Error al cargar órdenes')
+      toast.error('Error al cargar órdenes')
     } finally {
       setLoading(false)
     }
@@ -118,16 +66,12 @@ export default function OrdenesPage() {
 
   const ordenesFiltradas = ordenes.filter(orden => {
     const pasaFiltro = filtroActivo === 'todos' || orden.estado === filtroActivo
-    const clienteNombre = orden.clientes?.nombre || ''
-    const vehiculoInfo = `${orden.vehiculos?.marca || ''} ${orden.vehiculos?.modelo || ''}`
-    const matricula = orden.vehiculos?.matricula || ''
-    
-    const pasaBusqueda = 
-      orden.numero_orden.toLowerCase().includes(busqueda.toLowerCase()) ||
-      clienteNombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-      vehiculoInfo.toLowerCase().includes(busqueda.toLowerCase()) ||
-      matricula.toLowerCase().includes(busqueda.toLowerCase())
-    
+    const searchLower = busqueda.toLowerCase()
+
+    const pasaBusqueda =
+      (orden.numeroOrden || '').toLowerCase().includes(searchLower) ||
+      searchLower === ''
+
     return pasaFiltro && pasaBusqueda
   })
 
@@ -146,7 +90,7 @@ export default function OrdenesPage() {
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Nueva</span>
             </Button>
-            <Button 
+            <Button
               size="sm"
               variant="ghost"
               onClick={() => setMostrarMenu(!mostrarMenu)}
@@ -195,7 +139,16 @@ export default function OrdenesPage() {
 
       {/* CONTENIDO */}
       <div className="px-4 py-4 space-y-3">
-        {loading ? (
+        {error ? (
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
+            <p className="text-red-600 font-medium mb-2">Error al cargar datos</p>
+            <p className="text-gray-500 text-sm mb-4">{error}</p>
+            <Button onClick={() => { setError(null); cargarOrdenes(); }}>
+              Reintentar
+            </Button>
+          </div>
+        ) : loading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-sky-600" />
           </div>
@@ -203,7 +156,7 @@ export default function OrdenesPage() {
           <div className="flex flex-col items-center justify-center py-12">
             <AlertCircle className="w-12 h-12 text-gray-400 mb-3" />
             <p className="text-gray-600 font-medium">Sin órdenes</p>
-            <Button 
+            <Button
               className="mt-4 gap-2"
               onClick={() => setModoCrear(true)}
             >
@@ -216,7 +169,7 @@ export default function OrdenesPage() {
             {ordenesFiltradas.map(orden => {
               const config = ESTADO_CONFIG[orden.estado] || ESTADO_CONFIG.recibido
               return (
-                <Card 
+                <Card
                   key={orden.id}
                   onClick={() => setOrdenSeleccionada(orden.id)}
                   className="p-4 hover:shadow-md transition-shadow cursor-pointer border-l-4 active:bg-gray-100"
@@ -224,26 +177,24 @@ export default function OrdenesPage() {
                 >
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="flex-1 min-w-0">
-                      <div className="font-bold text-gray-900">{orden.numero_orden}</div>
-                      <div className="text-sm text-gray-600 truncate">{orden.clientes?.nombre || '—'}</div>
+                      <div className="font-bold text-gray-900">{orden.numeroOrden || '—'}</div>
+                      <div className="text-sm text-gray-600">Cliente: {orden.clienteId}</div>
                     </div>
                     <Badge className={config.color}>{config.icon}</Badge>
                   </div>
 
-                  <div className="text-sm text-gray-700 mb-3 truncate">
-                    🚗 {orden.vehiculos?.marca} {orden.vehiculos?.modelo}
+                  <div className="text-sm text-gray-700 mb-3">
+                    Vehículo: {orden.vehiculoId}
                   </div>
 
                   {/* STATS ROW */}
                   <div className="flex flex-wrap gap-4 text-xs text-gray-600">
-                    {orden.tiempo_estimado_horas && (
-                      <div>⏱️ {orden.tiempo_estimado_horas}h est.</div>
+                    {orden.total > 0 && (
+                      <div className="font-semibold text-green-600">{orden.totalFormateado}</div>
                     )}
-                    {orden.total_con_iva && (
-                      <div className="font-semibold text-green-600">€{orden.total_con_iva.toFixed(2)}</div>
-                    )}
-                    {orden.presupuesto_aprobado_por_cliente === false && (
-                      <div className="text-yellow-600">⚠️ Pendiente</div>
+                    <div className="text-gray-500">{orden.cantidadLineas} líneas</div>
+                    {orden.isFacturada && (
+                      <div className="text-blue-600">✓ Facturada</div>
                     )}
                   </div>
                 </Card>
@@ -252,6 +203,16 @@ export default function OrdenesPage() {
           </div>
         )}
       </div>
+
+      {/* Resumen */}
+      {!loading && ordenesFiltradas.length > 0 && (
+        <div className="fixed bottom-20 sm:bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-auto">
+          <div className="bg-white rounded-lg shadow-lg border border-gray-200 px-4 py-2 text-sm text-gray-600">
+            {ordenesFiltradas.length} orden{ordenesFiltradas.length !== 1 ? 'es' : ''}
+            {filtroActivo !== 'todos' && ` (${ESTADO_CONFIG[filtroActivo]?.label || filtroActivo})`}
+          </div>
+        </div>
+      )}
 
       {/* SHEET DE DETALLES O CREAR */}
       {(ordenSeleccionada || modoCrear) && (
