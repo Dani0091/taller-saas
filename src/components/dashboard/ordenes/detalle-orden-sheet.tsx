@@ -30,7 +30,9 @@ import { OrdenTrabajoTab } from './parts/OrdenTrabajoTab'
 import { OrdenItemsTab } from './parts/OrdenItemsTab'
 import { OrdenFotosTab } from './parts/OrdenFotosTab'
 import { OrdenInfoTab } from './parts/OrdenInfoTab'
+import { OrdenFooter } from './parts/OrdenFooter'
 import { FotoUploader } from './foto-uploader'
+import { OrdenPDFViewer } from './orden-pdf-viewer'
 import { calcularTotalesOrdenAction } from '@/actions/ordenes/calcular-totales-orden.action'
 import { TotalesOrdenDTO } from '@/application/dtos/orden.dto'
 
@@ -1269,139 +1271,31 @@ export function DetalleOrdenSheet({
               }}
             />
           )}
-        </div>
-
         {/* Footer */}
-        <div className="bg-white border-t p-4 space-y-2 shrink-0">
-          {/* Compartir presupuesto con cliente */}
-          {!modoCrear && ordenSeleccionada && (
-            <div className="space-y-2">
-              {!enlacePresupuesto ? (
-                <Button
-                  onClick={handleCompartirPresupuesto}
-                  disabled={compartiendo}
-                  variant="outline"
-                  className="w-full gap-2 py-3 border-purple-300 text-purple-700 hover:bg-purple-50"
-                >
-                  {compartiendo ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Share2 className="w-4 h-4" />
-                  )}
-                  {compartiendo ? 'Generando enlace...' : 'Enviar Presupuesto al Cliente'}
-                </Button>
-              ) : (
-                <div className="bg-purple-50 border border-purple-200 rounded-xl p-3 space-y-2">
-                  <p className="text-xs text-purple-700 font-medium">Enlace del presupuesto:</p>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={enlacePresupuesto}
-                      readOnly
-                      className="flex-1 text-xs bg-white border rounded-lg px-2 py-1.5 font-mono truncate"
-                    />
-                    <Button size="sm" variant="outline" onClick={copiarEnlace} className="gap-1">
-                      <Copy className="w-3 h-3" />
-                    </Button>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={enviarWhatsApp}
-                      className="flex-1 gap-1 bg-green-600 hover:bg-green-700"
-                    >
-                      <Share2 className="w-3 h-3" />
-                      WhatsApp
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => window.open(enlacePresupuesto, '_blank')}
-                      className="flex-1 gap-1"
-                    >
-                      <Link className="w-3 h-3" />
-                      Abrir
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+        <OrdenFooter
+          modoCrear={modoCrear}
+          ordenSeleccionada={ordenSeleccionada}
+          guardando={guardando}
+          compartiendo={compartiendo}
+          generandoFactura={generandoFactura}
+          ordenNumero={ordenNumero}
+          enlacePresupuesto={enlacePresupuesto}
+          clienteId={formData.cliente_id}
+          estado={formData.estado}
+          descripcionProblema={formData.descripcion_problema}
+          trabajosRealizados={formData.trabajos_realizados}
+          clientes={clientes}
+          vehiculoSeleccionado={vehiculoSeleccionado}
+          onCompartirPresupuesto={handleCompartirPresupuesto}
+          onCopiarEnlace={copiarEnlace}
+          onEnviarWhatsApp={enviarWhatsApp}
+          onMostrarPDF={() => setMostrarPDF(true)}
+          onCrearBorradorFactura={crearBorradorFactura}
+          onEmitirFacturaDirecta={emitirFacturaDirecta}
+          onGuardar={handleGuardar}
+          onClose={onClose}
+        />
 
-          {/* Botón para imprimir orden completa */}
-          {!modoCrear && ordenSeleccionada && (
-            <Button
-              onClick={() => setMostrarPDF(true)}
-              variant="outline"
-              className="w-full gap-2 py-3"
-            >
-              <Printer className="w-4 h-4" />
-              Ver / Imprimir Orden Completa
-            </Button>
-          )}
-
-          {/* Añadir a Google Calendar */}
-          {!modoCrear && ordenSeleccionada && (
-            <div className="flex justify-center">
-              <GoogleCalendarButton
-                ordenId={ordenSeleccionada}
-                titulo={`Orden ${ordenNumero}`}
-                descripcion={formData.descripcion_problema || formData.trabajos_realizados}
-                clienteNombre={clientes.find(c => c.id === formData.cliente_id)?.nombre}
-                vehiculoInfo={vehiculoSeleccionado ? `${vehiculoSeleccionado.marca} ${vehiculoSeleccionado.modelo} - ${vehiculoSeleccionado.matricula}` : undefined}
-              />
-            </div>
-          )}
-
-          {!modoCrear && ESTADOS_FACTURABLES.includes(formData.estado as any) && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  disabled={generandoFactura || guardando}
-                  className="w-full gap-2 bg-green-600 hover:bg-green-700 py-3"
-                >
-                  {generandoFactura ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <FileText className="w-4 h-4" />
-                  )}
-                  {generandoFactura ? 'Generando...' : 'Generar Factura'}
-                  <ChevronDown className="w-4 h-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-48">
-                <DropdownMenuItem onClick={crearBorradorFactura} className="gap-2">
-                  📝 Crear Borrador Editable
-                  <span className="text-xs text-gray-500 ml-auto">Modificar antes de emitir</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={emitirFacturaDirecta} className="gap-2">
-                  ⚡ Emitir Factura Directa
-                  <span className="text-xs text-gray-500 ml-auto">Sin opción de edición</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="flex-1 py-3"
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleGuardar}
-              disabled={guardando || !formData.cliente_id}
-              className="flex-1 gap-2 py-3 bg-sky-600 hover:bg-sky-700"
-            >
-              {guardando ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4" />
-              )}
-              {guardando ? 'Guardando...' : (modoCrear ? 'Crear Orden' : 'Guardar Cambios')}
-            </Button>
           </div>
         </div>
 
