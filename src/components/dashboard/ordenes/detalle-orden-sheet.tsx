@@ -24,6 +24,9 @@ import { Card } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { fotosToString, getFotoUrl, setFotoUrl, getFotoByKey, setFotoByKey } from '@/lib/utils'
 import { ESTADOS_ORDEN, FRACCIONES_HORA, CANTIDADES, ESTADOS_FACTURABLES, FOTOS_DIAGNOSTICO, FOTO_LABELS, type TipoFoto } from '@/lib/constants'
+import { OrdenHeader } from './parts/OrdenHeader'
+import { OrdenTotalSummary } from './parts/OrdenTotalSummary'
+import { calcularTotalesOrdenAction, type TotalesOrdenDTO } from '@/actions/ordenes/calcular-totales-orden.action'
 
 interface Orden {
   id?: string
@@ -98,6 +101,14 @@ export function DetalleOrdenSheet({
   const [enlacePresupuesto, setEnlacePresupuesto] = useState<string | null>(null)
   const [piezaRapida, setPiezaRapida] = useState({ tipo: 'pieza', descripcion: '', cantidad: 1, precio: 0 })
   const [guardadoAutomatico, setGuardadoAutomatico] = useState(false)
+  const [totales, setTotales] = useState<TotalesOrdenDTO>({
+    manoObra: 0,
+    piezas: 0,
+    servicios: 0,
+    subtotal: 0,
+    iva: 0,
+    total: 0,
+  })
 
   const [formData, setFormData] = useState<Orden>({
     estado: 'recibido',
@@ -587,22 +598,44 @@ export function DetalleOrdenSheet({
     }
   }
 
-  // Calcular totales
-  const totales = lineas.reduce(
-    (acc, linea) => {
-      const subtotal = linea.cantidad * linea.precio_unitario
-      const iva = subtotal * 0.21
-      return {
-        manoObra: linea.tipo === 'mano_obra' ? acc.manoObra + subtotal : acc.manoObra,
-        piezas: linea.tipo === 'pieza' ? acc.piezas + subtotal : acc.piezas,
-        servicios: linea.tipo === 'servicio' ? acc.servicios + subtotal : acc.servicios,
-        subtotal: acc.subtotal + subtotal,
-        iva: acc.iva + iva,
-        total: acc.total + subtotal + iva
+  // Cargar totales calculados en el servidor
+  const cargarTotales = useCallback(async () => {
+    if (!ordenSeleccionada || modoCrear) {
+      // En modo crear, calcular totales localmente temporalmente
+      // hasta que se guarde la orden y tengamos un ID
+      const totalesTemp = lineas.reduce(
+        (acc, linea) => {
+          const subtotal = linea.cantidad * linea.precio_unitario
+          const iva = subtotal * 0.21 // Temporal, se recalculará en servidor
+          return {
+            manoObra: linea.tipo === 'mano_obra' ? acc.manoObra + subtotal : acc.manoObra,
+            piezas: linea.tipo === 'pieza' ? acc.piezas + subtotal : acc.piezas,
+            servicios: linea.tipo === 'servicio' ? acc.servicios + subtotal : acc.servicios,
+            subtotal: acc.subtotal + subtotal,
+            iva: acc.iva + iva,
+            total: acc.total + subtotal + iva
+          }
+        },
+        { manoObra: 0, piezas: 0, servicios: 0, subtotal: 0, iva: 0, total: 0 }
+      )
+      setTotales(totalesTemp)
+      return
+    }
+
+    try {
+      const resultado = await calcularTotalesOrdenAction(ordenSeleccionada)
+      if (resultado.success) {
+        setTotales(resultado.data)
       }
-    },
-    { manoObra: 0, piezas: 0, servicios: 0, subtotal: 0, iva: 0, total: 0 }
-  )
+    } catch (error) {
+      console.error('Error cargando totales:', error)
+    }
+  }, [ordenSeleccionada, modoCrear, lineas])
+
+  // Actualizar totales cuando cambien las líneas
+  useEffect(() => {
+    cargarTotales()
+  }, [lineas, cargarTotales])
 
   const agregarLinea = () => {
     if (!nuevaLinea.descripcion) {
@@ -1068,10 +1101,8 @@ export function DetalleOrdenSheet({
 
   const cambiarEstado = (nuevoEstado: string) => {
     setFormData(prev => ({ ...prev, estado: nuevoEstado }))
-    setMostrarEstados(false)
   }
 
-  const estadoActual = ESTADOS_ORDEN.find(e => e.value === formData.estado) || ESTADOS_ORDEN[0]
   const vehiculoSeleccionado = vehiculos.find(v => v.id === formData.vehiculo_id)
 
   if (cargando) {
@@ -1088,72 +1119,20 @@ export function DetalleOrdenSheet({
   return (
     <div className="fixed inset-0 z-50 bg-black/50">
       <div className="fixed inset-y-0 right-0 w-full max-w-lg bg-gray-50 shadow-xl flex flex-col">
-        {/* Header */}
-        <div className="bg-white border-b px-4 py-3 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div>
-              <h2 className="text-lg font-bold text-gray-900">
-                {modoCrear ? 'Nueva Orden' : ordenNumero}
-              </h2>
-              <p className="text-xs text-gray-500">
-                {modoCrear ? 'Crear nueva orden de trabajo' : 'Editar orden'}
-              </p>
-            </div>
-            {!modoCrear && (
-              <div className="flex items-center gap-1">
-                {guardadoAutomatico ? (
-                  <div className="flex items-center gap-1 text-green-600">
-                    <Check className="w-3 h-3" />
-                    <span className="text-xs">Guardado</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1 text-gray-400">
-                    <Clock className="w-3 h-3" />
-                    <span className="text-xs">Autoguardando...</span>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Selector de estado */}
-        <div className="bg-white border-b px-4 py-3 shrink-0">
-          <Label className="text-xs text-gray-500 mb-2 block">Estado de la orden</Label>
-          <div className="relative">
-            <button
-              onClick={() => setMostrarEstados(!mostrarEstados)}
-              className={`w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl border-2 transition-all ${estadoActual.color} text-white`}>
-              <span className="flex items-center gap-2 font-medium">
-                <span>{estadoActual.icon}</span>
-                {estadoActual.label}
-              </span>
-              <ChevronDown className={`w-5 h-5 transition-transform ${mostrarEstados ? 'rotate-180' : ''}`} />
-            </button>
-
-            {mostrarEstados && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border z-10 overflow-hidden max-h-64 overflow-y-auto">
-                {ESTADOS_ORDEN.map(estado => (
-                  <button
-                    key={estado.value}
-                    onClick={() => cambiarEstado(estado.value)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${
-                      formData.estado === estado.value ? 'bg-gray-100' : ''
-                    }`}>
-                    <span className={`w-3 h-3 rounded-full ${estado.color}`} />
-                    <span className="flex-1 text-left font-medium">{estado.label}</span>
-                    {formData.estado === estado.value && (
-                      <Check className="w-4 h-4 text-green-600" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        {/* Header con componente extraído */}
+        <OrdenHeader
+          modoCrear={modoCrear}
+          ordenNumero={ordenNumero}
+          guardadoAutomatico={guardadoAutomatico}
+          estadoActual={formData.estado}
+          onCambiarEstado={cambiarEstado}
+          onClose={onClose}
+          onImprimir={() => setMostrarPDF(true)}
+          mostrarEstados={mostrarEstados}
+          onToggleEstados={setMostrarEstados}
+          generandoFactura={generandoFactura}
+          guardando={guardando}
+        />
 
         {/* Tabs */}
         <div className="bg-white border-b flex shrink-0 overflow-x-auto">
@@ -2478,36 +2457,8 @@ export function DetalleOrdenSheet({
                 </Card>
               )}
 
-              {/* Resumen */}
-              <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900 text-white">
-                <h3 className="font-semibold mb-3">Resumen</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Mano de obra:</span>
-                    <span>€{totales.manoObra.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Recambios:</span>
-                    <span>€{totales.piezas.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Servicios:</span>
-                    <span>€{totales.servicios.toFixed(2)}</span>
-                  </div>
-                  <div className="border-t border-gray-700 pt-2 flex justify-between">
-                    <span className="text-gray-400">Subtotal:</span>
-                    <span>€{totales.subtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">IVA (21%):</span>
-                    <span>€{totales.iva.toFixed(2)}</span>
-                  </div>
-                  <div className="border-t border-gray-600 pt-2 flex justify-between text-lg font-bold">
-                    <span>Total:</span>
-                    <span className="text-green-400">€{totales.total.toFixed(2)}</span>
-                  </div>
-                </div>
-              </Card>
+              {/* Resumen de totales con componente extraído */}
+              <OrdenTotalSummary totales={totales} />
             </>
           )}
         </div>
