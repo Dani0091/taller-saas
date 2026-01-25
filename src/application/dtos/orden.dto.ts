@@ -168,3 +168,26 @@ export interface OrdenPaginatedResponseDTO {
   pageSize: number
   totalPages: number
 }
+
+/**
+ * DTO de totales calculados de una orden
+ *
+ * IMPORTANTE: Todos los valores son pre-calculados en el servidor.
+ * El frontend NUNCA debe calcular estos valores, solo mostrarlos.
+ */
+export interface TotalesOrdenDTO {
+  /** Subtotal de mano de obra (pre-calculado en backend) */
+  manoObra: number
+  /** Subtotal de piezas/recambios (pre-calculado en backend) */
+  piezas: number
+  /** Subtotal de servicios (pre-calculado en backend) */
+  servicios: number
+  /** Subtotal general antes de IVA (pre-calculado en backend) */
+  subtotal: number
+  /** IVA aplicado (pre-calculado en backend con porcentaje de taller_config) */
+  iva: number
+  /** Total final con IVA (pre-calculado en backend) */
+  total: number
+  /** Porcentaje de retención si aplica (pre-calculado en backend) */
+  retencion?: number
+}

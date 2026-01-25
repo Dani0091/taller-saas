@@ -11,27 +11,11 @@
 'use client'
 
 import { Card } from '@/components/ui/card'
-
-interface TotalesOrden {
-  /** Subtotal de mano de obra (pre-calculado en backend) */
-  manoObra: number
-  /** Subtotal de piezas/recambios (pre-calculado en backend) */
-  piezas: number
-  /** Subtotal de servicios (pre-calculado en backend) */
-  servicios: number
-  /** Subtotal general antes de IVA (pre-calculado en backend) */
-  subtotal: number
-  /** IVA aplicado (pre-calculado en backend) */
-  iva: number
-  /** Total final con IVA (pre-calculado en backend) */
-  total: number
-  /** Porcentaje de retención si aplica (pre-calculado en backend) */
-  retencion?: number
-}
+import { TotalesOrdenDTO } from '@/application/dtos/orden.dto'
 
 interface OrdenTotalSummaryProps {
   /** Totales pre-calculados por el backend - NO calcular aquí */
-  totales: TotalesOrden
+  totales: TotalesOrdenDTO
   /** Clase CSS adicional */
   className?: string
 }

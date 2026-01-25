@@ -26,7 +26,8 @@ import { fotosToString, getFotoUrl, setFotoUrl, getFotoByKey, setFotoByKey } fro
 import { ESTADOS_ORDEN, FRACCIONES_HORA, CANTIDADES, ESTADOS_FACTURABLES, FOTOS_DIAGNOSTICO, FOTO_LABELS, type TipoFoto } from '@/lib/constants'
 import { OrdenHeader } from './parts/OrdenHeader'
 import { OrdenTotalSummary } from './parts/OrdenTotalSummary'
-import { calcularTotalesOrdenAction, type TotalesOrdenDTO } from '@/actions/ordenes/calcular-totales-orden.action'
+import { calcularTotalesOrdenAction } from '@/actions/ordenes/calcular-totales-orden.action'
+import { TotalesOrdenDTO } from '@/application/dtos/orden.dto'
 
 interface Orden {
   id?: string
@@ -94,6 +95,7 @@ export function DetalleOrdenSheet({
   const [vehiculos, setVehiculos] = useState<any[]>([])
   const [tallerId, setTallerId] = useState<string>('')
   const [tarifaHora, setTarifaHora] = useState<number>(45)
+  const [ivaConfigTaller, setIvaConfigTaller] = useState<number>(21)
   const [ordenNumero, setOrdenNumero] = useState<string>('')
   const [mostrarEstados, setMostrarEstados] = useState(false)
   const [mostrarPDF, setMostrarPDF] = useState(false)
@@ -255,15 +257,18 @@ export function DetalleOrdenSheet({
 
       setTallerId(usuario.taller_id)
 
-      // Cargar configuración del taller (para tarifa hora)
+      // Cargar configuración del taller (para tarifa hora e IVA)
       const { data: tallerConfig } = await supabase
         .from('taller_config')
-        .select('tarifa_hora')
+        .select('tarifa_hora, iva_general')
         .eq('taller_id', usuario.taller_id)
         .single()
 
       if (tallerConfig?.tarifa_hora) {
         setTarifaHora(tallerConfig.tarifa_hora)
+      }
+      if (tallerConfig?.iva_general) {
+        setIvaConfigTaller(tallerConfig.iva_general)
       }
 
       // Cargar clientes
@@ -606,7 +611,7 @@ export function DetalleOrdenSheet({
       const totalesTemp = lineas.reduce(
         (acc, linea) => {
           const subtotal = linea.cantidad * linea.precio_unitario
-          const iva = subtotal * 0.21 // Temporal, se recalculará en servidor
+          const iva = subtotal * (ivaConfigTaller / 100) // ✅ Dinámico desde taller_config
           return {
             manoObra: linea.tipo === 'mano_obra' ? acc.manoObra + subtotal : acc.manoObra,
             piezas: linea.tipo === 'pieza' ? acc.piezas + subtotal : acc.piezas,
@@ -626,16 +631,19 @@ export function DetalleOrdenSheet({
       const resultado = await calcularTotalesOrdenAction(ordenSeleccionada)
       if (resultado.success) {
         setTotales(resultado.data)
+      } else {
+        toast.error(`Error al cargar totales: ${resultado.error}`)
       }
     } catch (error) {
       console.error('Error cargando totales:', error)
+      toast.error('Error al cargar totales')
     }
-  }, [ordenSeleccionada, modoCrear, lineas])
+  }, [ordenSeleccionada, modoCrear, lineas, ivaConfigTaller])
 
   // Actualizar totales cuando cambien las líneas
   useEffect(() => {
     cargarTotales()
-  }, [lineas, cargarTotales])
+  }, [cargarTotales])
 
   const agregarLinea = () => {
     if (!nuevaLinea.descripcion) {
@@ -1130,8 +1138,6 @@ export function DetalleOrdenSheet({
           onImprimir={() => setMostrarPDF(true)}
           mostrarEstados={mostrarEstados}
           onToggleEstados={setMostrarEstados}
-          generandoFactura={generandoFactura}
-          guardando={guardando}
         />
 
         {/* Tabs */}

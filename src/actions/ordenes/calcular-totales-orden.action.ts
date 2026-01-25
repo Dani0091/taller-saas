@@ -3,25 +3,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { SupabaseErrorMapper } from '@/infrastructure/errors/SupabaseErrorMapper'
 import { AppError } from '@/domain/errors/AppError'
+import { TotalesOrdenDTO } from '@/application/dtos/orden.dto'
 
 type ActionResult<T> = { success: true; data: T } | { success: false; error: string }
-
-export interface TotalesOrdenDTO {
-  /** Subtotal de mano de obra (calculado en backend) */
-  manoObra: number
-  /** Subtotal de piezas/recambios (calculado en backend) */
-  piezas: number
-  /** Subtotal de servicios (calculado en backend) */
-  servicios: number
-  /** Subtotal general antes de IVA (calculado en backend) */
-  subtotal: number
-  /** IVA aplicado (calculado en backend) */
-  iva: number
-  /** Total final con IVA (calculado en backend) */
-  total: number
-  /** Porcentaje de retención si aplica */
-  retencion?: number
-}
 
 /**
  * Server Action: Calcular Totales de Orden

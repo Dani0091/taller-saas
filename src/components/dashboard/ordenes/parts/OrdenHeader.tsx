@@ -8,10 +8,10 @@
  */
 'use client'
 
-import { X, ChevronDown, Check, Clock, Printer, FileText, Loader2 } from 'lucide-react'
+import { X, ChevronDown, Check, Clock, Printer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { ESTADOS_ORDEN, ESTADOS_FACTURABLES } from '@/lib/constants'
+import { ESTADOS_ORDEN } from '@/lib/constants'
 
 interface OrdenHeaderProps {
   // Datos de la orden
@@ -26,13 +26,10 @@ interface OrdenHeaderProps {
   // Acciones
   onClose: () => void
   onImprimir?: () => void
-  onGenerarFactura?: () => void
 
   // UI State
   mostrarEstados: boolean
   onToggleEstados: (value: boolean) => void
-  generandoFactura?: boolean
-  guardando?: boolean
 }
 
 export function OrdenHeader({
@@ -43,14 +40,10 @@ export function OrdenHeader({
   onCambiarEstado,
   onClose,
   onImprimir,
-  onGenerarFactura,
   mostrarEstados,
   onToggleEstados,
-  generandoFactura = false,
-  guardando = false,
 }: OrdenHeaderProps) {
   const estadoActual = ESTADOS_ORDEN.find(e => e.value === estadoValue) || ESTADOS_ORDEN[0]
-  const esFacturable = ESTADOS_FACTURABLES.includes(estadoValue as any)
 
   const cambiarEstado = (nuevoEstado: string) => {
     onCambiarEstado(nuevoEstado)
@@ -128,36 +121,18 @@ export function OrdenHeader({
         </div>
       </div>
 
-      {/* Botones de acción */}
-      {!modoCrear && (
-        <div className="bg-white border-b px-4 py-3 shrink-0 space-y-2">
-          {onImprimir && (
-            <Button
-              onClick={onImprimir}
-              variant="outline"
-              className="w-full gap-2"
-              size="sm"
-            >
-              <Printer className="w-4 h-4" />
-              Ver / Imprimir Orden
-            </Button>
-          )}
-
-          {esFacturable && onGenerarFactura && (
-            <Button
-              onClick={onGenerarFactura}
-              disabled={generandoFactura || guardando}
-              className="w-full gap-2 bg-green-600 hover:bg-green-700"
-              size="sm"
-            >
-              {generandoFactura ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <FileText className="w-4 h-4" />
-              )}
-              {generandoFactura ? 'Generando...' : 'Generar Factura'}
-            </Button>
-          )}
+      {/* Botón de imprimir */}
+      {!modoCrear && onImprimir && (
+        <div className="bg-white border-b px-4 py-3 shrink-0">
+          <Button
+            onClick={onImprimir}
+            variant="outline"
+            className="w-full gap-2"
+            size="sm"
+          >
+            <Printer className="w-4 h-4" />
+            Ver / Imprimir Orden
+          </Button>
         </div>
       )}
     </>
