@@ -26,6 +26,7 @@ import { fotosToString, getFotoUrl, setFotoUrl, getFotoByKey, setFotoByKey } fro
 import { ESTADOS_ORDEN, FRACCIONES_HORA, CANTIDADES, ESTADOS_FACTURABLES, FOTOS_DIAGNOSTICO, FOTO_LABELS, type TipoFoto } from '@/lib/constants'
 import { OrdenHeader } from './parts/OrdenHeader'
 import { OrdenTotalSummary } from './parts/OrdenTotalSummary'
+import { OrdenTrabajoTab } from './parts/OrdenTrabajoTab'
 import { calcularTotalesOrdenAction } from '@/actions/ordenes/calcular-totales-orden.action'
 import { TotalesOrdenDTO } from '@/application/dtos/orden.dto'
 
@@ -2032,144 +2033,21 @@ export function DetalleOrdenSheet({
           )}
 
           {tab === 'trabajo' && (
-            <>
-              {/* Diagnóstico */}
-              <Card className="p-4">
-                <Label className="text-sm font-semibold mb-2 block">Diagnóstico técnico</Label>
-                <Textarea
-                  value={formData.diagnostico || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, diagnostico: e.target.value }))}
-                  placeholder="Resultado del diagnóstico del vehículo..."
-                  rows={3}
-                  className="resize-none"
-                />
-              </Card>
-
-              {/* Fotos de diagnóstico */}
-              <Card className="p-4 bg-amber-50/50 border-amber-200">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-lg">📷</span>
-                  <Label className="text-sm font-semibold">Fotos de diagnóstico</Label>
-                </div>
-                <p className="text-xs text-gray-500 mb-4">
-                  Sube fotos del cuadro de instrumentos, testigos de fallo, o cualquier evidencia visual del problema.
-                </p>
-                <div className="grid grid-cols-2 gap-3">
-                  {FOTOS_DIAGNOSTICO.map((tipoFoto) => (
-                    <FotoUploader
-                      key={tipoFoto}
-                      tipo={tipoFoto}
-                      fotoUrl={getFotoByKey(formData.fotos_diagnostico || '', tipoFoto)}
-                      ordenId={ordenSeleccionada || 'nueva'}
-                      onFotoSubida={(url) => {
-                        setFormData(prev => ({
-                          ...prev,
-                          fotos_diagnostico: setFotoByKey(prev.fotos_diagnostico || '', tipoFoto, url)
-                        }))
-                      }}
-                      disabled={!ordenSeleccionada && !modoCrear}
-                    />
-                  ))}
-                </div>
-              </Card>
-
-              {/* Trabajos realizados */}
-              <Card className="p-4">
-                <Label className="text-sm font-semibold mb-2 block">Trabajos realizados</Label>
-                <Textarea
-                  value={formData.trabajos_realizados || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, trabajos_realizados: e.target.value }))}
-                  placeholder="Describe los trabajos que se han realizado..."
-                  rows={3}
-                  className="resize-none"
-                />
-              </Card>
-
-
-
-              {/* Tiempos con selector de fracciones */}
-              <Card className="p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Clock className="w-5 h-5 text-sky-600" />
-                  <Label className="text-sm font-semibold">Tiempo de trabajo</Label>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Horas estimadas */}
-                  <div>
-                    <Label className="text-xs text-gray-500 mb-2 block">Horas estimadas</Label>
-                    <select
-                      value={formData.tiempo_estimado_horas || 0}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        tiempo_estimado_horas: parseFloat(e.target.value)
-                      }))}
-                      className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white text-center"
-                    >
-                      <option value="0">Sin estimar</option>
-                      {FRACCIONES_HORA.map(f => (
-                        <option key={f.value} value={f.value}>{f.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Horas reales */}
-                  <div>
-                    <Label className="text-xs text-gray-500 mb-2 block">Horas reales</Label>
-                    <select
-                      value={formData.tiempo_real_horas || 0}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        tiempo_real_horas: parseFloat(e.target.value)
-                      }))}
-                      className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white text-center"
-                    >
-                      <option value="0">Sin registrar</option>
-                      {FRACCIONES_HORA.map(f => (
-                        <option key={f.value} value={f.value}>{f.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Input manual para valores personalizados */}
-                <div className="mt-3 pt-3 border-t">
-                  <Label className="text-xs text-gray-500 mb-2 block">O introduce un valor personalizado:</Label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <NumberInput
-                      value={formData.tiempo_estimado_horas}
-                      onChange={(value) => {
-                        if (validarHorasTrabajo(value, 'tiempo_estimado_horas')) {
-                          setFormData(prev => ({
-                            ...prev,
-                            tiempo_estimado_horas: value
-                          }))
-                        }
-                      }}
-                      placeholder="Estimadas"
-                      className="text-center"
-                      min={0}
-                      max={100}
-                    />
-                    <NumberInput
-                      value={formData.tiempo_real_horas}
-                      onChange={(value) => {
-                        if (validarHorasTrabajo(value, 'tiempo_real_horas')) {
-                          setFormData(prev => ({
-                            ...prev,
-                            tiempo_real_horas: value
-                          }))
-                        }
-                      }}
-                      placeholder="Reales"
-                      className="text-center"
-                      min={0}
-                      max={100}
-                    />
-                  </div>
-                </div>
-              </Card>
-            </>
+            <OrdenTrabajoTab
+              modoCrear={modoCrear}
+              ordenSeleccionada={ordenSeleccionada}
+              diagnostico={formData.diagnostico || ''}
+              trabajosRealizados={formData.trabajos_realizados || ''}
+              tiempoEstimadoHoras={formData.tiempo_estimado_horas || 0}
+              tiempoRealHoras={formData.tiempo_real_horas || 0}
+              fotosDiagnostico={formData.fotos_diagnostico || ''}
+              onDiagnosticoChange={(value) => setFormData(prev => ({ ...prev, diagnostico: value }))}
+              onTrabajosRealizadosChange={(value) => setFormData(prev => ({ ...prev, trabajos_realizados: value }))}
+              onTiempoEstimadoChange={(value) => setFormData(prev => ({ ...prev, tiempo_estimado_horas: value }))}
+              onTiempoRealChange={(value) => setFormData(prev => ({ ...prev, tiempo_real_horas: value }))}
+              onFotosDiagnosticoChange={(fotos) => setFormData(prev => ({ ...prev, fotos_diagnostico: fotos }))}
+              validarHorasTrabajo={validarHorasTrabajo}
+            />
           )}
 
           {tab === 'items' && (
