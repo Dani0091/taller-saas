@@ -28,6 +28,8 @@ import { OrdenHeader } from './parts/OrdenHeader'
 import { OrdenTotalSummary } from './parts/OrdenTotalSummary'
 import { OrdenTrabajoTab } from './parts/OrdenTrabajoTab'
 import { OrdenItemsTab } from './parts/OrdenItemsTab'
+import { OrdenFotosTab } from './parts/OrdenFotosTab'
+import { FotoUploader } from './foto-uploader'
 import { calcularTotalesOrdenAction } from '@/actions/ordenes/calcular-totales-orden.action'
 import { TotalesOrdenDTO } from '@/application/dtos/orden.dto'
 
@@ -1913,124 +1915,17 @@ export function DetalleOrdenSheet({
           )}
 
           {tab === 'fotos' && (
-            <>
-              {modoCrear ? (
-                <Card className="p-4 bg-amber-50 border-amber-200">
-                  <p className="text-sm text-amber-800">
-                    💡 Guarda la orden primero para poder subir fotos
-                  </p>
-                </Card>
-              ) : (
-                <>
-                  {/* Fotos de entrada */}
-                  <Card className="p-4">
-                    <Label className="text-sm font-semibold mb-3 block">📸 Fotos de Entrada</Label>
-                    <p className="text-xs text-gray-500 mb-4">
-                      Documenta el estado del vehículo al llegar al taller
-                    </p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <FotoUploader
-                        tipo="entrada"
-                        ordenId={ordenSeleccionada || ''}
-                        fotoUrl={getFotoUrl(formData.fotos_entrada || '', 0)}
-                        onFotoSubida={(url) => {
-                          setFormData(prev => ({
-                            ...prev,
-                            fotos_entrada: setFotoUrl(prev.fotos_entrada || '', 0, url)
-                          }))
-                        }}
-                        onOCRData={(data) => {
-                          // Verificar matrícula si hay vehículo seleccionado
-                          if (data.matricula && vehiculoSeleccionado) {
-                            const matriculaLimpia = data.matricula.replace(/[\s-]/g, '').toUpperCase()
-                            const matriculaVehiculo = vehiculoSeleccionado.matricula.replace(/[\s-]/g, '').toUpperCase()
-                            if (matriculaLimpia === matriculaVehiculo) {
-                              toast.success(`✅ Matrícula coincide: ${data.matricula}`)
-                            } else {
-                              toast.warning(`⚠️ Matrícula detectada (${data.matricula}) no coincide con el vehículo (${vehiculoSeleccionado.matricula})`)
-                            }
-                          } else if (data.matricula) {
-                            toast.info(`Matrícula detectada: ${data.matricula}`)
-                          }
-
-                          // Actualizar KM del vehículo
-                          if (data.km && formData.vehiculo_id) {
-                            actualizarKMVehiculo(data.km)
-                          } else if (data.km) {
-                            toast.info(`KM detectados: ${data.km.toLocaleString()} (selecciona un vehículo para guardar)`)
-                          }
-                        }}
-                      />
-                      <FotoUploader
-                        tipo="frontal"
-                        ordenId={ordenSeleccionada || ''}
-                        fotoUrl={getFotoUrl(formData.fotos_entrada || '', 1)}
-                        onFotoSubida={(url) => {
-                          setFormData(prev => ({
-                            ...prev,
-                            fotos_entrada: setFotoUrl(prev.fotos_entrada || '', 1, url)
-                          }))
-                        }}
-                      />
-                      <FotoUploader
-                        tipo="izquierda"
-                        ordenId={ordenSeleccionada || ''}
-                        fotoUrl={getFotoUrl(formData.fotos_entrada || '', 2)}
-                        onFotoSubida={(url) => {
-                          setFormData(prev => ({
-                            ...prev,
-                            fotos_entrada: setFotoUrl(prev.fotos_entrada || '', 2, url)
-                          }))
-                        }}
-                      />
-                      <FotoUploader
-                        tipo="derecha"
-                        ordenId={ordenSeleccionada || ''}
-                        fotoUrl={getFotoUrl(formData.fotos_entrada || '', 3)}
-                        onFotoSubida={(url) => {
-                          setFormData(prev => ({
-                            ...prev,
-                            fotos_entrada: setFotoUrl(prev.fotos_entrada || '', 3, url)
-                          }))
-                        }}
-                      />
-                    </div>
-                  </Card>
-
-                  {/* Fotos de salida */}
-                  <Card className="p-4">
-                    <Label className="text-sm font-semibold mb-3 block">✅ Fotos de Salida</Label>
-                    <p className="text-xs text-gray-500 mb-4">
-                      Documenta el estado del vehículo al entregar
-                    </p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <FotoUploader
-                        tipo="salida"
-                        ordenId={ordenSeleccionada || ''}
-                        fotoUrl={getFotoUrl(formData.fotos_salida || '', 0)}
-                        onFotoSubida={(url) => {
-                          setFormData(prev => ({
-                            ...prev,
-                            fotos_salida: setFotoUrl(prev.fotos_salida || '', 0, url)
-                          }))
-                        }}
-                      />
-                      <FotoUploader
-                        tipo="trasera"
-                        ordenId={ordenSeleccionada || ''}
-                        fotoUrl={getFotoUrl(formData.fotos_salida || '', 1)}
-                        onFotoSubida={(url) => {
-                          setFormData(prev => ({
-                            ...prev,
-                            fotos_salida: setFotoUrl(prev.fotos_salida || '', 1, url)
-                          }))
-                        }}
-                      />
-                    </div>
-                  </Card>
-                </>
-              )}
-            </>
+            <OrdenFotosTab
+              modoCrear={modoCrear}
+              ordenSeleccionada={ordenSeleccionada}
+              fotosEntrada={formData.fotos_entrada || ''}
+              fotosSalida={formData.fotos_salida || ''}
+              vehiculoSeleccionado={vehiculoSeleccionado}
+              vehiculoId={formData.vehiculo_id}
+              onFotosEntradaChange={(fotos) => setFormData(prev => ({ ...prev, fotos_entrada: fotos }))}
+              onFotosSalidaChange={(fotos) => setFormData(prev => ({ ...prev, fotos_salida: fotos }))}
+              onActualizarKMVehiculo={actualizarKMVehiculo}
+            />
           )}
 
           {tab === 'trabajo' && (
