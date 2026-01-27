@@ -166,6 +166,7 @@ export async function POST(request: Request) {
     const { data: usuarioData, error: usuarioError } = await supabaseAdmin
       .from('usuarios')
       .insert({
+        auth_id: authData.user.id,
         email: email_usuario,
         nombre: nombre_usuario,
         rol: 'admin',
