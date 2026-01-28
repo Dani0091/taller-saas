@@ -129,7 +129,6 @@ export default function NuevoVehiculoPage() {
         body: JSON.stringify({
           ...vehiculoParaBD,
           taller_id: tallerId,
-          cliente_id: formData.cliente_id || null,
         }),
       })
 

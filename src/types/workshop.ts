@@ -3,6 +3,8 @@
  * @description Tipos consistentes para todo el sistema SaaS de talleres
  */
 
+import type { VehiculoFormulario } from './formularios'
+
 // ==================== TIPOS PRINCIPALES ====================
 
 export interface Vehiculo {
@@ -163,17 +165,17 @@ export const ValidationSchemas = {
 
 export const DEFAULT_VALUES = {
   vehiculo: {
-    marca: '',
-    modelo: '',
-    año: undefined,
-    color: '',
-    kilometros: undefined,
-    tipo_combustible: 'Gasolina' as TipoCombustible,
-    carroceria: '',
-    potencia_cv: undefined,
-    cilindrada: undefined,
-    vin: '',
-    bastidor_vin: '',
+    matricula: '',
+    marca: null,
+    modelo: null,
+    año: new Date().getFullYear(),
+    color: null,
+    kilometros: 0,
+    tipo_combustible: null,
+    carroceria: null,
+    potencia_cv: null,
+    cilindrada: null,
+    vin: null,
   } as VehiculoFormulario,
 
   cliente: {

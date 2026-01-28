@@ -3,6 +3,11 @@
  * @description Interfaz unificada para vehículos en todo el SaaS
  */
 
+import type { VehiculoFormulario } from './formularios'
+
+// Re-export para conveniencia
+export type { VehiculoFormulario }
+
 // ==================== TIPOS PRINCIPALES ====================
 
 export interface VehiculoBase {
@@ -107,19 +112,16 @@ export const VehiculoValidationRules: VehiculoValidations = {
 
 export const VehiculoDefaults: VehiculoFormulario = {
   matricula: '',
-  vin: '',
-  bastidor_vin: '',
-  marca: '',
-  modelo: '',
-  año: null,
-  color: '',
-  kilometros: null,
+  marca: null,
+  modelo: null,
+  año: new Date().getFullYear(),
+  color: null,
+  kilometros: 0,
   tipo_combustible: null,
-  carroceria: '',
+  vin: null,
+  carroceria: null,
   potencia_cv: null,
-  cilindrada: null,
-  cliente_id: null,
-  estado: 'activo'
+  cilindrada: null
 }
 
 // ==================== OPCIONES PARA SELECTS ====================
@@ -159,9 +161,15 @@ export const ESTADOS_VEHICULO_OPTIONS: { value: EstadoVehiculo; label: string }[
  */
 export function vehiculoBDToFormulario(vehiculo: VehiculoBD): VehiculoFormulario {
   return {
-    ...vehiculo,
-    año: vehiculo.año ? toDbNumber(vehiculo.año) : null,
-    kilometros: vehiculo.kilometros ? toDbNumber(vehiculo.kilometros) : null,
+    matricula: vehiculo.matricula,
+    marca: vehiculo.marca || null,
+    modelo: vehiculo.modelo || null,
+    año: vehiculo.año ? toDbNumber(vehiculo.año) : new Date().getFullYear(),
+    color: vehiculo.color || null,
+    kilometros: vehiculo.kilometros ? toDbNumber(vehiculo.kilometros) : 0,
+    tipo_combustible: vehiculo.tipo_combustible || null,
+    vin: vehiculo.vin || null,
+    carroceria: vehiculo.carroceria || null,
     potencia_cv: vehiculo.potencia_cv ? toDbNumber(vehiculo.potencia_cv) : null,
     cilindrada: vehiculo.cilindrada ? toDbNumber(vehiculo.cilindrada) : null
   }
@@ -170,14 +178,14 @@ export function vehiculoBDToFormulario(vehiculo: VehiculoBD): VehiculoFormulario
 /**
  * Convierte vehículo de formulario a BD
  */
-export function vehiculoFormularioToBD(formulario: VehiculoFormulario): VehiculoBase {
+export function vehiculoFormularioToBD(formulario: VehiculoFormulario): Omit<VehiculoBase, 'taller_id'> {
   return {
     ...formulario,
     año: formulario.año ? String(formulario.año) : null,
     kilometros: formulario.kilometros ? String(formulario.kilometros) : null,
     potencia_cv: formulario.potencia_cv ? String(formulario.potencia_cv) : null,
     cilindrada: formulario.cilindrada ? String(formulario.cilindrada) : null
-  }
+  } as Omit<VehiculoBase, 'taller_id'>
 }
 
 // Importar funciones de conversión
@@ -201,13 +209,4 @@ export interface VehiculoUpdateRequest extends Partial<VehiculoCreateRequest> {
 }
 
 // ==================== EXPORTS ====================
-
-export type {
-  VehiculoBase,
-  VehiculoBD,
-  VehiculoFormulario,
-  VehiculoValidations,
-  VehiculoAPIResponse,
-  VehiculoCreateRequest,
-  VehiculoUpdateRequest
-}
+// Todos los tipos ya están exportados directamente arriba
