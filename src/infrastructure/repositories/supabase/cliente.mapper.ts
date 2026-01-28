@@ -49,16 +49,21 @@ export class ClienteMapper {
     // Procesar Value Objects
     const nif = NIF.create(record.nif)
 
-    const email = record.email
-      ? Email.createOrNull(record.email)
-      : undefined
+    let email: Email | undefined
+    if (record.email) {
+      try {
+        email = Email.create(record.email)
+      } catch {
+        email = undefined
+      }
+    }
 
     const telefono = record.telefono
       ? Telefono.createUnsafe(record.telefono) // Unsafe para datos legacy
       : undefined
 
     const iban = record.iban
-      ? IBAN.createOrNull(record.iban)
+      ? IBAN.createOrNull(record.iban) ?? undefined
       : undefined
 
     return ClienteEntity.create({

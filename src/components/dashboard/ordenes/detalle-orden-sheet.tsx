@@ -190,12 +190,14 @@ export function DetalleOrdenSheet({
     matricula: '',
     marca: null,
     modelo: null,
-    año: null,
+    año: new Date().getFullYear(),
     color: null,
-    kilometros: null,
+    kilometros: 0,
     tipo_combustible: null,
+    potencia_cv: null,
+    cilindrada: null,
     vin: null,
-    taller_id: ''
+    carroceria: null
   })
 
   // Cargar datos iniciales
@@ -472,9 +474,9 @@ export function DetalleOrdenSheet({
           matricula: nuevoVehiculo.matricula.toUpperCase().replace(/\s/g, ''),
           marca: nuevoVehiculo.marca || null,
           modelo: nuevoVehiculo.modelo || null,
-          año: nuevoVehiculo.año ? parseInt(nuevoVehiculo.año) : null,
+          año: nuevoVehiculo.año || null,
           color: nuevoVehiculo.color || null,
-          kilometros: nuevoVehiculo.kilometros ? parseInt(nuevoVehiculo.kilometros) : null,
+          kilometros: nuevoVehiculo.kilometros || null,
           tipo_combustible: nuevoVehiculo.tipo_combustible || null,
           vin: nuevoVehiculo.vin || null,
         })
@@ -490,13 +492,16 @@ export function DetalleOrdenSheet({
       // Limpiar formulario
       setNuevoVehiculo({
         matricula: '',
-        marca: '',
-        modelo: '',
-        año: '',
-        color: '',
-        kilometros: '',
-        tipo_combustible: '',
-        vin: ''
+        marca: null,
+        modelo: null,
+        año: new Date().getFullYear(),
+        color: null,
+        kilometros: 0,
+        tipo_combustible: null,
+        vin: null,
+        carroceria: null,
+        potencia_cv: null,
+        cilindrada: null
       })
       setMostrarFormVehiculo(false)
       toast.success('Vehículo creado correctamente')
@@ -515,13 +520,16 @@ export function DetalleOrdenSheet({
 
     setVehiculoEditado({
       matricula: vehiculo.matricula || '',
-      marca: vehiculo.marca || '',
-      modelo: vehiculo.modelo || '',
-      año: vehiculo.año?.toString() || '',
-      color: vehiculo.color || '',
-      kilometros: vehiculo.kilometros?.toString() || '',
-      tipo_combustible: vehiculo.tipo_combustible || '',
-      vin: vehiculo.vin || vehiculo.bastidor_vin || ''
+      marca: vehiculo.marca || null,
+      modelo: vehiculo.modelo || null,
+      año: vehiculo.año || new Date().getFullYear(),
+      color: vehiculo.color || null,
+      kilometros: vehiculo.kilometros || 0,
+      tipo_combustible: vehiculo.tipo_combustible || null,
+      vin: vehiculo.vin || vehiculo.bastidor_vin || null,
+      potencia_cv: vehiculo.potencia_cv || null,
+      cilindrada: vehiculo.cilindrada || null,
+      carroceria: vehiculo.carroceria || null
     })
     setEditandoVehiculo(true)
   }
@@ -1189,16 +1197,16 @@ export function DetalleOrdenSheet({
               nuevoCliente={nuevoCliente}
               nuevoVehiculo={nuevoVehiculo}
               vehiculoEditado={vehiculoEditado}
-              onFormDataChange={(data) => setFormData(prev => ({ ...prev, ...data }))}
+              onFormDataChange={(data) => setFormData((prev: any) => ({ ...prev, ...data }))}
               onToggleFormCliente={() => setMostrarFormCliente(!mostrarFormCliente)}
               onToggleFormVehiculo={() => setMostrarFormVehiculo(!mostrarFormVehiculo)}
               onToggleEditandoVehiculo={() => setEditandoVehiculo(!editandoVehiculo)}
-              onNuevoClienteChange={(data) => setNuevoCliente(prev => ({ ...prev, ...data }))}
-              onNuevoVehiculoChange={(data) => setNuevoVehiculo(prev => ({ ...prev, ...data }))}
-              onVehiculoEditadoChange={(data) => setVehiculoEditado(prev => ({ ...prev, ...data }))}
+              onNuevoClienteChange={(data) => setNuevoCliente((prev: any) => ({ ...prev, ...data }))}
+              onNuevoVehiculoChange={(data) => setNuevoVehiculo((prev: VehiculoNuevoFormulario) => ({ ...prev, ...data }))}
+              onVehiculoEditadoChange={(data) => setVehiculoEditado((prev: VehiculoEdicionFormulario) => ({ ...prev, ...data }))}
               onCrearCliente={crearCliente}
               onCrearVehiculo={crearVehiculo}
-              onGuardarVehiculo={guardarVehiculo}
+              onGuardarVehiculo={guardarEdicionVehiculo}
               vehiculoSeleccionado={vehiculoSeleccionado}
             />
           )}

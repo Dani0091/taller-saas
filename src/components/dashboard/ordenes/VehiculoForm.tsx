@@ -9,7 +9,7 @@ import { NumberInput, createNumberChangeHandler } from '@/components/ui/number-i
 import { InputScanner } from '@/components/ui/input-scanner'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import type { VehiculoFormulario } from '@/types/workshop'
+import type { VehiculoFormulario } from '@/types/formularios'
 
 interface VehiculoFormProps {
   vehiculo: VehiculoFormulario | null
@@ -55,11 +55,8 @@ export function VehiculoForm({ vehiculo, onChange, onScan, disabled = false, mod
       <div>
         <Label className="text-xs text-gray-600 mb-1 block">VIN/Bastidor</Label>
         <Input
-          value={vehiculo.vin || vehiculo.bastidor_vin || ''}
-          onChange={(e) => {
-            handleChange('vin', e.target.value)
-            handleChange('bastidor_vin', e.target.value)
-          }}
+          value={vehiculo.vin || ''}
+          onChange={(e) => handleChange('vin', e.target.value)}
           placeholder="WVWZZZ..."
           disabled={disabled}
         />

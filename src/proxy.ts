@@ -1,7 +1,13 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export default async function proxy(request: NextRequest) {
+/**
+ * Proxy de autenticación para Next.js 16
+ *
+ * IMPORTANTE: En Next.js 16+ este archivo DEBE llamarse proxy.ts
+ * y la función DEBE llamarse proxy (cambió de middleware en v16.1+)
+ */
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -23,7 +29,7 @@ export default async function proxy(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({
             request,
           })
@@ -44,12 +50,13 @@ export default async function proxy(request: NextRequest) {
 
   // Rutas públicas que no requieren autenticación
   const publicRoutes = [
+    '/login',
     '/auth/login',
     '/auth/registro',
     '/auth/callback',
     '/auth/recuperar',
     '/auth/nueva-password',
-    '/api/auth',
+    '/api/auth/callback',
     '/api/presupuesto', // API de presupuestos públicos
     '/presupuesto',     // Página pública de presupuestos (compartir con cliente)
   ]
@@ -97,9 +104,10 @@ export const config = {
      * Match all request paths except:
      * - _next/static (static files)
      * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
+     * - _next/webpack-hmr (hot reload)
+     * - favicon.ico, robots.txt, sitemap.xml
+     * - public folder assets (.svg, .png, .jpg, etc)
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|_next/webpack-hmr|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|js|css|woff|woff2|ttf|eot)$).*)',
   ],
 }

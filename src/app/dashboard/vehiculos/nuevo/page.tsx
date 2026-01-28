@@ -99,8 +99,8 @@ export default function NuevoVehiculoPage() {
       default:
         sanitizedValue = toDbString(value, '')
     }
-    
-    setFormData(prev => ({ ...prev, [name]: sanitizedValue }))
+
+    setFormData((prev: VehiculoFormulario) => ({ ...prev, [name]: sanitizedValue }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -182,7 +182,7 @@ export default function NuevoVehiculoPage() {
                 />
                 <InputScanner
                   tipo="matricula"
-                  onResult={(val) => setFormData(prev => ({ ...prev, matricula: val }))}
+                  onResult={(val) => setFormData((prev: VehiculoFormulario) => ({ ...prev, matricula: val }))}
                 />
               </div>
             </div>
@@ -226,7 +226,7 @@ export default function NuevoVehiculoPage() {
                   const añoValidado = sanitizeAño(value, anioMax)
 
                   if (añoValidado !== undefined) {
-                    setFormData(prev => ({ ...prev, año: añoValidado }))
+                    setFormData((prev: VehiculoFormulario) => ({ ...prev, año: añoValidado }))
                   } else if (value !== null && value !== undefined) {
                     toast.error(VehiculoValidationRules.año.message)
                   }
@@ -265,7 +265,7 @@ export default function NuevoVehiculoPage() {
                   tipo="km"
                   onResult={(val) => {
                     const kmSanitizados = sanitizeKilometros(val)
-                    setFormData(prev => ({ ...prev, kilometros: kmSanitizados > 0 ? kmSanitizados : prev.kilometros }))
+                    setFormData((prev: VehiculoFormulario) => ({ ...prev, kilometros: kmSanitizados > 0 ? kmSanitizados : prev.kilometros }))
                   }}
                 />
               </div>

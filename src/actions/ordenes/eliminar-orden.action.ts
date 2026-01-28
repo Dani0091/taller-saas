@@ -6,6 +6,7 @@ import { EliminarOrdenUseCase } from '@/application/use-cases/ordenes'
 import { SupabaseOrdenRepository } from '@/infrastructure/repositories/supabase/orden.repository'
 import { SupabaseErrorMapper } from '@/infrastructure/errors/SupabaseErrorMapper'
 import { AppError } from '@/domain/errors/AppError'
+import { obtenerUsuarioConFallback } from '@/lib/auth/obtener-usuario-fallback'
 
 type VoidActionResult = { success: true } | { success: false; error: string }
 
@@ -22,13 +23,9 @@ export async function eliminarOrdenAction(id: string): Promise<VoidActionResult>
       return { success: false, error: 'No autenticado' }
     }
 
-    const { data: usuario, error: usuarioError } = await supabase
-      .from('usuarios')
-      .select('id, taller_id')
-      .eq('auth_id', user.id)
-      .single()
+    const usuario = await obtenerUsuarioConFallback()
 
-    if (usuarioError || !usuario) {
+    if (!usuario) {
       return { success: false, error: 'Usuario no encontrado' }
     }
 

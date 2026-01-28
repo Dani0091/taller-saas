@@ -42,9 +42,7 @@ export class SupabaseClienteRepository implements IClienteRepository {
       // Verificar que no exista otro cliente con el mismo NIF
       const existeNIF = await this.existeNIF(cliente.getNIF().valor, tallerId)
       if (existeNIF) {
-        throw new ConflictError(
-          `Ya existe un cliente con NIF ${cliente.getNIF().valor} en este taller`
-        )
+        throw new ConflictError('Cliente', 'NIF', cliente.getNIF().valor)
       }
 
       // Insertar cliente
@@ -145,9 +143,7 @@ export class SupabaseClienteRepository implements IClienteRepository {
           cliente.getId()
         )
         if (existeNIF) {
-          throw new ConflictError(
-            `Ya existe otro cliente con NIF ${cliente.getNIF().valor} en este taller`
-          )
+          throw new ConflictError('Cliente', 'NIF', cliente.getNIF().valor)
         }
       }
 

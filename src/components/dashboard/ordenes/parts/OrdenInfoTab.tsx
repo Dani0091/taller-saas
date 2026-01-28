@@ -337,7 +337,7 @@ export function OrdenInfoTab({
                     <div>
                       <Label className="text-xs text-gray-600 mb-1 block">Marca</Label>
                       <Input
-                        value={vehiculoEditado.marca}
+                        value={vehiculoEditado.marca || ''}
                         onChange={(e) => onVehiculoEditadoChange({ marca: e.target.value })}
                         placeholder="Ej: Seat"
                         className="bg-white"
@@ -346,7 +346,7 @@ export function OrdenInfoTab({
                     <div>
                       <Label className="text-xs text-gray-600 mb-1 block">Modelo</Label>
                       <Input
-                        value={vehiculoEditado.modelo}
+                        value={vehiculoEditado.modelo || ''}
                         onChange={(e) => onVehiculoEditadoChange({ modelo: e.target.value })}
                         placeholder="Ej: Ibiza"
                         className="bg-white"
@@ -357,8 +357,8 @@ export function OrdenInfoTab({
                   <div>
                     <Label className="text-xs text-gray-600 mb-1 block">Bastidor (VIN)</Label>
                     <Input
-                      value={vehiculoEditado.bastidor}
-                      onChange={(e) => onVehiculoEditadoChange({ bastidor: e.target.value })}
+                      value={vehiculoEditado.vin || ''}
+                      onChange={(e) => onVehiculoEditadoChange({ vin: e.target.value })}
                       placeholder="Ej: WVWZZZ1KZBW123456"
                       className="bg-white font-mono"
                     />
@@ -418,7 +418,7 @@ export function OrdenInfoTab({
                 <div>
                   <Label className="text-xs text-gray-600 mb-1 block">Marca</Label>
                   <Input
-                    value={nuevoVehiculo.marca}
+                    value={nuevoVehiculo.marca || ''}
                     onChange={(e) => onNuevoVehiculoChange({ marca: e.target.value })}
                     placeholder="Ej: Seat"
                     className="bg-white"
@@ -427,7 +427,7 @@ export function OrdenInfoTab({
                 <div>
                   <Label className="text-xs text-gray-600 mb-1 block">Modelo</Label>
                   <Input
-                    value={nuevoVehiculo.modelo}
+                    value={nuevoVehiculo.modelo || ''}
                     onChange={(e) => onNuevoVehiculoChange({ modelo: e.target.value })}
                     placeholder="Ej: Ibiza"
                     className="bg-white"
@@ -439,8 +439,8 @@ export function OrdenInfoTab({
               <div>
                 <Label className="text-xs text-gray-600 mb-1 block">Bastidor (VIN)</Label>
                 <Input
-                  value={nuevoVehiculo.bastidor}
-                  onChange={(e) => onNuevoVehiculoChange({ bastidor: e.target.value })}
+                  value={nuevoVehiculo.vin || ''}
+                  onChange={(e) => onNuevoVehiculoChange({ vin: e.target.value })}
                   placeholder="Ej: WVWZZZ1KZBW123456"
                   className="bg-white font-mono"
                 />
@@ -509,7 +509,7 @@ export function OrdenInfoTab({
           <Label className="text-xs text-gray-500 mb-1 block">Kilómetros de entrada</Label>
           <NumberInput
             value={formData.kilometros_entrada}
-            onChange={(value) => onFormDataChange({ kilometros_entrada: value })}
+            onChange={(value) => onFormDataChange({ kilometros_entrada: value || undefined })}
             placeholder="Ej: 145000"
             className="font-mono"
             min={0}

@@ -153,7 +153,7 @@ export function OrdenTrabajoTab({
             <NumberInput
               value={tiempoEstimadoHoras}
               onChange={(value) => {
-                if (validarHorasTrabajo(value, 'tiempo_estimado_horas')) {
+                if (typeof value === 'number' && validarHorasTrabajo(value, 'tiempo_estimado_horas')) {
                   onTiempoEstimadoChange(value)
                 }
               }}
@@ -165,7 +165,7 @@ export function OrdenTrabajoTab({
             <NumberInput
               value={tiempoRealHoras}
               onChange={(value) => {
-                if (validarHorasTrabajo(value, 'tiempo_real_horas')) {
+                if (typeof value === 'number' && validarHorasTrabajo(value, 'tiempo_real_horas')) {
                   onTiempoRealChange(value)
                 }
               }}

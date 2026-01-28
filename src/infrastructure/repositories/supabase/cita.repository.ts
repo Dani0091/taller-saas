@@ -18,10 +18,9 @@ import { SupabaseErrorMapper } from '@/infrastructure/errors/SupabaseErrorMapper
 import { CitaMapper } from '@/infrastructure/mappers/cita.mapper'
 import type {
   ICitaRepository,
-  CitaFiltros,
-  PaginacionOpciones,
-  ResultadoPaginado
+  CitaFiltros
 } from '@/application/ports/cita.repository.interface'
+import type { PaginacionOpciones, ResultadoPaginado } from '@/application/ports/repository.types'
 
 export class SupabaseCitaRepository implements ICitaRepository {
   /**

@@ -192,17 +192,17 @@ export const createNumberChangeHandler = (
 ) => {
   return (value: number | null | undefined) => {
     let processedValue = value
-    
+
     // Aplicar transformación si se especifica
-    if (options?.transform) {
+    if (options?.transform && typeof value === 'number') {
       processedValue = options.transform(value)
     }
     
     // Validar rango
-    if (options?.min !== undefined && processedValue !== null && processedValue < options.min) {
+    if (options?.min !== undefined && typeof processedValue === 'number' && processedValue < options.min) {
       processedValue = options.min
     }
-    if (options?.max !== undefined && processedValue !== null && processedValue > options.max) {
+    if (options?.max !== undefined && typeof processedValue === 'number' && processedValue > options.max) {
       processedValue = options.max
     }
     
@@ -214,8 +214,8 @@ export const createNumberChangeHandler = (
         processedValue = 0
       }
     }
-    
-    setValue(prev => ({
+
+    setValue((prev: any) => ({
       ...prev,
       [fieldName]: processedValue
     }))
@@ -233,8 +233,8 @@ export const handleScannerNumber = (
   // Remover todos los caracteres no numéricos
   const cleanValue = scannedValue.replace(/[^\d]/g, '')
   const numValue = parseInt(cleanValue) || 0
-  
-  setValue(prev => ({
+
+  setValue((prev: any) => ({
     ...prev,
     [fieldName]: numValue
   }))

@@ -18,10 +18,9 @@ import { SupabaseErrorMapper } from '@/infrastructure/errors/SupabaseErrorMapper
 import { VehiculoMapper } from '@/infrastructure/mappers/vehiculo.mapper'
 import type {
   IVehiculoRepository,
-  VehiculoFiltros,
-  PaginacionOpciones,
-  ResultadoPaginado
+  VehiculoFiltros
 } from '@/application/ports/vehiculo.repository.interface'
+import type { PaginacionOpciones, ResultadoPaginado } from '@/application/ports/repository.types'
 
 export class SupabaseVehiculoRepository implements IVehiculoRepository {
   /**
@@ -45,9 +44,7 @@ export class SupabaseVehiculoRepository implements IVehiculoRepository {
         tallerId
       )
       if (existeMatricula) {
-        throw new ConflictError(
-          `Ya existe un vehículo con matrícula ${vehiculo.getMatricula().valor} en este taller`
-        )
+        throw new ConflictError('Vehículo', 'matrícula', vehiculo.getMatricula().valor)
       }
 
       // Insertar vehículo
@@ -181,9 +178,7 @@ export class SupabaseVehiculoRepository implements IVehiculoRepository {
           vehiculo.getId()
         )
         if (existeMatricula) {
-          throw new ConflictError(
-            `Ya existe otro vehículo con matrícula ${vehiculo.getMatricula().valor} en este taller`
-          )
+          throw new ConflictError('Vehículo', 'matrícula', vehiculo.getMatricula().valor)
         }
       }
 
@@ -605,7 +600,7 @@ export class SupabaseVehiculoRepository implements IVehiculoRepository {
       // Obtener todos los vehículos (incluyendo eliminados)
       const { data, error } = await supabase
         .from('vehiculos')
-        .select('cliente_id, marca, modelo, año, vin, deleted_at')
+        .select('cliente_id, marca, modelo, vin, deleted_at')
         .eq('taller_id', tallerId)
 
       if (error) {
@@ -632,7 +627,7 @@ export class SupabaseVehiculoRepository implements IVehiculoRepository {
           } else {
             stats.sinCliente++
           }
-          if (v.marca && v.modelo && v.año && v.vin) {
+          if (v.marca && v.modelo && v.vin) {
             stats.conDatosCompletos++
           }
         }

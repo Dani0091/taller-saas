@@ -238,7 +238,7 @@ export type {
 
 export type TipoDatoCampo = 'string' | 'number' | 'boolean' | 'date'
 
-export interface DatoValidado<T = {
+export interface DatoValidado<T> {
   valor: T
   esValido: boolean
   mensaje?: string
@@ -352,7 +352,7 @@ export const validarRango = (valor: number, min?: number, max?: number): DatoVal
  */
 export const crearManejadorDeCambios = (
   initialState: any,
-  onUpdate?: () => void
+  onUpdate?: () => void,
   debounceMs = 300
 ) => {
   let timeoutId: NodeJS.Timeout | null
@@ -450,52 +450,7 @@ export function useFormulario<T extends Record<string, any>>(
 // ============================================================================
 // INTERFACES DE FORMULARIOS CENTRALIZADAS
 // ============================================================================
-
-/**
- * Formulario de Vehículo - Tipos estrictos para consistencia
- * Base de datos usa numbers, formularios deben manejar números
- */
-export interface VehiculoFormulario {
-  matricula: string
-  marca: string | null
-  modelo: string | null
-  año: number
-  color: string | null
-  kilometros: number
-  tipo_combustible: string | null
-  potencia_cv: number | null
-  cilindrada: number | null
-  vin: string | null
-  carroceria: string | null
-}
-
-/**
- * Formulario de Cliente - Tipos consistentes
- */
-export interface ClienteFormulario {
-  nombre: string
-  apellidos: string
-  nif: string
-  email: string | null
-  telefono: string | null
-  direccion: string | null
-  poblacion: string | null
-  provincia: string | null
-  cod_postal: string | null
-  iban: string | null
-}
-
-/**
- * Formulario de Vehículo Nuevo - Para crear desde cero
- */
-export interface VehiculoNuevoFormulario extends Omit<VehiculoFormulario, 'id' | 'taller_id'> {
-  // Hereda todo de VehiculoFormulario excepto id y taller_id
-}
-
-/**
- * Formulario de Vehículo Edición - Para actualizar existente
- */
-export type VehiculoEdicionFormulario = VehiculoFormulario
+// Eliminado duplicado - las interfaces ya están definidas arriba
 
 // ============================================================================
 // TIPOS DE ORDENES DE TRABAJO

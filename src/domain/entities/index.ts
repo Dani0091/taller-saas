@@ -13,7 +13,7 @@ export { LineaFacturaEntity } from './LineaFactura.entity'
 
 // Entities de Clientes
 export { ClienteEntity } from './Cliente.entity'
-export { VehiculoEntity } from './Vehiculo.entity'
+export { VehiculoEntity, type VehiculoProps } from './Vehiculo.entity'
 
 // Entities de Citas
-export { CitaEntity } from './Cita.entity'
+export { CitaEntity, type CitaProps } from './Cita.entity'

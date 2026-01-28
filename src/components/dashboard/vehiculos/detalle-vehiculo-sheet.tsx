@@ -25,6 +25,7 @@ import { listarOrdenesAction } from '@/actions/ordenes'
 import type { VehiculoResponseDTO } from '@/application/dtos/vehiculo.dto'
 import type { ClienteListadoDTO } from '@/application/dtos/cliente.dto'
 import type { OrdenListItemDTO } from '@/application/dtos/orden.dto'
+import { TipoCombustible } from '@/domain/types'
 
 interface DetalleVehiculoSheetProps {
   vehiculoId: string
@@ -41,7 +42,7 @@ interface VehiculoFormData {
   año?: number
   color?: string
   kilometros?: number
-  tipoCombustible?: string
+  tipoCombustible?: TipoCombustible
   carroceria?: string
   potenciaCv?: number
   cilindrada?: number
@@ -72,7 +73,7 @@ export function DetalleVehiculoSheet({
     año: undefined,
     color: '',
     kilometros: 0,
-    tipoCombustible: '',
+    tipoCombustible: undefined,
     potenciaCv: undefined,
     cilindrada: undefined,
     vin: '',
@@ -162,22 +163,24 @@ export function DetalleVehiculoSheet({
       setGuardando(true)
 
       // ✅ CORRECTO: Usar Server Action en lugar de fetch a API route
-      const resultado = await actualizarVehiculoAction({
-        vehiculoId: formData.id,
-        clienteId: formData.clienteId,
-        marca: formData.marca,
-        modelo: formData.modelo,
-        año: formData.año,
-        color: formData.color,
-        kilometros: formData.kilometros,
-        tipoCombustible: formData.tipoCombustible,
-        carroceria: formData.carroceria,
-        potenciaCv: formData.potenciaCv,
-        cilindrada: formData.cilindrada,
-        vin: formData.vin,
-        bastidorVin: formData.bastidorVin,
-        notas: formData.notas
-      })
+      const resultado = await actualizarVehiculoAction(
+        formData.id,
+        {
+          clienteId: formData.clienteId,
+          marca: formData.marca,
+          modelo: formData.modelo,
+          año: formData.año,
+          color: formData.color,
+          kilometros: formData.kilometros,
+          tipoCombustible: formData.tipoCombustible,
+          carroceria: formData.carroceria,
+          potenciaCv: formData.potenciaCv,
+          cilindrada: formData.cilindrada,
+          vin: formData.vin,
+          bastidorVin: formData.bastidorVin,
+          notas: formData.notas
+        }
+      )
 
       if (!resultado.success) {
         throw new Error(resultado.error)
@@ -387,13 +390,13 @@ export function DetalleVehiculoSheet({
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1">
                           <p className="font-medium">#{orden.numeroOrden}</p>
-                          <p className="text-sm text-gray-500">{orden.descripcionProblema}</p>
+                          <p className="text-sm text-gray-500">{orden.totalFormateado}</p>
                           <p className="text-xs text-gray-400 mt-1">
-                            {new Date(orden.fechaEntrada).toLocaleDateString('es-ES')}
+                            {new Date(orden.createdAt).toLocaleDateString('es-ES')}
                           </p>
                         </div>
                         <span className={`text-xs px-2 py-1 rounded ${ESTADO_COLORES[orden.estado]}`}>
-                          {orden.estadoLabel}
+                          {orden.estado}
                         </span>
                       </div>
                     </Link>

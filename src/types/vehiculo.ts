@@ -39,14 +39,7 @@ export interface VehiculoBD extends VehiculoBase {
 }
 
 // ==================== TIPOS DE FORMULARIO ====================
-
-export interface VehiculoFormulario extends Omit<VehiculoBase, 'taller_id'> {
-  // En el formulario, los valores numéricos pueden ser number para facilitar validaciones
-  año?: number | null
-  kilometros?: number | null
-  potencia_cv?: number | null
-  cilindrada?: number | null
-}
+// NOTA: VehiculoFormulario se define en src/types/formularios.ts
 
 // ==================== ENUMS Y TIPOS AUXILIARES ====================
 

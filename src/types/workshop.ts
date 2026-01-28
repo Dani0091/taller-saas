@@ -76,8 +76,8 @@ export interface LineaOrden {
 }
 
 // ==================== TIPOS DE FORMULARIOS (PARA UI) ====================
-
-export type VehiculoFormulario = Omit<Vehiculo, 'id' | 'taller_id' | 'cliente_id'>
+// NOTA: VehiculoFormulario se define en src/types/formularios.ts
+// export type VehiculoFormulario = Omit<Vehiculo, 'id' | 'taller_id' | 'cliente_id'>
 export type ClienteFormulario = Omit<Cliente, 'id' | 'taller_id'>
 export type OrdenFormulario = Omit<Orden, 'id' | 'taller_id' | 'numero_orden'>
 export type LineaOrdenFormulario = Omit<LineaOrden, 'id' | 'orden_id'>

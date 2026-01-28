@@ -9,6 +9,7 @@ import { CrearBorradorDesdeOrdenSchema } from '@/application/dtos/factura.dto'
 import { SupabaseErrorMapper } from '@/infrastructure/errors/SupabaseErrorMapper'
 import { AppError } from '@/domain/errors/AppError'
 import type { CrearBorradorDesdeOrdenDTO, FacturaResponseDTO } from '@/application/dtos'
+import { obtenerUsuarioConFallback } from '@/lib/auth/obtener-usuario-fallback'
 
 type ActionResult<T> = { success: true; data: T } | { success: false; error: string }
 
@@ -27,13 +28,9 @@ export async function crearBorradorDesdeOrdenAction(
       return { success: false, error: 'No autenticado' }
     }
 
-    const { data: usuario, error: usuarioError } = await supabase
-      .from('usuarios')
-      .select('id, taller_id')
-      .eq('auth_id', user.id)
-      .single()
+    const usuario = await obtenerUsuarioConFallback()
 
-    if (usuarioError || !usuario) {
+    if (!usuario) {
       return { success: false, error: 'Usuario no encontrado' }
     }
 

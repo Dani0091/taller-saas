@@ -49,7 +49,10 @@ export async function obtenerUsuarioConFallback(): Promise<UsuarioConTaller | nu
 
     if (usuarioPorAuthId) {
       console.log('✅ Usuario encontrado por auth_id:', usuarioPorAuthId.email)
-      return usuarioPorAuthId as UsuarioConTaller
+      return {
+        ...usuarioPorAuthId,
+        talleres: Array.isArray(usuarioPorAuthId.talleres) ? usuarioPorAuthId.talleres[0] : usuarioPorAuthId.talleres
+      } as UsuarioConTaller
     }
 
     // INTENTO 2: Buscar por email (método legacy)
@@ -83,7 +86,10 @@ export async function obtenerUsuarioConFallback(): Promise<UsuarioConTaller | nu
       }
     }
 
-    return usuarioPorEmail as UsuarioConTaller
+    return {
+      ...usuarioPorEmail,
+      talleres: Array.isArray(usuarioPorEmail.talleres) ? usuarioPorEmail.talleres[0] : usuarioPorEmail.talleres
+    } as UsuarioConTaller
 
   } catch (error: any) {
     console.error('❌ Error obteniendo usuario:', error.message)

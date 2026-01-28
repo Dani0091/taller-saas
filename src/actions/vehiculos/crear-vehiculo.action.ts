@@ -8,6 +8,7 @@ import { CrearVehiculoSchema } from '@/application/dtos/vehiculo.dto'
 import { SupabaseErrorMapper } from '@/infrastructure/errors/SupabaseErrorMapper'
 import { AppError } from '@/domain/errors/AppError'
 import type { CrearVehiculoDTO, VehiculoResponseDTO } from '@/application/dtos/vehiculo.dto'
+import { obtenerUsuarioConFallback } from '@/lib/auth/obtener-usuario-fallback'
 
 type ActionResult<T> = { success: true; data: T } | { success: false; error: string }
 
@@ -24,13 +25,9 @@ export async function crearVehiculoAction(dto: CrearVehiculoDTO): Promise<Action
       return { success: false, error: 'No autenticado' }
     }
 
-    const { data: usuario, error: usuarioError } = await supabase
-      .from('usuarios')
-      .select('id, taller_id')
-      .eq('auth_id', user.id)
-      .single()
+    const usuario = await obtenerUsuarioConFallback()
 
-    if (usuarioError || !usuario) {
+    if (!usuario) {
       return { success: false, error: 'Usuario no encontrado' }
     }
 

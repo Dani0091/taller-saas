@@ -294,7 +294,7 @@ export function useOrdenData(ordenId?: string | null): OrdenDataHookReturn {
       console.error('Error agregando línea:', error)
       toast.error('Error al agregar línea')
     }
-  }, [orden.id, supabase])
+  }, [orden?.id, supabase])
 
   const actualizarLinea = useCallback(async (id: string, updates: Partial<LineaOrden>) => {
     try {

@@ -44,7 +44,7 @@ export interface FacturaProps {
   createdAt: Date
   updatedAt: Date
   createdBy: string
-  emitenBy?: string
+  emitidaBy?: string
   anuladaBy?: string
 }
 
