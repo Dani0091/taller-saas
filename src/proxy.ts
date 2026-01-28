@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function proxy(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   })
@@ -57,6 +57,7 @@ export async function proxy(request: NextRequest) {
   const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
   const isStaticAsset = pathname.startsWith('/_next') ||
                         pathname.startsWith('/favicon') ||
+                        pathname.startsWith('/sw.js') ||
                         pathname.includes('.')
 
   // Si es un asset estático, permitir
@@ -89,9 +90,6 @@ export async function proxy(request: NextRequest) {
 
   return supabaseResponse
 }
-
-// Export default para compatibilidad
-export default proxy
 
 export const config = {
   matcher: [
