@@ -10,6 +10,8 @@
  * la implementación, NO los casos de uso ni el dominio.
  */
 
+import type { PaginacionOpciones, ResultadoPaginado } from './repository.types'
+
 import { FacturaEntity } from '@/domain/entities'
 import { EstadoFactura, TipoFactura, EstadoVerifactu } from '@/domain/types'
 
@@ -26,25 +28,6 @@ export interface FacturaFiltros {
   fechaHasta?: Date
   vencidas?: boolean // Solo facturas vencidas
   busqueda?: string // Búsqueda por número o cliente
-}
-
-/**
- * Opciones de paginación
- */
-export interface PaginacionOpciones {
-  page: number
-  pageSize: number
-}
-
-/**
- * Resultado paginado
- */
-export interface ResultadoPaginado<T> {
-  data: T[]
-  total: number
-  page: number
-  pageSize: number
-  totalPages: number
 }
 
 /**

@@ -9,6 +9,7 @@
 
 import { CitaEntity } from '@/domain/entities'
 import { TipoCita, EstadoCita } from '@/domain/types'
+import type { PaginacionOpciones, ResultadoPaginado } from './repository.types'
 
 /**
  * Filtros para búsqueda de citas
@@ -24,25 +25,6 @@ export interface CitaFiltros {
   soloHoy?: boolean
   soloVencidas?: boolean
   incluirEliminadas?: boolean
-}
-
-/**
- * Opciones de paginación
- */
-export interface PaginacionOpciones {
-  page: number
-  pageSize: number
-}
-
-/**
- * Resultado paginado
- */
-export interface ResultadoPaginado<T> {
-  data: T[]
-  total: number
-  page: number
-  pageSize: number
-  totalPages: number
 }
 
 /**

@@ -33,7 +33,7 @@ export interface OrdenProps {
   tiempoEstimadoHoras?: number
   tiempoRealHoras?: number
   kilometrosEntrada?: Kilometraje
-  nivel Combustible?: string
+  nivelCombustible?: string
   renunciaPresupuesto: boolean
   accionImprevisto: AccionImprevisto
   recogerPiezas: boolean

@@ -175,7 +175,7 @@ export default function NuevoVehiculoPage() {
                 <Input
                   name="matricula"
                   placeholder="ABC-1234"
-                  value={formData.matricula}
+                  value={formData.matricula || ''}
                   onChange={handleChange}
                   required
                   className="flex-1"
@@ -191,7 +191,7 @@ export default function NuevoVehiculoPage() {
               <Input
                 name="marca"
                 placeholder="BMW"
-                value={formData.marca}
+                value={formData.marca || ''}
                 onChange={handleChange}
               />
             </div>
@@ -200,23 +200,23 @@ export default function NuevoVehiculoPage() {
               <Input
                 name="modelo"
                 placeholder="320i"
-                value={formData.modelo}
+                value={formData.modelo || ''}
                 onChange={handleChange}
               />
             </div>
           </div>
 
           {/* Fila 2: Versión, Año, Color */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* <div>
               <Label>Versión</Label>
               <Input
                 name="versión"
                 placeholder="Sport, Luxury, etc"
-                value={formData.versión}
+                value={formData.versión || ''}
                 onChange={handleChange}
               />
-            </div>
+            </div> */}
             <div>
               <Label>Año</Label>
               <NumberInput
@@ -224,10 +224,10 @@ export default function NuevoVehiculoPage() {
                 onChange={(value) => {
                   const anioMax = new Date().getFullYear() + 1
                   const añoValidado = sanitizeAño(value, anioMax)
-                  
+
                   if (añoValidado !== undefined) {
-                    setFormData(prev => ({ ...prev, año: String(añoValidado) }))
-                  } else if (value !== null && value !== undefined && value !== '') {
+                    setFormData(prev => ({ ...prev, año: añoValidado }))
+                  } else if (value !== null && value !== undefined) {
                     toast.error(VehiculoValidationRules.año.message)
                   }
                 }}
@@ -242,7 +242,7 @@ export default function NuevoVehiculoPage() {
               <Input
                 name="color"
                 placeholder="Gris, Blanco, Negro"
-                value={formData.color}
+                value={formData.color || ''}
                 onChange={handleChange}
               />
             </div>
@@ -274,7 +274,7 @@ export default function NuevoVehiculoPage() {
               <Label>Combustible</Label>
               <select
                 name="tipo_combustible"
-                value={formData.tipo_combustible}
+                value={formData.tipo_combustible || ''}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
               >
@@ -290,7 +290,7 @@ export default function NuevoVehiculoPage() {
               <Label>Carrocería</Label>
               <select
                 name="carroceria"
-                value={formData.carroceria}
+                value={formData.carroceria || ''}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
               >

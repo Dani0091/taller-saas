@@ -44,7 +44,10 @@ export function CalendarioCitas({ onNuevaCita, onEditarCita }: CalendarioCitasPr
         fechaDesde: inicio.toISOString(),
         fechaHasta: fin.toISOString(),
         page: 1,
-        pageSize: 1000 // Cargar todas las citas del mes
+        pageSize: 1000, // Cargar todas las citas del mes
+        soloHoy: false,
+        soloVencidas: false,
+        incluirEliminadas: false
       })
 
       if (!resultado.success) {

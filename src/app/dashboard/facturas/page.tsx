@@ -10,6 +10,7 @@ import { FileText, Plus, Download, Eye, Trash2, Loader2, AlertCircle } from 'luc
 import { toast } from 'sonner'
 import { listarFacturasAction, anularFacturaAction } from '@/actions/facturas'
 import type { FacturaListadoDTO } from '@/application/dtos'
+import { EstadoFactura } from '@/domain/types'
 
 const estadoColors: Record<string, string> = {
   'borrador': 'bg-gray-100 text-gray-800',
@@ -22,7 +23,7 @@ export default function FacturasPage() {
   const [facturas, setFacturas] = useState<FacturaListadoDTO[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [filtroEstado, setFiltroEstado] = useState<string>('')
+  const [filtroEstado, setFiltroEstado] = useState<EstadoFactura | ''>('')
   const [busqueda, setBusqueda] = useState<string>('')
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
@@ -116,7 +117,7 @@ export default function FacturasPage() {
             <label className="block text-sm font-semibold mb-2">Estado</label>
             <select
               value={filtroEstado}
-              onChange={(e) => setFiltroEstado(e.target.value)}
+              onChange={(e) => setFiltroEstado(e.target.value as EstadoFactura | '')}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
             >
               <option value="">Todos los estados</option>

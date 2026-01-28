@@ -18,6 +18,7 @@ import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { crearClienteAction } from '@/actions/clientes'
+import { TipoCliente, FormaPago } from '@/domain/types'
 import { validarDocumentoIdentidad, validarEmail } from '@/lib/validaciones'
 
 interface FormClienteSheetProps {
@@ -140,10 +141,11 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
 
       // ✅ CORRECTO: Usar Server Action en lugar de fetch a API route
       // ✅ NO enviamos taller_id (la Server Action lo obtiene del servidor)
+      const apellidos = [formData.primerApellido, formData.segundoApellido].filter(Boolean).join(' ')
+
       const resultado = await crearClienteAction({
         nombre: formData.nombre,
-        primerApellido: formData.primerApellido,
-        segundoApellido: formData.segundoApellido,
+        apellidos,
         nif: formData.nif,
         email: formData.email,
         telefono: formData.telefono,
@@ -153,8 +155,10 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
         codigoPostal: formData.codigoPostal,
         pais: formData.pais || 'ES',
         notas: formData.notas,
-        tipoCliente: formData.tipoCliente || 'personal',
-        formaPago: formData.formaPago || 'transferencia',
+        tipoCliente: (formData.tipoCliente || TipoCliente.PARTICULAR) as TipoCliente,
+        formaPago: (formData.formaPago || FormaPago.TRANSFERENCIA) as FormaPago,
+        requiereAutorizacion: false,
+        diasPago: 0,
         iban: formData.iban
       })
 

@@ -51,6 +51,8 @@ export default function VehiculosPage() {
       // Usar Server Action blindada en lugar de Supabase directo
       const resultado = await listarVehiculosAction({
         incluirEliminados: false,
+        soloSinCliente: false,
+        soloConDatosCompletos: false,
         page: 1,
         pageSize: 100
       })
@@ -80,8 +82,7 @@ export default function VehiculosPage() {
     const pasaBusqueda =
       vehiculo.matricula.toLowerCase().includes(searchLower) ||
       (vehiculo.marca?.toLowerCase() || '').includes(searchLower) ||
-      (vehiculo.modelo?.toLowerCase() || '').includes(searchLower) ||
-      (vehiculo.clienteNombre || '').toLowerCase().includes(searchLower)
+      (vehiculo.modelo?.toLowerCase() || '').includes(searchLower)
 
     return pasaFiltro && pasaBusqueda
   })
@@ -200,10 +201,10 @@ export default function VehiculosPage() {
                   </div>
 
                   {/* Cliente */}
-                  {vehiculo.tieneCliente && vehiculo.clienteNombre && (
+                  {vehiculo.tieneCliente && (
                     <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                       <User className="w-3.5 h-3.5" />
-                      <span>{vehiculo.clienteNombre}</span>
+                      <span>Cliente asignado</span>
                     </div>
                   )}
 
@@ -227,11 +228,8 @@ export default function VehiculosPage() {
                     {vehiculo.kilometros && (
                       <div className="flex items-center gap-1">
                         <Gauge className="w-3.5 h-3.5" />
-                        {vehiculo.kilometrosFormateados}
+                        {vehiculo.kilometros?.toLocaleString()} km
                       </div>
-                    )}
-                    {vehiculo.carroceria && (
-                      <div>{vehiculo.carroceria}</div>
                     )}
                   </div>
                 </Card>

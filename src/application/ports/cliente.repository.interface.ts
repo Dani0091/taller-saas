@@ -9,6 +9,7 @@
 
 import { ClienteEntity } from '@/domain/entities'
 import { EstadoCliente, TipoCliente } from '@/domain/types'
+import type { PaginacionOpciones, ResultadoPaginado } from './repository.types'
 
 /**
  * Filtros para búsqueda de clientes
@@ -20,25 +21,6 @@ export interface ClienteFiltros {
   ciudad?: string
   provincia?: string
   incluirEliminados?: boolean
-}
-
-/**
- * Opciones de paginación
- */
-export interface PaginacionOpciones {
-  page: number
-  pageSize: number
-}
-
-/**
- * Resultado paginado
- */
-export interface ResultadoPaginado<T> {
-  data: T[]
-  total: number
-  page: number
-  pageSize: number
-  totalPages: number
 }
 
 /**

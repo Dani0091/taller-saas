@@ -7,13 +7,13 @@ import { SupabaseClienteRepository } from '@/infrastructure/repositories/supabas
 import { SupabaseErrorMapper } from '@/infrastructure/errors/SupabaseErrorMapper'
 import { AppError } from '@/domain/errors/AppError'
 
-type ActionResult<void> = { success: true } | { success: false; error: string }
+type VoidActionResult = { success: true } | { success: false; error: string }
 
 /**
  * Server Action: Eliminar Cliente
  * Patrón blindado: Auth → Validación → Use Case → Error Mapping
  */
-export async function eliminarClienteAction(id: string): Promise<ActionResult<void>> {
+export async function eliminarClienteAction(id: string): Promise<VoidActionResult> {
   try {
     // 1. AUTENTICACIÓN
     const supabase = await createClient()

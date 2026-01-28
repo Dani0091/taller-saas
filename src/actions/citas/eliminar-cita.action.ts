@@ -2,34 +2,20 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { EliminarCitaUseCase } from '@/application/use-cases/citas'
-import { SupabaseCitaRepository } from '@/infrastructure/repositories/supabase/cita.repository'
-import { SupabaseErrorMapper } from '@/infrastructure/errors/SupabaseErrorMapper'
-import { AppError } from '@/domain/errors/AppError'
+import { obtenerUsuarioConFallback } from '@/lib/auth/obtener-usuario-fallback'
 
-type ActionResult<void> = { success: true } | { success: false; error: string }
+type VoidActionResult = { success: true } | { success: false; error: string }
 
 /**
  * Server Action: Eliminar Cita
- * Patrón blindado: Auth → Validación → Use Case → Error Mapping
+ * Patrón simplificado: Auth → Validación → BD → Revalidate
  */
-export async function eliminarCitaAction(id: string): Promise<ActionResult<void>> {
+export async function eliminarCitaAction(id: string): Promise<VoidActionResult> {
   try {
-    // 1. AUTENTICACIÓN
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
+    // 1. AUTENTICACIÓN CON FALLBACK
+    const usuario = await obtenerUsuarioConFallback()
+    if (!usuario) {
       return { success: false, error: 'No autenticado' }
-    }
-
-    const { data: usuario, error: usuarioError } = await supabase
-      .from('usuarios')
-      .select('id, taller_id')
-      .eq('auth_id', user.id)
-      .single()
-
-    if (usuarioError || !usuario) {
-      return { success: false, error: 'Usuario no encontrado' }
     }
 
     // 2. VALIDACIÓN BÁSICA DE ID
@@ -37,10 +23,21 @@ export async function eliminarCitaAction(id: string): Promise<ActionResult<void>
       return { success: false, error: 'El ID de la cita es obligatorio' }
     }
 
-    // 3. EJECUTAR USE CASE
-    const citaRepository = new SupabaseCitaRepository()
-    const useCase = new EliminarCitaUseCase(citaRepository)
-    await useCase.execute(id, usuario.taller_id, usuario.id)
+    // 3. ELIMINAR CITA (soft delete)
+    const supabase = await createClient()
+    const { error } = await supabase
+      .from('citas')
+      .update({
+        deleted_at: new Date().toISOString(),
+        deleted_by: usuario.id
+      })
+      .eq('id', id)
+      .eq('taller_id', usuario.taller_id)
+
+    if (error) {
+      console.error('Error eliminando cita:', error)
+      return { success: false, error: 'Error al eliminar la cita' }
+    }
 
     // 4. REVALIDAR CACHE
     revalidatePath('/citas')
@@ -50,12 +47,7 @@ export async function eliminarCitaAction(id: string): Promise<ActionResult<void>
     return { success: true }
 
   } catch (error: any) {
-    // 5. ERROR MAPPING (traducir errores técnicos a mensajes de usuario)
-    if (error instanceof AppError) {
-      return { success: false, error: error.message }
-    }
-
-    const domainError = SupabaseErrorMapper.toDomainError(error)
-    return { success: false, error: domainError.message }
+    console.error('Error en eliminarCitaAction:', error)
+    return { success: false, error: error.message || 'Error al eliminar la cita' }
   }
 }

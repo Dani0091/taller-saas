@@ -7,6 +7,8 @@
  * Esto permite cambiar fácilmente de Supabase a otra BD sin afectar la lógica.
  */
 
+import type { PaginacionOpciones, ResultadoPaginado } from './repository.types'
+
 import { VehiculoEntity } from '@/domain/entities'
 import { TipoCombustible } from '@/domain/types'
 
@@ -23,25 +25,6 @@ export interface VehiculoFiltros {
   incluirEliminados?: boolean
   soloSinCliente?: boolean // Vehículos sin cliente asignado
   soloConDatosCompletos?: boolean // Vehículos con marca, modelo, año y VIN
-}
-
-/**
- * Opciones de paginación
- */
-export interface PaginacionOpciones {
-  page: number
-  pageSize: number
-}
-
-/**
- * Resultado paginado
- */
-export interface ResultadoPaginado<T> {
-  data: T[]
-  total: number
-  page: number
-  pageSize: number
-  totalPages: number
 }
 
 /**

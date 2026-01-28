@@ -32,15 +32,18 @@ export class ListarClientesUseCase {
       const dto = cliente.toDTO()
       return {
         id: dto.id,
+        nombre: dto.nombre,
         nombreCompleto: dto.nombreCompleto,
         nif: dto.nif,
         nifMasked: dto.nifMasked,
         email: dto.email,
         telefono: dto.telefono,
+        direccion: dto.direccion,
         ciudad: dto.ciudad,
         tipoCliente: dto.tipoCliente,
         estado: dto.estado,
-        isActivo: dto.isActivo
+        isActivo: dto.isActivo,
+        created_at: dto.createdAt
       }
     })
 

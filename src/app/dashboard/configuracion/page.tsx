@@ -23,6 +23,7 @@ interface ConfigTaller {
   nombre_taller?: string
   nombre_empresa?: string
   nif?: string
+  cif?: string
   telefono: string
   email: string
   direccion?: string
@@ -34,6 +35,9 @@ interface ConfigTaller {
   firma_url?: string | null
   tarifa_hora: number
   iva_default?: number
+  incluye_iva?: boolean
+  porcentaje_iva?: number
+  tarifa_con_iva?: boolean
   porcentaje_anticipo?: number | null
   plazo_pago_dias?: number | null
   moneda?: string
@@ -48,69 +52,7 @@ interface ConfigTaller {
   numero_factura_inicial?: number | null
 }
 
-interface TarifaConfig {
-  id?: string
-  tipo_cliente: string
-  tarifa_hora: number
-  tarifa_hora_urgente: number | null
-  descuento_piezas_porcentaje: number
-  descuento_mano_obra_porcentaje: number
-  dias_pago: number
-  limite_credito: number | null
-  activo: boolean
-}
-
-interface SerieConfig {
-  id?: string
-  taller_id?: string
-  nombre: string
-  prefijo: string
-  ultimo_numero: number
-  activa: boolean
-}
-
-// ==================== ALIAS PARA COMPATIBILIDAD ====================
-// Mantenemos compatibilidad con el código existente
-type Tarifa = TarifaConfig
-type SerieFacturacion = SerieConfig
-
-// ==================== VALORES POR DEFECTO UNIFICADOS ====================
-const CONFIG_DEFAULTS: ConfigTaller = {
-  taller_id: '',
-  telefono: '',
-  email: '',
-  pais: 'España',
-  logo_url: null,
-  firma_url: null,
-  tarifa_hora: 45.00,
-  iva_default: 21.00,
-  moneda: 'EUR',
-  idioma: 'es',
-  formato_fecha: 'dd/MM/yyyy',
-  iban: null,
-  condiciones_pago: null,
-  notas_factura: null,
-  color_primario: null,
-  color_secundario: null,
-}
-
-const TARIFA_DEFAULTS: TarifaConfig = {
-  tipo_cliente: '',
-  tarifa_hora: 45.00,
-  tarifa_hora_urgente: null,
-  descuento_piezas_porcentaje: 0,
-  descuento_mano_obra_porcentaje: 0,
-  dias_pago: 30,
-  limite_credito: null,
-  activo: true,
-}
-
-const SERIE_DEFAULTS: SerieConfig = {
-  nombre: '',
-  prefijo: '',
-  ultimo_numero: 0,
-  activa: true,
-}
+// ==================== INTERFACES AUXILIARES ====================
 
 interface TarifaConfig {
   id?: string
@@ -130,6 +72,26 @@ interface SerieConfig {
   prefijo: string
   ultimo_numero: number  // Siempre number
   activa: boolean
+}
+
+// ==================== VALORES POR DEFECTO UNIFICADOS ====================
+
+const TARIFA_DEFAULTS: TarifaConfig = {
+  tipo_cliente: '',
+  tarifa_hora: 45.00,
+  tarifa_hora_urgente: null,
+  descuento_piezas_porcentaje: 0,
+  descuento_mano_obra_porcentaje: 0,
+  dias_pago: 30,
+  limite_credito: null,
+  activo: true,
+}
+
+const SERIE_DEFAULTS: SerieConfig = {
+  nombre: '',
+  prefijo: '',
+  ultimo_numero: 0,
+  activa: true,
 }
 
 // Valores por defecto para prevenir undefined
@@ -159,48 +121,6 @@ const CONFIG_DEFAULTS: ConfigTaller = {
   color_primario: null,
   color_secundario: null,
 }
-
-const TARIFA_DEFAULTS: TarifaConfig = {
-  tipo_cliente: '',
-  tarifa_hora: 45.00,
-  tarifa_hora_urgente: null,
-  descuento_piezas_porcentaje: 0,
-  descuento_mano_obra_porcentaje: 0,
-  dias_pago: 30,
-  limite_credito: null,
-  activo: true,
-}
-
-const SERIE_DEFAULTS: SerieConfig = {
-  nombre: '',
-  prefijo: '',
-  ultimo_numero: 0,
-  activa: true,
-}
-
-interface Tarifa {
-  id?: string
-  tipo_cliente: string
-  tarifa_hora: number
-  tarifa_hora_urgente: number | null
-  descuento_piezas_porcentaje: number
-  descuento_mano_obra_porcentaje: number
-  dias_pago: number
-  limite_credito: number | null
-  activo: boolean
-}
-
-interface SerieFacturacion {
-  id: string
-  taller_id: string
-  nombre: string
-  prefijo: string
-  ultimo_numero: number
-  activa: boolean // ✅ CAMPO AÑADIDO - UNIFICACIÓN CON SerieConfig
-}
-
-// ✅ UNIFICACIÓN DE TIPOS - Ambas interfaces ahora son iguales
-type SerieConfig = SerieFacturacion
 
 const TIPOS_CLIENTE = [
   { value: 'particular', label: 'Particular', icon: '👤', desc: 'Clientes individuales' },
@@ -314,7 +234,7 @@ export default function ConfiguracionPage() {
     }
   }
 
-  const getTarifaPorTipo = (tipo: string): Tarifa => {
+  const getTarifaPorTipo = (tipo: string): TarifaConfig => {
     const tarifa = tarifas.find(t => t.tipo_cliente === tipo)
     return tarifa || {
       tipo_cliente: tipo,
@@ -328,7 +248,7 @@ export default function ConfiguracionPage() {
     }
   }
 
-  const guardarTarifa = async (tarifa: Tarifa) => {
+  const guardarTarifa = async (tarifa: TarifaConfig) => {
     setGuardandoTarifa(tarifa.tipo_cliente)
     try {
       const response = await fetch('/api/tarifas', {
@@ -483,7 +403,7 @@ export default function ConfiguracionPage() {
     }
   }
 
-  const handleEditarSerie = (serie: SerieFacturacion) => {
+  const handleEditarSerie = (serie: SerieConfig) => {
     setSerieEditando(serie)
     setFormSerie({
       nombre: serie.nombre,
@@ -668,13 +588,14 @@ const handleRadioChange = (value: boolean) => {
   }
 
   // Calcular tarifa base (sin IVA) y con IVA
+  const porcentajeIva = formData.porcentaje_iva ?? 21
   const tarifaBase = formData.tarifa_con_iva
-    ? formData.tarifa_hora / (1 + formData.porcentaje_iva / 100)
+    ? formData.tarifa_hora / (1 + porcentajeIva / 100)
     : formData.tarifa_hora
 
   const tarifaConIva = formData.tarifa_con_iva
     ? formData.tarifa_hora
-    : formData.tarifa_hora * (1 + formData.porcentaje_iva / 100)
+    : formData.tarifa_hora * (1 + porcentajeIva / 100)
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -964,9 +885,9 @@ const handleRadioChange = (value: boolean) => {
 
               {formData.incluye_iva && (
                 <div className="bg-white p-4 rounded-lg border border-orange-100">
-                  <p className="text-gray-600 text-xs uppercase">IVA ({formData.porcentaje_iva}%)</p>
+                  <p className="text-gray-600 text-xs uppercase">IVA ({porcentajeIva}%)</p>
                   <p className="text-2xl font-bold text-orange-600 mt-2">
-                    €{((tarifaBase * 2 * formData.porcentaje_iva) / 100).toFixed(2)}
+                    €{((tarifaBase * 2 * porcentajeIva) / 100).toFixed(2)}
                   </p>
                 </div>
               )}
@@ -1123,8 +1044,9 @@ const handleRadioChange = (value: boolean) => {
                           type="button"
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleEliminarSerie(serie.id)}
+                          onClick={() => serie.id && handleEliminarSerie(serie.id)}
                           className="text-red-600 hover:bg-red-50"
+                          disabled={!serie.id}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -1567,13 +1489,13 @@ function TarifaEditor({
   guardando,
   tarifaBase
 }: {
-  tarifa: Tarifa
-  onSave: (t: Tarifa) => void
+  tarifa: TarifaConfig
+  onSave: (t: TarifaConfig) => void
   onCancel: () => void
   guardando: boolean
   tarifaBase: number
 }) {
-  const [formTarifa, setFormTarifa] = useState<Tarifa>({
+  const [formTarifa, setFormTarifa] = useState<TarifaConfig>({
     ...tarifa,
     tarifa_hora: tarifa.tarifa_hora || tarifaBase
   })

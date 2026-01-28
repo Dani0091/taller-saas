@@ -178,7 +178,9 @@ export function DetalleOrdenSheet({
     kilometros: 0,
     tipo_combustible: null,
     vin: null,
-    taller_id: ''
+    carroceria: null,
+    cilindrada: null,
+    potencia_cv: null
   })
 
   // Estado para editar vehículo existente
@@ -1271,6 +1273,8 @@ export function DetalleOrdenSheet({
               }}
             />
           )}
+        </div>
+
         {/* Footer */}
         <OrdenFooter
           modoCrear={modoCrear}
@@ -1295,9 +1299,6 @@ export function DetalleOrdenSheet({
           onGuardar={handleGuardar}
           onClose={onClose}
         />
-
-          </div>
-        </div>
 
         {/* Modal PDF */}
         {mostrarPDF && ordenSeleccionada && (

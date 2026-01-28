@@ -10,6 +10,8 @@
  * la implementación, NO los casos de uso ni el dominio.
  */
 
+import type { PaginacionOpciones, ResultadoPaginado } from './repository.types'
+
 import { OrdenEntity } from '@/domain/entities'
 import { EstadoOrden } from '@/domain/types'
 
@@ -24,25 +26,6 @@ export interface OrdenFiltros {
   fechaDesde?: Date
   fechaHasta?: Date
   busqueda?: string // Búsqueda por número o descripción
-}
-
-/**
- * Opciones de paginación
- */
-export interface PaginacionOpciones {
-  page: number
-  pageSize: number
-}
-
-/**
- * Resultado paginado
- */
-export interface ResultadoPaginado<T> {
-  data: T[]
-  total: number
-  page: number
-  pageSize: number
-  totalPages: number
 }
 
 /**

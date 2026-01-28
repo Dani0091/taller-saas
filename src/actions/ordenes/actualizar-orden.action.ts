@@ -47,7 +47,7 @@ export async function actualizarOrdenAction(
     // 3. EJECUTAR USE CASE
     const ordenRepository = new SupabaseOrdenRepository()
     const useCase = new ActualizarOrdenUseCase(ordenRepository)
-    const orden = await useCase.execute(id, validacion.data, usuario.taller_id)
+    const orden = await useCase.execute(id, validacion.data, usuario.taller_id, usuario.id)
 
     // 4. REVALIDAR CACHE
     revalidatePath('/ordenes')

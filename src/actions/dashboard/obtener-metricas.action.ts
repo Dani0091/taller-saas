@@ -9,6 +9,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { obtenerUsuarioConFallback } from '@/lib/auth/obtener-usuario-fallback'
 import type { MetricasDashboardDTO } from '@/application/dtos/dashboard.dto'
 
 type ActionResult<T> = { success: true; data: T } | { success: false; error: string }
@@ -19,24 +20,15 @@ type ActionResult<T> = { success: true; data: T } | { success: false; error: str
  */
 export async function obtenerMetricasDashboardAction(): Promise<ActionResult<MetricasDashboardDTO>> {
   try {
-    // 1. AUTENTICACIÓN
-    const supabase = await createClient()
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return { success: false, error: 'No autenticado' }
-    }
+    // 1. AUTENTICACIÓN CON FALLBACK
+    const usuario = await obtenerUsuarioConFallback()
 
-    const { data: usuario, error: usuarioError } = await supabase
-      .from('usuarios')
-      .select('id, taller_id, nombre, talleres(nombre)')
-      .eq('auth_id', user.id)
-      .single()
-
-    if (usuarioError || !usuario) {
+    if (!usuario) {
       return { success: false, error: 'Usuario no encontrado' }
     }
 
     const tallerId = usuario.taller_id
+    const supabase = await createClient()
 
     // 2. CONSULTAS CON FILTRO DE SEGURIDAD (taller_id)
 
@@ -118,8 +110,8 @@ export async function obtenerMetricasDashboardAction(): Promise<ActionResult<Met
       ivaRecaudadoMes,
       ivaTrimestre,
       clientesActivos: clientes?.length || 0,
-      nombreUsuario: usuario.nombre,
-      nombreTaller: (usuario.talleres as any)?.nombre
+      nombreUsuario: usuario.nombre ?? undefined,
+      nombreTaller: (usuario.talleres as any)?.nombre ?? undefined
     }
 
     return { success: true, data: metricas }

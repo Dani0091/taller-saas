@@ -144,15 +144,18 @@ export interface ClienteResponseDTO {
  */
 export interface ClienteListadoDTO {
   id: string
+  nombre: string
   nombreCompleto: string
   nif: string
   nifMasked: string
   email?: string
   telefono?: string
+  direccion?: string
   ciudad?: string
   tipoCliente: TipoCliente
   estado: EstadoCliente
   isActivo: boolean
+  created_at: string
 }
 
 /**
