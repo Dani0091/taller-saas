@@ -102,10 +102,18 @@ export class FacturaMapper {
       }
     }
 
-    // Retención
-    const retencion = record.porcentaje_retencion
-      ? Retencion.create(record.porcentaje_retencion)
-      : Retencion.ninguna()
+    // Retención (con protección para datos legacy)
+    let retencion: Retencion
+    if (record.porcentaje_retencion) {
+      try {
+        retencion = Retencion.create(record.porcentaje_retencion)
+      } catch (error) {
+        console.warn(`⚠️ Retención inválida (legacy): ${record.porcentaje_retencion}`, error)
+        retencion = Retencion.ninguna()
+      }
+    } else {
+      retencion = Retencion.ninguna()
+    }
 
     return FacturaEntity.create({
       id: record.id,
@@ -175,6 +183,25 @@ export class FacturaMapper {
    * Convierte línea de BD a Entity
    */
   private static lineaToDomain(record: LineaFacturaDBRecord): LineaFacturaEntity {
+    // Protección para precios legacy
+    let precioUnitario: Precio
+    try {
+      precioUnitario = Precio.create(record.precio_unitario)
+    } catch (error) {
+      console.warn(`⚠️ Precio unitario inválido (legacy): ${record.precio_unitario}`, error)
+      precioUnitario = Precio.create(0)
+    }
+
+    let descuentoImporte: Precio | undefined
+    if (record.descuento_importe) {
+      try {
+        descuentoImporte = Precio.create(record.descuento_importe)
+      } catch (error) {
+        console.warn(`⚠️ Descuento inválido (legacy): ${record.descuento_importe}`, error)
+        descuentoImporte = undefined
+      }
+    }
+
     return LineaFacturaEntity.create({
       id: record.id,
       facturaId: record.factura_id,
@@ -182,11 +209,9 @@ export class FacturaMapper {
       descripcion: record.descripcion,
       referencia: record.referencia,
       cantidad: record.cantidad,
-      precioUnitario: Precio.create(record.precio_unitario),
+      precioUnitario,
       descuentoPorcentaje: record.descuento_porcentaje || 0,
-      descuentoImporte: record.descuento_importe
-        ? Precio.create(record.descuento_importe)
-        : undefined,
+      descuentoImporte,
       ivaPorcentaje: record.iva_porcentaje
     })
   }

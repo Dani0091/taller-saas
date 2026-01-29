@@ -36,12 +36,21 @@ export async function obtenerOrdenAction(id: string): Promise<ActionResult<Orden
     return { success: true, data: orden }
 
   } catch (error: any) {
-    // 3. ERROR MAPPING
+    console.error('❌ Error en obtenerOrden:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    })
+
     if (error instanceof AppError) {
       return { success: false, error: error.message }
     }
 
     const domainError = SupabaseErrorMapper.toDomainError(error)
-    return { success: false, error: domainError.message }
+    return {
+      success: false,
+      error: domainError.message || 'Error alObtener orden'
+    }
   }
 }

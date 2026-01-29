@@ -95,12 +95,21 @@ export async function calcularTotalesOrdenAction(
     return { success: true, data: totales }
 
   } catch (error: any) {
-    // 7. ERROR MAPPING
+    console.error('❌ Error en calcularTotalesOrden:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    })
+
     if (error instanceof AppError) {
       return { success: false, error: error.message }
     }
 
     const domainError = SupabaseErrorMapper.toDomainError(error)
-    return { success: false, error: domainError.message }
+    return {
+      success: false,
+      error: domainError.message || 'Error alCalcular totales orden'
+    }
   }
 }

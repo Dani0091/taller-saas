@@ -46,12 +46,21 @@ export async function eliminarOrdenAction(id: string): Promise<VoidActionResult>
     return { success: true }
 
   } catch (error: any) {
-    // 5. ERROR MAPPING (traducir errores técnicos a mensajes de usuario)
+    console.error('❌ Error en eliminarOrden:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    })
+
     if (error instanceof AppError) {
       return { success: false, error: error.message }
     }
 
     const domainError = SupabaseErrorMapper.toDomainError(error)
-    return { success: false, error: domainError.message }
+    return {
+      success: false,
+      error: domainError.message || 'Error alEliminar orden'
+    }
   }
 }

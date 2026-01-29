@@ -26,10 +26,16 @@ export async function cerrarSesionAction(): Promise<ActionResult> {
 
     return { success: true }
   } catch (error: any) {
-    console.error('Error cerrando sesión:', error)
+    console.error('❌ Error en cerrarSesion:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    })
+
     return {
       success: false,
-      error: error.message || 'Error al cerrar sesión'
+      error: error.message || error.details || error.hint || 'Error al cerrar sesión'
     }
   }
 }

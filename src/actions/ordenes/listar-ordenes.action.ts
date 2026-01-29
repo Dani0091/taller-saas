@@ -48,12 +48,21 @@ export async function listarOrdenesAction(
     return { success: true, data: ordenesPaginadas }
 
   } catch (error: any) {
-    // 4. ERROR MAPPING (traducir errores técnicos a mensajes de usuario)
+    console.error('❌ Error en listarOrdenes:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code
+    })
+
     if (error instanceof AppError) {
       return { success: false, error: error.message }
     }
 
     const domainError = SupabaseErrorMapper.toDomainError(error)
-    return { success: false, error: domainError.message }
+    return {
+      success: false,
+      error: domainError.message || 'Error alListar ordenes'
+    }
   }
 }

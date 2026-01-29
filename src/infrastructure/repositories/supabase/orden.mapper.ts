@@ -88,7 +88,14 @@ export class OrdenMapper {
       tiempoEstimadoHoras: record.tiempo_estimado_horas,
       tiempoRealHoras: record.tiempo_real_horas,
       kilometrosEntrada: record.kilometros_entrada
-        ? Kilometraje.create(record.kilometros_entrada)
+        ? (() => {
+            try {
+              return Kilometraje.create(record.kilometros_entrada)
+            } catch (error) {
+              console.warn(`⚠️ Kilometraje inválido (legacy): ${record.kilometros_entrada}`, error)
+              return undefined
+            }
+          })()
         : undefined,
       nivelCombustible: record.nivel_combustible,
       renunciaPresupuesto: record.renuncia_presupuesto,
@@ -96,7 +103,14 @@ export class OrdenMapper {
       recogerPiezas: record.recoger_piezas,
       danosCarroceria: record.danos_carroceria,
       costeDiarioEstancia: record.coste_diario_estancia
-        ? Precio.create(record.coste_diario_estancia)
+        ? (() => {
+            try {
+              return Precio.create(record.coste_diario_estancia)
+            } catch (error) {
+              console.warn(`⚠️ Coste diario inválido (legacy): ${record.coste_diario_estancia}`, error)
+              return undefined
+            }
+          })()
         : undefined,
       fotosEntrada,
       fotosSalida,
@@ -152,13 +166,22 @@ export class OrdenMapper {
    * Convierte línea de BD a Entity
    */
   private static lineaToDomain(record: LineaDBRecord): LineaOrdenEntity {
+    // Protección para precio legacy
+    let precioUnitario: Precio
+    try {
+      precioUnitario = Precio.create(record.precio_unitario)
+    } catch (error) {
+      console.warn(`⚠️ Precio unitario inválido (legacy): ${record.precio_unitario}`, error)
+      precioUnitario = Precio.create(0)
+    }
+
     return LineaOrdenEntity.create({
       id: record.id,
       ordenId: record.orden_id,
       tipo: record.tipo as TipoLinea,
       descripcion: record.descripcion,
       cantidad: record.cantidad,
-      precioUnitario: Precio.create(record.precio_unitario),
+      precioUnitario,
       estado: record.estado as EstadoLineaOrden
     })
   }
