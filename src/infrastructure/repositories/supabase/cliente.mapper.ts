@@ -11,14 +11,19 @@ import { NIF, Email, Telefono, IBAN } from '@/domain/value-objects'
 import { EstadoCliente, TipoCliente, FormaPago } from '@/domain/types'
 
 /**
- * Tipo de registro de cliente desde Supabase
+ * Tipo de registro de cliente desde Supabase (ESQUEMA REAL)
+ * CAMPOS QUE EXISTEN: id, taller_id, nombre, apellidos, nif, email, telefono, direccion, notas, estado,
+ * created_at, updated_at, tipo_cliente, iban, numero_registros_mercanitles, contacto_principal,
+ * contacto_email, contacto_telefono, ciudad, provincia, codigo_postal, pais, forma_pago,
+ * primer_apellido, segundo_apellido, fecha_nacimiento, segundo_telefono, email_secundario,
+ * preferencia_contacto, acepta_marketing, como_nos_conocio, credito_disponible, total_facturado, ultima_visita
  */
 export interface ClienteDBRecord {
   id: string
   taller_id: string
   nombre: string
   apellidos?: string
-  nif: string
+  nif?: string
   email?: string
   telefono?: string
   direccion?: string
@@ -27,16 +32,33 @@ export interface ClienteDBRecord {
   codigo_postal?: string
   pais?: string
   notas?: string
-  estado: string
-  tipo_cliente: string
-  requiere_autorizacion: boolean
-  empresa_renting?: string
+  estado?: string
+  tipo_cliente?: string
   iban?: string
-  forma_pago: string
-  dias_pago: number
+  forma_pago?: string
+  created_at?: string
+  updated_at?: string
+  // Campos adicionales que SÍ existen en BD real
+  primer_apellido?: string
+  segundo_apellido?: string
+  fecha_nacimiento?: string
+  segundo_telefono?: string
+  email_secundario?: string
+  preferencia_contacto?: string
+  acepta_marketing?: boolean
+  como_nos_conocio?: string
+  numero_registros_mercanitles?: string
+  contacto_principal?: string
+  contacto_email?: string
+  contacto_telefono?: string
+  credito_disponible?: number
+  total_facturado?: number
+  ultima_visita?: string
+  // Campos legacy (pueden no existir, pero código los espera)
+  requiere_autorizacion?: boolean
+  empresa_renting?: string
+  dias_pago?: number
   limite_credito?: number
-  created_at: string
-  updated_at: string
   deleted_at?: string
   deleted_by?: string
 }
@@ -49,7 +71,7 @@ export class ClienteMapper {
     // Procesar Value Objects (con protección para datos legacy)
     let nif: NIF
     try {
-      nif = NIF.create(record.nif)
+      nif = NIF.create(record.nif || '00000000T')
     } catch (error) {
       // Si el NIF es inválido, crear uno ficticio para no romper la app
       console.warn(`⚠️ NIF inválido (legacy) para cliente ${record.id}: ${record.nif}`, error)
@@ -87,16 +109,16 @@ export class ClienteMapper {
       codigoPostal: record.codigo_postal,
       pais: record.pais || 'España',
       notas: record.notas,
-      estado: this.mapEstadoCliente(record.estado),
-      tipoCliente: this.mapTipoCliente(record.tipo_cliente),
-      requiereAutorizacion: record.requiere_autorizacion,
+      estado: this.mapEstadoCliente(record.estado || 'activo'),
+      tipoCliente: this.mapTipoCliente(record.tipo_cliente || 'particular'),
+      requiereAutorizacion: record.requiere_autorizacion ?? false,
       empresaRenting: record.empresa_renting,
       iban,
-      formaPago: this.mapFormaPago(record.forma_pago),
-      diasPago: record.dias_pago,
+      formaPago: this.mapFormaPago(record.forma_pago || 'efectivo'),
+      diasPago: record.dias_pago ?? 0,
       limiteCredito: record.limite_credito,
-      createdAt: new Date(record.created_at),
-      updatedAt: new Date(record.updated_at),
+      createdAt: record.created_at ? new Date(record.created_at) : new Date(),
+      updatedAt: record.updated_at ? new Date(record.updated_at) : new Date(),
       deletedAt: record.deleted_at ? new Date(record.deleted_at) : undefined,
       deletedBy: record.deleted_by
     })
