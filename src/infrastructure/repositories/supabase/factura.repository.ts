@@ -58,7 +58,7 @@ export class SupabaseFacturaRepository implements IFacturaRepository {
         const lineasData = lineas.map(linea => FacturaMapper.lineaToPersistence(linea))
 
         const { error: lineasError } = await supabase
-          .from('lineas_factura')
+          .from('detalles_factura')
           .insert(lineasData)
 
         if (lineasError) {
@@ -92,7 +92,7 @@ export class SupabaseFacturaRepository implements IFacturaRepository {
         .from('facturas')
         .select(`
           *,
-          lineas:lineas_factura(*)
+          lineas:detalles_factura(*)
         `)
         .eq('id', id)
         .eq('taller_id', tallerId) // 🔒 FILTRO DE SEGURIDAD
@@ -189,7 +189,7 @@ export class SupabaseFacturaRepository implements IFacturaRepository {
         const lineasData = lineas.map(linea => FacturaMapper.lineaToPersistence(linea))
 
         const { error: lineasError } = await supabase
-          .from('lineas_factura')
+          .from('detalles_factura')
           .insert(lineasData)
 
         if (lineasError) {

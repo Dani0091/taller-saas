@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
     })
 
     const { error: lineasError } = await supabase
-      .from('lineas_factura')
+      .from('detalles_factura')
       .insert(lineasParaInsertar)
 
     if (lineasError) {

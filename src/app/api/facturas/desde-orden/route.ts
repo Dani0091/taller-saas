@@ -286,7 +286,7 @@ SOLUCIÓN: Verifica que el cliente "${orden.clientes?.nombre}" exista en Cliente
       })
 
       const { error: lineasError } = await supabase
-        .from('lineas_factura')
+        .from('detalles_factura')
         .insert(lineasFactura)
 
       if (lineasError) {
@@ -305,7 +305,7 @@ SOLUCIÓN: Verifica que el cliente "${orden.clientes?.nombre}" exista en Cliente
       // Si no hay líneas, crear una línea genérica
       // IMPORTANTE: total_linea es solo la BASE, el IVA se suma a nivel de factura
       const { error: lineaError } = await supabase
-        .from('lineas_factura')
+        .from('detalles_factura')
         .insert([{
           factura_id: factura.id,
           numero_linea: 1,

@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
 
     // Obtener líneas
     const { data: lineas } = await supabase
-      .from('lineas_factura')
+      .from('detalles_factura')
       .select('*')
       .eq('factura_id', facturaId)
 
