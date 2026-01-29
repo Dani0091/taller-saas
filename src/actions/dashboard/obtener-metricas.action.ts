@@ -24,40 +24,55 @@ export async function obtenerMetricasDashboardAction(): Promise<ActionResult<Met
     const usuario = await obtenerUsuarioConFallback()
 
     if (!usuario) {
+      console.error('❌ Usuario no encontrado en obtenerMetricasDashboardAction')
       return { success: false, error: 'Usuario no encontrado' }
     }
+
+    console.log('✅ Usuario para métricas:', {
+      email: usuario.email,
+      taller_id: usuario.taller_id,
+      tiene_talleres: !!usuario.talleres
+    })
 
     const tallerId = usuario.taller_id
     const supabase = await createClient()
 
     // 2. CONSULTAS CON FILTRO DE SEGURIDAD (taller_id)
 
-    // Órdenes
+    // Órdenes (no tiene deleted_at en el schema)
     const { data: ordenes, error: ordenesError } = await supabase
       .from('ordenes_reparacion')
-      .select('id, estado, fecha_entrada, deleted_at')
+      .select('id, estado, fecha_entrada')
       .eq('taller_id', tallerId)
-      .is('deleted_at', null)
 
-    if (ordenesError) throw ordenesError
+    if (ordenesError) {
+      console.error('❌ Error consultando órdenes:', ordenesError)
+      throw new Error(`Error en órdenes: ${ordenesError.message || ordenesError.details || 'Desconocido'}`)
+    }
 
-    // Facturas
+    // Facturas (tiene deleted_at)
     const { data: facturas, error: facturasError } = await supabase
       .from('facturas')
-      .select('id, total, base_imponible, iva, fecha_emision, deleted_at')
+      .select('id, total, base_imponible, iva, fecha_emision')
       .eq('taller_id', tallerId)
       .is('deleted_at', null)
 
-    if (facturasError) throw facturasError
+    if (facturasError) {
+      console.error('❌ Error consultando facturas:', facturasError)
+      throw new Error(`Error en facturas: ${facturasError.message || facturasError.details || 'Desconocido'}`)
+    }
 
-    // Clientes (solo conteo)
+    // Clientes (tiene deleted_at)
     const { count: clientesCount, error: clientesError } = await supabase
       .from('clientes')
       .select('*', { count: 'exact', head: true })
       .eq('taller_id', tallerId)
       .is('deleted_at', null)
 
-    if (clientesError) throw clientesError
+    if (clientesError) {
+      console.error('❌ Error consultando clientes:', clientesError)
+      throw new Error(`Error en clientes: ${clientesError.message || clientesError.details || 'Desconocido'}`)
+    }
 
     // 3. CÁLCULOS EN EL BACKEND (no en la UI)
 
@@ -119,10 +134,18 @@ export async function obtenerMetricasDashboardAction(): Promise<ActionResult<Met
     return { success: true, data: metricas }
 
   } catch (error: any) {
-    console.error('Error obteniendo métricas dashboard:', error)
+    // Logging mejorado para debugging
+    console.error('❌ Error obteniendo métricas dashboard:', {
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+      fullError: JSON.stringify(error, null, 2)
+    })
+
     return {
       success: false,
-      error: error.message || 'Error al obtener métricas del dashboard'
+      error: error.message || error.details || error.hint || 'Error al obtener métricas del dashboard'
     }
   }
 }
