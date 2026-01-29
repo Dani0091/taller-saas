@@ -58,13 +58,13 @@ export async function calcularTotalesOrdenAction(
 
     // 4. OBTENER CONFIGURACIÓN DE IVA DEL TALLER
     const { data: config, error: configError } = await supabase
-      .from('taller_config')
-      .select('iva_general')
+      .from('configuracion_taller')
+      .select('porcentaje_iva')
       .eq('taller_id', usuario.taller_id)
       .single()
 
     // Valor por defecto de IVA si no está configurado
-    const porcentajeIVA = config?.iva_general || 21
+    const porcentajeIVA = config?.porcentaje_iva || 21
 
     // 5. CALCULAR TOTALES EN EL SERVIDOR (única fuente de verdad)
     const totales = (lineas || []).reduce(

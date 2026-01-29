@@ -108,7 +108,7 @@ export async function eliminarFactura(id: string) {
 
 export async function obtenerConfiguracion(tallerId: string) {
   const { data, error } = await supabase
-    .from('taller_config')
+    .from('configuracion_taller')
     .select('*')
     .eq('taller_id', tallerId)
     .single()
