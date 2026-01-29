@@ -129,29 +129,7 @@ const TIPOS_CLIENTE = [
   { value: 'flota', label: 'Flota', icon: '🚗', desc: 'Gestores de flotas' },
 ]
 
-interface Config {
-  id: string | null
-  taller_id: string
-  tarifa_hora: number
-  incluye_iva: boolean
-  porcentaje_iva: number
-  tarifa_con_iva: boolean
-  nombre_empresa: string | null
-  cif: string | null
-  direccion: string | null
-  telefono: string | null
-  email: string | null
-  logo_url: string | null
-  // Configuración de facturación
-  serie_factura: string | null
-  numero_factura_inicial: number | null
-  iban: string | null
-  condiciones_pago: string | null
-  notas_factura: string | null
-  // Colores de marca
-  color_primario: string | null
-  color_secundario: string | null
-}
+// ==================== COMPONENTE PRINCIPAL ====================
 
 export default function ConfiguracionPage() {
   const [config, setConfig] = useState<ConfigTaller | null>(null)
