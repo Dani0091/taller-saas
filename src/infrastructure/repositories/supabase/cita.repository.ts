@@ -67,7 +67,31 @@ export class SupabaseCitaRepository implements ICitaRepository {
 
       const { data, error } = await supabase
         .from('citas')
-        .select('*')
+        .select(`
+          id,
+          taller_id,
+          cliente_id,
+          vehiculo_id,
+          orden_id,
+          titulo,
+          descripcion,
+          tipo,
+          fecha_inicio,
+          fecha_fin,
+          todo_el_dia,
+          estado,
+          recordatorio_email,
+          recordatorio_sms,
+          minutos_antes_recordatorio,
+          recordatorio_enviado,
+          color,
+          notas,
+          google_event_id,
+          google_calendar_id,
+          created_at,
+          updated_at,
+          created_by
+        `)
         .eq('id', id)
         .eq('taller_id', tallerId) // 🔒 FILTRO DE SEGURIDAD
         .single()
@@ -122,7 +146,7 @@ export class SupabaseCitaRepository implements ICitaRepository {
   }
 
   /**
-   * Elimina una cita (soft delete)
+   * Elimina una cita (HARD DELETE - no hay deleted_at en tabla citas)
    */
   async eliminar(id: string, tallerId: string): Promise<void> {
     try {
@@ -134,13 +158,10 @@ export class SupabaseCitaRepository implements ICitaRepository {
         throw new NotFoundError('cita', id)
       }
 
-      // Soft delete
+      // Hard delete (tabla citas no tiene deleted_at)
       const { error } = await supabase
         .from('citas')
-        .update({
-          deleted_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
+        .delete()
         .eq('id', id)
         .eq('taller_id', tallerId) // 🔒 FILTRO DE SEGURIDAD
 
@@ -155,46 +176,10 @@ export class SupabaseCitaRepository implements ICitaRepository {
 
   /**
    * Restaura una cita eliminada
+   * DESHABILITADO: La tabla citas no tiene deleted_at (hard delete)
    */
   async restaurar(id: string, tallerId: string): Promise<CitaEntity> {
-    try {
-      const supabase = await createClient()
-
-      // Verificar que la cita existe
-      const { data, error: fetchError } = await supabase
-        .from('citas')
-        .select('*')
-        .eq('id', id)
-        .eq('taller_id', tallerId)
-        .single()
-
-      if (fetchError) {
-        if (fetchError.code === 'PGRST116') {
-          throw new NotFoundError('cita', id)
-        }
-        throw SupabaseErrorMapper.toDomainError(fetchError)
-      }
-
-      // Restaurar
-      const { error } = await supabase
-        .from('citas')
-        .update({
-          deleted_at: null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id)
-        .eq('taller_id', tallerId)
-
-      if (error) {
-        throw SupabaseErrorMapper.toDomainError(error)
-      }
-
-      // Retornar cita restaurada
-      return await this.obtenerPorId(id, tallerId) as CitaEntity
-
-    } catch (error) {
-      throw SupabaseErrorMapper.toDomainError(error)
-    }
+    throw new Error('No se pueden restaurar citas: la tabla usa hard delete (no tiene deleted_at)')
   }
 
   /**
@@ -208,16 +193,39 @@ export class SupabaseCitaRepository implements ICitaRepository {
     try {
       const supabase = await createClient()
 
-      // Construir query base
+      // Construir query base con SOLO columnas que existen + relaciones
       let query = supabase
         .from('citas')
-        .select('*', { count: 'exact' })
+        .select(`
+          id,
+          taller_id,
+          cliente_id,
+          vehiculo_id,
+          orden_id,
+          titulo,
+          descripcion,
+          tipo,
+          fecha_inicio,
+          fecha_fin,
+          todo_el_dia,
+          estado,
+          recordatorio_email,
+          recordatorio_sms,
+          minutos_antes_recordatorio,
+          recordatorio_enviado,
+          color,
+          notas,
+          google_event_id,
+          google_calendar_id,
+          created_at,
+          updated_at,
+          created_by,
+          clientes(nombre, apellidos),
+          vehiculos(matricula, marca, modelo, año)
+        `, { count: 'exact' })
         .eq('taller_id', tallerId) // 🔒 FILTRO DE SEGURIDAD
 
-      // Filtrar eliminados por defecto
-      if (!filtros.incluirEliminadas) {
-        query = query.is('deleted_at', null)
-      }
+      // NOTA: La tabla citas NO tiene deleted_at, las eliminaciones son hard delete
 
       // Aplicar filtros
       if (filtros.clienteId) {
