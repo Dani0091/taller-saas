@@ -82,7 +82,13 @@ export class FacturaMapper {
     // Construir número de factura completo si existe
     let numeroFactura: NumeroFactura | undefined
     if (record.numero_factura) {
-      numeroFactura = NumeroFactura.fromString(record.numero_factura)
+      try {
+        numeroFactura = NumeroFactura.fromString(record.numero_factura)
+      } catch (error) {
+        // Si el número de factura es inválido, lo ignoramos (datos legacy)
+        console.warn(`⚠️ Número de factura inválido (legacy): ${record.numero_factura}`, error)
+        numeroFactura = undefined
+      }
     }
 
     // NIF del cliente

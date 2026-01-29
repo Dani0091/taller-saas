@@ -46,8 +46,15 @@ export class ClienteMapper {
    * Convierte de registro de BD a Entity de dominio
    */
   static toDomain(record: ClienteDBRecord): ClienteEntity {
-    // Procesar Value Objects
-    const nif = NIF.create(record.nif)
+    // Procesar Value Objects (con protección para datos legacy)
+    let nif: NIF
+    try {
+      nif = NIF.create(record.nif)
+    } catch (error) {
+      // Si el NIF es inválido, crear uno ficticio para no romper la app
+      console.warn(`⚠️ NIF inválido (legacy) para cliente ${record.id}: ${record.nif}`, error)
+      nif = NIF.create('00000000T') // NIF placeholder para datos legacy
+    }
 
     let email: Email | undefined
     if (record.email) {
