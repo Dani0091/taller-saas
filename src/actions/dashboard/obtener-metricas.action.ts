@@ -50,10 +50,10 @@ export async function obtenerMetricasDashboardAction(): Promise<ActionResult<Met
 
     if (facturasError) throw facturasError
 
-    // Clientes
-    const { data: clientes, error: clientesError } = await supabase
+    // Clientes (solo conteo)
+    const { count: clientesCount, error: clientesError } = await supabase
       .from('clientes')
-      .select('id', { count: 'exact', head: true })
+      .select('*', { count: 'exact', head: true })
       .eq('taller_id', tallerId)
       .is('deleted_at', null)
 
@@ -84,14 +84,16 @@ export async function obtenerMetricasDashboardAction(): Promise<ActionResult<Met
       ['completado', 'entregado'].includes(o.estado)
     ).length
 
-    // Filtrar facturas del mes y trimestre
-    const facturasMes = (facturas || []).filter(f =>
-      new Date(f.fecha_emision) >= inicioMes
-    )
+    // Filtrar facturas del mes y trimestre (con protección contra fechas null)
+    const facturasMes = (facturas || []).filter(f => {
+      if (!f.fecha_emision) return false
+      return new Date(f.fecha_emision) >= inicioMes
+    })
 
-    const facturasTrimestre = (facturas || []).filter(f =>
-      new Date(f.fecha_emision) >= inicioTrimestre
-    )
+    const facturasTrimestre = (facturas || []).filter(f => {
+      if (!f.fecha_emision) return false
+      return new Date(f.fecha_emision) >= inicioTrimestre
+    })
 
     // Calcular totales financieros (BACKEND hace los cálculos)
     const facturadoMes = facturasMes.reduce((sum, f) => sum + (f.total || 0), 0)
@@ -109,9 +111,9 @@ export async function obtenerMetricasDashboardAction(): Promise<ActionResult<Met
       baseImponibleMes,
       ivaRecaudadoMes,
       ivaTrimestre,
-      clientesActivos: clientes?.length || 0,
+      clientesActivos: clientesCount || 0,
       nombreUsuario: usuario.nombre ?? undefined,
-      nombreTaller: (usuario.talleres as any)?.nombre ?? undefined
+      nombreTaller: usuario.talleres?.nombre ?? undefined
     }
 
     return { success: true, data: metricas }
