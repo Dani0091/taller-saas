@@ -15,10 +15,14 @@ BEGIN
     SELECT 1 FROM information_schema.tables
     WHERE table_name = 'series_facturacion'
   ) THEN
-    -- Agregar columnas faltantes si no existen
+    -- Agregar TODAS las columnas faltantes si no existen
     ALTER TABLE series_facturacion
     ADD COLUMN IF NOT EXISTS serie VARCHAR(20),
-    ADD COLUMN IF NOT EXISTS año INTEGER;
+    ADD COLUMN IF NOT EXISTS año INTEGER,
+    ADD COLUMN IF NOT EXISTS activa BOOLEAN DEFAULT TRUE,
+    ADD COLUMN IF NOT EXISTS es_predeterminada BOOLEAN DEFAULT FALSE,
+    ADD COLUMN IF NOT EXISTS tipo VARCHAR(50) DEFAULT 'ordinaria',
+    ADD COLUMN IF NOT EXISTS descripcion TEXT;
 
     -- Si tiene "prefijo" pero no "serie", copiar prefijo a serie
     UPDATE series_facturacion
@@ -29,6 +33,11 @@ BEGIN
     UPDATE series_facturacion
     SET año = EXTRACT(YEAR FROM CURRENT_DATE)::INTEGER
     WHERE año IS NULL;
+
+    -- Si tiene "activa" NULL, poner TRUE
+    UPDATE series_facturacion
+    SET activa = TRUE
+    WHERE activa IS NULL;
 
     -- Crear índice único para evitar duplicados por taller/serie/año
     CREATE UNIQUE INDEX IF NOT EXISTS idx_series_facturacion_taller_serie_año
