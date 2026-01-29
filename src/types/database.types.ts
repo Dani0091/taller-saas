@@ -480,7 +480,7 @@ export interface Database {
           created_at?: string
         }
       }
-      taller_config: {
+      configuracion_taller: {
         Row: {
           id: string
           taller_id: string
