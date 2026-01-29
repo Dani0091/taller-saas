@@ -62,16 +62,24 @@ export async function obtenerMetricasDashboardAction(): Promise<ActionResult<Met
       throw new Error(`Error en facturas: ${facturasError.message || facturasError.details || 'Desconocido'}`)
     }
 
-    // Clientes (tiene deleted_at)
-    const { count: clientesCount, error: clientesError } = await supabase
-      .from('clientes')
-      .select('*', { count: 'exact', head: true })
-      .eq('taller_id', tallerId)
-      .is('deleted_at', null)
+    // Clientes (tiene deleted_at) - NO CRÍTICO: Si falla, el dashboard sigue funcionando
+    let clientesCount = 0
+    try {
+      const result = await supabase
+        .from('clientes')
+        .select('id', { count: 'exact', head: true })
+        .eq('taller_id', tallerId)
+        .is('deleted_at', null)
 
-    if (clientesError) {
-      console.error('❌ Error consultando clientes:', clientesError)
-      throw new Error(`Error en clientes: ${clientesError.message || clientesError.details || 'Desconocido'}`)
+      if (result.error) {
+        console.warn('⚠️ Error consultando clientes (no crítico):', result.error)
+        // No lanzamos error, solo logueamos
+      } else {
+        clientesCount = result.count || 0
+      }
+    } catch (clientesError: any) {
+      console.warn('⚠️ Excepción consultando clientes (no crítico):', clientesError)
+      // Continuamos con count = 0
     }
 
     // 3. CÁLCULOS EN EL BACKEND (no en la UI)
@@ -126,7 +134,7 @@ export async function obtenerMetricasDashboardAction(): Promise<ActionResult<Met
       baseImponibleMes,
       ivaRecaudadoMes,
       ivaTrimestre,
-      clientesActivos: clientesCount || 0,
+      clientesActivos: clientesCount,
       nombreUsuario: usuario.nombre ?? undefined,
       nombreTaller: usuario.talleres?.nombre ?? undefined
     }

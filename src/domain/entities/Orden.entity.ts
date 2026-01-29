@@ -3,7 +3,8 @@
  * @description Representa una orden de reparación en el taller
  *
  * REGLAS DE NEGOCIO:
- * - Una orden siempre tiene un cliente y un vehículo
+ * - Una orden siempre tiene un cliente
+ * - El vehículo es opcional inicialmente (puede asignarse después)
  * - Una orden puede tener 0 o más líneas
  * - El total se calcula automáticamente desde las líneas
  * - Una orden facturada no se puede modificar
@@ -22,7 +23,7 @@ export interface OrdenProps {
   tallerId: string
   numeroOrden?: string
   clienteId: string
-  vehiculoId: string
+  vehiculoId?: string
   operarioId?: string
   facturaId?: string
   descripcionProblema?: string
@@ -55,7 +56,7 @@ export class OrdenEntity {
   private readonly tallerId: string
   private numeroOrden?: string
   private readonly clienteId: string
-  private readonly vehiculoId: string
+  private readonly vehiculoId?: string
   private operarioId?: string
   private facturaId?: string
   private descripcionProblema?: string
@@ -124,14 +125,14 @@ export class OrdenEntity {
       throw new ValidationError('El cliente es obligatorio', 'clienteId')
     }
 
-    // Validar vehículo
-    if (!props.vehiculoId || props.vehiculoId.trim().length === 0) {
-      throw new ValidationError('El vehículo es obligatorio', 'vehiculoId')
-    }
-
     // Validar taller
     if (!props.tallerId || props.tallerId.trim().length === 0) {
       throw new ValidationError('El taller es obligatorio', 'tallerId')
+    }
+
+    // Validar vehículo SI se proporciona (no es obligatorio pero si viene debe ser válido)
+    if (props.vehiculoId && props.vehiculoId.trim().length === 0) {
+      throw new ValidationError('Si se proporciona un vehículo, no puede estar vacío', 'vehiculoId')
     }
 
     return new OrdenEntity(props)
@@ -155,7 +156,7 @@ export class OrdenEntity {
     return this.clienteId
   }
 
-  public getVehiculoId(): string {
+  public getVehiculoId(): string | undefined {
     return this.vehiculoId
   }
 
