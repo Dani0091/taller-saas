@@ -537,6 +537,96 @@ export default function ConfiguracionPage() {
               })}
             </div>
           </Card>
+
+          {/* Personalización de Facturas */}
+          <Card className="p-6">
+            <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
+              <FileText className="w-5 h-5 text-sky-500" />
+              Personalización de Facturas
+            </h2>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>IBAN (Cuenta Bancaria)</Label>
+                <Input
+                  name="iban"
+                  value={formData?.iban || ''}
+                  onChange={handleChange}
+                  placeholder="ES00 0000 0000 0000 0000 0000"
+                  className="font-mono"
+                />
+                <p className="text-xs text-gray-500">Se mostrará en las facturas para transferencias bancarias</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Condiciones de Pago</Label>
+                <Textarea
+                  name="condiciones_pago"
+                  value={formData?.condiciones_pago || ''}
+                  onChange={handleChange}
+                  placeholder="Ej: Pago a 30 días desde la fecha de emisión"
+                  rows={2}
+                  className="resize-none"
+                />
+                <p className="text-xs text-gray-500">Aparecerá en el pie de todas las facturas</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Notas Legales / Texto Adicional</Label>
+                <Textarea
+                  name="notas_factura"
+                  value={formData?.notas_factura || ''}
+                  onChange={handleChange}
+                  placeholder="Ej: Garantía de 12 meses en todas las reparaciones. No se aceptan devoluciones de piezas especiales."
+                  rows={3}
+                  className="resize-none"
+                />
+                <p className="text-xs text-gray-500">Información adicional que aparecerá en todas las facturas (garantías, términos, etc.)</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Color Primario</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      name="color_primario"
+                      value={formData?.color_primario || '#0284c7'}
+                      onChange={handleChange}
+                      className="w-16 h-10 p-1 cursor-pointer"
+                    />
+                    <Input
+                      type="text"
+                      name="color_primario"
+                      value={formData?.color_primario || '#0284c7'}
+                      onChange={handleChange}
+                      placeholder="#0284c7"
+                      className="font-mono flex-1"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Color Secundario</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      name="color_secundario"
+                      value={formData?.color_secundario || '#0369a1'}
+                      onChange={handleChange}
+                      className="w-16 h-10 p-1 cursor-pointer"
+                    />
+                    <Input
+                      type="text"
+                      name="color_secundario"
+                      value={formData?.color_secundario || '#0369a1'}
+                      onChange={handleChange}
+                      placeholder="#0369a1"
+                      className="font-mono flex-1"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Card>
         </div>
 
         <div className="space-y-8">
