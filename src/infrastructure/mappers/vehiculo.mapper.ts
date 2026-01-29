@@ -45,17 +45,49 @@ export class VehiculoMapper {
    * Convierte un registro de BD a VehiculoEntity
    */
   static toDomain(record: VehiculoDbRecord): VehiculoEntity {
+    // Protección para datos legacy: matricula
+    let matricula: Matricula
+    try {
+      matricula = Matricula.create(record.matricula)
+    } catch (error) {
+      console.warn(`⚠️ Matrícula inválida (legacy) para vehículo ${record.id}: ${record.matricula}`, error)
+      // Usar matrícula placeholder para datos legacy
+      matricula = Matricula.create('0000XXX')
+    }
+
+    // Protección para datos legacy: kilometros
+    let kilometros: Kilometraje | undefined
+    if (record.kilometros !== null && record.kilometros !== undefined) {
+      try {
+        kilometros = Kilometraje.create(record.kilometros)
+      } catch (error) {
+        console.warn(`⚠️ Kilometraje inválido (legacy) para vehículo ${record.id}: ${record.kilometros}`, error)
+        kilometros = undefined
+      }
+    }
+
+    // Protección para datos legacy: VIN
+    let vin: VIN | undefined
+    if (record.vin) {
+      try {
+        vin = VIN.create(record.vin)
+      } catch (error) {
+        console.warn(`⚠️ VIN inválido (legacy) para vehículo ${record.id}: ${record.vin}`, error)
+        vin = undefined
+      }
+    }
+
     const props: VehiculoProps = {
       id: record.id,
       tallerId: record.taller_id,
       clienteId: record.cliente_id ?? undefined,
-      matricula: Matricula.create(record.matricula),
+      matricula,
       marca: record.marca ?? undefined,
       modelo: record.modelo ?? undefined,
       año: record.año ?? undefined,
       color: record.color ?? undefined,
-      kilometros: record.kilometros ? Kilometraje.create(record.kilometros) : undefined,
-      vin: record.vin ? VIN.create(record.vin) : undefined,
+      kilometros,
+      vin,
       bastidorVin: record.bastidor_vin ?? undefined,
       numeroMotor: record.numero_motor ?? undefined,
       tipoCombustible: record.tipo_combustible as TipoCombustible | undefined,
