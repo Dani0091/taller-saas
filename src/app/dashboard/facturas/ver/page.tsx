@@ -83,9 +83,9 @@ export default function VerFacturaPage() {
     const obtenerTallerId = async () => {
       try {
         const supabase = createClient()
-        const { data: { session } } = await supabase.auth.getSession()
+        const { data: { user } } = await supabase.auth.getUser()
 
-        if (!session?.user?.email) {
+        if (!user?.email) {
           return
         }
 

@@ -17,8 +17,8 @@ export async function GET(request: Request) {
     }
 
     // Verificar que el usuario es admin del taller
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user?.email) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user?.email) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
@@ -68,8 +68,8 @@ export async function POST(request: Request) {
     }
 
     // Verificar que el usuario actual es admin del taller
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user?.email) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user?.email) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
@@ -157,8 +157,8 @@ export async function PATCH(request: Request) {
     }
 
     // Verificar que el usuario actual es admin del taller
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user?.email) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user?.email) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
@@ -229,8 +229,8 @@ export async function DELETE(request: Request) {
     }
 
     // Verificar que el usuario actual es admin del taller
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user?.email) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user?.email) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 

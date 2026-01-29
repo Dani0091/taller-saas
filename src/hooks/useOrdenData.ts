@@ -88,8 +88,8 @@ export function useOrdenData(ordenId?: string | null): OrdenDataHookReturn {
     setCargando(true)
     try {
       // Obtener sesión del usuario
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.user) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
         throw new Error('No autenticado')
       }
 

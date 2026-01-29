@@ -25,9 +25,9 @@ export async function getAuthenticatedUser(): Promise<AuthResult | AuthError> {
   try {
     const supabase = await createClient()
 
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    const { data: { user }, error: sessionError } = await supabase.auth.getUser()
 
-    if (sessionError || !session?.user) {
+    if (sessionError || !user) {
       return { error: 'No autenticado', status: 401 }
     }
 

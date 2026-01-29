@@ -5,9 +5,9 @@ import { NextResponse } from 'next/server'
  * Helper: Obtener taller_id del usuario autenticado
  */
 async function getUsuarioTaller(supabase: any) {
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  if (!session?.user) {
+  if (!user) {
     return { error: 'No autorizado', status: 401 }
   }
 

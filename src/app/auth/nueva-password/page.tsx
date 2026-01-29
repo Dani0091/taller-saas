@@ -28,7 +28,7 @@ export default function NuevaPasswordPage() {
   // Verificar que hay una sesión de recuperación válida
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      const { data: { user } } = await supabase.auth.getUser()
       // El usuario debe llegar aquí desde el email de recuperación
       // Supabase maneja automáticamente el token del URL
       setChecking(false)

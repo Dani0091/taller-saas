@@ -6,11 +6,11 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient()
 
     // 1. Obtener usuario logueado
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    const { data: { user }, error: sessionError } = await supabase.auth.getUser()
 
     if (sessionError) throw sessionError
 
-    if (!session?.user) {
+    if (!user) {
       return NextResponse.json(
         { success: false, error: 'No hay sesión activa' },
         { status: 401 }
@@ -83,9 +83,9 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
     const body = await request.json()
 
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    if (!session?.user) {
+    if (!user) {
       return NextResponse.json(
         { success: false, error: 'No autorizado' },
         { status: 401 }
@@ -147,9 +147,9 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Verificar autenticación
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    if (!session?.user) {
+    if (!user) {
       return NextResponse.json(
         { success: false, error: 'No autorizado' },
         { status: 401 }
@@ -224,9 +224,9 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Verificar autenticación
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    if (!session?.user) {
+    if (!user) {
       return NextResponse.json(
         { success: false, error: 'No autorizado' },
         { status: 401 }

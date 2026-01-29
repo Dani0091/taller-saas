@@ -10,11 +10,11 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
 
     // Verificar sesión
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    const { data: { user }, error: sessionError } = await supabase.auth.getUser()
     if (sessionError) {
       return NextResponse.json({ error: 'Error de sesión', details: sessionError.message }, { status: 401 })
     }
-    if (!session?.user) {
+    if (!user) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
     }
 

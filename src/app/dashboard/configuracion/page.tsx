@@ -151,8 +151,8 @@ export default function ConfiguracionPage() {
     const obtenerTallerId = async () => {
       try {
         const supabase = createClient()
-        const { data: { session } } = await supabase.auth.getSession()
-        if (!session?.user?.email) {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user?.email) {
           setLoading(false)
           return
         }

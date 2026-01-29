@@ -14,8 +14,8 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient()
 
     // Verificar sesión
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-    if (sessionError || !session?.user) {
+    const { data: { user }, error: sessionError } = await supabase.auth.getUser()
+    if (sessionError || !user) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
     }
 
@@ -56,8 +56,8 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
 
     // Verificar sesión
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-    if (sessionError || !session?.user) {
+    const { data: { user }, error: sessionError } = await supabase.auth.getUser()
+    if (sessionError || !user) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
     }
 

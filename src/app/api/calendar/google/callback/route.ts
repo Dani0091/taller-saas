@@ -50,9 +50,9 @@ export async function GET(req: NextRequest) {
 
     // Verificar sesión
     const supabase = await createClient()
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    if (!session?.user || session.user.id !== stateData.userId) {
+    if (!user || session.user.id !== stateData.userId) {
       return NextResponse.redirect(
         new URL('/dashboard/configuracion?google_error=unauthorized', req.url)
       )
