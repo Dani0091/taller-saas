@@ -66,6 +66,13 @@ export class ListarOrdenesUseCase {
         numeroOrden: dto.numeroOrden,
         clienteId: dto.clienteId,
         vehiculoId: dto.vehiculoId,
+        // Extraer metadata de JOINs (agregada por el repositorio)
+        // @ts-ignore - Propiedades temporales para transporte de datos
+        clienteNombre: (orden as any)._clienteNombre,
+        // @ts-ignore
+        vehiculoMatricula: (orden as any)._vehiculoMatricula,
+        // @ts-ignore
+        vehiculoMarcaModelo: (orden as any)._vehiculoMarcaModelo,
         estado: dto.estado,
         total: dto.total,
         totalFormateado: dto.totalFormateado,

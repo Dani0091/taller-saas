@@ -244,12 +244,14 @@ export class SupabaseOrdenRepository implements IOrdenRepository {
     try {
       const supabase = await createClient()
 
-      // Construir query base
+      // Construir query base con JOINs para obtener nombres de clientes y vehículos
       let query = supabase
         .from('ordenes_reparacion')
         .select(`
           *,
-          lineas:lineas_orden(*)
+          lineas:lineas_orden(*),
+          cliente:clientes!ordenes_reparacion_cliente_id_fkey(nombre, apellidos),
+          vehiculo:vehiculos!ordenes_reparacion_vehiculo_id_fkey(matricula, marca, modelo)
         `, { count: 'exact' })
         .eq('taller_id', tallerId) // 🔒 FILTRO DE SEGURIDAD
         .is('deleted_at', null)
@@ -300,8 +302,22 @@ export class SupabaseOrdenRepository implements IOrdenRepository {
         throw SupabaseErrorMapper.toDomainError(error)
       }
 
-      // Mapear a entities
-      const ordenes = (data || []).map(record => OrdenMapper.toDomain(record))
+      // Mapear a entities y agregar metadata de JOINs
+      const ordenes = (data || []).map(record => {
+        const entity = OrdenMapper.toDomain(record)
+        // Agregar metadata para UI (datos de JOINs)
+        // @ts-ignore - Agregamos propiedades temporales para transporte
+        entity._clienteNombre = record.cliente
+          ? `${record.cliente.nombre}${record.cliente.apellidos ? ' ' + record.cliente.apellidos : ''}`
+          : undefined
+        // @ts-ignore
+        entity._vehiculoMatricula = record.vehiculo?.matricula
+        // @ts-ignore
+        entity._vehiculoMarcaModelo = record.vehiculo && (record.vehiculo.marca || record.vehiculo.modelo)
+          ? `${record.vehiculo.marca || ''} ${record.vehiculo.modelo || ''}`.trim()
+          : undefined
+        return entity
+      })
 
       return {
         data: ordenes,

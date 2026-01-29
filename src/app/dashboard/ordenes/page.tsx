@@ -70,6 +70,8 @@ export default function OrdenesPage() {
 
     const pasaBusqueda =
       (orden.numeroOrden || '').toLowerCase().includes(searchLower) ||
+      (orden.clienteNombre || '').toLowerCase().includes(searchLower) ||
+      (orden.vehiculoMatricula || '').toLowerCase().includes(searchLower) ||
       searchLower === ''
 
     return pasaFiltro && pasaBusqueda
@@ -178,13 +180,16 @@ export default function OrdenesPage() {
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="flex-1 min-w-0">
                       <div className="font-bold text-gray-900">{orden.numeroOrden || '—'}</div>
-                      <div className="text-sm text-gray-600">Cliente: {orden.clienteId}</div>
+                      <div className="text-sm text-gray-600">
+                        Cliente: {orden.clienteNombre || 'Sin nombre'}
+                      </div>
                     </div>
                     <Badge className={config.color}>{config.icon}</Badge>
                   </div>
 
                   <div className="text-sm text-gray-700 mb-3">
-                    Vehículo: {orden.vehiculoId}
+                    Vehículo: {orden.vehiculoMatricula || 'Sin matrícula'}
+                    {orden.vehiculoMarcaModelo && ` • ${orden.vehiculoMarcaModelo}`}
                   </div>
 
                   {/* STATS ROW */}
@@ -204,27 +209,22 @@ export default function OrdenesPage() {
         )}
       </div>
 
-      {/* Resumen */}
-      {!loading && ordenesFiltradas.length > 0 && (
-        <div className="fixed bottom-20 sm:bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-auto">
-          <div className="bg-white rounded-lg shadow-lg border border-gray-200 px-4 py-2 text-sm text-gray-600">
-            {ordenesFiltradas.length} orden{ordenesFiltradas.length !== 1 ? 'es' : ''}
-            {filtroActivo !== 'todos' && ` (${ESTADO_CONFIG[filtroActivo]?.label || filtroActivo})`}
-          </div>
-        </div>
+      {/* SHEET DE DETALLE/EDICIÓN */}
+      {ordenSeleccionada && (
+        <DetalleOrdenSheet
+          ordenId={ordenSeleccionada}
+          isOpen={!!ordenSeleccionada}
+          onClose={() => setOrdenSeleccionada(null)}
+          onSuccess={cargarOrdenes}
+        />
       )}
 
-      {/* SHEET DE DETALLES O CREAR */}
-      {(ordenSeleccionada || modoCrear) && (
+      {/* SHEET DE CREACIÓN */}
+      {modoCrear && (
         <DetalleOrdenSheet
-          ordenSeleccionada={ordenSeleccionada}
-          ordenes={ordenesFiltradas}
-          onClose={() => {
-            setOrdenSeleccionada(null)
-            setModoCrear(false)
-          }}
-          onActualizar={cargarOrdenes}
-          modoCrear={modoCrear}
+          isOpen={modoCrear}
+          onClose={() => setModoCrear(false)}
+          onSuccess={cargarOrdenes}
         />
       )}
     </div>

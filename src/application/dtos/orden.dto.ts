@@ -149,6 +149,10 @@ export interface OrdenListItemDTO {
   numeroOrden?: string
   clienteId: string
   vehiculoId: string
+  // Campos poblados para UI (para evitar mostrar UUIDs)
+  clienteNombre?: string
+  vehiculoMatricula?: string
+  vehiculoMarcaModelo?: string
   estado: EstadoOrden
   total: number
   totalFormateado: string
