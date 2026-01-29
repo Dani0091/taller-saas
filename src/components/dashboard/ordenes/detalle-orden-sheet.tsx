@@ -258,7 +258,7 @@ export function DetalleOrdenSheet({
       const { data: usuario } = await supabase
         .from('usuarios')
         .select('taller_id')
-        .eq('email', session.user.email)
+        .eq('email', user.email)
         .single()
 
       if (!usuario) {

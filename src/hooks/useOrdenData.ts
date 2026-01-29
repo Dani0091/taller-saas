@@ -97,7 +97,7 @@ export function useOrdenData(ordenId?: string | null): OrdenDataHookReturn {
       const { data: usuario, error: usuarioError } = await supabase
         .from('usuarios')
         .select('taller_id')
-        .eq('email', session.user.email)
+        .eq('email', user.email)
         .single()
 
       if (usuarioError || !usuario) {

@@ -34,7 +34,7 @@ export async function getAuthenticatedUser(): Promise<AuthResult | AuthError> {
     const { data: usuario, error: usuarioError } = await supabase
       .from('usuarios')
       .select('taller_id')
-      .eq('email', session.user.email)
+      .eq('email', user.email)
       .single()
 
     if (usuarioError || !usuario) {
@@ -42,8 +42,8 @@ export async function getAuthenticatedUser(): Promise<AuthResult | AuthError> {
     }
 
     return {
-      userId: session.user.id,
-      email: session.user.email!,
+      userId: user.id,
+      email: user.email!,
       tallerId: usuario.taller_id
     }
   } catch (error) {

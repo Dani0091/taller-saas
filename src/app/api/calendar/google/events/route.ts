@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
     const { data: usuario } = await supabase
       .from('usuarios')
       .select('id, taller_id')
-      .eq('auth_id', session.user.id)
+      .eq('auth_id', user.id)
       .single()
 
     if (!usuario) {
@@ -201,7 +201,7 @@ export async function GET(req: NextRequest) {
     const { data: usuario } = await supabase
       .from('usuarios')
       .select('id')
-      .eq('auth_id', session.user.id)
+      .eq('auth_id', user.id)
       .single()
 
     if (!usuario) {

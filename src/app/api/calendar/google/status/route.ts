@@ -21,7 +21,7 @@ export async function GET() {
     const { data: usuario } = await supabase
       .from('usuarios')
       .select('id')
-      .eq('auth_id', session.user.id)
+      .eq('auth_id', user.id)
       .single()
 
     if (!usuario) {
@@ -81,7 +81,7 @@ export async function DELETE() {
     const { data: usuario } = await supabase
       .from('usuarios')
       .select('id')
-      .eq('auth_id', session.user.id)
+      .eq('auth_id', user.id)
       .single()
 
     if (!usuario) {

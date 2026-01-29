@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
     const { data: usuario } = await supabase
       .from('usuarios')
       .select('taller_id, rol')
-      .eq('auth_id', session.user.id)
+      .eq('auth_id', user.id)
       .single()
 
     if (!usuario || usuario.taller_id !== taller_id) {

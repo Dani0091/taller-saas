@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user || session.user.id !== stateData.userId) {
+    if (!user || user.id !== stateData.userId) {
       return NextResponse.redirect(
         new URL('/dashboard/configuracion?google_error=unauthorized', req.url)
       )
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
     const { data: usuario } = await supabase
       .from('usuarios')
       .select('id, taller_id')
-      .eq('auth_id', session.user.id)
+      .eq('auth_id', user.id)
       .single()
 
     if (!usuario) {

@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
 
     // El state contiene el ID del usuario para verificar en el callback
     const state = Buffer.from(JSON.stringify({
-      userId: session.user.id,
+      userId: user.id,
       timestamp: Date.now()
     })).toString('base64')
 

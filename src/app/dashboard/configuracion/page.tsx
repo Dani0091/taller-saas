@@ -159,7 +159,7 @@ export default function ConfiguracionPage() {
         const { data: usuario, error } = await supabase
           .from('usuarios')
           .select('taller_id')
-          .eq('email', session.user.email)
+          .eq('email', user.email)
           .single()
 
         if (!error && usuario) setTallerId(usuario.taller_id)

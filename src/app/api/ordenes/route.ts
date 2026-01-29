@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     const { data: usuario, error: usuarioError } = await supabase
       .from('usuarios')
       .select('taller_id')
-      .eq('email', session.user.email)
+      .eq('email', user.email)
       .single()
 
     if (usuarioError) throw usuarioError
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     const { data: usuario } = await supabase
       .from('usuarios')
       .select('taller_id')
-      .eq('email', session.user.email)
+      .eq('email', user.email)
       .single()
 
     if (!usuario?.taller_id) {
@@ -156,6 +156,20 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
+    // Obtener taller_id del usuario
+    const { data: usuario } = await supabase
+      .from('usuarios')
+      .select('taller_id')
+      .eq('email', user.email)
+      .single()
+
+    if (!usuario?.taller_id) {
+      return NextResponse.json(
+        { success: false, error: 'Usuario sin taller' },
+        { status: 403 }
+      )
+    }
+
     // Campos válidos que existen en la base de datos
     const camposValidos = [
       'estado', 'cliente_id', 'vehiculo_id', 'operario_id',
@@ -189,6 +203,7 @@ export async function PATCH(request: NextRequest) {
       .from('ordenes_reparacion')
       .update(cleanUpdates)
       .eq('id', id)
+      .eq('taller_id', usuario.taller_id) // Seguridad: solo actualizar órdenes del taller
       .select()
       .single()
 
@@ -237,7 +252,7 @@ export async function DELETE(request: NextRequest) {
     const { data: usuario } = await supabase
       .from('usuarios')
       .select('id, taller_id')
-      .eq('email', session.user.email)
+      .eq('email', user.email)
       .single()
 
     if (!usuario?.taller_id) {
