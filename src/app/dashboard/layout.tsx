@@ -28,14 +28,15 @@ export default function DashboardLayout({
 
     const checkAuth = async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
+        const { data: { user }, error } = await supabase.auth.getUser()
 
-        if (!user) {
+        if (error || !user) {
+          console.error('Auth error:', error)
           router.push('/auth/login')
           return
         }
 
-        setUser(session.user)
+        setUser(user)
       } catch (error) {
         console.error('Auth error:', error)
         router.push('/auth/login')

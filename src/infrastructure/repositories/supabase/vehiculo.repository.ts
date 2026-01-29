@@ -130,31 +130,12 @@ export class SupabaseVehiculoRepository implements IVehiculoRepository {
 
   /**
    * Obtiene un vehículo por su VIN
+   * ⚠️ DESHABILITADO: El campo 'vin' NO EXISTE en la tabla vehiculos de Supabase
+   * Solo hay: id, taller_id, cliente_id, matricula, marca, modelo, año, color
    */
   async obtenerPorVIN(vin: string, tallerId: string): Promise<VehiculoEntity | null> {
-    try {
-      const supabase = await createClient()
-
-      const { data, error } = await supabase
-        .from('vehiculos')
-        .select('*')
-        .eq('vin', vin.toUpperCase())
-        .eq('taller_id', tallerId) // 🔒 FILTRO DE SEGURIDAD
-        .is('deleted_at', null) // No devolver eliminados
-        .single()
-
-      if (error) {
-        if (error.code === 'PGRST116') {
-          return null
-        }
-        throw SupabaseErrorMapper.toDomainError(error)
-      }
-
-      return VehiculoMapper.toDomain(data)
-
-    } catch (error) {
-      throw SupabaseErrorMapper.toDomainError(error)
-    }
+    console.warn('⚠️ obtenerPorVIN: El campo VIN no existe en la BD. Use obtenerPorMatricula()')
+    return null // Método deshabilitado - campo no existe en BD
   }
 
   /**
@@ -598,9 +579,10 @@ export class SupabaseVehiculoRepository implements IVehiculoRepository {
       const supabase = await createClient()
 
       // Obtener todos los vehículos (incluyendo eliminados)
+      // NOTA: Solo campos que EXISTEN en BD: id, taller_id, cliente_id, matricula, marca, modelo, año, color
       const { data, error } = await supabase
         .from('vehiculos')
-        .select('cliente_id, marca, modelo, vin, deleted_at')
+        .select('cliente_id, marca, modelo, matricula, deleted_at')
         .eq('taller_id', tallerId)
 
       if (error) {
@@ -627,7 +609,8 @@ export class SupabaseVehiculoRepository implements IVehiculoRepository {
           } else {
             stats.sinCliente++
           }
-          if (v.marca && v.modelo && v.vin) {
+          // Datos completos = tiene marca, modelo y matrícula
+          if (v.marca && v.modelo && v.matricula) {
             stats.conDatosCompletos++
           }
         }
