@@ -76,7 +76,7 @@ export class SupabaseVehiculoRepository implements IVehiculoRepository {
 
       const { data, error } = await supabase
         .from('vehiculos')
-        .select('*')
+        .select('id, taller_id, cliente_id, matricula, marca, modelo, año, color, created_at, updated_at, deleted_at')
         .eq('id', id)
         .eq('taller_id', tallerId) // 🔒 FILTRO DE SEGURIDAD
         .single()
@@ -107,7 +107,7 @@ export class SupabaseVehiculoRepository implements IVehiculoRepository {
 
       const { data, error } = await supabase
         .from('vehiculos')
-        .select('*')
+        .select('id, taller_id, cliente_id, matricula, marca, modelo, año, color, created_at, updated_at, deleted_at')
         .eq('taller_id', tallerId) // 🔒 FILTRO DE SEGURIDAD
         .ilike('matricula', matriculaNormalizada.replace(/(.{4})/, '$1%')) // Buscar con o sin guión
         .is('deleted_at', null) // No devolver eliminados
@@ -227,7 +227,7 @@ export class SupabaseVehiculoRepository implements IVehiculoRepository {
       // Verificar que el vehículo existe
       const { data, error: fetchError } = await supabase
         .from('vehiculos')
-        .select('*')
+        .select('id, taller_id, cliente_id, matricula, marca, modelo, año, color, created_at, updated_at, deleted_at')
         .eq('id', id)
         .eq('taller_id', tallerId)
         .single()
@@ -272,10 +272,10 @@ export class SupabaseVehiculoRepository implements IVehiculoRepository {
     try {
       const supabase = await createClient()
 
-      // Construir query base
+      // Construir query base - SOLO columnas que existen en Supabase
       let query = supabase
         .from('vehiculos')
-        .select('*', { count: 'exact' })
+        .select('id, taller_id, cliente_id, matricula, marca, modelo, año, color, created_at, updated_at, deleted_at', { count: 'exact' })
         .eq('taller_id', tallerId) // 🔒 FILTRO DE SEGURIDAD
 
       // Filtrar eliminados por defecto
@@ -465,7 +465,7 @@ export class SupabaseVehiculoRepository implements IVehiculoRepository {
 
       let query = supabase
         .from('vehiculos')
-        .select('*', { count: 'exact' })
+        .select('id, taller_id, cliente_id, matricula, marca, modelo, año, color, created_at, updated_at, deleted_at', { count: 'exact' })
         .eq('taller_id', tallerId)
         .not('deleted_at', 'is', null) // Solo eliminados
 
@@ -531,9 +531,15 @@ export class SupabaseVehiculoRepository implements IVehiculoRepository {
 
   /**
    * Cuenta vehículos por tipo de combustible
+   * NOTA: Campo 'tipo_combustible' no existe en esquema actual de Supabase
    */
   async contarPorTipoCombustible(tallerId: string): Promise<Record<TipoCombustible, number>> {
     try {
+      console.warn('⚠️ contarPorTipoCombustible: Campo tipo_combustible no existe en BD')
+      // Retornar objeto vacío porque el campo no existe en la BD actual
+      return {} as Record<TipoCombustible, number>
+
+      /* CÓDIGO ORIGINAL (deshabilitado porque tipo_combustible no existe):
       const supabase = await createClient()
 
       const { data, error } = await supabase
@@ -559,6 +565,7 @@ export class SupabaseVehiculoRepository implements IVehiculoRepository {
       })
 
       return counts as Record<TipoCombustible, number>
+      */
 
     } catch (error) {
       throw SupabaseErrorMapper.toDomainError(error)
