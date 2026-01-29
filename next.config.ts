@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Raíz del proyecto para tracing de archivos (Next.js 16+)
+  outputFileTracingRoot: process.cwd(),
+
   // Output standalone para deploy optimizado (Docker, VPS, etc.)
   output: 'standalone',
 
