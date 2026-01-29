@@ -74,7 +74,42 @@ export class SupabaseClienteRepository implements IClienteRepository {
 
       const { data, error } = await supabase
         .from('clientes')
-        .select('*')
+        .select(`
+          id,
+          taller_id,
+          nombre,
+          apellidos,
+          nif,
+          email,
+          telefono,
+          direccion,
+          notas,
+          estado,
+          created_at,
+          updated_at,
+          tipo_cliente,
+          iban,
+          numero_registros_mercanitles,
+          contacto_principal,
+          contacto_email,
+          contacto_telefono,
+          ciudad,
+          provincia,
+          codigo_postal,
+          pais,
+          forma_pago,
+          primer_apellido,
+          segundo_apellido,
+          fecha_nacimiento,
+          segundo_telefono,
+          email_secundario,
+          preferencia_contacto,
+          acepta_marketing,
+          como_nos_conocio,
+          credito_disponible,
+          total_facturado,
+          ultima_visita
+        `)
         .eq('id', id)
         .eq('taller_id', tallerId) // 🔒 FILTRO DE SEGURIDAD
         .single()
@@ -102,10 +137,44 @@ export class SupabaseClienteRepository implements IClienteRepository {
 
       const { data, error } = await supabase
         .from('clientes')
-        .select('*')
+        .select(`
+          id,
+          taller_id,
+          nombre,
+          apellidos,
+          nif,
+          email,
+          telefono,
+          direccion,
+          notas,
+          estado,
+          created_at,
+          updated_at,
+          tipo_cliente,
+          iban,
+          numero_registros_mercanitles,
+          contacto_principal,
+          contacto_email,
+          contacto_telefono,
+          ciudad,
+          provincia,
+          codigo_postal,
+          pais,
+          forma_pago,
+          primer_apellido,
+          segundo_apellido,
+          fecha_nacimiento,
+          segundo_telefono,
+          email_secundario,
+          preferencia_contacto,
+          acepta_marketing,
+          como_nos_conocio,
+          credito_disponible,
+          total_facturado,
+          ultima_visita
+        `)
         .eq('nif', nif.toUpperCase())
         .eq('taller_id', tallerId) // 🔒 FILTRO DE SEGURIDAD
-        .is('deleted_at', null) // No devolver eliminados
         .single()
 
       if (error) {
@@ -170,7 +239,7 @@ export class SupabaseClienteRepository implements IClienteRepository {
   }
 
   /**
-   * Elimina un cliente (soft delete)
+   * Elimina un cliente (HARD DELETE - no hay deleted_at en tabla clientes)
    */
   async eliminar(id: string, tallerId: string, userId: string): Promise<void> {
     try {
@@ -182,14 +251,10 @@ export class SupabaseClienteRepository implements IClienteRepository {
         throw new NotFoundError('cliente', id)
       }
 
-      // Soft delete
+      // Hard delete (tabla clientes no tiene deleted_at ni deleted_by)
       const { error } = await supabase
         .from('clientes')
-        .update({
-          deleted_at: new Date().toISOString(),
-          deleted_by: userId,
-          updated_at: new Date().toISOString()
-        })
+        .delete()
         .eq('id', id)
         .eq('taller_id', tallerId) // 🔒 FILTRO DE SEGURIDAD
 
@@ -204,47 +269,10 @@ export class SupabaseClienteRepository implements IClienteRepository {
 
   /**
    * Restaura un cliente eliminado
+   * DESHABILITADO: La tabla clientes no tiene deleted_at (hard delete)
    */
   async restaurar(id: string, tallerId: string): Promise<ClienteEntity> {
-    try {
-      const supabase = await createClient()
-
-      // Verificar que el cliente existe
-      const { data, error: fetchError } = await supabase
-        .from('clientes')
-        .select('*')
-        .eq('id', id)
-        .eq('taller_id', tallerId)
-        .single()
-
-      if (fetchError) {
-        if (fetchError.code === 'PGRST116') {
-          throw new NotFoundError('cliente', id)
-        }
-        throw SupabaseErrorMapper.toDomainError(fetchError)
-      }
-
-      // Restaurar
-      const { error } = await supabase
-        .from('clientes')
-        .update({
-          deleted_at: null,
-          deleted_by: null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', id)
-        .eq('taller_id', tallerId)
-
-      if (error) {
-        throw SupabaseErrorMapper.toDomainError(error)
-      }
-
-      // Retornar cliente restaurado
-      return await this.obtenerPorId(id, tallerId) as ClienteEntity
-
-    } catch (error) {
-      throw SupabaseErrorMapper.toDomainError(error)
-    }
+    throw new Error('No se pueden restaurar clientes: la tabla usa hard delete (no tiene deleted_at)')
   }
 
   /**
@@ -258,16 +286,48 @@ export class SupabaseClienteRepository implements IClienteRepository {
     try {
       const supabase = await createClient()
 
-      // Construir query base
+      // Construir query base con SOLO columnas que existen en Supabase
       let query = supabase
         .from('clientes')
-        .select('*', { count: 'exact' })
+        .select(`
+          id,
+          taller_id,
+          nombre,
+          apellidos,
+          nif,
+          email,
+          telefono,
+          direccion,
+          notas,
+          estado,
+          created_at,
+          updated_at,
+          tipo_cliente,
+          iban,
+          numero_registros_mercanitles,
+          contacto_principal,
+          contacto_email,
+          contacto_telefono,
+          ciudad,
+          provincia,
+          codigo_postal,
+          pais,
+          forma_pago,
+          primer_apellido,
+          segundo_apellido,
+          fecha_nacimiento,
+          segundo_telefono,
+          email_secundario,
+          preferencia_contacto,
+          acepta_marketing,
+          como_nos_conocio,
+          credito_disponible,
+          total_facturado,
+          ultima_visita
+        `, { count: 'exact' })
         .eq('taller_id', tallerId) // 🔒 FILTRO DE SEGURIDAD
 
-      // Filtrar eliminados por defecto
-      if (!filtros.incluirEliminados) {
-        query = query.is('deleted_at', null)
-      }
+      // NOTA: La tabla clientes NO tiene deleted_at, las eliminaciones son hard delete
 
       // Aplicar filtros
       if (filtros.estado) {
