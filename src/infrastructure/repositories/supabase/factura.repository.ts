@@ -123,7 +123,7 @@ export class SupabaseFacturaRepository implements IFacturaRepository {
         .from('facturas')
         .select(`
           *,
-          lineas:lineas_factura(*)
+          lineas:detalles_factura(*)
         `)
         .eq('numero_factura', numeroFactura)
         .eq('taller_id', tallerId) // 🔒 FILTRO DE SEGURIDAD
@@ -179,7 +179,7 @@ export class SupabaseFacturaRepository implements IFacturaRepository {
       // Actualizar líneas (estrategia: eliminar todas y reinsertar)
       // Primero eliminar líneas existentes
       await supabase
-        .from('lineas_factura')
+        .from('detalles_factura')
         .delete()
         .eq('factura_id', factura.getId())
 
@@ -362,7 +362,7 @@ export class SupabaseFacturaRepository implements IFacturaRepository {
       // Construir query base
       let query = supabase
         .from('facturas')
-        .select('*, lineas:lineas_factura(*)', { count: 'exact' })
+        .select('*, lineas:detalles_factura(*)', { count: 'exact' })
         .eq('taller_id', tallerId) // 🔒 FILTRO DE SEGURIDAD
 
       // Aplicar filtros
@@ -555,7 +555,7 @@ export class SupabaseFacturaRepository implements IFacturaRepository {
 
       const { data, error } = await supabase
         .from('facturas')
-        .select('*, lineas:lineas_factura(*)')
+        .select('*, lineas:detalles_factura(*)')
         .eq('orden_id', ordenId)
         .eq('taller_id', tallerId) // 🔒 FILTRO DE SEGURIDAD
         .order('fecha_emision', { ascending: false })

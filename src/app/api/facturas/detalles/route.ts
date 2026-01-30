@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       .select(`
         *,
         cliente:cliente_id(*),
-        lineas:lineas_factura(*)
+        lineas:detalles_factura(*)
       `)
       .eq('id', id)
       .single()

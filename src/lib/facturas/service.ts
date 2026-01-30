@@ -16,7 +16,7 @@ export async function obtenerFacturas(tallerId: string, filtros?: {
     .select(`
       *,
       cliente:clientes(id, nombre, nif),
-      lineas:lineas_factura(*)
+      lineas:detalles_factura(*)
     `)
     .eq('taller_id', tallerId)
     .order('fecha_emision', { ascending: false })
@@ -50,7 +50,7 @@ export async function obtenerFactura(id: string) {
     .select(`
       *,
       cliente:clientes(*),
-      lineas:lineas_factura(*)
+      lineas:detalles_factura(*)
     `)
     .eq('id', id)
     .single()
