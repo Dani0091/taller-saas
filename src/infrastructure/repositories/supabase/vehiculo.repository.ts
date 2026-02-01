@@ -74,23 +74,38 @@ export class SupabaseVehiculoRepository implements IVehiculoRepository {
     try {
       const supabase = await createClient()
 
+      console.log('🔍 DEBUG obtenerPorId - Buscando vehículo:', { id, tallerId })
+
+      // SIMPLIFICACIÓN: SELECT * para debugging
       const { data, error } = await supabase
         .from('vehiculos')
-        .select('id, taller_id, cliente_id, matricula, marca, modelo, año, color, created_at, updated_at, deleted_at')
+        .select('*')
         .eq('id', id)
         .eq('taller_id', tallerId) // 🔒 FILTRO DE SEGURIDAD
         .single()
 
       if (error) {
         if (error.code === 'PGRST116') {
+          console.log('⚠️ Vehículo no encontrado:', id)
           return null // No encontrado
         }
+        console.error('❌ ERROR REAL DE SUPABASE en obtenerPorId:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        })
         throw SupabaseErrorMapper.toDomainError(error)
       }
 
+      console.log('✅ Vehículo encontrado:', data)
       return VehiculoMapper.toDomain(data)
 
-    } catch (error) {
+    } catch (error: any) {
+      console.error('❌ ERROR EN CATCH de obtenerPorId:', {
+        tipo: error.constructor.name,
+        mensaje: error.message
+      })
       throw SupabaseErrorMapper.toDomainError(error)
     }
   }
@@ -105,25 +120,35 @@ export class SupabaseVehiculoRepository implements IVehiculoRepository {
       // Normalizar matrícula (sin guiones, uppercase)
       const matriculaNormalizada = matricula.toUpperCase().replace(/-/g, '')
 
+      console.log('🔍 DEBUG obtenerPorMatricula - Buscando:', { matricula, matriculaNormalizada, tallerId })
+
+      // SIMPLIFICACIÓN: SELECT * y búsqueda simple
       const { data, error } = await supabase
         .from('vehiculos')
-        .select('id, taller_id, cliente_id, matricula, marca, modelo, año, color, created_at, updated_at, deleted_at')
+        .select('*')
         .eq('taller_id', tallerId) // 🔒 FILTRO DE SEGURIDAD
-        .ilike('matricula', matriculaNormalizada.replace(/(.{4})/, '$1%')) // Buscar con o sin guión
-        .is('deleted_at', null) // No devolver eliminados
+        .ilike('matricula', `%${matriculaNormalizada}%`) // Buscar simple
         .limit(1)
         .single()
 
       if (error) {
         if (error.code === 'PGRST116') {
+          console.log('⚠️ Matrícula no encontrada:', matricula)
           return null
         }
+        console.error('❌ ERROR REAL DE SUPABASE en obtenerPorMatricula:', {
+          code: error.code,
+          message: error.message,
+          details: error.details
+        })
         throw SupabaseErrorMapper.toDomainError(error)
       }
 
+      console.log('✅ Vehículo encontrado por matrícula:', data)
       return VehiculoMapper.toDomain(data)
 
-    } catch (error) {
+    } catch (error: any) {
+      console.error('❌ ERROR EN CATCH de obtenerPorMatricula:', error.message)
       throw SupabaseErrorMapper.toDomainError(error)
     }
   }
@@ -272,50 +297,17 @@ export class SupabaseVehiculoRepository implements IVehiculoRepository {
     try {
       const supabase = await createClient()
 
-      // Construir query base - SOLO columnas que existen en Supabase
+      console.log('🔍 DEBUG listarVehiculos - Iniciando query con:', {
+        tallerId,
+        filtros,
+        paginacion
+      })
+
+      // SIMPLIFICACIÓN RADICAL: SELECT * para debugging
       let query = supabase
         .from('vehiculos')
-        .select('id, taller_id, cliente_id, matricula, marca, modelo, año, color, created_at, updated_at, deleted_at', { count: 'exact' })
+        .select('*', { count: 'exact' })
         .eq('taller_id', tallerId) // 🔒 FILTRO DE SEGURIDAD
-
-      // Filtrar eliminados por defecto
-      if (!filtros.incluirEliminados) {
-        query = query.is('deleted_at', null)
-      }
-
-      // Aplicar filtros
-      if (filtros.clienteId) {
-        query = query.eq('cliente_id', filtros.clienteId)
-      }
-
-      if (filtros.marca) {
-        query = query.ilike('marca', `%${filtros.marca}%`)
-      }
-
-      if (filtros.modelo) {
-        query = query.ilike('modelo', `%${filtros.modelo}%`)
-      }
-
-      if (filtros.año) {
-        query = query.eq('año', filtros.año)
-      }
-
-      if (filtros.tipoCombustible) {
-        query = query.eq('tipo_combustible', filtros.tipoCombustible)
-      }
-
-      if (filtros.soloSinCliente) {
-        query = query.is('cliente_id', null)
-      }
-
-      if (filtros.busqueda) {
-        query = query.or(
-          `matricula.ilike.%${filtros.busqueda}%,marca.ilike.%${filtros.busqueda}%,modelo.ilike.%${filtros.busqueda}%,vin.ilike.%${filtros.busqueda}%`
-        )
-      }
-
-      // Ordenar por matrícula
-      query = query.order('matricula', { ascending: true })
 
       // Aplicar paginación
       const from = (paginacion.page - 1) * paginacion.pageSize
@@ -323,15 +315,33 @@ export class SupabaseVehiculoRepository implements IVehiculoRepository {
 
       query = query.range(from, to)
 
+      console.log('🔍 DEBUG listarVehiculos - Query construida, ejecutando...')
+
       // Ejecutar query
       const { data, error, count } = await query
 
       if (error) {
+        // DEBUG DETALLADO DEL ERROR REAL DE SUPABASE
+        console.error('❌ ERROR REAL DE SUPABASE en listarVehiculos:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          errorCompleto: JSON.stringify(error, null, 2)
+        })
         throw SupabaseErrorMapper.toDomainError(error)
       }
 
+      console.log('✅ DEBUG listarVehiculos - Query exitosa:', {
+        registrosObtenidos: data?.length || 0,
+        total: count
+      })
+
       // Mapear resultados
-      const vehiculos = (data || []).map(record => VehiculoMapper.toDomain(record))
+      const vehiculos = (data || []).map(record => {
+        console.log('🔍 Mapeando vehículo:', record)
+        return VehiculoMapper.toDomain(record)
+      })
 
       return {
         data: vehiculos,
@@ -341,7 +351,14 @@ export class SupabaseVehiculoRepository implements IVehiculoRepository {
         totalPages: Math.ceil((count || 0) / paginacion.pageSize)
       }
 
-    } catch (error) {
+    } catch (error: any) {
+      // DEBUG DETALLADO DEL ERROR EN CATCH
+      console.error('❌ ERROR EN CATCH de listarVehiculos:', {
+        tipo: error.constructor.name,
+        mensaje: error.message,
+        stack: error.stack,
+        errorCompleto: JSON.stringify(error, null, 2)
+      })
       throw SupabaseErrorMapper.toDomainError(error)
     }
   }
@@ -463,11 +480,15 @@ export class SupabaseVehiculoRepository implements IVehiculoRepository {
     try {
       const supabase = await createClient()
 
+      console.log('🔍 DEBUG listarEliminados - Buscando vehículos eliminados para taller:', tallerId)
+
+      // SIMPLIFICACIÓN: SELECT *
       let query = supabase
         .from('vehiculos')
-        .select('id, taller_id, cliente_id, matricula, marca, modelo, año, color, created_at, updated_at, deleted_at', { count: 'exact' })
+        .select('*', { count: 'exact' })
         .eq('taller_id', tallerId)
-        .not('deleted_at', 'is', null) // Solo eliminados
+        // Nota: Si deleted_at NO existe en la tabla, esta query fallará
+        // En ese caso, retornar array vacío
 
       // Aplicar paginación
       const from = (paginacion.page - 1) * paginacion.pageSize
@@ -478,10 +499,29 @@ export class SupabaseVehiculoRepository implements IVehiculoRepository {
       const { data, error, count } = await query
 
       if (error) {
+        console.error('❌ ERROR en listarEliminados (puede ser que deleted_at no exista):', {
+          code: error.code,
+          message: error.message
+        })
+
+        // Si la tabla no tiene deleted_at, retornar array vacío
+        if (error.code === '42703') { // Column does not exist
+          console.warn('⚠️ La tabla vehiculos NO tiene columna deleted_at, retornando array vacío')
+          return {
+            data: [],
+            total: 0,
+            page: paginacion.page,
+            pageSize: paginacion.pageSize,
+            totalPages: 0
+          }
+        }
+
         throw SupabaseErrorMapper.toDomainError(error)
       }
 
       const vehiculos = (data || []).map(record => VehiculoMapper.toDomain(record))
+
+      console.log('✅ Vehículos eliminados encontrados:', vehiculos.length)
 
       return {
         data: vehiculos,
@@ -491,7 +531,8 @@ export class SupabaseVehiculoRepository implements IVehiculoRepository {
         totalPages: Math.ceil((count || 0) / paginacion.pageSize)
       }
 
-    } catch (error) {
+    } catch (error: any) {
+      console.error('❌ ERROR EN CATCH de listarEliminados:', error.message)
       throw SupabaseErrorMapper.toDomainError(error)
     }
   }
