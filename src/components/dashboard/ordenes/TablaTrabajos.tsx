@@ -104,73 +104,83 @@ export function TablaTrabajos({
       {/* Formulario para nueva línea */}
       {!readonly && mostrarFormulario && (
         <div className="mb-6 p-4 bg-gray-50 rounded-lg border">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
-            <div>
-              <label className="block text-sm font-medium mb-1">Tipo</label>
-              <select
-                value={nuevaLinea.tipo}
-                onChange={(e) => setNuevaLinea(prev => ({
-                  ...prev,
-                  tipo: e.target.value as TipoLinea
-                }))}
-                className="w-full px-3 py-2 border rounded"
-              >
-                {tiposLinea.map(tipo => (
-                  <option key={tipo.value} value={tipo.value}>
-                    {tipo.label}
-                  </option>
-                ))}
-              </select>
+          <div className="grid grid-cols-1 gap-4">
+            {/* Fila 1: Tipo y Descripción (más ancha) */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+              <div className="md:col-span-3">
+                <label className="block text-sm font-medium mb-1">Tipo</label>
+                <select
+                  value={nuevaLinea.tipo}
+                  onChange={(e) => setNuevaLinea(prev => ({
+                    ...prev,
+                    tipo: e.target.value as TipoLinea
+                  }))}
+                  className="w-full px-3 py-2 border rounded"
+                >
+                  {tiposLinea.map(tipo => (
+                    <option key={tipo.value} value={tipo.value}>
+                      {tipo.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="md:col-span-9">
+                <label className="block text-sm font-medium mb-1">Descripción</label>
+                <Input
+                  value={nuevaLinea.descripcion || ''}
+                  onChange={(e) => setNuevaLinea(prev => ({
+                    ...prev,
+                    descripcion: e.target.value
+                  }))}
+                  placeholder="Descripción del trabajo/pieza"
+                  className="w-full"
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Descripción</label>
-              <Input
-                value={nuevaLinea.descripcion || ''}
-                onChange={(e) => setNuevaLinea(prev => ({
-                  ...prev,
-                  descripcion: e.target.value
-                }))}
-                placeholder="Descripción del trabajo/pieza"
-              />
-            </div>
+            {/* Fila 2: Cantidad, Precio y Botones */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+              <div className="md:col-span-3">
+                <label className="block text-sm font-medium mb-1">Cantidad</label>
+                <NumberInput
+                  value={nuevaLinea.cantidad || 1}
+                  onChange={(value) => setNuevaLinea(prev => ({
+                    ...prev,
+                    cantidad: value ?? 1
+                  }))}
+                  min={0.01}
+                  step={nuevaLinea.tipo === 'mano_obra' ? 0.25 : 1}
+                  className="w-full"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Cantidad</label>
-              <NumberInput
-                value={nuevaLinea.cantidad || 1}
-                onChange={(value) => setNuevaLinea(prev => ({
-                  ...prev,
-                  cantidad: value ?? 1
-                }))}
-                min={0.01}
-                step={nuevaLinea.tipo === 'mano_obra' ? 0.25 : 1}
-              />
-            </div>
+              <div className="md:col-span-3">
+                <label className="block text-sm font-medium mb-1">Precio/Unidad (€)</label>
+                <NumberInput
+                  value={nuevaLinea.precio_unitario || 0}
+                  onChange={(value) => setNuevaLinea(prev => ({
+                    ...prev,
+                    precio_unitario: value ?? 0
+                  }))}
+                  min={0}
+                  step={0.01}
+                  className="w-full text-right"
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Precio/Unidad</label>
-              <NumberInput
-                value={nuevaLinea.precio_unitario || 0}
-                onChange={(value) => setNuevaLinea(prev => ({
-                  ...prev,
-                  precio_unitario: value ?? 0
-                }))}
-                min={0}
-                step={0.01}
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <Button onClick={handleAgregarLinea}>
-                Agregar
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => setMostrarFormulario(false)}
-              >
-                Cancelar
-              </Button>
+              <div className="md:col-span-6 flex gap-2">
+                <Button onClick={handleAgregarLinea} className="flex-1">
+                  Agregar
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setMostrarFormulario(false)}
+                  className="flex-1"
+                >
+                  Cancelar
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -206,7 +216,7 @@ export function TablaTrabajos({
                       </Badge>
                     </td>
 
-                    <td className="py-3">
+                    <td className="py-3 min-w-[200px]">
                       {editandoId === linea.id ? (
                         <Input
                           value={linea.descripcion}
@@ -221,7 +231,7 @@ export function TablaTrabajos({
                       )}
                     </td>
 
-                    <td className="text-right py-3">
+                    <td className="text-right py-3 min-w-[100px]">
                       {editandoId === linea.id ? (
                         <NumberInput
                           value={linea.cantidad}
@@ -230,14 +240,14 @@ export function TablaTrabajos({
                           })}
                           min={0.01}
                           step={linea.tipo === 'mano_obra' ? 0.25 : 1}
-                          className="w-20 text-right"
+                          className="w-full text-right"
                         />
                       ) : (
                         <span>{linea.cantidad}</span>
                       )}
                     </td>
 
-                    <td className="text-right py-3">
+                    <td className="text-right py-3 min-w-[120px]">
                       {editandoId === linea.id ? (
                         <NumberInput
                           value={linea.precio_unitario}
@@ -246,10 +256,10 @@ export function TablaTrabajos({
                           })}
                           min={0}
                           step={0.01}
-                          className="w-24 text-right"
+                          className="w-full text-right"
                         />
                       ) : (
-                        <span>€{(linea.precio_unitario || 0).toFixed(2)}</span>
+                        <span className="whitespace-nowrap">€{(linea.precio_unitario || 0).toFixed(2)}</span>
                       )}
                     </td>
 

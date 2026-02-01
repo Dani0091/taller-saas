@@ -152,11 +152,9 @@ export default function NuevoVehiculoPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <button onClick={() => router.back()}>
-          <Button variant="outline" size="icon">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-        </button>
+        <Button variant="outline" size="icon" onClick={() => router.back()}>
+          <ArrowLeft className="w-4 h-4" />
+        </Button>
         <div>
           <h1 className="text-3xl font-bold">Nuevo Vehículo</h1>
           <p className="text-gray-500 text-sm">Agrega los datos del vehículo</p>
@@ -336,11 +334,9 @@ export default function NuevoVehiculoPage() {
             <Button type="submit" disabled={loading}>
               {loading ? 'Creando...' : 'Crear Vehículo'}
             </Button>
-            <button onClick={() => router.back()}>
-              <Button type="button" variant="outline">
-                Cancelar
-              </Button>
-            </button>
+            <Button type="button" variant="outline" onClick={() => router.back()}>
+              Cancelar
+            </Button>
           </div>
         </form>
       </Card>

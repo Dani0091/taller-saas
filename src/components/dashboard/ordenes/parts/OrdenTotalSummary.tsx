@@ -83,13 +83,6 @@ export function OrdenTotalSummary({ totales, className = '' }: OrdenTotalSummary
           <span className="text-green-400 font-mono">{formatearMoneda(totales.total)}</span>
         </div>
       </div>
-
-      {/* Advertencia de desarrollo - remover en producción */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="mt-3 p-2 bg-yellow-900/20 border border-yellow-600 rounded text-xs text-yellow-400">
-          ℹ️ Totales calculados en el servidor
-        </div>
-      )}
     </Card>
   )
 }

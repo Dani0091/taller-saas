@@ -727,8 +727,8 @@ export default function NuevaFacturaPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-4 gap-3">
-                <div>
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                <div className="md:col-span-3">
                   <Label className="block text-sm font-semibold mb-2">Cantidad</Label>
                   <NumberInput
                     value={nuevaLinea.cantidad}
@@ -737,12 +737,12 @@ export default function NuevaFacturaPage() {
                         setNuevaLinea({ ...nuevaLinea, cantidad: value })
                       }
                     }}
-                    className="text-center"
+                    className="text-center w-full"
                     min={0.01}
                     step={0.01}
                   />
                 </div>
-                <div>
+                <div className="md:col-span-3">
                   <Label className="block text-sm font-semibold mb-2">Precio (€)</Label>
                   <NumberInput
                     value={nuevaLinea.precioUnitario}
@@ -754,10 +754,10 @@ export default function NuevaFacturaPage() {
                     placeholder="0.00"
                     min={0}
                     step={0.01}
-                    className="text-right"
+                    className="text-right w-full"
                   />
                 </div>
-                <div>
+                <div className="md:col-span-3">
                   <Label className="block text-sm font-semibold mb-2">IVA</Label>
                   <select
                     value={nuevaLinea.ivaPorcentaje}
@@ -770,9 +770,9 @@ export default function NuevaFacturaPage() {
                     <option value="0">0%</option>
                   </select>
                 </div>
-                <div>
+                <div className="md:col-span-3">
                   <Label className="block text-sm font-semibold mb-2">Total</Label>
-                  <div className="py-2 px-3 bg-white border border-green-200 rounded-lg font-bold text-right text-green-700">
+                  <div className="py-2 px-3 bg-white border border-green-200 rounded-lg font-bold text-right text-green-700 whitespace-nowrap">
                     {(() => {
                       const cant = nuevaLinea.cantidad || 0
                       const precio = nuevaLinea.precioUnitario || 0
