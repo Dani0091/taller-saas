@@ -51,6 +51,37 @@ export class Serie {
   }
 
   /**
+   * Crea una serie con validación flexible (acepta series personalizadas y legacy)
+   * NO lanza excepciones, solo emite warnings en desarrollo
+   */
+  public static createFlexible(value: string): Serie {
+    if (!value || !value.trim()) {
+      console.warn('⚠️ Serie vacía detectada, usando serie por defecto "F"')
+      return Serie.factura()
+    }
+
+    const normalized = value.toUpperCase().trim()
+
+    // Validar longitud (flexible: permite hasta 10 caracteres para series personalizadas)
+    if (normalized.length > 10) {
+      console.warn(`⚠️ Serie "${normalized}" excede 10 caracteres, truncando...`)
+      return new Serie(normalized.substring(0, 10))
+    }
+
+    // Validar que contenga al menos letras (permite alfanuméricos)
+    if (!/^[A-Z0-9]+$/.test(normalized)) {
+      console.warn(`⚠️ Serie "${normalized}" contiene caracteres no alfanuméricos, limpiando...`)
+      const cleaned = normalized.replace(/[^A-Z0-9]/g, '')
+      if (cleaned.length === 0) {
+        return Serie.factura()
+      }
+      return new Serie(cleaned)
+    }
+
+    return new Serie(normalized)
+  }
+
+  /**
    * Crea una serie desde el tipo predefinido
    */
   public static fromTipo(tipo: TipoSerie): Serie {

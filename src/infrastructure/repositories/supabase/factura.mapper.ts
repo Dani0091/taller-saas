@@ -16,8 +16,11 @@ import { EstadoFactura, TipoFactura, EstadoVerifactu, TipoLineaFactura } from '@
 export interface FacturaDBRecord {
   id: string
   taller_id: string
-  numero_factura?: string
-  numero_serie?: string
+  // Columnas de número de factura (sincronizadas con esquema real)
+  serie?: string // Serie de la factura (ej: "F", "SCR", "ALP")
+  numero?: number // Número secuencial de la factura
+  numero_factura?: string // Número completo formateado (legacy o generado)
+  numero_serie?: string // Alias/deprecated
   tipo: string
   estado: string
   orden_id?: string
@@ -79,16 +82,45 @@ export class FacturaMapper {
     // Mapear líneas
     const lineas = (record.lineas || []).map(linea => this.lineaToDomain(linea))
 
-    // Construir número de factura completo si existe
+    // Construir número de factura completo usando las columnas reales
     let numeroFactura: NumeroFactura | undefined
-    if (record.numero_factura) {
+
+    // PRIORIDAD 1: Si tenemos serie + numero (columnas separadas), construir desde ellas
+    if (record.serie && record.numero) {
       try {
-        numeroFactura = NumeroFactura.fromString(record.numero_factura)
+        const serie = Serie.createFlexible(record.serie)
+        const añoActual = new Date().getFullYear()
+        numeroFactura = NumeroFactura.create(serie, añoActual, record.numero)
       } catch (error) {
-        // Si el número de factura es inválido, lo ignoramos (datos legacy)
-        console.warn(`⚠️ Número de factura inválido (legacy): ${record.numero_factura}`, error)
+        console.warn(
+          `⚠️ Error al crear número de factura desde serie="${record.serie}" y numero=${record.numero}:`,
+          error
+        )
+        // Continuar a la siguiente opción
+      }
+    }
+
+    // PRIORIDAD 2: Si tenemos numero_factura (valor completo), parsearlo de forma flexible
+    if (!numeroFactura && record.numero_factura) {
+      try {
+        numeroFactura = NumeroFactura.fromStringFlexible(record.numero_factura)
+      } catch (error) {
+        // El método fromStringFlexible NO debería lanzar excepciones,
+        // pero por seguridad envolvemos en try/catch
+        console.warn(
+          `⚠️ Error inesperado al parsear numero_factura="${record.numero_factura}":`,
+          error
+        )
         numeroFactura = undefined
       }
+    }
+
+    // PRIORIDAD 3: Si todo falla, dejar como undefined (factura sin número asignado)
+    if (!numeroFactura) {
+      console.warn(
+        `⚠️ No se pudo determinar el número de factura para la factura con ID ${record.id}. ` +
+        `Serie: ${record.serie}, Numero: ${record.numero}, NumeroFactura: ${record.numero_factura}`
+      )
     }
 
     // NIF del cliente
