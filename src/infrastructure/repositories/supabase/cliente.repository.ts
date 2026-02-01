@@ -395,7 +395,7 @@ export class SupabaseClienteRepository implements IClienteRepository {
         .from('clientes')
         .select('estado')
         .eq('taller_id', tallerId)
-        .is('deleted_at', null)
+        // NOTA: La tabla clientes NO tiene deleted_at (hard delete)
 
       if (error) {
         throw SupabaseErrorMapper.toDomainError(error)
@@ -407,7 +407,8 @@ export class SupabaseClienteRepository implements IClienteRepository {
         counts[estado] = 0
       })
 
-      data?.forEach(record => {
+      // Protección contra arrays vacíos
+      (data || []).forEach(record => {
         counts[record.estado] = (counts[record.estado] || 0) + 1
       })
 
@@ -429,7 +430,7 @@ export class SupabaseClienteRepository implements IClienteRepository {
         .from('clientes')
         .select('tipo_cliente')
         .eq('taller_id', tallerId)
-        .is('deleted_at', null)
+        // NOTA: La tabla clientes NO tiene deleted_at (hard delete)
 
       if (error) {
         throw SupabaseErrorMapper.toDomainError(error)
@@ -441,7 +442,8 @@ export class SupabaseClienteRepository implements IClienteRepository {
         counts[tipo] = 0
       })
 
-      data?.forEach(record => {
+      // Protección contra arrays vacíos
+      (data || []).forEach(record => {
         counts[record.tipo_cliente] = (counts[record.tipo_cliente] || 0) + 1
       })
 
@@ -475,7 +477,7 @@ export class SupabaseClienteRepository implements IClienteRepository {
         .select('id')
         .eq('nif', nif.toUpperCase())
         .eq('taller_id', tallerId)
-        .is('deleted_at', null)
+        // NOTA: La tabla clientes NO tiene deleted_at (hard delete)
 
       if (excludeId) {
         query = query.neq('id', excludeId)

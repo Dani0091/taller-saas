@@ -38,13 +38,16 @@ export async function obtenerMetricasDashboardAction(): Promise<ActionResult<Met
     const supabase = await createClient()
 
     // 2. CONSULTAS CON FILTRO DE SEGURIDAD (taller_id)
+    // PROTECCIÓN: Si no hay datos, retornar arrays vacíos (NO lanzar DATABASE_ERROR)
 
-    // Órdenes (no tiene deleted_at en el schema)
+    // Órdenes (tiene deleted_at)
     const { data: ordenes, error: ordenesError } = await supabase
       .from('ordenes_reparacion')
       .select('id, estado, fecha_entrada')
       .eq('taller_id', tallerId)
+      .is('deleted_at', null)
 
+    // Solo lanzar error si es un error REAL de BD, no si simplemente no hay datos
     if (ordenesError) {
       console.error('❌ Error consultando órdenes:', ordenesError)
       throw new Error(`Error en órdenes: ${ordenesError.message || ordenesError.details || 'Desconocido'}`)
@@ -57,19 +60,20 @@ export async function obtenerMetricasDashboardAction(): Promise<ActionResult<Met
       .eq('taller_id', tallerId)
       .is('deleted_at', null)
 
+    // Solo lanzar error si es un error REAL de BD, no si simplemente no hay datos
     if (facturasError) {
       console.error('❌ Error consultando facturas:', facturasError)
       throw new Error(`Error en facturas: ${facturasError.message || facturasError.details || 'Desconocido'}`)
     }
 
-    // Clientes (tiene deleted_at) - NO CRÍTICO: Si falla, el dashboard sigue funcionando
+    // Clientes (NO tiene deleted_at - hard delete) - NO CRÍTICO: Si falla, el dashboard sigue funcionando
     let clientesCount = 0
     try {
       const result = await supabase
         .from('clientes')
         .select('id', { count: 'exact', head: true })
         .eq('taller_id', tallerId)
-        .is('deleted_at', null)
+        // NOTA: La tabla clientes NO tiene deleted_at (hard delete)
 
       if (result.error) {
         console.warn('⚠️ Error consultando clientes (no crítico):', result.error)
@@ -83,6 +87,7 @@ export async function obtenerMetricasDashboardAction(): Promise<ActionResult<Met
     }
 
     // 3. CÁLCULOS EN EL BACKEND (no en la UI)
+    // PROTECCIÓN: Arrays vacíos retornan 0, nunca undefined o NaN
 
     const hoy = new Date().toISOString().split('T')[0]
     const ahora = new Date()
@@ -90,39 +95,50 @@ export async function obtenerMetricasDashboardAction(): Promise<ActionResult<Met
     const trimestre = Math.floor(ahora.getMonth() / 3)
     const inicioTrimestre = new Date(ahora.getFullYear(), trimestre * 3, 1)
 
-    // Métricas operativas
-    const ordenesHoy = (ordenes || []).filter(o =>
+    // Métricas operativas (protegidas contra null/undefined)
+    const ordenesArray = ordenes || []
+    const ordenesHoy = ordenesArray.filter(o =>
       o.fecha_entrada?.startsWith(hoy)
-    ).length
+    ).length || 0
 
-    const pendientes = (ordenes || []).filter(o =>
-      ['recibido', 'diagnostico', 'presupuestado', 'aprobado'].includes(o.estado)
-    ).length
+    const pendientes = ordenesArray.filter(o =>
+      o.estado && ['recibido', 'diagnostico', 'presupuestado', 'aprobado'].includes(o.estado)
+    ).length || 0
 
-    const enProgreso = (ordenes || []).filter(o =>
+    const enProgreso = ordenesArray.filter(o =>
       o.estado === 'en_reparacion'
-    ).length
+    ).length || 0
 
-    const completadas = (ordenes || []).filter(o =>
-      ['completado', 'entregado'].includes(o.estado)
-    ).length
+    const completadas = ordenesArray.filter(o =>
+      o.estado && ['completado', 'entregado'].includes(o.estado)
+    ).length || 0
 
     // Filtrar facturas del mes y trimestre (con protección contra fechas null)
-    const facturasMes = (facturas || []).filter(f => {
+    const facturasArray = facturas || []
+    const facturasMes = facturasArray.filter(f => {
       if (!f.fecha_emision) return false
-      return new Date(f.fecha_emision) >= inicioMes
+      try {
+        return new Date(f.fecha_emision) >= inicioMes
+      } catch {
+        return false
+      }
     })
 
-    const facturasTrimestre = (facturas || []).filter(f => {
+    const facturasTrimestre = facturasArray.filter(f => {
       if (!f.fecha_emision) return false
-      return new Date(f.fecha_emision) >= inicioTrimestre
+      try {
+        return new Date(f.fecha_emision) >= inicioTrimestre
+      } catch {
+        return false
+      }
     })
 
     // Calcular totales financieros (BACKEND hace los cálculos)
-    const facturadoMes = facturasMes.reduce((sum, f) => sum + (f.total || 0), 0)
-    const baseImponibleMes = facturasMes.reduce((sum, f) => sum + (f.base_imponible || 0), 0)
-    const ivaRecaudadoMes = facturasMes.reduce((sum, f) => sum + (f.iva || 0), 0)
-    const ivaTrimestre = facturasTrimestre.reduce((sum, f) => sum + (f.iva || 0), 0)
+    // Protegido: reduce siempre retorna un número, nunca undefined
+    const facturadoMes = facturasMes.reduce((sum, f) => sum + (Number(f.total) || 0), 0)
+    const baseImponibleMes = facturasMes.reduce((sum, f) => sum + (Number(f.base_imponible) || 0), 0)
+    const ivaRecaudadoMes = facturasMes.reduce((sum, f) => sum + (Number(f.iva) || 0), 0)
+    const ivaTrimestre = facturasTrimestre.reduce((sum, f) => sum + (Number(f.iva) || 0), 0)
 
     // 4. RETORNAR MÉTRICAS PRE-CALCULADAS
     const metricas: MetricasDashboardDTO = {
