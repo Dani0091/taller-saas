@@ -437,7 +437,7 @@ export default function ConfiguracionPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>NIF / CIF</Label>
-                    <Input name="nif" value={formData?.nif || formData?.cif || ''} onChange={handleChange} />
+                    <Input name="cif" value={formData?.cif || ''} onChange={handleChange} />
                   </div>
                   <div className="space-y-2">
                     <Label>Teléfono</Label>

@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
       logoUrl: tallerConfig?.logo_url || 'https://via.placeholder.com/150x80/E11D48/FFFFFF?text=R%26S',
       emisor: {
         nombre: tallerConfig?.nombre_empresa || taller?.nombre || 'Taller',
-        nif: tallerConfig?.cif || taller?.nif || '',
+        nif: tallerConfig?.cif || taller?.nif || 'B22757140',
         direccion: tallerConfig?.direccion || taller?.direccion || '',
         codigoPostal: taller?.codigo_postal || '',
         ciudad: taller?.ciudad || '',
