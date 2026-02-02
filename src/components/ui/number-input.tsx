@@ -136,7 +136,7 @@ export function NumberInput({
       <Input
         ref={inputRef}
         type="text"
-        inputMode="numeric"
+        inputMode="decimal"
         value={displayValue}
         onChange={handleChange}
         onBlur={() => {

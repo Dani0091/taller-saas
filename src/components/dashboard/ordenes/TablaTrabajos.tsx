@@ -133,8 +133,15 @@ export function TablaTrabajos({
                     ...prev,
                     descripcion: e.target.value
                   }))}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      handleAgregarLinea()
+                    }
+                  }}
                   placeholder="Descripción del trabajo/pieza"
                   className="w-full"
+                  autoFocus
                 />
               </div>
             </div>
@@ -149,6 +156,12 @@ export function TablaTrabajos({
                     ...prev,
                     cantidad: value ?? 1
                   }))}
+                  onBlur={() => {
+                    // Auto-completar cantidad a 1 si está vacío
+                    if (!nuevaLinea.cantidad) {
+                      setNuevaLinea(prev => ({ ...prev, cantidad: 1 }))
+                    }
+                  }}
                   min={0.01}
                   step={nuevaLinea.tipo === 'mano_obra' ? 0.25 : 1}
                   className="w-full"

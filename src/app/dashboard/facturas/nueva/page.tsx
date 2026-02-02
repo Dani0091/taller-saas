@@ -723,7 +723,13 @@ export default function NuevaFacturaPage() {
                   placeholder="Ej: Limpiaparabrisas, Cambio aceite..."
                   value={nuevaLinea.descripcion}
                   onChange={(e) => setNuevaLinea({ ...nuevaLinea, descripcion: e.target.value })}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAgregarLinea()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      handleAgregarLinea()
+                    }
+                  }}
+                  autoFocus
                 />
               </div>
 
