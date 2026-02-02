@@ -206,23 +206,72 @@ export function TablaTrabajos({
           <p>No hay líneas agregadas</p>
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className={`w-full ${compact ? 'text-sm' : ''}`}>
-            <thead>
-              <tr className="border-b">
-                <th className="text-left py-2">Tipo</th>
-                <th className="text-left py-2">Descripción</th>
-                <th className="text-right py-2">Cantidad</th>
-                <th className="text-right py-2">Precio/U</th>
-                {!readonly && <th className="text-center py-2">Acciones</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {lineas.map((linea) => {
-                const tipoInfo = getTipoInfo(linea.tipo)
+        <>
+          {/* Vista de TARJETAS en MÓVIL (< 640px) - Mejor UX táctil */}
+          <div className="sm:hidden space-y-3">
+            {lineas.map((linea) => {
+              const tipoInfo = getTipoInfo(linea.tipo)
+              return (
+                <div key={linea.id} className="bg-white border rounded-lg p-4 shadow-sm">
+                  <div className="flex justify-between items-start mb-2">
+                    <Badge variant="secondary" className="text-xs">
+                      {tipoInfo.icon} {tipoInfo.label}
+                    </Badge>
+                    {!readonly && (
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setEditandoId(linea.id!)}
+                          className="h-8 w-8 p-0"
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => onEliminarLinea(linea.id!)}
+                          className="h-8 w-8 p-0 text-red-600"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  <p className="font-medium text-sm mb-3">{linea.descripcion}</p>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="bg-gray-50 p-2 rounded">
+                      <span className="text-gray-500 text-xs block mb-1">Cantidad</span>
+                      <p className="font-semibold text-base">{linea.cantidad}</p>
+                    </div>
+                    <div className="bg-gray-50 p-2 rounded">
+                      <span className="text-gray-500 text-xs block mb-1">Precio/U</span>
+                      <p className="font-semibold text-base text-green-700">€{(linea.precio_unitario || 0).toFixed(2)}</p>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
 
-                return (
-                  <tr key={linea.id} className="border-b hover:bg-gray-50">
+          {/* Vista de TABLA en DESKTOP (>= 640px) */}
+          <div className="hidden sm:block overflow-x-auto">
+            <table className={`w-full ${compact ? 'text-sm' : ''}`}>
+              <thead>
+                <tr className="border-b">
+                  <th className="text-left py-2">Tipo</th>
+                  <th className="text-left py-2">Descripción</th>
+                  <th className="text-right py-2">Cantidad</th>
+                  <th className="text-right py-2">Precio/U</th>
+                  {!readonly && <th className="text-center py-2">Acciones</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {lineas.map((linea) => {
+                  const tipoInfo = getTipoInfo(linea.tipo)
+
+                  return (
+                    <tr key={linea.id} className="border-b hover:bg-gray-50">
                     <td className="py-3">
                       <Badge variant="secondary" className="text-xs">
                         {tipoInfo.icon} {tipoInfo.label}
@@ -331,10 +380,11 @@ export function TablaTrabajos({
                     )}
                   </tr>
                 )
-              })}
-            </tbody>
-          </table>
-        </div>
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {/* ✅ ELIMINADA: Sección de resumen con cálculos de IVA, subtotales, etc.
