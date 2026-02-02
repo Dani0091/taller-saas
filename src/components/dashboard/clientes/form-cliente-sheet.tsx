@@ -27,7 +27,8 @@ interface FormClienteSheetProps {
 }
 
 interface ClienteFormData {
-  nombre: string // Campo único: Nombre / Razón Social
+  nombre: string // Nombre de pila
+  apellidos?: string // Apellidos (separados)
   nif: string
   email?: string
   telefono?: string
@@ -63,7 +64,8 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
   const [guardando, setGuardando] = useState(false)
   const [errores, setErrores] = useState<Record<string, string>>({})
   const [formData, setFormData] = useState<ClienteFormData>({
-    nombre: '', // Campo único para Nombre / Razón Social
+    nombre: '', // Nombre de pila
+    apellidos: '', // Apellidos
     nif: '',
     email: '',
     telefono: '',
@@ -140,7 +142,8 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
       // ✅ nombre ahora es un campo único (Nombre / Razón Social)
 
       const resultado = await crearClienteAction({
-        nombre: formData.nombre, // Campo único, sin separar apellidos
+        nombre: formData.nombre,
+        apellidos: formData.apellidos, // Apellidos separados
         nif: formData.nif,
         email: formData.email,
         telefono: formData.telefono,
@@ -187,43 +190,62 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
           <Card className="p-4 border-l-4 border-l-blue-600">
             <h3 className="font-bold mb-3">👤 Datos Básicos</h3>
             <div className="space-y-3">
-              <div>
-                <Label className="text-xs font-semibold">Nombre / Razón Social *</Label>
-                <Input
-                  placeholder="Juan García, Taller Mecánico S.L., etc."
-                  value={formData.nombre}
-                  onChange={(e) => setFormData(prev => ({ ...prev, nombre: e.target.value }))}
-                />
-                <p className="text-[10px] text-gray-500 mt-1">
-                  Acepta cualquier formato: comas, puntos, personas o empresas
-                </p>
-              </div>
-              <div>
-                <Label className="text-xs font-semibold">NIF/CIF *</Label>
-                <div className="relative">
+              {/* NOMBRE Y APELLIDOS - Grid horizontal */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs font-semibold">Nombre *</Label>
                   <Input
-                    placeholder="Ej: 12345678A"
-                    value={formData.nif}
-                    onChange={(e) => {
-                      const valor = e.target.value.toUpperCase()
-                      setFormData(prev => ({ ...prev, nif: valor }))
-                      validarCampoNIF(valor)
-                    }}
-                    className={errores.nif ? 'border-red-500 pr-10' : formData.nif && !errores.nif ? 'border-green-500 pr-10' : ''}
+                    placeholder="Juan"
+                    value={formData.nombre}
+                    onChange={(e) => setFormData(prev => ({ ...prev, nombre: e.target.value }))}
                   />
-                  {formData.nif && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      {errores.nif ? (
-                        <AlertCircle className="w-4 h-4 text-red-500" />
-                      ) : (
-                        <CheckCircle2 className="w-4 h-4 text-green-500" />
-                      )}
-                    </div>
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold">Apellidos</Label>
+                  <Input
+                    placeholder="García López"
+                    value={formData.apellidos || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, apellidos: e.target.value }))}
+                  />
+                </div>
+              </div>
+              {/* NIF Y TELÉFONO - Grid horizontal */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs font-semibold">NIF/CIF *</Label>
+                  <div className="relative">
+                    <Input
+                      placeholder="12345678A"
+                      value={formData.nif}
+                      onChange={(e) => {
+                        const valor = e.target.value.toUpperCase()
+                        setFormData(prev => ({ ...prev, nif: valor }))
+                        validarCampoNIF(valor)
+                      }}
+                      className={errores.nif ? 'border-red-500 pr-10' : formData.nif && !errores.nif ? 'border-green-500 pr-10' : ''}
+                    />
+                    {formData.nif && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        {errores.nif ? (
+                          <AlertCircle className="w-4 h-4 text-red-500" />
+                        ) : (
+                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {errores.nif && (
+                    <p className="text-xs text-red-500 mt-1">{errores.nif}</p>
                   )}
                 </div>
-                {errores.nif && (
-                  <p className="text-xs text-red-500 mt-1">{errores.nif}</p>
-                )}
+                <div>
+                  <Label className="text-xs font-semibold">Teléfono</Label>
+                  <Input
+                    placeholder="+34 600 000 000"
+                    value={formData.telefono}
+                    onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))}
+                  />
+                </div>
               </div>
               <div>
                 <Label className="text-xs font-semibold">Tipo de cliente</Label>
@@ -241,16 +263,8 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
 
           {/* CONTACTO */}
           <Card className="p-4 border-l-4 border-l-green-600">
-            <h3 className="font-bold mb-3">📞 Contacto</h3>
+            <h3 className="font-bold mb-3">📧 Email</h3>
             <div className="space-y-3">
-              <div>
-                <Label className="text-xs font-semibold">Teléfono</Label>
-                <Input
-                  placeholder="+34 666 123 456"
-                  value={formData.telefono}
-                  onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))}
-                />
-              </div>
               <div>
                 <Label className="text-xs font-semibold">Email</Label>
                 <div className="relative">
