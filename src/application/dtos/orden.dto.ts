@@ -111,7 +111,7 @@ export interface OrdenResponseDTO {
   tallerId: string
   numeroOrden?: string
   clienteId: string
-  vehiculoId: string
+  vehiculoId?: string // Opcional: puede no tener vehículo asignado
   operarioId?: string
   facturaId?: string
   descripcionProblema?: string
@@ -148,7 +148,7 @@ export interface OrdenListItemDTO {
   id: string
   numeroOrden?: string
   clienteId: string
-  vehiculoId: string
+  vehiculoId?: string // Opcional: puede no tener vehículo asignado
   // Campos poblados para UI (para evitar mostrar UUIDs)
   clienteNombre?: string
   vehiculoMatricula?: string
