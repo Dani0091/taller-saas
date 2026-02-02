@@ -52,10 +52,14 @@ export default function NuevaFacturaPage() {
   const [creandoCliente, setCreandoCliente] = useState(false)
   const [nuevoCliente, setNuevoCliente] = useState({
     nombre: '',
+    apellidos: '',
     nif: '',
     telefono: '',
     email: '',
-    direccion: ''
+    direccion: '',
+    ciudad: '',
+    provincia: '',
+    codigo_postal: ''
   })
 
   // Datos de la factura
@@ -162,6 +166,12 @@ export default function NuevaFacturaPage() {
       return
     }
 
+    // NIF OBLIGATORIO para facturación legal
+    if (!nuevoCliente.nif) {
+      toast.error('El NIF/CIF es obligatorio para facturación')
+      return
+    }
+
     if (!tallerId) {
       toast.error('No se encontró el taller')
       return
@@ -175,10 +185,14 @@ export default function NuevaFacturaPage() {
         body: JSON.stringify({
           taller_id: tallerId,
           nombre: nuevoCliente.nombre,
-          nif: nuevoCliente.nif || null,
+          apellidos: nuevoCliente.apellidos || null,
+          nif: nuevoCliente.nif,
           telefono: nuevoCliente.telefono || null,
           email: nuevoCliente.email || null,
           direccion: nuevoCliente.direccion || null,
+          ciudad: nuevoCliente.ciudad || null,
+          provincia: nuevoCliente.provincia || null,
+          codigo_postal: nuevoCliente.codigo_postal || null,
           tipo: 'particular'
         })
       })
@@ -189,9 +203,13 @@ export default function NuevaFacturaPage() {
         toast.error(data.error)
       } else if (data.cliente) {
         toast.success('Cliente creado correctamente')
+        // Construir nombre completo para mostrar
+        const nombreCompleto = nuevoCliente.apellidos
+          ? `${nuevoCliente.nombre} ${nuevoCliente.apellidos}`
+          : nuevoCliente.nombre
         const nuevoClienteData = {
           id: data.cliente.id,
-          nombre: data.cliente.nombre,
+          nombre: nombreCompleto,
           nif: data.cliente.nif || '',
           telefono: data.cliente.telefono,
           email: data.cliente.email
@@ -199,7 +217,10 @@ export default function NuevaFacturaPage() {
         setClientes([...clientes, nuevoClienteData])
         setFormData({ ...formData, cliente_id: data.cliente.id })
         setMostrarCrearCliente(false)
-        setNuevoCliente({ nombre: '', nif: '', telefono: '', email: '', direccion: '' })
+        setNuevoCliente({
+          nombre: '', apellidos: '', nif: '', telefono: '',
+          email: '', direccion: '', ciudad: '', provincia: '', codigo_postal: ''
+        })
       } else {
         toast.error('Error al crear cliente: respuesta inválida')
       }
@@ -761,10 +782,10 @@ export default function NuevaFacturaPage() {
         </div>
       </div>
 
-      {/* MODAL CREAR CLIENTE */}
+      {/* MODAL CREAR CLIENTE - Completo con todos los campos */}
       {mostrarCrearCliente && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-md p-6">
+          <Card className="w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold flex items-center gap-2">
                 <UserPlus className="w-5 h-5 text-sky-600" />
@@ -776,34 +797,49 @@ export default function NuevaFacturaPage() {
             </div>
 
             <div className="space-y-4">
-              <div>
-                <Label className="text-sm font-semibold">Nombre *</Label>
-                <Input
-                  placeholder="Nombre o razón social"
-                  value={nuevoCliente.nombre}
-                  onChange={(e) => setNuevoCliente({ ...nuevoCliente, nombre: e.target.value })}
-                />
-              </div>
-
+              {/* NOMBRE Y APELLIDOS - Grid horizontal */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-sm font-semibold">NIF/CIF</Label>
+                  <Label className="text-sm font-semibold">Nombre *</Label>
+                  <Input
+                    placeholder="Juan"
+                    value={nuevoCliente.nombre}
+                    onChange={(e) => setNuevoCliente({ ...nuevoCliente, nombre: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-semibold">Apellidos</Label>
+                  <Input
+                    placeholder="García López"
+                    value={nuevoCliente.apellidos}
+                    onChange={(e) => setNuevoCliente({ ...nuevoCliente, apellidos: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {/* NIF Y TELÉFONO - Grid horizontal */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-sm font-semibold">NIF/CIF *</Label>
                   <Input
                     placeholder="12345678A"
                     value={nuevoCliente.nif}
-                    onChange={(e) => setNuevoCliente({ ...nuevoCliente, nif: e.target.value })}
+                    onChange={(e) => setNuevoCliente({ ...nuevoCliente, nif: e.target.value.toUpperCase() })}
+                    className={!nuevoCliente.nif ? '' : 'border-green-500'}
                   />
+                  <p className="text-xs text-gray-500 mt-1">Obligatorio para factura legal</p>
                 </div>
                 <div>
                   <Label className="text-sm font-semibold">Teléfono</Label>
                   <Input
-                    placeholder="+34 600..."
+                    placeholder="+34 600 000 000"
                     value={nuevoCliente.telefono}
                     onChange={(e) => setNuevoCliente({ ...nuevoCliente, telefono: e.target.value })}
                   />
                 </div>
               </div>
 
+              {/* EMAIL */}
               <div>
                 <Label className="text-sm font-semibold">Email</Label>
                 <Input
@@ -814,13 +850,43 @@ export default function NuevaFacturaPage() {
                 />
               </div>
 
+              {/* DIRECCIÓN */}
               <div>
                 <Label className="text-sm font-semibold">Dirección</Label>
                 <Input
-                  placeholder="Calle, número, ciudad..."
+                  placeholder="C/ Ejemplo, 123"
                   value={nuevoCliente.direccion}
                   onChange={(e) => setNuevoCliente({ ...nuevoCliente, direccion: e.target.value })}
                 />
+              </div>
+
+              {/* CIUDAD, PROVINCIA, CP - Grid horizontal */}
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label className="text-sm font-semibold">C.P.</Label>
+                  <Input
+                    placeholder="28001"
+                    value={nuevoCliente.codigo_postal}
+                    onChange={(e) => setNuevoCliente({ ...nuevoCliente, codigo_postal: e.target.value })}
+                    maxLength={10}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-semibold">Ciudad</Label>
+                  <Input
+                    placeholder="Madrid"
+                    value={nuevoCliente.ciudad}
+                    onChange={(e) => setNuevoCliente({ ...nuevoCliente, ciudad: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-semibold">Provincia</Label>
+                  <Input
+                    placeholder="Madrid"
+                    value={nuevoCliente.provincia}
+                    onChange={(e) => setNuevoCliente({ ...nuevoCliente, provincia: e.target.value })}
+                  />
+                </div>
               </div>
 
               <div className="flex gap-2 pt-2">
@@ -834,14 +900,14 @@ export default function NuevaFacturaPage() {
                 <Button
                   className="flex-1 gap-2 bg-sky-600 hover:bg-sky-700"
                   onClick={handleCrearCliente}
-                  disabled={creandoCliente || !nuevoCliente.nombre}
+                  disabled={creandoCliente || !nuevoCliente.nombre || !nuevoCliente.nif}
                 >
                   {creandoCliente ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <Check className="w-4 h-4" />
                   )}
-                  Crear
+                  Crear Cliente
                 </Button>
               </div>
             </div>
