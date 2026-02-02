@@ -12,19 +12,19 @@ import { TipoCita, EstadoCita } from '@/domain/types'
 export type CitaDbRecord = {
   id: string
   taller_id: string
-  titulo: string
+  titulo?: string | null
   descripcion?: string | null
   tipo: string
   fecha_inicio: string
   fecha_fin?: string | null
-  todo_el_dia: boolean
+  todo_el_dia?: boolean | null
   cliente_id?: string | null
   vehiculo_id?: string | null
   orden_id?: string | null
   estado: string
-  notificar_cliente: boolean
-  recordatorio_enviado: boolean
-  color: string
+  notificar_cliente?: boolean | null
+  recordatorio_enviado?: boolean | null
+  color?: string | null
   deleted_at?: string | null
   created_at: string
   updated_at: string
@@ -39,19 +39,19 @@ export class CitaMapper {
     const props: CitaProps = {
       id: record.id,
       tallerId: record.taller_id,
-      titulo: record.titulo,
+      titulo: record.titulo ?? 'Sin título',
       descripcion: record.descripcion ?? undefined,
       tipo: record.tipo as TipoCita,
       fechaInicio: new Date(record.fecha_inicio),
       fechaFin: record.fecha_fin ? new Date(record.fecha_fin) : undefined,
-      todoElDia: record.todo_el_dia,
+      todoElDia: record.todo_el_dia ?? false,
       clienteId: record.cliente_id ?? undefined,
       vehiculoId: record.vehiculo_id ?? undefined,
       ordenId: record.orden_id ?? undefined,
       estado: record.estado as EstadoCita,
-      notificarCliente: record.notificar_cliente,
-      recordatorioEnviado: record.recordatorio_enviado,
-      color: record.color,
+      notificarCliente: record.notificar_cliente ?? false,
+      recordatorioEnviado: record.recordatorio_enviado ?? false,
+      color: record.color ?? '#3B82F6',
       deletedAt: record.deleted_at ? new Date(record.deleted_at) : undefined,
       createdAt: new Date(record.created_at),
       updatedAt: new Date(record.updated_at),

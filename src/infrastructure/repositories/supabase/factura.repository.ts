@@ -452,10 +452,13 @@ export class SupabaseFacturaRepository implements IFacturaRepository {
       }
 
       // Contar por estado
-      const counts: Record<string, number> = {}
-      Object.values(EstadoFactura).forEach(estado => {
-        counts[estado] = 0
-      })
+      const counts: Record<string, number> = {
+        [EstadoFactura.BORRADOR]: 0,
+        [EstadoFactura.EMITIDA]: 0,
+        [EstadoFactura.PAGADA]: 0,
+        [EstadoFactura.ANULADA]: 0,
+        [EstadoFactura.VENCIDA]: 0
+      } as Record<string, number>
 
       data?.forEach(record => {
         counts[record.estado] = (counts[record.estado] || 0) + 1
