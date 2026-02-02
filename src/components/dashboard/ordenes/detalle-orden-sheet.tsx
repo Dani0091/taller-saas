@@ -67,9 +67,12 @@ interface Orden {
 
 interface DetalleOrdenSheetProps {
   ordenSeleccionada?: string | null
+  ordenId?: string | null // Alias para ordenSeleccionada (retrocompatibilidad)
   ordenes?: any[]
+  isOpen?: boolean // Control de visibilidad (opcional, no usado internamente)
   onClose: () => void
-  onActualizar: () => void
+  onActualizar?: () => void
+  onSuccess?: () => void // Alias para onActualizar (retrocompatibilidad)
   modoCrear?: boolean
 }
 
@@ -86,11 +89,16 @@ interface Linea {
 }
 
 export function DetalleOrdenSheet({
-  ordenSeleccionada,
+  ordenSeleccionada: ordenSeleccionadaProp,
+  ordenId,
   onClose,
-  onActualizar,
+  onActualizar: onActualizarProp,
+  onSuccess,
   modoCrear = false
 }: DetalleOrdenSheetProps) {
+  // Soporte para alias de props (retrocompatibilidad)
+  const ordenSeleccionada = ordenId || ordenSeleccionadaProp
+  const onActualizar = onSuccess || onActualizarProp || (() => {})
   const router = useRouter()
   const supabase = createClient()
   const [cargando, setCargando] = useState(!modoCrear)
