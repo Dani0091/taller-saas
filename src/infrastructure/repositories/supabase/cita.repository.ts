@@ -197,31 +197,9 @@ export class SupabaseCitaRepository implements ICitaRepository {
       let query = supabase
         .from('citas')
         .select(`
-          id,
-          taller_id,
-          cliente_id,
-          vehiculo_id,
-          orden_id,
-          titulo,
-          descripcion,
-          tipo,
-          fecha_inicio,
-          fecha_fin,
-          todo_el_dia,
-          estado,
-          recordatorio_email,
-          recordatorio_sms,
-          minutos_antes_recordatorio,
-          recordatorio_enviado,
-          color,
-          notas,
-          google_event_id,
-          google_calendar_id,
-          created_at,
-          updated_at,
-          created_by,
+          *,
           clientes(nombre, apellidos),
-          vehiculos(matricula, marca, modelo, año)
+          vehiculos(*)
         `, { count: 'exact' })
         .eq('taller_id', tallerId) // 🔒 FILTRO DE SEGURIDAD
 
@@ -531,10 +509,12 @@ export class SupabaseCitaRepository implements ICitaRepository {
       }
 
       // Contar por estado
-      const counts: Record<string, number> = {}
-      Object.values(EstadoCita).forEach(estado => {
-        counts[estado] = 0
-      })
+      const counts: Record<string, number> = {
+        [EstadoCita.PENDIENTE]: 0,
+        [EstadoCita.CONFIRMADA]: 0,
+        [EstadoCita.COMPLETADA]: 0,
+        [EstadoCita.CANCELADA]: 0
+      } as Record<string, number>
 
       data?.forEach(record => {
         counts[record.estado] = (counts[record.estado] || 0) + 1
@@ -565,10 +545,12 @@ export class SupabaseCitaRepository implements ICitaRepository {
       }
 
       // Contar por tipo
-      const counts: Record<string, number> = {}
-      Object.values(TipoCita).forEach(tipo => {
-        counts[tipo] = 0
-      })
+      const counts: Record<string, number> = {
+        [TipoCita.CITA]: 0,
+        [TipoCita.ITV]: 0,
+        [TipoCita.REVISION]: 0,
+        [TipoCita.ENTREGA]: 0
+      } as Record<string, number>
 
       data?.forEach(record => {
         counts[record.tipo] = (counts[record.tipo] || 0) + 1

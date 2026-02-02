@@ -402,10 +402,10 @@ export class SupabaseClienteRepository implements IClienteRepository {
       }
 
       // Contar por estado
-      const counts: Record<string, number> = {}
-      Object.values(EstadoCliente).forEach(estado => {
-        counts[estado] = 0
-      })
+      const counts: Record<string, number> = {
+        [EstadoCliente.ACTIVO]: 0,
+        [EstadoCliente.INACTIVO]: 0
+      } as Record<string, number>
 
       // Protección contra arrays vacíos
       (data || []).forEach(record => {
@@ -437,10 +437,13 @@ export class SupabaseClienteRepository implements IClienteRepository {
       }
 
       // Contar por tipo
-      const counts: Record<string, number> = {}
-      Object.values(TipoCliente).forEach(tipo => {
-        counts[tipo] = 0
-      })
+      const counts: Record<string, number> = {
+        [TipoCliente.PARTICULAR]: 0,
+        [TipoCliente.EMPRESA]: 0,
+        [TipoCliente.AUTONOMO]: 0,
+        [TipoCliente.FLOTA]: 0,
+        [TipoCliente.RENTING]: 0
+      } as Record<string, number>
 
       // Protección contra arrays vacíos
       (data || []).forEach(record => {

@@ -594,10 +594,14 @@ export class SupabaseVehiculoRepository implements IVehiculoRepository {
       }
 
       // Contar por tipo
-      const counts: Record<string, number> = {}
-      Object.values(TipoCombustible).forEach(tipo => {
-        counts[tipo] = 0
-      })
+      const counts: Record<string, number> = {
+        [TipoCombustible.GASOLINA]: 0,
+        [TipoCombustible.DIESEL]: 0,
+        [TipoCombustible.ELECTRICO]: 0,
+        [TipoCombustible.HIBRIDO]: 0,
+        [TipoCombustible.GAS]: 0,
+        [TipoCombustible.OTRO]: 0
+      } as Record<string, number>
 
       data?.forEach(record => {
         if (record.tipo_combustible) {

@@ -18,21 +18,21 @@ export interface OrdenDBRecord {
   taller_id: string
   numero_orden?: string
   cliente_id: string
-  vehiculo_id: string
+  vehiculo_id?: string | null
   operario_id?: string
   factura_id?: string
   descripcion_problema?: string
   diagnostico?: string
   trabajos_realizados?: string
   notas?: string
-  presupuesto_aprobado_por_cliente: boolean
+  presupuesto_aprobado_por_cliente?: boolean | null
   tiempo_estimado_horas?: number
   tiempo_real_horas?: number
   kilometros_entrada?: number
   nivel_combustible?: string
-  renuncia_presupuesto: boolean
+  renuncia_presupuesto?: boolean | null
   accion_imprevisto: string
-  recoger_piezas: boolean
+  recoger_piezas?: boolean | null
   danos_carroceria?: string
   coste_diario_estancia?: number
   fotos_entrada?: string
@@ -77,14 +77,14 @@ export class OrdenMapper {
       tallerId: record.taller_id,
       numeroOrden: record.numero_orden,
       clienteId: record.cliente_id,
-      vehiculoId: record.vehiculo_id,
+      vehiculoId: record.vehiculo_id ?? '',
       operarioId: record.operario_id,
       facturaId: record.factura_id,
       descripcionProblema: record.descripcion_problema,
       diagnostico: record.diagnostico,
       trabajosRealizados: record.trabajos_realizados,
       notas: record.notas,
-      presupuestoAprobadoPorCliente: record.presupuesto_aprobado_por_cliente,
+      presupuestoAprobadoPorCliente: record.presupuesto_aprobado_por_cliente ?? false,
       tiempoEstimadoHoras: record.tiempo_estimado_horas,
       tiempoRealHoras: record.tiempo_real_horas,
       kilometrosEntrada: record.kilometros_entrada
@@ -98,9 +98,9 @@ export class OrdenMapper {
           })()
         : undefined,
       nivelCombustible: record.nivel_combustible,
-      renunciaPresupuesto: record.renuncia_presupuesto,
+      renunciaPresupuesto: record.renuncia_presupuesto ?? false,
       accionImprevisto: record.accion_imprevisto as AccionImprevisto,
-      recogerPiezas: record.recoger_piezas,
+      recogerPiezas: record.recoger_piezas ?? false,
       danosCarroceria: record.danos_carroceria,
       costeDiarioEstancia: record.coste_diario_estancia
         ? (() => {

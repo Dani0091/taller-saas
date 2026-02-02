@@ -464,7 +464,7 @@ export class SupabaseOrdenRepository implements IOrdenRepository {
           fotos_diagnostico,
           lineas:lineas_orden(*),
           cliente:clientes!ordenes_reparacion_cliente_id_fkey(nombre, apellidos),
-          vehiculo:vehiculos!ordenes_reparacion_vehiculo_id_fkey(matricula, marca, modelo, año)
+          vehiculo:vehiculos!ordenes_reparacion_vehiculo_id_fkey(*)
         `, { count: 'exact' })
         .eq('taller_id', tallerId) // 🔒 FILTRO DE SEGURIDAD
         .is('deleted_at', null)
@@ -521,12 +521,14 @@ export class SupabaseOrdenRepository implements IOrdenRepository {
         // Agregar metadata para UI (datos de JOINs)
         // @ts-ignore - Agregamos propiedades temporales para transporte
         entity._clienteNombre = record.cliente
+          // @ts-ignore
           ? `${record.cliente.nombre}${record.cliente.apellidos ? ' ' + record.cliente.apellidos : ''}`
           : undefined
         // @ts-ignore
         entity._vehiculoMatricula = record.vehiculo?.matricula
         // @ts-ignore
         entity._vehiculoMarcaModelo = record.vehiculo && (record.vehiculo.marca || record.vehiculo.modelo)
+          // @ts-ignore
           ? `${record.vehiculo.marca || ''} ${record.vehiculo.modelo || ''}`.trim()
           : undefined
         return entity
