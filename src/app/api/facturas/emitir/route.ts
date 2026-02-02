@@ -162,8 +162,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 4. Generar número de factura
-    const numeroFactura = `${serieToUse}${siguienteNumero.toString().padStart(3, '0')}`
+    // 4. Generar número de factura en formato [prefijo]-[numero] (ej: RS-1, FA-123)
+    // Sin ceros extras, según lo especificado
+    const numeroFactura = `${serieToUse}-${siguienteNumero}`
 
     // 5. Actualizar factura con número y nuevo estado
     const { data: facturaEmitida, error: emitirError } = await supabase
@@ -197,6 +198,40 @@ export async function POST(request: NextRequest) {
     console.log(`   - Estado: ${estado_final}`)
     console.log(`   - Cliente: ${factura.cliente?.nombre || 'N/A'}`)
     console.log(`   - Total: ${factura.total}€`)
+
+    // 📢 TELEGRAM: Enviar notificación de factura emitida
+    try {
+      const botToken = process.env.TELEGRAM_BOT_TOKEN
+      const chatId = process.env.TELEGRAM_CHAT_ID
+
+      if (botToken && chatId) {
+        const nombreCliente = factura.cliente?.nombre || 'Cliente'
+        const mensaje = `
+🧾 <b>Nueva Factura Emitida</b>
+
+📋 Número: <b>${numeroFactura}</b>
+👤 Cliente: ${nombreCliente}
+💰 Total: <b>${factura.total}€</b>
+📅 Fecha: ${new Date().toLocaleDateString('es-ES')}
+🔖 Estado: ${estado_final === 'pagada' ? '✅ Pagada' : '⏳ Pendiente'}
+        `.trim()
+
+        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: mensaje,
+            parse_mode: 'HTML'
+          })
+        })
+
+        console.log('✅ Notificación enviada a Telegram')
+      }
+    } catch (telegramError) {
+      // No fallar si Telegram falla - solo log
+      console.warn('⚠️ Error al enviar notificación a Telegram:', telegramError)
+    }
 
     return NextResponse.json({
       success: true,

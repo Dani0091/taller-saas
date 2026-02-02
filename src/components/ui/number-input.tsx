@@ -85,27 +85,31 @@ export function NumberInput({
   }
 
   // Convertir string a número de forma segura
+  // ✅ Acepta tanto punto como coma como separador decimal
   const parseNumber = (str: string): number | null => {
     if (!str || str.trim() === '') {
       return allowEmpty ? null : 0
     }
 
-    // Remover caracteres no numéricos excepto punto para decimales
-    const cleanStr = str.replace(/[^\d.-]/g, '')
-    
+    // Reemplazar coma por punto para normalizar el separador decimal
+    let cleanStr = str.replace(',', '.')
+
+    // Remover caracteres no numéricos excepto punto y guión (para negativos)
+    cleanStr = cleanStr.replace(/[^\d.-]/g, '')
+
     // Validar que no tenga múltiples puntos decimales
     const parts = cleanStr.split('.')
     if (parts.length > 2) return null
-    
+
     // Convertir a número
     const num = parseFloat(cleanStr)
-    
+
     if (isNaN(num)) return null
-    
+
     // Aplicar validaciones de rango
     if (min !== undefined && num < min) return null
     if (max !== undefined && num > max) return null
-    
+
     return num
   }
 

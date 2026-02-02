@@ -69,17 +69,17 @@ export async function POST(request: NextRequest) {
     // Determinar serie a usar (del body o de la configuración del taller)
     let serieToUse = serie || 'FA'
 
-    // Obtener configuración del taller (IVA, serie, etc.)
+    // ✅ Obtener configuración del taller desde taller_config (IVA, serie, etc.)
     const { data: tallerConfig } = await supabase
-      .from('configuracion_taller')
-      .select('serie_factura_default, porcentaje_iva')
+      .from('taller_config')
+      .select('serie_factura, porcentaje_iva')
       .eq('taller_id', taller_id)
       .single()
 
     const ivaPorcentajeConfig = tallerConfig?.porcentaje_iva || 21
 
-    if (!serie && tallerConfig?.serie_factura_default) {
-      serieToUse = tallerConfig.serie_factura_default
+    if (!serie && tallerConfig?.serie_factura) {
+      serieToUse = tallerConfig.serie_factura
     }
 
     // NUEVO FLUJO: Las facturas se crean siempre como BORRADOR sin número

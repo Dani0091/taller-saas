@@ -15,8 +15,9 @@ export async function GET(request: Request) {
 
     const supabase = await createClient()
 
+    // ✅ Consultar desde taller_config (con columnas: cif, logo_url, color_primario)
     const { data, error } = await supabase
-      .from('configuracion_taller')
+      .from('taller_config')
       .select('*')
       .eq('taller_id', taller_id)
       .single()
