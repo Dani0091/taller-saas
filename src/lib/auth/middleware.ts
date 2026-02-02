@@ -25,16 +25,16 @@ export async function getAuthenticatedUser(): Promise<AuthResult | AuthError> {
   try {
     const supabase = await createClient()
 
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    const { data: { user }, error: sessionError } = await supabase.auth.getUser()
 
-    if (sessionError || !session?.user) {
+    if (sessionError || !user) {
       return { error: 'No autenticado', status: 401 }
     }
 
     const { data: usuario, error: usuarioError } = await supabase
       .from('usuarios')
       .select('taller_id')
-      .eq('email', session.user.email)
+      .eq('email', user.email)
       .single()
 
     if (usuarioError || !usuario) {
@@ -42,8 +42,8 @@ export async function getAuthenticatedUser(): Promise<AuthResult | AuthError> {
     }
 
     return {
-      userId: session.user.id,
-      email: session.user.email!,
+      userId: user.id,
+      email: user.email!,
       tallerId: usuario.taller_id
     }
   } catch (error) {

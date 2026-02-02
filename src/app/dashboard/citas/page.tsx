@@ -8,24 +8,24 @@ import type { Cita } from '@/types/citas'
 export default function CitasPage() {
   const [showFormulario, setShowFormulario] = useState(false)
   const [fechaSeleccionada, setFechaSeleccionada] = useState<Date | null>(null)
-  const [citaEditar, setCitaEditar] = useState<Cita | null>(null)
+  const [citaIdEditar, setCitaIdEditar] = useState<string | null>(null)
   const [key, setKey] = useState(0) // Para forzar recarga del calendario
 
   const handleNuevaCita = (fecha: Date) => {
     setFechaSeleccionada(fecha)
-    setCitaEditar(null)
+    setCitaIdEditar(null)
     setShowFormulario(true)
   }
 
-  const handleEditarCita = (cita: Cita) => {
-    setCitaEditar(cita)
+  const handleEditarCita = (citaId: string) => {
+    setCitaIdEditar(citaId)
     setFechaSeleccionada(null)
     setShowFormulario(true)
   }
 
   const handleCerrarFormulario = () => {
     setShowFormulario(false)
-    setCitaEditar(null)
+    setCitaIdEditar(null)
     setFechaSeleccionada(null)
   }
 
@@ -49,7 +49,7 @@ export default function CitasPage() {
 
       {showFormulario && (
         <FormularioCita
-          cita={citaEditar}
+          cita={undefined}
           fechaInicial={fechaSeleccionada}
           onClose={handleCerrarFormulario}
           onSave={handleCitaGuardada}

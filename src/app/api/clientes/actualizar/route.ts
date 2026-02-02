@@ -5,16 +5,16 @@ import { NextRequest, NextResponse } from 'next/server'
  * Helper: Obtener taller_id del usuario autenticado
  */
 async function getUsuarioTaller(supabase: any) {
-  const { data: { session } } = await supabase.auth.getSession()
+  const { data: { user } } = await supabase.auth.getUser()
 
-  if (!session?.user) {
+  if (!user) {
     return { error: 'No autorizado', status: 401 }
   }
 
   const { data: usuario } = await supabase
     .from('usuarios')
     .select('taller_id')
-    .eq('email', session.user.email)
+    .eq('email', user.email)
     .single()
 
   if (!usuario?.taller_id) {

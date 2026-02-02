@@ -10,9 +10,9 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient()
 
     // SEGURIDAD: Verificar que hay usuario autenticado
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    if (!session?.user) {
+    if (!user) {
       return NextResponse.json(
         { error: 'No autorizado' },
         { status: 401 }
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const { data: usuario } = await supabase
       .from('usuarios')
       .select('taller_id')
-      .eq('email', session.user.email)
+      .eq('email', user.email)
       .single()
 
     if (!usuario?.taller_id) {

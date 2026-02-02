@@ -17,15 +17,15 @@ export async function GET(request: Request) {
     }
 
     // Verificar que el usuario es admin del taller
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user?.email) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user?.email) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
     const { data: currentUser } = await supabase
       .from('usuarios')
       .select('taller_id, rol')
-      .eq('email', session.user.email)
+      .eq('email', user.email)
       .single()
 
     if (!currentUser || currentUser.taller_id !== tallerId) {
@@ -68,15 +68,15 @@ export async function POST(request: Request) {
     }
 
     // Verificar que el usuario actual es admin del taller
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user?.email) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user?.email) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
     const { data: currentUser } = await supabase
       .from('usuarios')
       .select('taller_id, rol')
-      .eq('email', session.user.email)
+      .eq('email', user.email)
       .single()
 
     if (!currentUser || currentUser.taller_id !== taller_id || currentUser.rol !== 'admin') {
@@ -157,15 +157,15 @@ export async function PATCH(request: Request) {
     }
 
     // Verificar que el usuario actual es admin del taller
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user?.email) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user?.email) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
     const { data: currentUser } = await supabase
       .from('usuarios')
       .select('taller_id, rol')
-      .eq('email', session.user.email)
+      .eq('email', user.email)
       .single()
 
     // Obtener el usuario a modificar
@@ -184,7 +184,7 @@ export async function PATCH(request: Request) {
     }
 
     // No permitir que un admin se quite su propio rol admin
-    if (targetUser.email === session.user.email && rol && rol !== 'admin') {
+    if (targetUser.email === user.email && rol && rol !== 'admin') {
       return NextResponse.json({ error: 'No puedes quitarte tu propio rol de admin' }, { status: 400 })
     }
 
@@ -229,15 +229,15 @@ export async function DELETE(request: Request) {
     }
 
     // Verificar que el usuario actual es admin del taller
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.user?.email) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user?.email) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
     const { data: currentUser } = await supabase
       .from('usuarios')
       .select('taller_id, rol')
-      .eq('email', session.user.email)
+      .eq('email', user.email)
       .single()
 
     // Obtener el usuario a eliminar
@@ -256,7 +256,7 @@ export async function DELETE(request: Request) {
     }
 
     // No permitir que un admin se elimine a sí mismo
-    if (targetUser.email === session.user.email) {
+    if (targetUser.email === user.email) {
       return NextResponse.json({ error: 'No puedes eliminarte a ti mismo' }, { status: 400 })
     }
 

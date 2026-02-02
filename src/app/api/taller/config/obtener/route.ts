@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     const supabase = await createClient()
 
     const { data, error } = await supabase
-      .from('taller_config')
+      .from('configuracion_taller')
       .select('*')
       .eq('taller_id', taller_id)
       .single()

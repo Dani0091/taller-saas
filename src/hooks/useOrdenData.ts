@@ -88,8 +88,8 @@ export function useOrdenData(ordenId?: string | null): OrdenDataHookReturn {
     setCargando(true)
     try {
       // Obtener sesión del usuario
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.user) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
         throw new Error('No autenticado')
       }
 
@@ -97,7 +97,7 @@ export function useOrdenData(ordenId?: string | null): OrdenDataHookReturn {
       const { data: usuario, error: usuarioError } = await supabase
         .from('usuarios')
         .select('taller_id')
-        .eq('email', session.user.email)
+        .eq('email', user.email)
         .single()
 
       if (usuarioError || !usuario) {
@@ -108,7 +108,7 @@ export function useOrdenData(ordenId?: string | null): OrdenDataHookReturn {
 
       // Cargar configuración del taller
       const { data: config, error: configError } = await supabase
-        .from('taller_config')
+        .from('configuracion_taller')
         .select('tarifa_hora')
         .eq('taller_id', usuario.taller_id)
         .single()
@@ -294,7 +294,7 @@ export function useOrdenData(ordenId?: string | null): OrdenDataHookReturn {
       console.error('Error agregando línea:', error)
       toast.error('Error al agregar línea')
     }
-  }, [orden.id, supabase])
+  }, [orden?.id, supabase])
 
   const actualizarLinea = useCallback(async (id: string, updates: Partial<LineaOrden>) => {
     try {

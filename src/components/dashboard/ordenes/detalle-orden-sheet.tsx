@@ -24,6 +24,17 @@ import { Card } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { fotosToString, getFotoUrl, setFotoUrl, getFotoByKey, setFotoByKey } from '@/lib/utils'
 import { ESTADOS_ORDEN, FRACCIONES_HORA, CANTIDADES, ESTADOS_FACTURABLES, FOTOS_DIAGNOSTICO, FOTO_LABELS, type TipoFoto } from '@/lib/constants'
+import { OrdenHeader } from './parts/OrdenHeader'
+import { OrdenTotalSummary } from './parts/OrdenTotalSummary'
+import { OrdenTrabajoTab } from './parts/OrdenTrabajoTab'
+import { OrdenItemsTab } from './parts/OrdenItemsTab'
+import { OrdenFotosTab } from './parts/OrdenFotosTab'
+import { OrdenInfoTab } from './parts/OrdenInfoTab'
+import { OrdenFooter } from './parts/OrdenFooter'
+import { FotoUploader } from './foto-uploader'
+import { OrdenPDFViewer } from './orden-pdf-viewer'
+import { calcularTotalesOrdenAction } from '@/actions/ordenes/calcular-totales-orden.action'
+import { TotalesOrdenDTO } from '@/application/dtos/orden.dto'
 
 interface Orden {
   id?: string
@@ -91,6 +102,7 @@ export function DetalleOrdenSheet({
   const [vehiculos, setVehiculos] = useState<any[]>([])
   const [tallerId, setTallerId] = useState<string>('')
   const [tarifaHora, setTarifaHora] = useState<number>(45)
+  const [ivaConfigTaller, setIvaConfigTaller] = useState<number>(21)
   const [ordenNumero, setOrdenNumero] = useState<string>('')
   const [mostrarEstados, setMostrarEstados] = useState(false)
   const [mostrarPDF, setMostrarPDF] = useState(false)
@@ -98,6 +110,14 @@ export function DetalleOrdenSheet({
   const [enlacePresupuesto, setEnlacePresupuesto] = useState<string | null>(null)
   const [piezaRapida, setPiezaRapida] = useState({ tipo: 'pieza', descripcion: '', cantidad: 1, precio: 0 })
   const [guardadoAutomatico, setGuardadoAutomatico] = useState(false)
+  const [totales, setTotales] = useState<TotalesOrdenDTO>({
+    manoObra: 0,
+    piezas: 0,
+    servicios: 0,
+    subtotal: 0,
+    iva: 0,
+    total: 0,
+  })
 
   const [formData, setFormData] = useState<Orden>({
     estado: 'recibido',
@@ -158,7 +178,9 @@ export function DetalleOrdenSheet({
     kilometros: 0,
     tipo_combustible: null,
     vin: null,
-    taller_id: ''
+    carroceria: null,
+    cilindrada: null,
+    potencia_cv: null
   })
 
   // Estado para editar vehículo existente
@@ -168,12 +190,14 @@ export function DetalleOrdenSheet({
     matricula: '',
     marca: null,
     modelo: null,
-    año: null,
+    año: new Date().getFullYear(),
     color: null,
-    kilometros: null,
+    kilometros: 0,
     tipo_combustible: null,
+    potencia_cv: null,
+    cilindrada: null,
     vin: null,
-    taller_id: ''
+    carroceria: null
   })
 
   // Cargar datos iniciales
@@ -225,8 +249,8 @@ export function DetalleOrdenSheet({
 
   const inicializar = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.user) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
         toast.error('No autenticado')
         return
       }
@@ -234,7 +258,7 @@ export function DetalleOrdenSheet({
       const { data: usuario } = await supabase
         .from('usuarios')
         .select('taller_id')
-        .eq('email', session.user.email)
+        .eq('email', user.email)
         .single()
 
       if (!usuario) {
@@ -244,15 +268,18 @@ export function DetalleOrdenSheet({
 
       setTallerId(usuario.taller_id)
 
-      // Cargar configuración del taller (para tarifa hora)
+      // Cargar configuración del taller (para tarifa hora e IVA)
       const { data: tallerConfig } = await supabase
-        .from('taller_config')
-        .select('tarifa_hora')
+        .from('configuracion_taller')
+        .select('tarifa_hora, porcentaje_iva')
         .eq('taller_id', usuario.taller_id)
         .single()
 
       if (tallerConfig?.tarifa_hora) {
         setTarifaHora(tallerConfig.tarifa_hora)
+      }
+      if (tallerConfig?.porcentaje_iva) {
+        setIvaConfigTaller(tallerConfig.porcentaje_iva)
       }
 
       // Cargar clientes
@@ -447,9 +474,9 @@ export function DetalleOrdenSheet({
           matricula: nuevoVehiculo.matricula.toUpperCase().replace(/\s/g, ''),
           marca: nuevoVehiculo.marca || null,
           modelo: nuevoVehiculo.modelo || null,
-          año: nuevoVehiculo.año ? parseInt(nuevoVehiculo.año) : null,
+          año: nuevoVehiculo.año || null,
           color: nuevoVehiculo.color || null,
-          kilometros: nuevoVehiculo.kilometros ? parseInt(nuevoVehiculo.kilometros) : null,
+          kilometros: nuevoVehiculo.kilometros || null,
           tipo_combustible: nuevoVehiculo.tipo_combustible || null,
           vin: nuevoVehiculo.vin || null,
         })
@@ -465,13 +492,16 @@ export function DetalleOrdenSheet({
       // Limpiar formulario
       setNuevoVehiculo({
         matricula: '',
-        marca: '',
-        modelo: '',
-        año: '',
-        color: '',
-        kilometros: '',
-        tipo_combustible: '',
-        vin: ''
+        marca: null,
+        modelo: null,
+        año: new Date().getFullYear(),
+        color: null,
+        kilometros: 0,
+        tipo_combustible: null,
+        vin: null,
+        carroceria: null,
+        potencia_cv: null,
+        cilindrada: null
       })
       setMostrarFormVehiculo(false)
       toast.success('Vehículo creado correctamente')
@@ -490,13 +520,16 @@ export function DetalleOrdenSheet({
 
     setVehiculoEditado({
       matricula: vehiculo.matricula || '',
-      marca: vehiculo.marca || '',
-      modelo: vehiculo.modelo || '',
-      año: vehiculo.año?.toString() || '',
-      color: vehiculo.color || '',
-      kilometros: vehiculo.kilometros?.toString() || '',
-      tipo_combustible: vehiculo.tipo_combustible || '',
-      vin: vehiculo.vin || vehiculo.bastidor_vin || ''
+      marca: vehiculo.marca || null,
+      modelo: vehiculo.modelo || null,
+      año: vehiculo.año || new Date().getFullYear(),
+      color: vehiculo.color || null,
+      kilometros: vehiculo.kilometros || 0,
+      tipo_combustible: vehiculo.tipo_combustible || null,
+      vin: vehiculo.vin || vehiculo.bastidor_vin || null,
+      potencia_cv: vehiculo.potencia_cv || null,
+      cilindrada: vehiculo.cilindrada || null,
+      carroceria: vehiculo.carroceria || null
     })
     setEditandoVehiculo(true)
   }
@@ -587,22 +620,47 @@ export function DetalleOrdenSheet({
     }
   }
 
-  // Calcular totales
-  const totales = lineas.reduce(
-    (acc, linea) => {
-      const subtotal = linea.cantidad * linea.precio_unitario
-      const iva = subtotal * 0.21
-      return {
-        manoObra: linea.tipo === 'mano_obra' ? acc.manoObra + subtotal : acc.manoObra,
-        piezas: linea.tipo === 'pieza' ? acc.piezas + subtotal : acc.piezas,
-        servicios: linea.tipo === 'servicio' ? acc.servicios + subtotal : acc.servicios,
-        subtotal: acc.subtotal + subtotal,
-        iva: acc.iva + iva,
-        total: acc.total + subtotal + iva
+  // Cargar totales calculados en el servidor
+  const cargarTotales = useCallback(async () => {
+    if (!ordenSeleccionada || modoCrear) {
+      // En modo crear, calcular totales localmente temporalmente
+      // hasta que se guarde la orden y tengamos un ID
+      const totalesTemp = lineas.reduce(
+        (acc, linea) => {
+          const subtotal = linea.cantidad * linea.precio_unitario
+          const iva = subtotal * (ivaConfigTaller / 100) // ✅ Dinámico desde taller_config
+          return {
+            manoObra: linea.tipo === 'mano_obra' ? acc.manoObra + subtotal : acc.manoObra,
+            piezas: linea.tipo === 'pieza' ? acc.piezas + subtotal : acc.piezas,
+            servicios: linea.tipo === 'servicio' ? acc.servicios + subtotal : acc.servicios,
+            subtotal: acc.subtotal + subtotal,
+            iva: acc.iva + iva,
+            total: acc.total + subtotal + iva
+          }
+        },
+        { manoObra: 0, piezas: 0, servicios: 0, subtotal: 0, iva: 0, total: 0 }
+      )
+      setTotales(totalesTemp)
+      return
+    }
+
+    try {
+      const resultado = await calcularTotalesOrdenAction(ordenSeleccionada)
+      if (resultado.success) {
+        setTotales(resultado.data)
+      } else {
+        toast.error(`Error al cargar totales: ${resultado.error}`)
       }
-    },
-    { manoObra: 0, piezas: 0, servicios: 0, subtotal: 0, iva: 0, total: 0 }
-  )
+    } catch (error) {
+      console.error('Error cargando totales:', error)
+      toast.error('Error al cargar totales')
+    }
+  }, [ordenSeleccionada, modoCrear, lineas, ivaConfigTaller])
+
+  // Actualizar totales cuando cambien las líneas
+  useEffect(() => {
+    cargarTotales()
+  }, [cargarTotales])
 
   const agregarLinea = () => {
     if (!nuevaLinea.descripcion) {
@@ -1068,10 +1126,8 @@ export function DetalleOrdenSheet({
 
   const cambiarEstado = (nuevoEstado: string) => {
     setFormData(prev => ({ ...prev, estado: nuevoEstado }))
-    setMostrarEstados(false)
   }
 
-  const estadoActual = ESTADOS_ORDEN.find(e => e.value === formData.estado) || ESTADOS_ORDEN[0]
   const vehiculoSeleccionado = vehiculos.find(v => v.id === formData.vehiculo_id)
 
   if (cargando) {
@@ -1088,72 +1144,18 @@ export function DetalleOrdenSheet({
   return (
     <div className="fixed inset-0 z-50 bg-black/50">
       <div className="fixed inset-y-0 right-0 w-full max-w-lg bg-gray-50 shadow-xl flex flex-col">
-        {/* Header */}
-        <div className="bg-white border-b px-4 py-3 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div>
-              <h2 className="text-lg font-bold text-gray-900">
-                {modoCrear ? 'Nueva Orden' : ordenNumero}
-              </h2>
-              <p className="text-xs text-gray-500">
-                {modoCrear ? 'Crear nueva orden de trabajo' : 'Editar orden'}
-              </p>
-            </div>
-            {!modoCrear && (
-              <div className="flex items-center gap-1">
-                {guardadoAutomatico ? (
-                  <div className="flex items-center gap-1 text-green-600">
-                    <Check className="w-3 h-3" />
-                    <span className="text-xs">Guardado</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-1 text-gray-400">
-                    <Clock className="w-3 h-3" />
-                    <span className="text-xs">Autoguardando...</span>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-lg">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Selector de estado */}
-        <div className="bg-white border-b px-4 py-3 shrink-0">
-          <Label className="text-xs text-gray-500 mb-2 block">Estado de la orden</Label>
-          <div className="relative">
-            <button
-              onClick={() => setMostrarEstados(!mostrarEstados)}
-              className={`w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl border-2 transition-all ${estadoActual.color} text-white`}>
-              <span className="flex items-center gap-2 font-medium">
-                <span>{estadoActual.icon}</span>
-                {estadoActual.label}
-              </span>
-              <ChevronDown className={`w-5 h-5 transition-transform ${mostrarEstados ? 'rotate-180' : ''}`} />
-            </button>
-
-            {mostrarEstados && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border z-10 overflow-hidden max-h-64 overflow-y-auto">
-                {ESTADOS_ORDEN.map(estado => (
-                  <button
-                    key={estado.value}
-                    onClick={() => cambiarEstado(estado.value)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${
-                      formData.estado === estado.value ? 'bg-gray-100' : ''
-                    }`}>
-                    <span className={`w-3 h-3 rounded-full ${estado.color}`} />
-                    <span className="flex-1 text-left font-medium">{estado.label}</span>
-                    {formData.estado === estado.value && (
-                      <Check className="w-4 h-4 text-green-600" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+        {/* Header con componente extraído */}
+        <OrdenHeader
+          modoCrear={modoCrear}
+          ordenNumero={ordenNumero}
+          guardadoAutomatico={guardadoAutomatico}
+          estadoActual={formData.estado}
+          onCambiarEstado={cambiarEstado}
+          onClose={onClose}
+          onImprimir={() => setMostrarPDF(true)}
+          mostrarEstados={mostrarEstados}
+          onToggleEstados={setMostrarEstados}
+        />
 
         {/* Tabs */}
         <div className="bg-white border-b flex shrink-0 overflow-x-auto">
@@ -1180,1471 +1182,131 @@ export function DetalleOrdenSheet({
         {/* Contenido */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {tab === 'info' && (
-            <>
-              {/* Cliente */}
-              <Card className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <Label className="text-sm font-semibold">Cliente *</Label>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setMostrarFormCliente(!mostrarFormCliente)}
-                    className="gap-1 text-xs"
-                  >
-                    <UserPlus className="w-3 h-3" />
-                    {mostrarFormCliente ? 'Cancelar' : 'Nuevo'}
-                  </Button>
-                </div>
-
-                {!mostrarFormCliente ? (
-                  <select
-                    value={formData.cliente_id}
-                    onChange={(e) => setFormData(prev => ({ ...prev, cliente_id: e.target.value, vehiculo_id: '' }))}
-                    className="w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white"
-                  >
-                    <option value="">Seleccionar cliente...</option>
-                    {clientes.map(c => (
-                      <option key={c.id} value={c.id}>
-                        {c.nombre} {c.apellidos ? c.apellidos : ''} {c.nif ? `(${c.nif})` : ''}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <div className="space-y-3 p-3 bg-blue-50 rounded-xl border border-blue-200">
-                    <h4 className="font-semibold text-blue-800 text-sm flex items-center gap-2">
-                      <UserPlus className="w-4 h-4" />
-                      Nuevo Cliente
-                    </h4>
-
-                    {/* Nombre - obligatorio */}
-                    <div>
-                      <Label className="text-xs text-gray-600 mb-1 block">Nombre *</Label>
-                      <Input
-                        value={nuevoCliente.nombre}
-                        onChange={(e) => setNuevoCliente(prev => ({ ...prev, nombre: e.target.value }))}
-                        placeholder="Nombre"
-                        className="bg-white"
-                      />
-                    </div>
-
-                    {/* Apellidos */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label className="text-xs text-gray-600 mb-1 block">Primer Apellido</Label>
-                        <Input
-                          value={nuevoCliente.primer_apellido}
-                          onChange={(e) => setNuevoCliente(prev => ({ ...prev, primer_apellido: e.target.value }))}
-                          placeholder="Primer apellido"
-                          className="bg-white"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs text-gray-600 mb-1 block">Segundo Apellido</Label>
-                        <Input
-                          value={nuevoCliente.segundo_apellido}
-                          onChange={(e) => setNuevoCliente(prev => ({ ...prev, segundo_apellido: e.target.value }))}
-                          placeholder="Segundo apellido"
-                          className="bg-white"
-                        />
-                      </div>
-                    </div>
-
-                    {/* NIF y Teléfono */}
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label className="text-xs text-gray-600 mb-1 block">NIF/CIF</Label>
-                        <Input
-                          value={nuevoCliente.nif}
-                          onChange={(e) => setNuevoCliente(prev => ({ ...prev, nif: e.target.value.toUpperCase() }))}
-                          placeholder="12345678A"
-                          className="bg-white font-mono"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs text-gray-600 mb-1 block">Teléfono</Label>
-                        <Input
-                          value={nuevoCliente.telefono}
-                          onChange={(e) => setNuevoCliente(prev => ({ ...prev, telefono: e.target.value }))}
-                          placeholder="666 123 456"
-                          className="bg-white"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Email */}
-                    <div>
-                      <Label className="text-xs text-gray-600 mb-1 block">Email</Label>
-                      <Input
-                        type="email"
-                        value={nuevoCliente.email}
-                        onChange={(e) => setNuevoCliente(prev => ({ ...prev, email: e.target.value }))}
-                        placeholder="cliente@email.com"
-                        className="bg-white"
-                      />
-                    </div>
-
-                    {/* Botón crear */}
-                    <Button
-                      type="button"
-                      onClick={crearCliente}
-                      disabled={creandoCliente || !nuevoCliente.nombre.trim()}
-                      className="w-full gap-2 bg-blue-600 hover:bg-blue-700"
-                    >
-                      {creandoCliente ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <UserPlus className="w-4 h-4" />
-                      )}
-                      {creandoCliente ? 'Creando...' : 'Crear Cliente'}
-                    </Button>
-                  </div>
-                )}
-              </Card>
-
-              {/* Vehículo */}
-              {formData.cliente_id && (
-                <Card className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <Label className="text-sm font-semibold">Vehículo</Label>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setMostrarFormVehiculo(!mostrarFormVehiculo)}
-                      className="gap-1 text-xs"
-                    >
-                      <Car className="w-3 h-3" />
-                      {mostrarFormVehiculo ? 'Cancelar' : 'Nuevo'}
-                    </Button>
-                  </div>
-
-                  {!mostrarFormVehiculo ? (
-                    <>
-                      {vehiculos.length > 0 ? (
-                        <select
-                          value={formData.vehiculo_id}
-                          onChange={(e) => setFormData(prev => ({ ...prev, vehiculo_id: e.target.value }))}
-                          className="w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white"
-                        >
-                          <option value="">Seleccionar vehículo...</option>
-                          {vehiculos.map(v => (
-                            <option key={v.id} value={v.id}>
-                              {v.matricula} - {v.marca} {v.modelo}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <div className="text-center py-4 bg-amber-50 rounded-xl border border-amber-200">
-                          <Car className="w-8 h-8 text-amber-500 mx-auto mb-2" />
-                          <p className="text-sm text-amber-700 font-medium">
-                            Este cliente no tiene vehículos
-                          </p>
-                          <p className="text-xs text-amber-600 mt-1">
-                            Pulsa "Nuevo" para añadir uno
-                          </p>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="space-y-3 p-3 bg-green-50 rounded-xl border border-green-200">
-                      <h4 className="font-semibold text-green-800 text-sm flex items-center gap-2">
-                        <Car className="w-4 h-4" />
-                        Nuevo Vehículo
-                      </h4>
-
-                      {/* Matrícula - obligatorio */}
-                      <div>
-                        <Label className="text-xs text-gray-600 mb-1 block">Matrícula *</Label>
-                        <div className="flex gap-2">
-                          <Input
-                            value={nuevoVehiculo.matricula}
-                            onChange={(e) => setNuevoVehiculo(prev => ({ ...prev, matricula: e.target.value.toUpperCase() }))}
-                            placeholder="1234ABC"
-                            className="font-mono uppercase flex-1"
-                          />
-                          <InputScanner
-                            tipo="matricula"
-                            onResult={(val) => setNuevoVehiculo(prev => ({ ...prev, matricula: val }))}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Marca y Modelo */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Label className="text-xs text-gray-600 mb-1 block">Marca</Label>
-                          <Input
-                            value={nuevoVehiculo.marca}
-                            onChange={(e) => setNuevoVehiculo(prev => ({ ...prev, marca: e.target.value }))}
-                            placeholder="Ford, BMW..."
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-gray-600 mb-1 block">Modelo</Label>
-                          <Input
-                            value={nuevoVehiculo.modelo}
-                            onChange={(e) => setNuevoVehiculo(prev => ({ ...prev, modelo: e.target.value }))}
-                            placeholder="Focus, 320i..."
-                          />
-                        </div>
-                      </div>
-
-                      {/* Año y Color */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Label className="text-xs text-gray-600 mb-1 block">Año</Label>
-                          <NumberInput
-                            value={nuevoVehiculo.año}
-                            onChange={createNumberChangeHandler(setNuevoVehiculo, 'año', {
-                              min: 1900,
-                              max: new Date().getFullYear() + 1,
-                              allowEmpty: false
-                            })}
-                            placeholder="2020"
-                            min={1900}
-                            max={new Date().getFullYear() + 1}
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-gray-600 mb-1 block">Color</Label>
-                          <Input
-                            value={nuevoVehiculo.color}
-                            onChange={(e) => setNuevoVehiculo(prev => ({ ...prev, color: e.target.value }))}
-                            placeholder="Blanco, Negro..."
-                          />
-                        </div>
-                      </div>
-
-                      {/* KM y Combustible */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Label className="text-xs text-gray-600 mb-1 block">Kilómetros</Label>
-                          <div className="flex gap-2">
-                            <NumberInput
-                              value={nuevoVehiculo.kilometros}
-                              onChange={createNumberChangeHandler(setNuevoVehiculo, 'kilometros', {
-                                min: 0,
-                                allowEmpty: true
-                              })}
-                              placeholder="125000"
-                              className="flex-1"
-                            />
-                              <InputScanner
-                                tipo="km"
-                                onResult={(val) => handleScannerNumber(val, setVehiculoEditado, 'kilometros')}
-                              />
-                          </div>
-                        </div>
-                        <div>
-                          <Label className="text-xs text-gray-600 mb-1 block">Combustible</Label>
-                          <select
-                            value={nuevoVehiculo.tipo_combustible}
-                            onChange={(e) => setNuevoVehiculo(prev => ({ ...prev, tipo_combustible: e.target.value }))}
-                            className="w-full px-3 py-2 border rounded-lg text-sm"
-                          >
-                            <option value="">Seleccionar...</option>
-                            <option value="Gasolina">Gasolina</option>
-                            <option value="Diésel">Diésel</option>
-                            <option value="Híbrido">Híbrido</option>
-                            <option value="Eléctrico">Eléctrico</option>
-                            <option value="GLP">GLP</option>
-                            <option value="GNC">GNC</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      {/* VIN */}
-                      <div>
-                        <Label className="text-xs text-gray-600 mb-1 block">Bastidor (VIN)</Label>
-                        <div className="flex gap-2">
-                          <Input
-                            value={nuevoVehiculo.vin}
-                            onChange={(e) => setNuevoVehiculo(prev => ({ ...prev, vin: e.target.value.toUpperCase() }))}
-                            placeholder="WVWZZZ3CZWE123456"
-                            className="font-mono uppercase text-xs flex-1"
-                          />
-                          <InputScanner
-                            tipo="vin"
-                            onResult={(val) => setNuevoVehiculo(prev => ({ ...prev, vin: val }))}
-                          />
-                        </div>
-                      </div>
-
-                      <Button
-                        onClick={crearVehiculo}
-                        disabled={creandoVehiculo || !nuevoVehiculo.matricula.trim()}
-                        className="w-full gap-2 bg-green-600 hover:bg-green-700"
-                      >
-                        {creandoVehiculo ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Plus className="w-4 h-4" />
-                        )}
-                        {creandoVehiculo ? 'Creando...' : 'Crear Vehículo'}
-                      </Button>
-                    </div>
-                  )}
-
-                  {vehiculoSeleccionado && !editandoVehiculo && (
-                    <div className="mt-3 p-4 bg-gradient-to-br from-sky-50 to-cyan-50 rounded-xl border border-sky-200">
-                      {/* Cabecera del vehículo */}
-                      <div className="flex items-center gap-3 mb-3 pb-3 border-b border-sky-200">
-                        <div className="w-10 h-10 bg-sky-600 rounded-lg flex items-center justify-center text-white text-lg">
-                          🚗
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-bold text-gray-900">
-                            {vehiculoSeleccionado.marca} {vehiculoSeleccionado.modelo}
-                          </p>
-                          <p className="text-lg font-mono font-bold text-sky-700">
-                            {vehiculoSeleccionado.matricula}
-                          </p>
-                        </div>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={iniciarEdicionVehiculo}
-                          className="gap-1 text-xs"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                          Editar
-                        </Button>
-                      </div>
-
-                      {/* Detalles del vehículo */}
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div className="bg-white p-2 rounded-lg border border-sky-100">
-                          <span className="text-xs text-gray-500 block">Kilómetros</span>
-                          <span className="font-bold text-gray-900">
-                            {vehiculoSeleccionado.kilometros?.toLocaleString() || '—'} km
-                          </span>
-                        </div>
-                        <div className="bg-white p-2 rounded-lg border border-sky-100">
-                          <span className="text-xs text-gray-500 block">Color</span>
-                          <span className="font-bold text-gray-900">
-                            {vehiculoSeleccionado.color || '—'}
-                          </span>
-                        </div>
-                        {vehiculoSeleccionado.tipo_combustible && (
-                          <div className="bg-white p-2 rounded-lg border border-sky-100">
-                            <span className="text-xs text-gray-500 block">Combustible</span>
-                            <span className="font-bold text-gray-900">
-                              {vehiculoSeleccionado.tipo_combustible}
-                            </span>
-                          </div>
-                        )}
-                        {vehiculoSeleccionado.año && (
-                          <div className="bg-white p-2 rounded-lg border border-sky-100">
-                            <span className="text-xs text-gray-500 block">Año</span>
-                            <span className="font-bold text-gray-900">
-                              {vehiculoSeleccionado.año}
-                            </span>
-                          </div>
-                        )}
-                        {(vehiculoSeleccionado.vin || vehiculoSeleccionado.bastidor_vin) && (
-                          <div className="col-span-2 bg-white p-2 rounded-lg border border-sky-100">
-                            <span className="text-xs text-gray-500 block">Bastidor (VIN)</span>
-                            <span className="font-mono text-xs font-medium text-gray-700">
-                              {vehiculoSeleccionado.vin || vehiculoSeleccionado.bastidor_vin}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Indicador de OCR */}
-                      <div className="mt-3 pt-3 border-t border-sky-200">
-                        <p className="text-xs text-sky-600 flex items-center gap-1">
-                          <span>📸</span>
-                          Sube foto del cuadro para actualizar KM automáticamente
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Formulario de edición de vehículo */}
-                  {vehiculoSeleccionado && editandoVehiculo && (
-                    <div className="mt-3 space-y-3 p-3 bg-amber-50 rounded-xl border border-amber-200">
-                      <h4 className="font-semibold text-amber-800 text-sm flex items-center gap-2">
-                        <Edit2 className="w-4 h-4" />
-                        Editar Vehículo
-                      </h4>
-
-                      {/* Matrícula */}
-                      <div>
-                        <Label className="text-xs text-gray-600 mb-1 block">Matrícula *</Label>
-                        <div className="flex gap-2">
-                          <Input
-                            value={vehiculoEditado.matricula}
-                            onChange={(e) => setVehiculoEditado(prev => ({ ...prev, matricula: e.target.value.toUpperCase() }))}
-                            placeholder="1234ABC"
-                            className="font-mono uppercase flex-1"
-                          />
-                          <InputScanner
-                            tipo="matricula"
-                            onResult={(val) => setVehiculoEditado(prev => ({ ...prev, matricula: val }))}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Marca y Modelo */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Label className="text-xs text-gray-600 mb-1 block">Marca</Label>
-                          <Input
-                            value={vehiculoEditado.marca}
-                            onChange={(e) => setVehiculoEditado(prev => ({ ...prev, marca: e.target.value }))}
-                            placeholder="Ford, BMW..."
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-gray-600 mb-1 block">Modelo</Label>
-                          <Input
-                            value={vehiculoEditado.modelo}
-                            onChange={(e) => setVehiculoEditado(prev => ({ ...prev, modelo: e.target.value }))}
-                            placeholder="Focus, 320i..."
-                          />
-                        </div>
-                      </div>
-
-                      {/* Año y Color */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Label className="text-xs text-gray-600 mb-1 block">Año</Label>
-                          <NumberInput
-                            value={vehiculoEditado.año || undefined}
-                            onChange={(value) => {
-                              setVehiculoEditado(prev => ({ ...prev, año: value ? Number(value) : undefined }))
-                            }}
-                            placeholder="2020"
-                            min={1900}
-                            max={new Date().getFullYear() + 1}
-                          />
-                        </div>
-                        <div>
-                          <Label className="text-xs text-gray-600 mb-1 block">Color</Label>
-                          <Input
-                            value={vehiculoEditado.color}
-                            onChange={(e) => setVehiculoEditado(prev => ({ ...prev, color: e.target.value }))}
-                            placeholder="Blanco, Negro..."
-                          />
-                        </div>
-                      </div>
-
-                      {/* KM y Combustible */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <Label className="text-xs text-gray-600 mb-1 block">Kilómetros</Label>
-                          <div className="flex gap-1">
-                            <NumberInput
-                              value={vehiculoEditado.kilometros || undefined}
-                              onChange={(value) => setVehiculoEditado(prev => ({ ...prev, kilometros: value ? String(value) : '' }))}
-                              placeholder="125000"
-                              className="flex-1"
-                              min={0}
-                            />
-                            <InputScanner
-                              tipo="km"
-                              onResult={(val) => {
-                                const num = parseInt(val.replace(/\D/g, ''))
-                                setVehiculoEditado(prev => ({ ...prev, kilometros: num > 0 ? num.toString() : '' }))
-                              }}
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <Label className="text-xs text-gray-600 mb-1 block">Combustible</Label>
-                          <select
-                            value={vehiculoEditado.tipo_combustible}
-                            onChange={(e) => setVehiculoEditado(prev => ({ ...prev, tipo_combustible: e.target.value }))}
-                            className="w-full px-3 py-2 border rounded-lg text-sm"
-                          >
-                            <option value="">Seleccionar...</option>
-                            <option value="Gasolina">Gasolina</option>
-                            <option value="Diésel">Diésel</option>
-                            <option value="Híbrido">Híbrido</option>
-                            <option value="Eléctrico">Eléctrico</option>
-                            <option value="GLP">GLP</option>
-                            <option value="GNC">GNC</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      {/* VIN */}
-                      <div>
-                        <Label className="text-xs text-gray-600 mb-1 block">Bastidor (VIN)</Label>
-                        <div className="flex gap-2">
-                          <Input
-                            value={vehiculoEditado.vin}
-                            onChange={(e) => setVehiculoEditado(prev => ({ ...prev, vin: e.target.value.toUpperCase() }))}
-                            placeholder="WVWZZZ3CZWE123456"
-                            className="font-mono uppercase text-xs flex-1"
-                          />
-                          <InputScanner
-                            tipo="km"
-                            onResult={(val) => handleScannerNumber(val, setVehiculoEditado, 'kilometros')}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Botones */}
-                      <div className="flex gap-2 pt-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => setEditandoVehiculo(false)}
-                          className="flex-1"
-                        >
-                          Cancelar
-                        </Button>
-                        <Button
-                          type="button"
-                          onClick={guardarEdicionVehiculo}
-                          disabled={guardandoVehiculo || !vehiculoEditado.matricula.trim()}
-                          className="flex-1 gap-2 bg-amber-600 hover:bg-amber-700"
-                        >
-                          {guardandoVehiculo ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Save className="w-4 h-4" />
-                          )}
-                          {guardandoVehiculo ? 'Guardando...' : 'Guardar'}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </Card>
-              )}
-
-              {/* Descripción del problema */}
-              <Card className="p-4">
-                <Label className="text-sm font-semibold mb-2 block">
-                  Descripción del problema / Motivo de entrada
-                </Label>
-                <Textarea
-                  value={formData.descripcion_problema || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, descripcion_problema: e.target.value }))}
-                  placeholder="Describe el problema que presenta el vehículo..."
-                  rows={3}
-                  className="resize-none"
-                />
-              </Card>
-
-              {/* Datos de recepción */}
-              <Card className="p-4">
-                <Label className="text-sm font-semibold mb-3 block">⛽ Recepción del vehículo</Label>
-
-                {/* Nivel de combustible */}
-                <div className="mb-4">
-                  <Label className="text-xs text-gray-500 mb-2 block">Nivel de combustible</Label>
-                  <div className="flex gap-2">
-                    {['E', '1/4', '1/2', '3/4', 'F'].map(nivel => (
-                      <button
-                        key={nivel}
-                        type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, nivel_combustible: nivel }))}
-                        className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg border-2 transition-all ${
-                          formData.nivel_combustible === nivel
-                            ? 'bg-amber-500 border-amber-500 text-white'
-                            : 'bg-white border-gray-200 text-gray-600 hover:border-amber-300'
-                        }`}> 
-                        {nivel}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* KM de entrada */}
-                <div className="mb-4">
-                  <Label className="text-xs text-gray-500 mb-1 block">Kilómetros de entrada</Label>
-                  <NumberInput
-                    value={formData.kilometros_entrada}
-                    onChange={(value) => setFormData(prev => ({
-                      ...prev,
-                      kilometros_entrada: value
-                    }))}
-                    placeholder="Ej: 145000"
-                    className="font-mono"
-                    min={0}
-                    allowEmpty={true}
-                  />
-                </div>
-
-                {/* Coste diario de estancia */}
-                <div>
-                  <Label className="text-xs text-gray-500 mb-1 block">Coste diario de estancia (€)</Label>
-                  <NumberInput
-                    value={formData.coste_diario_estancia ?? 0}
-                    onChange={(value) => setFormData(prev => ({
-                      ...prev,
-                      coste_diario_estancia: value || undefined
-                    }))}
-                    min={0}
-                    step={0.01}
-                    placeholder="Ej: 15.00"
-                    allowEmpty
-                  />
-                </div>
-              </Card>
-
-              {/* Autorizaciones legales */}
-              <Card className="p-4">
-                <Label className="text-sm font-semibold mb-3 block">✍️ Autorizaciones del cliente</Label>
-
-                {/* Cliente autoriza reparación */}
-                <label className="flex items-center gap-3 cursor-pointer mb-3 p-2 rounded-lg hover:bg-gray-50">
-                  <input
-                    type="checkbox"
-                    checked={formData.presupuesto_aprobado_por_cliente || false}
-                    onChange={(e) => setFormData(prev => ({ ...prev, presupuesto_aprobado_por_cliente: e.target.checked }))}
-                    className="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
-                  />
-                  <div>
-                    <span className="font-medium text-gray-900">Cliente autoriza reparación</span>
-                    <p className="text-xs text-gray-500">El cliente ha dado su aprobación para realizar los trabajos</p>
-                  </div>
-                </label>
-
-                {/* Renuncia a presupuesto */}
-                <label className="flex items-center gap-3 cursor-pointer mb-3 p-2 rounded-lg hover:bg-gray-50">
-                  <input
-                    type="checkbox"
-                    checked={formData.renuncia_presupuesto || false}
-                    onChange={(e) => setFormData(prev => ({ ...prev, renuncia_presupuesto: e.target.checked }))}
-                    className="w-5 h-5 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                  />
-                  <div>
-                    <span className="font-medium text-gray-900">Renuncia a presupuesto previo</span>
-                    <p className="text-xs text-gray-500">El cliente no desea recibir presupuesto antes de la reparación</p>
-                  </div>
-                </label>
-
-                {/* Recoger piezas */}
-                <label className="flex items-center gap-3 cursor-pointer mb-4 p-2 rounded-lg hover:bg-gray-50">
-                  <input
-                    type="checkbox"
-                    checked={formData.recoger_piezas || false}
-                    onChange={(e) => setFormData(prev => ({ ...prev, recoger_piezas: e.target.checked }))}
-                    className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <div>
-                    <span className="font-medium text-gray-900">Desea recoger piezas sustituidas</span>
-                    <p className="text-xs text-gray-500">El cliente quiere llevarse las piezas que se reemplacen</p>
-                  </div>
-                </label>
-
-                {/* Acción en caso de imprevistos */}
-                <div className="border-t pt-3">
-                  <Label className="text-xs text-gray-500 mb-2 block">En caso de imprevistos:</Label>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, accion_imprevisto: 'avisar' }))}
-                      className={`flex-1 py-2 px-4 text-sm font-medium rounded-lg border-2 transition-all ${
-                        formData.accion_imprevisto === 'avisar'
-                          ? 'bg-blue-500 border-blue-500 text-white'
-                          : 'bg-white border-gray-200 text-gray-600 hover:border-blue-300'
-                      }`}>
-                      📞 Avisar antes
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, accion_imprevisto: 'actuar' }))}
-                      className={`flex-1 py-2 px-4 text-sm font-medium rounded-lg border-2 transition-all ${
-                        formData.accion_imprevisto === 'actuar'
-                          ? 'bg-green-500 border-green-500 text-white'
-                          : 'bg-white border-gray-200 text-gray-600 hover:border-green-300'
-                      }`}>
-                      🔧 Actuar directamente
-                    </button>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Daños en carrocería */}
-              <Card className="p-4">
-                <Label className="text-sm font-semibold mb-2 block">🚗 Daños preexistentes en carrocería</Label>
-                <Textarea
-                  value={formData.danos_carroceria || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, danos_carroceria: e.target.value }))}
-                  placeholder="Describe los daños preexistentes en la carrocería del vehículo (golpe, rasguño, etc.)..."
-                  rows={3}
-                  className="resize-none"
-                />
-              </Card>
-
-              {/* Notas */}
-              <Card className="p-4">
-                <Label className="text-sm font-semibold mb-2 block">Notas internas</Label>
-                <Textarea
-                  value={formData.notas || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, notas: e.target.value }))}
-                  placeholder="Notas para el equipo del taller..."
-                  rows={2}
-                  className="resize-none"
-                />
-
-                {/* Upload de documentación adicional */}
-                <div className="mt-3 pt-3 border-t">
-                  <Label className="text-xs font-semibold mb-2 block text-gray-600">
-                    📄 Documentación adicional (Hoja de orden, notas escritas, etc.)
-                  </Label>
-                  {!modoCrear && ordenSeleccionada ? (
-                    <div className="grid grid-cols-2 gap-2">
-                      <FotoUploader
-                        tipo="diagnostico_1"
-                        ordenId={ordenSeleccionada}
-                        fotoUrl={getFotoByKey(formData.fotos_diagnostico || '', 'diagnostico_1')}
-                        onFotoSubida={(url) => {
-                          const fotosActuales = formData.fotos_diagnostico || ''
-                          const fotosObj = fotosActuales ? JSON.parse(fotosActuales) : {}
-                          fotosObj['diagnostico_1'] = url
-                          setFormData(prev => ({ ...prev, fotos_diagnostico: JSON.stringify(fotosObj) }))
-                        }}
-                      />
-                      <FotoUploader
-                        tipo="diagnostico_2"
-                        ordenId={ordenSeleccionada}
-                        fotoUrl={getFotoByKey(formData.fotos_diagnostico || '', 'diagnostico_2')}
-                        onFotoSubida={(url) => {
-                          const fotosActuales = formData.fotos_diagnostico || ''
-                          const fotosObj = fotosActuales ? JSON.parse(fotosActuales) : {}
-                          fotosObj['diagnostico_2'] = url
-                          setFormData(prev => ({ ...prev, fotos_diagnostico: JSON.stringify(fotosObj) }))
-                        }}
-                      />
-                    </div>
-                  ) : (
-                    <p className="text-xs text-gray-400 italic">
-                      Guarda la orden primero para poder subir documentos
-                    </p>
-                  )}
-                </div>
-              </Card>
-            </>
+            <OrdenInfoTab
+              modoCrear={modoCrear}
+              ordenSeleccionada={ordenSeleccionada}
+              formData={formData}
+              clientes={clientes}
+              vehiculos={vehiculos}
+              mostrarFormCliente={mostrarFormCliente}
+              mostrarFormVehiculo={mostrarFormVehiculo}
+              editandoVehiculo={editandoVehiculo}
+              creandoCliente={creandoCliente}
+              creandoVehiculo={creandoVehiculo}
+              guardandoVehiculo={guardandoVehiculo}
+              nuevoCliente={nuevoCliente}
+              nuevoVehiculo={nuevoVehiculo}
+              vehiculoEditado={vehiculoEditado}
+              onFormDataChange={(data) => setFormData((prev: any) => ({ ...prev, ...data }))}
+              onToggleFormCliente={() => setMostrarFormCliente(!mostrarFormCliente)}
+              onToggleFormVehiculo={() => setMostrarFormVehiculo(!mostrarFormVehiculo)}
+              onToggleEditandoVehiculo={() => setEditandoVehiculo(!editandoVehiculo)}
+              onNuevoClienteChange={(data) => setNuevoCliente((prev: any) => ({ ...prev, ...data }))}
+              onNuevoVehiculoChange={(data) => setNuevoVehiculo((prev: VehiculoNuevoFormulario) => ({ ...prev, ...data }))}
+              onVehiculoEditadoChange={(data) => setVehiculoEditado((prev: VehiculoEdicionFormulario) => ({ ...prev, ...data }))}
+              onCrearCliente={crearCliente}
+              onCrearVehiculo={crearVehiculo}
+              onGuardarVehiculo={guardarEdicionVehiculo}
+              vehiculoSeleccionado={vehiculoSeleccionado}
+            />
           )}
 
+
           {tab === 'fotos' && (
-            <>
-              {modoCrear ? (
-                <Card className="p-4 bg-amber-50 border-amber-200">
-                  <p className="text-sm text-amber-800">
-                    💡 Guarda la orden primero para poder subir fotos
-                  </p>
-                </Card>
-              ) : (
-                <>
-                  {/* Fotos de entrada */}
-                  <Card className="p-4">
-                    <Label className="text-sm font-semibold mb-3 block">📸 Fotos de Entrada</Label>
-                    <p className="text-xs text-gray-500 mb-4">
-                      Documenta el estado del vehículo al llegar al taller
-                    </p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <FotoUploader
-                        tipo="entrada"
-                        ordenId={ordenSeleccionada || ''}
-                        fotoUrl={getFotoUrl(formData.fotos_entrada || '', 0)}
-                        onFotoSubida={(url) => {
-                          setFormData(prev => ({
-                            ...prev,
-                            fotos_entrada: setFotoUrl(prev.fotos_entrada || '', 0, url)
-                          }))
-                        }}
-                        onOCRData={(data) => {
-                          // Verificar matrícula si hay vehículo seleccionado
-                          if (data.matricula && vehiculoSeleccionado) {
-                            const matriculaLimpia = data.matricula.replace(/[\s-]/g, '').toUpperCase()
-                            const matriculaVehiculo = vehiculoSeleccionado.matricula.replace(/[\s-]/g, '').toUpperCase()
-                            if (matriculaLimpia === matriculaVehiculo) {
-                              toast.success(`✅ Matrícula coincide: ${data.matricula}`)
-                            } else {
-                              toast.warning(`⚠️ Matrícula detectada (${data.matricula}) no coincide con el vehículo (${vehiculoSeleccionado.matricula})`)
-                            }
-                          } else if (data.matricula) {
-                            toast.info(`Matrícula detectada: ${data.matricula}`)
-                          }
-
-                          // Actualizar KM del vehículo
-                          if (data.km && formData.vehiculo_id) {
-                            actualizarKMVehiculo(data.km)
-                          } else if (data.km) {
-                            toast.info(`KM detectados: ${data.km.toLocaleString()} (selecciona un vehículo para guardar)`)
-                          }
-                        }}
-                      />
-                      <FotoUploader
-                        tipo="frontal"
-                        ordenId={ordenSeleccionada || ''}
-                        fotoUrl={getFotoUrl(formData.fotos_entrada || '', 1)}
-                        onFotoSubida={(url) => {
-                          setFormData(prev => ({
-                            ...prev,
-                            fotos_entrada: setFotoUrl(prev.fotos_entrada || '', 1, url)
-                          }))
-                        }}
-                      />
-                      <FotoUploader
-                        tipo="izquierda"
-                        ordenId={ordenSeleccionada || ''}
-                        fotoUrl={getFotoUrl(formData.fotos_entrada || '', 2)}
-                        onFotoSubida={(url) => {
-                          setFormData(prev => ({
-                            ...prev,
-                            fotos_entrada: setFotoUrl(prev.fotos_entrada || '', 2, url)
-                          }))
-                        }}
-                      />
-                      <FotoUploader
-                        tipo="derecha"
-                        ordenId={ordenSeleccionada || ''}
-                        fotoUrl={getFotoUrl(formData.fotos_entrada || '', 3)}
-                        onFotoSubida={(url) => {
-                          setFormData(prev => ({
-                            ...prev,
-                            fotos_entrada: setFotoUrl(prev.fotos_entrada || '', 3, url)
-                          }))
-                        }}
-                      />
-                    </div>
-                  </Card>
-
-                  {/* Fotos de salida */}
-                  <Card className="p-4">
-                    <Label className="text-sm font-semibold mb-3 block">✅ Fotos de Salida</Label>
-                    <p className="text-xs text-gray-500 mb-4">
-                      Documenta el estado del vehículo al entregar
-                    </p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <FotoUploader
-                        tipo="salida"
-                        ordenId={ordenSeleccionada || ''}
-                        fotoUrl={getFotoUrl(formData.fotos_salida || '', 0)}
-                        onFotoSubida={(url) => {
-                          setFormData(prev => ({
-                            ...prev,
-                            fotos_salida: setFotoUrl(prev.fotos_salida || '', 0, url)
-                          }))
-                        }}
-                      />
-                      <FotoUploader
-                        tipo="trasera"
-                        ordenId={ordenSeleccionada || ''}
-                        fotoUrl={getFotoUrl(formData.fotos_salida || '', 1)}
-                        onFotoSubida={(url) => {
-                          setFormData(prev => ({
-                            ...prev,
-                            fotos_salida: setFotoUrl(prev.fotos_salida || '', 1, url)
-                          }))
-                        }}
-                      />
-                    </div>
-                  </Card>
-                </>
-              )}
-            </>
+            <OrdenFotosTab
+              modoCrear={modoCrear}
+              ordenSeleccionada={ordenSeleccionada}
+              fotosEntrada={formData.fotos_entrada || ''}
+              fotosSalida={formData.fotos_salida || ''}
+              vehiculoSeleccionado={vehiculoSeleccionado}
+              vehiculoId={formData.vehiculo_id}
+              onFotosEntradaChange={(fotos) => setFormData(prev => ({ ...prev, fotos_entrada: fotos }))}
+              onFotosSalidaChange={(fotos) => setFormData(prev => ({ ...prev, fotos_salida: fotos }))}
+              onActualizarKMVehiculo={actualizarKMVehiculo}
+            />
           )}
 
           {tab === 'trabajo' && (
-            <>
-              {/* Diagnóstico */}
-              <Card className="p-4">
-                <Label className="text-sm font-semibold mb-2 block">Diagnóstico técnico</Label>
-                <Textarea
-                  value={formData.diagnostico || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, diagnostico: e.target.value }))}
-                  placeholder="Resultado del diagnóstico del vehículo..."
-                  rows={3}
-                  className="resize-none"
-                />
-              </Card>
-
-              {/* Fotos de diagnóstico */}
-              <Card className="p-4 bg-amber-50/50 border-amber-200">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-lg">📷</span>
-                  <Label className="text-sm font-semibold">Fotos de diagnóstico</Label>
-                </div>
-                <p className="text-xs text-gray-500 mb-4">
-                  Sube fotos del cuadro de instrumentos, testigos de fallo, o cualquier evidencia visual del problema.
-                </p>
-                <div className="grid grid-cols-2 gap-3">
-                  {FOTOS_DIAGNOSTICO.map((tipoFoto) => (
-                    <FotoUploader
-                      key={tipoFoto}
-                      tipo={tipoFoto}
-                      fotoUrl={getFotoByKey(formData.fotos_diagnostico || '', tipoFoto)}
-                      ordenId={ordenSeleccionada || 'nueva'}
-                      onFotoSubida={(url) => {
-                        setFormData(prev => ({
-                          ...prev,
-                          fotos_diagnostico: setFotoByKey(prev.fotos_diagnostico || '', tipoFoto, url)
-                        }))
-                      }}
-                      disabled={!ordenSeleccionada && !modoCrear}
-                    />
-                  ))}
-                </div>
-              </Card>
-
-              {/* Trabajos realizados */}
-              <Card className="p-4">
-                <Label className="text-sm font-semibold mb-2 block">Trabajos realizados</Label>
-                <Textarea
-                  value={formData.trabajos_realizados || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, trabajos_realizados: e.target.value }))}
-                  placeholder="Describe los trabajos que se han realizado..."
-                  rows={3}
-                  className="resize-none"
-                />
-              </Card>
-
-
-
-              {/* Tiempos con selector de fracciones */}
-              <Card className="p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Clock className="w-5 h-5 text-sky-600" />
-                  <Label className="text-sm font-semibold">Tiempo de trabajo</Label>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Horas estimadas */}
-                  <div>
-                    <Label className="text-xs text-gray-500 mb-2 block">Horas estimadas</Label>
-                    <select
-                      value={formData.tiempo_estimado_horas || 0}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        tiempo_estimado_horas: parseFloat(e.target.value)
-                      }))}
-                      className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white text-center"
-                    >
-                      <option value="0">Sin estimar</option>
-                      {FRACCIONES_HORA.map(f => (
-                        <option key={f.value} value={f.value}>{f.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Horas reales */}
-                  <div>
-                    <Label className="text-xs text-gray-500 mb-2 block">Horas reales</Label>
-                    <select
-                      value={formData.tiempo_real_horas || 0}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        tiempo_real_horas: parseFloat(e.target.value)
-                      }))}
-                      className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white text-center"
-                    >
-                      <option value="0">Sin registrar</option>
-                      {FRACCIONES_HORA.map(f => (
-                        <option key={f.value} value={f.value}>{f.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Input manual para valores personalizados */}
-                <div className="mt-3 pt-3 border-t">
-                  <Label className="text-xs text-gray-500 mb-2 block">O introduce un valor personalizado:</Label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <NumberInput
-                      value={formData.tiempo_estimado_horas}
-                      onChange={(value) => {
-                        if (validarHorasTrabajo(value, 'tiempo_estimado_horas')) {
-                          setFormData(prev => ({
-                            ...prev,
-                            tiempo_estimado_horas: value
-                          }))
-                        }
-                      }}
-                      placeholder="Estimadas"
-                      className="text-center"
-                      min={0}
-                      max={100}
-                    />
-                    <NumberInput
-                      value={formData.tiempo_real_horas}
-                      onChange={(value) => {
-                        if (validarHorasTrabajo(value, 'tiempo_real_horas')) {
-                          setFormData(prev => ({
-                            ...prev,
-                            tiempo_real_horas: value
-                          }))
-                        }
-                      }}
-                      placeholder="Reales"
-                      className="text-center"
-                      min={0}
-                      max={100}
-                    />
-                  </div>
-                </div>
-              </Card>
-            </>
+            <OrdenTrabajoTab
+              modoCrear={modoCrear}
+              ordenSeleccionada={ordenSeleccionada}
+              diagnostico={formData.diagnostico || ''}
+              trabajosRealizados={formData.trabajos_realizados || ''}
+              tiempoEstimadoHoras={formData.tiempo_estimado_horas || 0}
+              tiempoRealHoras={formData.tiempo_real_horas || 0}
+              fotosDiagnostico={formData.fotos_diagnostico || ''}
+              onDiagnosticoChange={(value) => setFormData(prev => ({ ...prev, diagnostico: value }))}
+              onTrabajosRealizadosChange={(value) => setFormData(prev => ({ ...prev, trabajos_realizados: value }))}
+              onTiempoEstimadoChange={(value) => setFormData(prev => ({ ...prev, tiempo_estimado_horas: value }))}
+              onTiempoRealChange={(value) => setFormData(prev => ({ ...prev, tiempo_real_horas: value }))}
+              onFotosDiagnosticoChange={(fotos) => setFormData(prev => ({ ...prev, fotos_diagnostico: fotos }))}
+              validarHorasTrabajo={validarHorasTrabajo}
+            />
           )}
 
           {tab === 'items' && (
-            <>
-              {/* Añadir línea */}
-              <Card className="p-4 border-2 border-dashed border-sky-200 bg-sky-50/50">
-                <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <Plus className="w-4 h-4" />
-                  Añadir línea de trabajo
-                </h3>
+            <OrdenItemsTab
+              lineas={lineas}
+              nuevaLinea={nuevaLinea}
+              piezaRapida={piezaRapida}
+              tarifaHora={tarifaHora}
+              totales={totales}
+              onNuevaLineaChange={setNuevaLinea}
+              onAgregarLinea={agregarLinea}
+              onActualizarLinea={actualizarLinea}
+              onEliminarLinea={eliminarLinea}
+              onPiezaRapidaChange={setPiezaRapida}
+              onAgregarPiezaRapida={() => {
+                const desc = piezaRapida.descripcion?.trim()
+                const qty = piezaRapida.cantidad || 1
+                const precio = piezaRapida.precio || 0
 
-                <div className="space-y-3">
-                  <div>
-                    <Label className="text-xs text-gray-600 mb-1 block">Tipo de elemento</Label>
-                    <select
-                      value={nuevaLinea.tipo}
-                      onChange={(e) => {
-                        const nuevoTipo = e.target.value as TipoLinea
-                        setNuevaLinea(prev => ({
-                          ...prev,
-                          tipo: nuevoTipo,
-                          // Auto-rellenar precio si es mano de obra
-                          precio_unitario: nuevoTipo === 'mano_obra' ? tarifaHora : 0
-                        }))
-                      }}
-                      className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white"
-                    >
-                      <option value="mano_obra">🔧 Mano de obra</option>
-                      <option value="pieza">⚙️ Recambio / Pieza</option>
-                      <option value="servicio">🛠️ Servicio externo</option>
-                      <option value="suplido">💸 Suplido (pagado por cliente: ITV, multa, etc.)</option>
-                      <option value="reembolso">💰 Reembolso (compra por cliente)</option>
-                    </select>
-                    {nuevaLinea.tipo === 'suplido' && (
-                      <p className="text-xs text-amber-600 mt-1">
-                        ⚠️ Suplidos: Se suman al total SIN IVA (ej: pago de ITV, multa)
-                      </p>
-                    )}
-                    {nuevaLinea.tipo === 'reembolso' && (
-                      <p className="text-xs text-blue-600 mt-1">
-                        ℹ️ Reembolsos: Se suman a base imponible CON IVA (ej: pieza comprada)
-                      </p>
-                    )}
-                  </div>
+                if (!desc) {
+                  toast.error('Escribe una descripción')
+                  return
+                }
 
-                  <div>
-                    <Label className="text-xs text-gray-600 mb-1 block">Descripción del trabajo</Label>
-                    <Input
-                      value={nuevaLinea.descripcion}
-                      onChange={(e) => setNuevaLinea(prev => ({ ...prev, descripcion: e.target.value }))}
-                      placeholder="Ej: Cambio de aceite y filtro"
-                    />
-                  </div>
+                setLineas(prev => [...prev, {
+                  id: `new-${Date.now()}`,
+                  tipo: (piezaRapida.tipo || 'pieza') as TipoLinea,
+                  descripcion: desc,
+                  cantidad: qty,
+                  precio_unitario: precio,
+                  estado: precio === 0 ? 'presupuestado' : 'confirmado',
+                  isNew: true
+                }])
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label className="text-xs text-gray-600 mb-1 block">
-                        {nuevaLinea.tipo === 'mano_obra' ? '⏱️ Horas de trabajo' : '📦 Cantidad (uds)'}
-                      </Label>
-                      {nuevaLinea.tipo === 'mano_obra' ? (
-                        <select
-                          value={nuevaLinea.cantidad}
-                          onChange={(e) => setNuevaLinea(prev => ({
-                            ...prev,
-                            cantidad: parseFloat(e.target.value)
-                          }))}
-                          className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white text-center"
-                        >
-                          {FRACCIONES_HORA.map(f => (
-                            <option key={f.value} value={f.value}>{f.label}</option>
-                          ))}
-                        </select>
-                      ) : (
-                        <select
-                          value={nuevaLinea.cantidad}
-                          onChange={(e) => setNuevaLinea(prev => ({
-                            ...prev,
-                            cantidad: parseFloat(e.target.value)
-                          }))}
-                          className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white text-center"
-                        >
-                          {CANTIDADES.map(c => (
-                            <option key={c.value} value={c.value}>{c.label}</option>
-                          ))}
-                        </select>
-                      )}
-                    </div>
-                    <div>
-                      <Label className="text-xs text-gray-600 mb-1 block">
-                        {nuevaLinea.tipo === 'mano_obra' ? '💶 Precio/hora (€)' : '💶 Precio/unidad (€)'}
-                      </Label>
-                          <NumberInput
-                            value={nuevaLinea.precio_unitario}
-                            onChange={(value) => {
-                              if (value != null) {
-                                setNuevaLinea(prev => ({
-                                  ...prev,
-                                  precio_unitario: value
-                                }))
-                              }
-                            }}
-                            min={0}
-                            step={0.01}
-                            placeholder="0.00"
-                            className="text-right"
-                          />
-                    </div>
-                  </div>
-
-                  {nuevaLinea.cantidad > 0 && nuevaLinea.precio_unitario > 0 && (
-                    <div className="p-2 bg-green-100 rounded-lg text-center">
-                      <span className="text-sm text-gray-600">Subtotal: </span>
-                      <span className="font-bold text-green-700">
-                        €{(nuevaLinea.cantidad * nuevaLinea.precio_unitario).toFixed(2)}
-                      </span>
-                    </div>
-                  )}
-
-                  <Button onClick={agregarLinea} className="w-full gap-2 bg-sky-600 hover:bg-sky-700">
-                    <Plus className="w-4 h-4" />
-                    Añadir línea
-                  </Button>
-                </div>
-              </Card>
-
-              {/* Lista de elementos unificada */}
-              {lineas.length > 0 && (
-                <Card className="p-4">
-                  <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                    📋 Elementos de la orden ({lineas.length})
-                  </h3>
-                  
-                  {/* Tabla unificada */}
-                  <div className="border rounded-lg overflow-hidden bg-white">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50 border-b">
-                        <tr>
-                          <th className="px-3 py-2 text-left font-semibold text-gray-700">Concepto</th>
-                          <th className="px-2 py-2 text-center font-semibold text-gray-700 w-16">Tipo</th>
-                          <th className="px-2 py-2 text-center font-semibold text-gray-700 w-12">Cant</th>
-                          <th className="px-2 py-2 text-right font-semibold text-gray-700 w-20">Precio</th>
-                          <th className="px-2 py-2 text-center font-semibold text-gray-700 w-20">Estado</th>
-                          <th className="px-2 py-2 text-right font-semibold text-gray-700 w-20">Total</th>
-                          <th className="px-2 py-2 w-8"></th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {lineas.map(linea => (
-                          <tr key={linea.id} className="hover:bg-gray-50">
-                            <td className="px-3 py-2">
-                              <div className="font-medium text-gray-900">{linea.descripcion}</div>
-                              {linea.precio_unitario === 0 && (
-                                <div className="text-xs text-amber-600">⏳ Precio pendiente</div>
-                              )}
-                            </td>
-                            <td className="px-2 py-2 text-center">
-                              <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                linea.tipo === 'mano_obra' ? 'bg-blue-100 text-blue-700' :
-                                linea.tipo === 'pieza' ? 'bg-purple-100 text-purple-700' :
-                                linea.tipo === 'servicio' ? 'bg-green-100 text-green-700' :
-                                'bg-gray-100 text-gray-700'
-                              }`}>
-                                {linea.tipo === 'mano_obra' ? '⏱️ M.O.' :
-                                 linea.tipo === 'pieza' ? '📦 Pieza' :
-                                 linea.tipo === 'servicio' ? '🔧 Serv.' :
-                                 linea.tipo}
-                              </span>
-                            </td>
-                            <td className="px-2 py-2">
-                              <NumberInput
-                                value={linea.cantidad}
-                                onChange={(value) => actualizarLinea(linea.id, 'cantidad', value ?? 0)}
-                                className="w-12 px-1 py-0.5 text-xs border border-gray-300 rounded text-center"
-                                min={0.01}
-                                step={linea.tipo === 'mano_obra' ? 0.25 : 1}
-                              />
-                            </td>
-                            <td className="px-2 py-2">
-                              <div className="flex items-center gap-1">
-                                <span className="text-xs text-gray-500">€</span>
-                                <NumberInput
-                                  value={linea.precio_unitario}
-                                  onChange={(value) => actualizarLinea(linea.id, 'precio_unitario', value ?? 0)}
-                                  className="w-16 px-1 py-0.5 text-xs border border-gray-300 rounded text-center"
-                                  placeholder="0.00"
-                                  min={0}
-                                  step={0.01}
-                                />
-                              </div>
-                            </td>
-                            <td className="px-2 py-2 text-center">
-                              {linea.tipo === 'pieza' ? (
-                                <select
-                                  value={linea.estado || 'presupuestado'}
-                                  onChange={(e) => actualizarLinea(linea.id, 'estado', e.target.value)}
-                                  className="text-xs px-1 py-0.5 border border-gray-300 rounded"
-                                >
-                                  <option value="presupuestado">📋 Presup.</option>
-                                  <option value="confirmado">✅ Confirm.</option>
-                                  <option value="recibido">📦 Recib.</option>
-                                </select>
-                              ) : (
-                                <span className="text-xs text-gray-400">-</span>
-                              )}
-                            </td>
-                            <td className="px-2 py-2 text-right font-mono text-sm font-semibold">
-                              €{(linea.cantidad * linea.precio_unitario).toFixed(2)}
-                            </td>
-                            <td className="px-2 py-2">
-                              <button
-                                onClick={() => eliminarLinea(linea.id)}
-                                className="p-1 text-red-500 hover:bg-red-50 rounded"
-                                title="Eliminar línea"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Formulario rápido para añadir elementos */}
-                  <div className="mt-4 p-3 bg-sky-50 rounded-lg border border-sky-200">
-                    <p className="text-xs font-semibold text-sky-800 mb-2">➕ Añadir elemento rápido</p>
-                    <div className="grid grid-cols-12 gap-2">
-                      <select
-                        value={piezaRapida.tipo || 'pieza'}
-                        onChange={(e) => setPiezaRapida(prev => ({ ...prev, tipo: e.target.value }))}
-                        className="col-span-2 text-xs px-2 py-1 border border-gray-300 rounded"
-                      >
-                        <option value="pieza">📦 Pieza</option>
-                        <option value="mano_obra">⏱️ M.O.</option>
-                        <option value="servicio">🔧 Serv.</option>
-                      </select>
-                      <input
-                        type="text"
-                        placeholder="Descripción..."
-                        value={piezaRapida.descripcion}
-                        onChange={(e) => setPiezaRapida(prev => ({ ...prev, descripcion: e.target.value }))}
-                        className="col-span-5 text-xs px-2 py-1 border border-gray-300 rounded"
-                      />
-                      <NumberInput
-                        value={piezaRapida.cantidad}
-                        onChange={(value) => setPiezaRapida(prev => ({ ...prev, cantidad: value ?? 1 }))}
-                        placeholder="Cant"
-                        className="col-span-1 text-xs"
-                        min={1}
-                        step={piezaRapida.tipo === 'mano_obra' ? 0.25 : 1}
-                      />
-                      <NumberInput
-                        value={piezaRapida.precio || 0}
-                        onChange={(value) => setPiezaRapida(prev => ({ ...prev, precio: value ?? 0 }))}
-                        placeholder="Precio"
-                        className="col-span-2 text-xs"
-                        min={0}
-                        step={0.01}
-                      />
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          const desc = piezaRapida.descripcion?.trim()
-                          const qty = piezaRapida.cantidad || 1
-                          const precio = piezaRapida.precio || 0
-
-                          if (!desc) {
-                            toast.error('Escribe una descripción')
-                            return
-                          }
-
-                          setLineas(prev => [...prev, {
-                            id: `new-${Date.now()}`,
-                            tipo: (piezaRapida.tipo || 'pieza') as TipoLinea,
-                            descripcion: desc,
-                            cantidad: qty,
-                            precio_unitario: precio,
-                            estado: precio === 0 ? 'presupuestado' : 'confirmado',
-                            isNew: true
-                          }])
-
-                          setPiezaRapida({ tipo: 'pieza', descripcion: '', cantidad: 1, precio: 0 })
-                          toast.success('Elemento añadido')
-                        }}
-                        className="col-span-2 h-7 text-xs"
-                      >
-                        <Plus className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              )}
-
-              {/* Resumen */}
-              <Card className="p-4 bg-gradient-to-br from-slate-800 to-slate-900 text-white">
-                <h3 className="font-semibold mb-3">Resumen</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Mano de obra:</span>
-                    <span>€{totales.manoObra.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Recambios:</span>
-                    <span>€{totales.piezas.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Servicios:</span>
-                    <span>€{totales.servicios.toFixed(2)}</span>
-                  </div>
-                  <div className="border-t border-gray-700 pt-2 flex justify-between">
-                    <span className="text-gray-400">Subtotal:</span>
-                    <span>€{totales.subtotal.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">IVA (21%):</span>
-                    <span>€{totales.iva.toFixed(2)}</span>
-                  </div>
-                  <div className="border-t border-gray-600 pt-2 flex justify-between text-lg font-bold">
-                    <span>Total:</span>
-                    <span className="text-green-400">€{totales.total.toFixed(2)}</span>
-                  </div>
-                </div>
-              </Card>
-            </>
+                setPiezaRapida({ tipo: 'pieza', descripcion: '', cantidad: 1, precio: 0 })
+                toast.success('Elemento añadido')
+              }}
+            />
           )}
         </div>
 
         {/* Footer */}
-        <div className="bg-white border-t p-4 space-y-2 shrink-0">
-          {/* Compartir presupuesto con cliente */}
-          {!modoCrear && ordenSeleccionada && (
-            <div className="space-y-2">
-              {!enlacePresupuesto ? (
-                <Button
-                  onClick={handleCompartirPresupuesto}
-                  disabled={compartiendo}
-                  variant="outline"
-                  className="w-full gap-2 py-3 border-purple-300 text-purple-700 hover:bg-purple-50"
-                >
-                  {compartiendo ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Share2 className="w-4 h-4" />
-                  )}
-                  {compartiendo ? 'Generando enlace...' : 'Enviar Presupuesto al Cliente'}
-                </Button>
-              ) : (
-                <div className="bg-purple-50 border border-purple-200 rounded-xl p-3 space-y-2">
-                  <p className="text-xs text-purple-700 font-medium">Enlace del presupuesto:</p>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={enlacePresupuesto}
-                      readOnly
-                      className="flex-1 text-xs bg-white border rounded-lg px-2 py-1.5 font-mono truncate"
-                    />
-                    <Button size="sm" variant="outline" onClick={copiarEnlace} className="gap-1">
-                      <Copy className="w-3 h-3" />
-                    </Button>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={enviarWhatsApp}
-                      className="flex-1 gap-1 bg-green-600 hover:bg-green-700"
-                    >
-                      <Share2 className="w-3 h-3" />
-                      WhatsApp
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => window.open(enlacePresupuesto, '_blank')}
-                      className="flex-1 gap-1"
-                    >
-                      <Link className="w-3 h-3" />
-                      Abrir
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Botón para imprimir orden completa */}
-          {!modoCrear && ordenSeleccionada && (
-            <Button
-              onClick={() => setMostrarPDF(true)}
-              variant="outline"
-              className="w-full gap-2 py-3"
-            >
-              <Printer className="w-4 h-4" />
-              Ver / Imprimir Orden Completa
-            </Button>
-          )}
-
-          {/* Añadir a Google Calendar */}
-          {!modoCrear && ordenSeleccionada && (
-            <div className="flex justify-center">
-              <GoogleCalendarButton
-                ordenId={ordenSeleccionada}
-                titulo={`Orden ${ordenNumero}`}
-                descripcion={formData.descripcion_problema || formData.trabajos_realizados}
-                clienteNombre={clientes.find(c => c.id === formData.cliente_id)?.nombre}
-                vehiculoInfo={vehiculoSeleccionado ? `${vehiculoSeleccionado.marca} ${vehiculoSeleccionado.modelo} - ${vehiculoSeleccionado.matricula}` : undefined}
-              />
-            </div>
-          )}
-
-          {!modoCrear && ESTADOS_FACTURABLES.includes(formData.estado as any) && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  disabled={generandoFactura || guardando}
-                  className="w-full gap-2 bg-green-600 hover:bg-green-700 py-3"
-                >
-                  {generandoFactura ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <FileText className="w-4 h-4" />
-                  )}
-                  {generandoFactura ? 'Generando...' : 'Generar Factura'}
-                  <ChevronDown className="w-4 h-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-48">
-                <DropdownMenuItem onClick={crearBorradorFactura} className="gap-2">
-                  📝 Crear Borrador Editable
-                  <span className="text-xs text-gray-500 ml-auto">Modificar antes de emitir</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={emitirFacturaDirecta} className="gap-2">
-                  ⚡ Emitir Factura Directa
-                  <span className="text-xs text-gray-500 ml-auto">Sin opción de edición</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              className="flex-1 py-3"
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={handleGuardar}
-              disabled={guardando || !formData.cliente_id}
-              className="flex-1 gap-2 py-3 bg-sky-600 hover:bg-sky-700"
-            >
-              {guardando ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4" />
-              )}
-              {guardando ? 'Guardando...' : (modoCrear ? 'Crear Orden' : 'Guardar Cambios')}
-            </Button>
-          </div>
-        </div>
+        <OrdenFooter
+          modoCrear={modoCrear}
+          ordenSeleccionada={ordenSeleccionada}
+          guardando={guardando}
+          compartiendo={compartiendo}
+          generandoFactura={generandoFactura}
+          ordenNumero={ordenNumero}
+          enlacePresupuesto={enlacePresupuesto}
+          clienteId={formData.cliente_id}
+          estado={formData.estado}
+          descripcionProblema={formData.descripcion_problema}
+          trabajosRealizados={formData.trabajos_realizados}
+          clientes={clientes}
+          vehiculoSeleccionado={vehiculoSeleccionado}
+          onCompartirPresupuesto={handleCompartirPresupuesto}
+          onCopiarEnlace={copiarEnlace}
+          onEnviarWhatsApp={enviarWhatsApp}
+          onMostrarPDF={() => setMostrarPDF(true)}
+          onCrearBorradorFactura={crearBorradorFactura}
+          onEmitirFacturaDirecta={emitirFacturaDirecta}
+          onGuardar={handleGuardar}
+          onClose={onClose}
+        />
 
         {/* Modal PDF */}
         {mostrarPDF && ordenSeleccionada && (

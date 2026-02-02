@@ -6,11 +6,11 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient()
 
     // 1. Obtener usuario logueado
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    const { data: { user }, error: sessionError } = await supabase.auth.getUser()
 
     if (sessionError) throw sessionError
 
-    if (!session?.user) {
+    if (!user) {
       return NextResponse.json(
         { success: false, error: 'No hay sesión activa' },
         { status: 401 }
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     const { data: usuario, error: usuarioError } = await supabase
       .from('usuarios')
       .select('taller_id')
-      .eq('email', session.user.email)
+      .eq('email', user.email)
       .single()
 
     if (usuarioError) throw usuarioError
@@ -83,9 +83,9 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
     const body = await request.json()
 
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    if (!session?.user) {
+    if (!user) {
       return NextResponse.json(
         { success: false, error: 'No autorizado' },
         { status: 401 }
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     const { data: usuario } = await supabase
       .from('usuarios')
       .select('taller_id')
-      .eq('email', session.user.email)
+      .eq('email', user.email)
       .single()
 
     if (!usuario?.taller_id) {
@@ -147,12 +147,26 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Verificar autenticación
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    if (!session?.user) {
+    if (!user) {
       return NextResponse.json(
         { success: false, error: 'No autorizado' },
         { status: 401 }
+      )
+    }
+
+    // Obtener taller_id del usuario
+    const { data: usuario } = await supabase
+      .from('usuarios')
+      .select('taller_id')
+      .eq('email', user.email)
+      .single()
+
+    if (!usuario?.taller_id) {
+      return NextResponse.json(
+        { success: false, error: 'Usuario sin taller' },
+        { status: 403 }
       )
     }
 
@@ -189,6 +203,7 @@ export async function PATCH(request: NextRequest) {
       .from('ordenes_reparacion')
       .update(cleanUpdates)
       .eq('id', id)
+      .eq('taller_id', usuario.taller_id) // Seguridad: solo actualizar órdenes del taller
       .select()
       .single()
 
@@ -224,9 +239,9 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Verificar autenticación
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    if (!session?.user) {
+    if (!user) {
       return NextResponse.json(
         { success: false, error: 'No autorizado' },
         { status: 401 }
@@ -237,7 +252,7 @@ export async function DELETE(request: NextRequest) {
     const { data: usuario } = await supabase
       .from('usuarios')
       .select('id, taller_id')
-      .eq('email', session.user.email)
+      .eq('email', user.email)
       .single()
 
     if (!usuario?.taller_id) {

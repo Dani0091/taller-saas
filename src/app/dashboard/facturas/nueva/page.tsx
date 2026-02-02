@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -12,6 +12,7 @@ import { NumberInput } from '@/components/ui/number-input'
 import { ArrowLeft, Loader2, Plus, X, Check, UserPlus, FileText } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import { useTaller } from '@/contexts/TallerContext'
 
 interface Cliente {
   id: string
@@ -37,11 +38,11 @@ interface SerieFactura {
 
 export default function NuevaFacturaPage() {
   const router = useRouter()
+  const { tallerId, loading: loadingAuth } = useTaller()
   const [loading, setLoading] = useState(false)
   const [cargandoClientes, setCargandoClientes] = useState(true)
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [lineas, setLineas] = useState<LineaFactura[]>([])
-  const [tallerId, setTallerId] = useState<string | null>(null)
 
   // Series disponibles
   const [seriesDisponibles, setSeriesDisponibles] = useState<SerieFactura[]>([])
@@ -62,9 +63,6 @@ export default function NuevaFacturaPage() {
     cliente_id: '',
     serie: 'FA',
     fecha_emision: new Date().toISOString().split('T')[0],
-    fecha_vencimiento: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .split('T')[0],
     metodo_pago: 'T',
     notas: '',
     condiciones_pago: '',
@@ -90,150 +88,72 @@ export default function NuevaFacturaPage() {
   const [pagadoAlEmitir, setPagadoAlEmitir] = useState(true)
   const [plazoPago, setPlazoPago] = useState(30) // días
 
-  // Función para calcular fecha de vencimiento
-  const calcularFechaVencimiento = (fechaEmision: string, dias: number): string => {
-    const fecha = new Date(fechaEmision)
-    fecha.setDate(fecha.getDate() + dias)
+  // ⚡ OPTIMIZACIÓN: Cálculo derivado en lugar de useEffect (elimina re-renders)
+  const fechaVencimiento = useMemo(() => {
+    if (pagadoAlEmitir) {
+      return formData.fecha_emision
+    }
+    const fecha = new Date(formData.fecha_emision)
+    fecha.setDate(fecha.getDate() + plazoPago)
     return fecha.toISOString().split('T')[0]
-  }
+  }, [pagadoAlEmitir, plazoPago, formData.fecha_emision])
 
-  // Obtener taller_id del usuario autenticado
+  // ⚡ OPTIMIZACIÓN: Carga paralela de clientes, config y series
   useEffect(() => {
-    const obtenerTallerId = async () => {
+    if (!tallerId || loadingAuth) return
+
+    const cargarDatosEnParalelo = async () => {
       try {
+        setCargandoClientes(true)
+
         const supabase = createClient()
-        const { data: { session } } = await supabase.auth.getSession()
 
-        if (!session?.user?.email) {
-          toast.error('No hay sesión activa')
-          setCargandoClientes(false)
-          return
+        // 🚀 Promise.all ejecuta todas las llamadas en paralelo
+        const [clientesRes, configRes, seriesRes] = await Promise.all([
+          supabase.from('clientes').select('id, nombre, nif, telefono, email').eq('taller_id', tallerId),
+          fetch(`/api/taller/config/obtener?taller_id=${tallerId}`),
+          fetch(`/api/series/obtener?taller_id=${tallerId}`)
+        ])
+
+        // Procesar clientes
+        if (clientesRes.data) {
+          setClientes(clientesRes.data)
         }
 
-        const { data: usuario, error } = await supabase
-          .from('usuarios')
-          .select('taller_id')
-          .eq('email', session.user.email)
-          .single()
+        // Procesar config y series en paralelo
+        const [configData, seriesData] = await Promise.all([
+          configRes.json(),
+          seriesRes.json()
+        ])
 
-        if (error || !usuario) {
-          toast.error('No se pudo obtener datos del usuario')
-          setCargandoClientes(false)
-          return
+        if (configData) {
+          setIvaPorDefecto(configData.porcentaje_iva || 21)
+          setNuevaLinea(prev => ({ ...prev, ivaPorcentaje: String(configData.porcentaje_iva || 21) }))
+          setFormData(prev => ({
+            ...prev,
+            serie: configData.serie_factura || 'FA'
+          }))
         }
 
-        setTallerId(usuario.taller_id)
+        if (seriesData.series && seriesData.series.length > 0) {
+          const seriesFormateadas = seriesData.series.map((s: any) => ({
+            id: s.id,
+            codigo: s.prefijo,
+            nombre: s.nombre
+          }))
+          setSeriesDisponibles(seriesFormateadas)
+        }
+
       } catch (error) {
-        console.error('Error obteniendo taller_id:', error)
-        toast.error('Error de autenticación')
+        console.error('Error cargando datos:', error)
+        toast.error('Error al cargar datos iniciales')
+      } finally {
         setCargandoClientes(false)
       }
     }
-    obtenerTallerId()
-  }, [])
 
-  // Cargar clientes y configuración cuando tengamos taller_id
-  useEffect(() => {
-    if (tallerId) {
-      fetchClientes()
-      fetchConfig()
-    }
-  }, [tallerId])
-
-  // Actualizar fecha_vencimiento automáticamente según pagadoAlEmitir y plazoPago
-  useEffect(() => {
-    if (pagadoAlEmitir) {
-      // Si es pago al contado, vencimiento = emisión
-      setFormData(prev => ({ ...prev, fecha_vencimiento: prev.fecha_emision }))
-    } else {
-      // Si es aplazado, calcular según plazo
-      setFormData(prev => ({
-        ...prev,
-        fecha_vencimiento: calcularFechaVencimiento(prev.fecha_emision, plazoPago)
-      }))
-    }
-  }, [pagadoAlEmitir, plazoPago, formData.fecha_emision])
-
-  const fetchConfig = async () => {
-    if (!tallerId) return
-
-    try {
-      const response = await fetch(`/api/taller/config/obtener?taller_id=${tallerId}`)
-      const data = await response.json()
-
-      if (data) {
-        setIvaPorDefecto(data.porcentaje_iva || 21)
-        setNuevaLinea(prev => ({ ...prev, ivaPorcentaje: String(data.porcentaje_iva || 21) }))
-
-        // Cargar series dinámicamente desde la base de datos
-        fetchSeries()
-
-        setFormData(prev => ({
-          ...prev,
-          serie: data.serie_factura || 'FA'
-          // No poner valor por defecto en condiciones_pago
-        }))
-      }
-    } catch (error) {
-      console.error('Error cargando config:', error)
-    }
-  }
-
-  const fetchSeries = async () => {
-    if (!tallerId) return
-
-    try {
-      const response = await fetch(`/api/series/obtener?taller_id=${tallerId}`)
-      const data = await response.json()
-
-      if (data.series && data.series.length > 0) {
-        const seriesFormateadas = data.series.map((s: any) => ({
-          id: s.id,
-          codigo: s.prefijo,
-          nombre: s.nombre
-        }))
-        setSeriesDisponibles(seriesFormateadas)
-
-        // Si no hay serie seleccionada, usar la primera disponible
-        if (!formData.serie && seriesFormateadas.length > 0) {
-          setFormData(prev => ({ ...prev, serie: seriesFormateadas[0].codigo }))
-        }
-      } else {
-        // Si no hay series, mostrar advertencia
-        toast.warning('No hay series de facturación configuradas. Ve a Configuración para crear una.')
-        setSeriesDisponibles([])
-      }
-    } catch (error) {
-      console.error('Error cargando series:', error)
-      toast.error('Error al cargar series de facturación')
-    }
-  }
-
-  const fetchClientes = async () => {
-    if (!tallerId) return
-
-    try {
-      setCargandoClientes(true)
-      const response = await fetch(`/api/clientes/obtener?taller_id=${tallerId}`)
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const data = await response.json()
-
-      if (data.error) {
-        toast.error(data.error)
-      } else {
-        setClientes(data || [])
-      }
-    } catch (error) {
-      console.error('Error al cargar clientes:', error)
-      toast.error('Error al cargar clientes')
-    } finally {
-      setCargandoClientes(false)
-    }
-  }
+    cargarDatosEnParalelo()
+  }, [tallerId, loadingAuth])
 
   // Crear cliente rápido
   const handleCrearCliente = async () => {
@@ -365,7 +285,7 @@ export default function NuevaFacturaPage() {
           cliente_id: formData.cliente_id,
           serie: formData.serie,
           fecha_emision: formData.fecha_emision,
-          fecha_vencimiento: formData.fecha_vencimiento,
+          fecha_vencimiento: fechaVencimiento,
           base_imponible: baseImponible,
           iva,
           total,
@@ -619,28 +539,25 @@ export default function NuevaFacturaPage() {
                     <div className="flex items-center px-3 py-2 bg-gray-100 rounded-lg text-sm">
                       <span className="text-gray-600">Vto: </span>
                       <span className="ml-1 font-semibold">
-                        {new Date(formData.fecha_vencimiento).toLocaleDateString('es-ES')}
+                        {new Date(fechaVencimiento).toLocaleDateString('es-ES')}
                       </span>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Fecha Vencimiento (mostrada pero calculada automáticamente) */}
+              {/* Fecha Vencimiento (calculada automáticamente) */}
               <div className={!pagadoAlEmitir ? '' : 'lg:col-span-2'}>
                 <Label className="block text-sm font-semibold mb-2">Fecha Vencimiento</Label>
                 <Input
                   type="date"
-                  value={formData.fecha_vencimiento}
-                  onChange={(e) => setFormData({ ...formData, fecha_vencimiento: e.target.value })}
-                  disabled={pagadoAlEmitir}
-                  className={pagadoAlEmitir ? 'bg-gray-100' : ''}
+                  value={fechaVencimiento}
+                  disabled
+                  className="bg-gray-100"
                 />
-                {pagadoAlEmitir && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Al contado: vencimiento = fecha de emisión
-                  </p>
-                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  {pagadoAlEmitir ? 'Al contado: vencimiento = fecha de emisión' : `Calculado automáticamente: ${plazoPago} días desde emisión`}
+                </p>
               </div>
 
               {/* Condiciones de Pago (opcional, sin valor por defecto) */}
@@ -723,12 +640,18 @@ export default function NuevaFacturaPage() {
                   placeholder="Ej: Limpiaparabrisas, Cambio aceite..."
                   value={nuevaLinea.descripcion}
                   onChange={(e) => setNuevaLinea({ ...nuevaLinea, descripcion: e.target.value })}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAgregarLinea()}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      handleAgregarLinea()
+                    }
+                  }}
+                  autoFocus
                 />
               </div>
 
-              <div className="grid grid-cols-4 gap-3">
-                <div>
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                <div className="md:col-span-3">
                   <Label className="block text-sm font-semibold mb-2">Cantidad</Label>
                   <NumberInput
                     value={nuevaLinea.cantidad}
@@ -737,12 +660,12 @@ export default function NuevaFacturaPage() {
                         setNuevaLinea({ ...nuevaLinea, cantidad: value })
                       }
                     }}
-                    className="text-center"
+                    className="text-center w-full"
                     min={0.01}
                     step={0.01}
                   />
                 </div>
-                <div>
+                <div className="md:col-span-3">
                   <Label className="block text-sm font-semibold mb-2">Precio (€)</Label>
                   <NumberInput
                     value={nuevaLinea.precioUnitario}
@@ -754,10 +677,10 @@ export default function NuevaFacturaPage() {
                     placeholder="0.00"
                     min={0}
                     step={0.01}
-                    className="text-right"
+                    className="text-right w-full"
                   />
                 </div>
-                <div>
+                <div className="md:col-span-3">
                   <Label className="block text-sm font-semibold mb-2">IVA</Label>
                   <select
                     value={nuevaLinea.ivaPorcentaje}
@@ -770,9 +693,9 @@ export default function NuevaFacturaPage() {
                     <option value="0">0%</option>
                   </select>
                 </div>
-                <div>
+                <div className="md:col-span-3">
                   <Label className="block text-sm font-semibold mb-2">Total</Label>
-                  <div className="py-2 px-3 bg-white border border-green-200 rounded-lg font-bold text-right text-green-700">
+                  <div className="py-2 px-3 bg-white border border-green-200 rounded-lg font-bold text-right text-green-700 whitespace-nowrap">
                     {(() => {
                       const cant = nuevaLinea.cantidad || 0
                       const precio = nuevaLinea.precioUnitario || 0

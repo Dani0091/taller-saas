@@ -3,6 +3,8 @@
  * @description Tipos consistentes para todo el sistema SaaS de talleres
  */
 
+import type { VehiculoFormulario } from './formularios'
+
 // ==================== TIPOS PRINCIPALES ====================
 
 export interface Vehiculo {
@@ -76,8 +78,8 @@ export interface LineaOrden {
 }
 
 // ==================== TIPOS DE FORMULARIOS (PARA UI) ====================
-
-export type VehiculoFormulario = Omit<Vehiculo, 'id' | 'taller_id' | 'cliente_id'>
+// NOTA: VehiculoFormulario se define en src/types/formularios.ts
+// export type VehiculoFormulario = Omit<Vehiculo, 'id' | 'taller_id' | 'cliente_id'>
 export type ClienteFormulario = Omit<Cliente, 'id' | 'taller_id'>
 export type OrdenFormulario = Omit<Orden, 'id' | 'taller_id' | 'numero_orden'>
 export type LineaOrdenFormulario = Omit<LineaOrden, 'id' | 'orden_id'>
@@ -163,17 +165,17 @@ export const ValidationSchemas = {
 
 export const DEFAULT_VALUES = {
   vehiculo: {
-    marca: '',
-    modelo: '',
-    año: undefined,
-    color: '',
-    kilometros: undefined,
-    tipo_combustible: 'Gasolina' as TipoCombustible,
-    carroceria: '',
-    potencia_cv: undefined,
-    cilindrada: undefined,
-    vin: '',
-    bastidor_vin: '',
+    matricula: '',
+    marca: null,
+    modelo: null,
+    año: new Date().getFullYear(),
+    color: null,
+    kilometros: 0,
+    tipo_combustible: null,
+    carroceria: null,
+    potencia_cv: null,
+    cilindrada: null,
+    vin: null,
   } as VehiculoFormulario,
 
   cliente: {

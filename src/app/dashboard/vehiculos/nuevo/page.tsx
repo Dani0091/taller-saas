@@ -2,7 +2,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -12,69 +12,32 @@ import { Label } from '@/components/ui/label'
 import { NumberInput } from '@/components/ui/number-input'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { createClient } from '@/lib/supabase/client'
 import { InputScanner } from '@/components/ui/input-scanner'
+import { useTaller } from '@/contexts/TallerContext'
 
 // Importaciones de conversión y tipos (Senior Level Architecture)
-import { 
-  toDbString, 
-  toDbNumber, 
-  createNumericHandler, 
+import {
+  toDbString,
+  toDbNumber,
+  createNumericHandler,
   createTextHandler,
   sanitizeMatricula,
   sanitizeKilometros,
-  sanitizeAño 
+  sanitizeAño
 } from '@/lib/utils/converters'
-import { 
-  VehiculoFormulario, 
-  VehiculoDefaults, 
+import {
+  VehiculoFormulario,
+  VehiculoDefaults,
   VehiculoValidationRules,
   vehiculoFormularioToBD,
-  TIPOS_COMBUSTIBLE_OPTIONS 
+  TIPOS_COMBUSTIBLE_OPTIONS
 } from '@/types/vehiculo'
 
 export default function NuevoVehiculoPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const [tallerId, setTallerId] = useState<string | null>(null)
-  const [loadingAuth, setLoadingAuth] = useState(true)
+  const { tallerId, loading: loadingAuth } = useTaller()
   const [formData, setFormData] = useState<VehiculoFormulario>(VehiculoDefaults)
-
-  // Obtener taller_id del usuario autenticado
-  useEffect(() => {
-    const obtenerTallerId = async () => {
-      try {
-        const supabase = createClient()
-        const { data: { session } } = await supabase.auth.getSession()
-
-        if (!session?.user?.email) {
-          toast.error('No hay sesión activa')
-          setLoadingAuth(false)
-          return
-        }
-
-        const { data: usuario, error } = await supabase
-          .from('usuarios')
-          .select('taller_id')
-          .eq('email', session.user.email)
-          .single()
-
-        if (error || !usuario) {
-          toast.error('No se pudo obtener datos del usuario')
-          setLoadingAuth(false)
-          return
-        }
-
-        setTallerId(usuario.taller_id)
-      } catch (error) {
-        console.error('Error obteniendo taller_id:', error)
-        toast.error('Error de autenticación')
-      } finally {
-        setLoadingAuth(false)
-      }
-    }
-    obtenerTallerId()
-  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -99,8 +62,8 @@ export default function NuevoVehiculoPage() {
       default:
         sanitizedValue = toDbString(value, '')
     }
-    
-    setFormData(prev => ({ ...prev, [name]: sanitizedValue }))
+
+    setFormData((prev: VehiculoFormulario) => ({ ...prev, [name]: sanitizedValue }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -129,7 +92,6 @@ export default function NuevoVehiculoPage() {
         body: JSON.stringify({
           ...vehiculoParaBD,
           taller_id: tallerId,
-          cliente_id: formData.cliente_id || null,
         }),
       })
 
@@ -153,11 +115,9 @@ export default function NuevoVehiculoPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <button onClick={() => router.back()}>
-          <Button variant="outline" size="icon">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-        </button>
+        <Button variant="outline" size="icon" onClick={() => router.back()}>
+          <ArrowLeft className="w-4 h-4" />
+        </Button>
         <div>
           <h1 className="text-3xl font-bold">Nuevo Vehículo</h1>
           <p className="text-gray-500 text-sm">Agrega los datos del vehículo</p>
@@ -175,14 +135,14 @@ export default function NuevoVehiculoPage() {
                 <Input
                   name="matricula"
                   placeholder="ABC-1234"
-                  value={formData.matricula}
+                  value={formData.matricula || ''}
                   onChange={handleChange}
                   required
                   className="flex-1"
                 />
                 <InputScanner
                   tipo="matricula"
-                  onResult={(val) => setFormData(prev => ({ ...prev, matricula: val }))}
+                  onResult={(val) => setFormData((prev: VehiculoFormulario) => ({ ...prev, matricula: val }))}
                 />
               </div>
             </div>
@@ -191,7 +151,7 @@ export default function NuevoVehiculoPage() {
               <Input
                 name="marca"
                 placeholder="BMW"
-                value={formData.marca}
+                value={formData.marca || ''}
                 onChange={handleChange}
               />
             </div>
@@ -200,23 +160,23 @@ export default function NuevoVehiculoPage() {
               <Input
                 name="modelo"
                 placeholder="320i"
-                value={formData.modelo}
+                value={formData.modelo || ''}
                 onChange={handleChange}
               />
             </div>
           </div>
 
           {/* Fila 2: Versión, Año, Color */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* <div>
               <Label>Versión</Label>
               <Input
                 name="versión"
                 placeholder="Sport, Luxury, etc"
-                value={formData.versión}
+                value={formData.versión || ''}
                 onChange={handleChange}
               />
-            </div>
+            </div> */}
             <div>
               <Label>Año</Label>
               <NumberInput
@@ -224,10 +184,10 @@ export default function NuevoVehiculoPage() {
                 onChange={(value) => {
                   const anioMax = new Date().getFullYear() + 1
                   const añoValidado = sanitizeAño(value, anioMax)
-                  
+
                   if (añoValidado !== undefined) {
-                    setFormData(prev => ({ ...prev, año: String(añoValidado) }))
-                  } else if (value !== null && value !== undefined && value !== '') {
+                    setFormData((prev: VehiculoFormulario) => ({ ...prev, año: añoValidado }))
+                  } else if (value !== null && value !== undefined) {
                     toast.error(VehiculoValidationRules.año.message)
                   }
                 }}
@@ -242,7 +202,7 @@ export default function NuevoVehiculoPage() {
               <Input
                 name="color"
                 placeholder="Gris, Blanco, Negro"
-                value={formData.color}
+                value={formData.color || ''}
                 onChange={handleChange}
               />
             </div>
@@ -265,7 +225,7 @@ export default function NuevoVehiculoPage() {
                   tipo="km"
                   onResult={(val) => {
                     const kmSanitizados = sanitizeKilometros(val)
-                    setFormData(prev => ({ ...prev, kilometros: kmSanitizados > 0 ? kmSanitizados : prev.kilometros }))
+                    setFormData((prev: VehiculoFormulario) => ({ ...prev, kilometros: kmSanitizados > 0 ? kmSanitizados : prev.kilometros }))
                   }}
                 />
               </div>
@@ -274,7 +234,7 @@ export default function NuevoVehiculoPage() {
               <Label>Combustible</Label>
               <select
                 name="tipo_combustible"
-                value={formData.tipo_combustible}
+                value={formData.tipo_combustible || ''}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
               >
@@ -290,7 +250,7 @@ export default function NuevoVehiculoPage() {
               <Label>Carrocería</Label>
               <select
                 name="carroceria"
-                value={formData.carroceria}
+                value={formData.carroceria || ''}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
               >
@@ -337,11 +297,9 @@ export default function NuevoVehiculoPage() {
             <Button type="submit" disabled={loading}>
               {loading ? 'Creando...' : 'Crear Vehículo'}
             </Button>
-            <button onClick={() => router.back()}>
-              <Button type="button" variant="outline">
-                Cancelar
-              </Button>
-            </button>
+            <Button type="button" variant="outline" onClick={() => router.back()}>
+              Cancelar
+            </Button>
           </div>
         </form>
       </Card>

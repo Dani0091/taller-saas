@@ -166,6 +166,7 @@ export async function POST(request: Request) {
     const { data: usuarioData, error: usuarioError } = await supabaseAdmin
       .from('usuarios')
       .insert({
+        auth_id: authData.user.id,
         email: email_usuario,
         nombre: nombre_usuario,
         rol: 'admin',
@@ -190,7 +191,7 @@ export async function POST(request: Request) {
     // 5. Crear configuración por defecto del taller
     console.log('📝 Creando configuración...')
     const { error: configError } = await supabaseAdmin
-      .from('taller_config')
+      .from('configuracion_taller')
       .insert({
         taller_id: taller.id,
         nombre_empresa: nombre_taller,

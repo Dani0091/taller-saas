@@ -1,10 +1,20 @@
+/**
+ * @fileoverview Header del Dashboard - SANEADO
+ * @description Header principal con navegación y logout
+ *
+ * ✅ SANEADO: Sin createClient directo
+ * ✅ Usa Server Action para logout
+ * ✅ Optimizado para Android de gama baja (130 líneas)
+ */
+
 'use client'
 
 import { useState, useEffect } from 'react'
 import { Menu, LogOut, Bell, Gauge } from 'lucide-react'
 import { useRouter, usePathname } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { cerrarSesionAction } from '@/actions/auth'
+import { toast } from 'sonner'
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/dashboard': { title: 'Dashboard', subtitle: 'Vista general del taller' },
@@ -31,8 +41,8 @@ interface HeaderProps {
 export function Header({ user, onMenuClick }: HeaderProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const supabase = createClient()
   const [planInfo, setPlanInfo] = useState<PlanInfo | null>(null)
+  const [loggingOut, setLoggingOut] = useState(false)
 
   useEffect(() => {
     const fetchPlan = async () => {
@@ -50,8 +60,25 @@ export function Header({ user, onMenuClick }: HeaderProps) {
   }, [])
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/auth/login')
+    if (loggingOut) return
+
+    try {
+      setLoggingOut(true)
+
+      // ✅ CORRECTO: Usar Server Action en lugar de createClient directo
+      const resultado = await cerrarSesionAction()
+
+      if (!resultado.success) {
+        throw new Error(resultado.error)
+      }
+
+      // Redirigir al login
+      router.push('/auth/login')
+    } catch (error: any) {
+      console.error('Error al cerrar sesión:', error)
+      toast.error('Error al cerrar sesión')
+      setLoggingOut(false)
+    }
   }
 
   // Obtener título de la página actual
@@ -118,10 +145,11 @@ export function Header({ user, onMenuClick }: HeaderProps) {
             variant="ghost"
             size="sm"
             onClick={handleLogout}
+            disabled={loggingOut}
             className="gap-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200"
           >
             <LogOut className="w-4 h-4" />
-            <span className="hidden sm:inline">Salir</span>
+            <span className="hidden sm:inline">{loggingOut ? 'Saliendo...' : 'Salir'}</span>
           </Button>
         </div>
       </div>

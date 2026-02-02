@@ -38,25 +38,27 @@ export async function POST(request: Request) {
 
     // Verificar si existe configuración
     const { data: existing, error: checkError } = await supabase
-      .from('taller_config')
+      .from('configuracion_taller')
       .select('id')
       .eq('taller_id', taller_id)
       .single()
 
     // Solo incluir campos que no sean undefined
     const configData: Record<string, any> = {}
-    if (tarifa_hora !== undefined) configData.tarifa_hora = tarifa_hora
+    if (tarifa_hora !== undefined) configData.tarifa_hora = Number(tarifa_hora)
     if (incluye_iva !== undefined) configData.incluye_iva = incluye_iva
-    if (porcentaje_iva !== undefined) configData.porcentaje_iva = porcentaje_iva
-    if (tarifa_con_iva !== undefined) configData.tarifa_con_iva = tarifa_con_iva
+    if (porcentaje_iva !== undefined) configData.porcentaje_iva = Number(porcentaje_iva)
+    if (tarifa_con_iva !== undefined) configData.tarifa_con_iva = Number(tarifa_con_iva)
+    if (numero_factura_inicial !== undefined && numero_factura_inicial !== null) {
+      configData.numero_factura_inicial = Number(numero_factura_inicial)
+    }
     if (nombre_empresa !== undefined) configData.nombre_empresa = nombre_empresa
     if (cif !== undefined) configData.cif = cif
     if (direccion !== undefined) configData.direccion = direccion
     if (telefono !== undefined) configData.telefono = telefono
     if (email !== undefined) configData.email = email
     if (logo_url !== undefined) configData.logo_url = logo_url
-    if (serie_factura !== undefined) configData.serie_factura = serie_factura
-    if (numero_factura_inicial !== undefined) configData.numero_factura_inicial = numero_factura_inicial
+    if (serie_factura !== undefined) configData.serie_factura_default = serie_factura
     if (iban !== undefined) configData.iban = iban
     if (condiciones_pago !== undefined) configData.condiciones_pago = condiciones_pago
     if (notas_factura !== undefined) configData.notas_factura = notas_factura
@@ -67,7 +69,7 @@ export async function POST(request: Request) {
     if (existing && !checkError) {
       // Actualizar existente
       response = await supabase
-        .from('taller_config')
+        .from('configuracion_taller')
         .update({
           ...configData,
           updated_at: new Date().toISOString(),
@@ -78,7 +80,7 @@ export async function POST(request: Request) {
     } else {
       // Crear nuevo
       response = await supabase
-        .from('taller_config')
+        .from('configuracion_taller')
         .insert([{
           taller_id,
           ...configData,

@@ -17,6 +17,7 @@ export function createClient() {
   // Durante prerendering en build, las env vars pueden no estar disponibles
   // Retornamos un cliente mock que no fallará pero no funcionará realmente
   if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn('⚠️ Variables de Supabase no detectadas - usando placeholders')
     // Retornar un cliente con URL y key placeholders para evitar errores en build
     return createBrowserClient(
       'https://placeholder.supabase.co',

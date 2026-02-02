@@ -10,9 +10,9 @@ import { getGoogleAuthUrl } from '@/lib/google/calendar'
 export async function GET(req: NextRequest) {
   try {
     const supabase = await createClient()
-    const { data: { session } } = await supabase.auth.getSession()
+    const { data: { user } } = await supabase.auth.getUser()
 
-    if (!session?.user) {
+    if (!user) {
       return NextResponse.json(
         { error: 'No autorizado' },
         { status: 401 }
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
 
     // El state contiene el ID del usuario para verificar en el callback
     const state = Buffer.from(JSON.stringify({
-      userId: session.user.id,
+      userId: user.id,
       timestamp: Date.now()
     })).toString('base64')
 

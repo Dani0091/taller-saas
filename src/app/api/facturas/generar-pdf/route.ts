@@ -64,14 +64,14 @@ export async function GET(request: NextRequest) {
 
     // Obtener configuración del taller (incluye logo)
     const { data: tallerConfig } = await supabase
-      .from('taller_config')
+      .from('configuracion_taller')
       .select('*')
       .eq('taller_id', factura.taller_id)
       .single()
 
     // Obtener líneas
     const { data: lineas } = await supabase
-      .from('lineas_factura')
+      .from('detalles_factura')
       .select('*')
       .eq('factura_id', facturaId)
 

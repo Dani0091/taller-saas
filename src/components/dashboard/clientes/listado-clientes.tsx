@@ -6,12 +6,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { toast } from 'sonner'
-import { Cliente } from '@/types/cliente'
+import type { ClienteListadoDTO } from '@/application/dtos'
 import { EditarClienteSheet } from './editar-cliente-sheet'
 import { FormClienteSheet } from './form-cliente-sheet'
 
 interface ListadoClientesProps {
-  clientes: Cliente[]
+  clientes: ClienteListadoDTO[]
   onActualizar: () => void
 }
 
@@ -22,7 +22,6 @@ export function ListadoClientes({ clientes, onActualizar }: ListadoClientesProps
   const [cargando, setCargando] = useState(false)
 
   const clientesFiltrados = clientes
-    .filter(c => !c.estado || c.estado !== 'archivado')  // ✅ MOSTRAR TODOS EXCEPTO ARCHIVADOS
     .filter(c =>
       !searchTerm ||
       c.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||

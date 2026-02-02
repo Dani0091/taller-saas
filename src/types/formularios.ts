@@ -4,6 +4,8 @@
  * @note Si necesitas un tipo mixto (string | number), usa union types en la interfaz
  */
 
+import { useState, useCallback } from 'react'
+
 // ============================================================================
 // INTERFACES DE FORMULARIOS CENTRALIZADAS
 // ============================================================================
@@ -25,6 +27,16 @@ export interface VehiculoFormulario {
   vin: string | null
   carroceria: string | null
 }
+
+/**
+ * Formulario de Vehículo Nuevo - Para crear desde cero
+ */
+export type VehiculoNuevoFormulario = VehiculoFormulario
+
+/**
+ * Formulario de Vehículo Edición - Para actualizar existente
+ */
+export type VehiculoEdicionFormulario = VehiculoFormulario
 
 /**
  * Formulario de Cliente - Tipos consistentes
@@ -123,6 +135,12 @@ export interface ValidacionCampo {
   step?: number
   required?: boolean
   mensajeError?: string
+  validateOnChange?: boolean
+  allowEmpty?: boolean
+  tipo?: TipoDatoCampo
+  onBlur?: () => void
+  onDirty?: () => void
+  onUpdate?: (updates: any) => void
 }
 
 /**
@@ -220,17 +238,8 @@ export const VALORES_POR_DEFECTO = {
 }
 
 // ============================================================================
-// EXPORTACIONES POR CONVENIENCIA
+// EXPORTACIONES - Ya exportados arriba directamente, no necesitan re-export
 // ============================================================================
-
-export type { 
-  VehiculoFormulario,
-  ClienteFormulario, 
-  OrdenFormulario, 
-  FacturaFormulario, 
-  ConfiguracionFormulario,
-  VALORES_POR_DEFECTO
-} from './formularios'
 
 // ============================================================================
 // TIPOS GENÉRICOS DE VALIDACIÓN
@@ -238,7 +247,7 @@ export type {
 
 export type TipoDatoCampo = 'string' | 'number' | 'boolean' | 'date'
 
-export interface DatoValidado<T = {
+export interface DatoValidado<T> {
   valor: T
   esValido: boolean
   mensaje?: string
@@ -247,11 +256,11 @@ export interface DatoValidado<T = {
 /**
  * Valida si un dato cumple con el tipo esperado
  */
-export function validarCampo<T>(
-  valor: any, 
-  tipo: TipoDatoCampo, 
+export function validarCampo<T = any>(
+  valor: any,
+  tipo: TipoDatoCampo,
   opciones?: ValidacionCampo
-): DatoValidado<T> {
+): DatoValidado<any> {
   if (valor === null || valor === undefined) {
     return { valor: null, esValido: true, mensaje: '' }
   }
@@ -322,7 +331,7 @@ export const formatNumber = (num: number, decimales = 2): string => {
 /**
  * Valida rango de un número
  */
-export const validarRango = (valor: number, min?: number, max?: number): DatoValidado<number> => {
+export const validarRango = (valor: number, min?: number, max?: number): DatoValidado<number | null> => {
   if (valor === null || isNaN(valor)) {
     return { valor: null, esValido: true }
   }
@@ -352,7 +361,7 @@ export const validarRango = (valor: number, min?: number, max?: number): DatoVal
  */
 export const crearManejadorDeCambios = (
   initialState: any,
-  onUpdate?: () => void
+  onUpdate?: (updates: any) => void,
   debounceMs = 300
 ) => {
   let timeoutId: NodeJS.Timeout | null
@@ -365,7 +374,7 @@ export const crearManejadorDeCambios = (
     }
 
     timeoutId = setTimeout(() => {
-      onUpdate(updates)
+      if (onUpdate) onUpdate(updates)
     }, debounceMs)
   }
 
@@ -407,7 +416,7 @@ export function useFormulario<T extends Record<string, any>>(
     // Para números, validar conversión segura
     const validado = validarCampo(valor, opciones?.tipo || 'string')
     if (!validado.esValido) {
-      setErrors(prev => ({ ...prev, [campo]: validado.mensaje }))
+      setErrors(prev => ({ ...prev, [campo]: validado.mensaje || 'Error de validación' }))
       return
     }
 
@@ -450,52 +459,7 @@ export function useFormulario<T extends Record<string, any>>(
 // ============================================================================
 // INTERFACES DE FORMULARIOS CENTRALIZADAS
 // ============================================================================
-
-/**
- * Formulario de Vehículo - Tipos estrictos para consistencia
- * Base de datos usa numbers, formularios deben manejar números
- */
-export interface VehiculoFormulario {
-  matricula: string
-  marca: string | null
-  modelo: string | null
-  año: number
-  color: string | null
-  kilometros: number
-  tipo_combustible: string | null
-  potencia_cv: number | null
-  cilindrada: number | null
-  vin: string | null
-  carroceria: string | null
-}
-
-/**
- * Formulario de Cliente - Tipos consistentes
- */
-export interface ClienteFormulario {
-  nombre: string
-  apellidos: string
-  nif: string
-  email: string | null
-  telefono: string | null
-  direccion: string | null
-  poblacion: string | null
-  provincia: string | null
-  cod_postal: string | null
-  iban: string | null
-}
-
-/**
- * Formulario de Vehículo Nuevo - Para crear desde cero
- */
-export interface VehiculoNuevoFormulario extends Omit<VehiculoFormulario, 'id' | 'taller_id'> {
-  // Hereda todo de VehiculoFormulario excepto id y taller_id
-}
-
-/**
- * Formulario de Vehículo Edición - Para actualizar existente
- */
-export type VehiculoEdicionFormulario = VehiculoFormulario
+// Eliminado duplicado - las interfaces ya están definidas arriba
 
 // ============================================================================
 // TIPOS DE ORDENES DE TRABAJO
@@ -599,87 +563,7 @@ export interface ConfiguracionFormulario {
 // UTILIDADES DE TIPOS
 // ============================================================================
 
-/**
- * Valores por defecto para formularios
- */
-export const VALORES_POR_DEFECTO = {
-  vehiculo: {
-    matricula: '',
-    marca: null,
-    modelo: null,
-    año: new Date().getFullYear(),
-    color: null,
-    kilometros: 0,
-    tipo_combustible: null,
-    potencia_cv: null,
-    cilindrada: null,
-    vin: null,
-    carroceria: null
-  } as VehiculoFormulario,
-  
-  orden: {
-    estado: 'recibido',
-    cliente_id: null,
-    vehiculo_id: null,
-    descripcion_problema: '',
-    diagnostico: '',
-    trabajos_realizados: '',
-    notas: '',
-    presupuesto_aprobado_por_cliente: false,
-    tiempo_estimado_horas: 0,
-    tiempo_real_horas: 0,
-    subtotal_mano_obra: 0,
-    subtotal_piezas: 0,
-    iva_amount: 0,
-    total_con_iva: 0,
-    fotos_entrada: '',
-    fotos_salida: '',
-    fotos_diagnostico: '',
-    nivel_combustible: null,
-    renuncia_presupuesto: false,
-    accion_imprevisto: 'avisar',
-    recoger_piezas: false,
-    danos_carroceria: false,
-    coste_diario_estancia: null,
-    kilometros_entrada: 0,
-  } as OrdenFormulario,
-  
-  factura: {
-    numero_factura: '',
-    cliente_id: null,
-    serie_factura: null,
-    base_imponible: 0,
-    iva: 0,
-    total: 0,
-    metodo_pago: null,
-    fecha_emision: new Date().toISOString().split('T')[0],
-    fecha_vencimiento: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    notas_factura: null,
-    condiciones_pago: null,
-    persona_contacto: null,
-    telefono_contacto: null,
-  } as FacturaFormulario,
-  
-  configuracion: {
-    tarifa_hora: 45,
-    incluye_iva: true,
-    porcentaje_iva: 21,
-    tarifa_con_iva: false,
-    nombre_empresa: null,
-    cif: null,
-    direccion: null,
-    telefono: null,
-    email: null,
-    logo_url: null,
-    serie_factura: 'FA',
-    numero_factura_inicial: 1,
-    iban: null,
-    condiciones_pago: null,
-    notas_factura: null,
-    color_primario: '#3b82f6',
-    color_secundario: '#10b981',
-  } as ConfiguracionFormulario,
-} as const;
+// Valores por defecto ya definidos arriba - duplicado eliminado
 
 // ============================================================================
 // TIPOS GENÉRICOS
@@ -689,8 +573,8 @@ export const VALORES_POR_DEFECTO = {
  * Tipo genérico para formulario con ID
  */
 export interface FormularioConID<T> {
-  id?: string | number | null
-  [key: string]: T;
+  id?: string | number | null | undefined
+  [key: string]: T | string | number | null | undefined;
 }
 
 /**
@@ -715,18 +599,5 @@ export interface ValidacionNumerica {
 }
 
 // ============================================================================
-// EXPORTS POR CONVENIENCIA
+// EXPORTS POR CONVENIENCIA - Ya exportados arriba, sección eliminada para evitar duplicados
 // ============================================================================
-
-export type { 
-  VehiculoFormulario, 
-  ClienteFormulario, 
-  OrdenFormulario, 
-  FacturaFormulario, 
-  ConfiguracionFormulario,
-  VehiculoNuevoFormulario,
-  VehiculoEdicionFormulario,
-  OrdenNuevoFormulario,
-  FacturaNuevoFormulario,
-  VALORES_POR_DEFECTO
-} from './database.types';

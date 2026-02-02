@@ -10,11 +10,11 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
 
     // Verificar sesión
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    const { data: { user }, error: sessionError } = await supabase.auth.getUser()
     if (sessionError) {
       return NextResponse.json({ error: 'Error de sesión', details: sessionError.message }, { status: 401 })
     }
-    if (!session?.user) {
+    if (!user) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
     }
 
@@ -71,15 +71,15 @@ export async function POST(request: NextRequest) {
 
     // Obtener configuración del taller (IVA, serie, etc.)
     const { data: tallerConfig } = await supabase
-      .from('taller_config')
-      .select('serie_factura, porcentaje_iva')
+      .from('configuracion_taller')
+      .select('serie_factura_default, porcentaje_iva')
       .eq('taller_id', taller_id)
       .single()
 
     const ivaPorcentajeConfig = tallerConfig?.porcentaje_iva || 21
 
-    if (!serie && tallerConfig?.serie_factura) {
-      serieToUse = tallerConfig.serie_factura
+    if (!serie && tallerConfig?.serie_factura_default) {
+      serieToUse = tallerConfig.serie_factura_default
     }
 
     // NUEVO FLUJO: Las facturas se crean siempre como BORRADOR sin número
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
       })
 
       const { error: lineasError } = await supabase
-        .from('lineas_factura')
+        .from('detalles_factura')
         .insert(lineasData)
 
       if (lineasError) {

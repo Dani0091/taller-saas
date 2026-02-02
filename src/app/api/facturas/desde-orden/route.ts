@@ -35,8 +35,8 @@ export async function POST(request: NextRequest) {
     // ==================== OBTENER CONFIGURACIÓN ====================
     console.log(`📋 Obteniendo configuración del taller...`)
     const { data: config, error: configError } = await supabase
-      .from('taller_config')
-      .select('serie_factura, numero_factura_inicial, iban, condiciones_pago, notas_factura, porcentaje_iva')
+      .from('configuracion_taller')
+      .select('serie_factura_default, numero_factura_inicial, iban, condiciones_pago, notas_factura, porcentaje_iva, tarifa_hora')
       .eq('taller_id', taller_id)
       .single()
 
@@ -52,22 +52,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const serieFactura = config?.serie_factura || 'FA'
+    const serieFactura = config?.serie_factura_default || 'FA'
     const ivaPorcentaje = config?.porcentaje_iva || 21
-
-    // Intentar obtener precio_hora_trabajo (puede no existir en la BD)
-    let precioHoraTrabajo = 0
-    try {
-      const { data: configExtra } = await supabase
-        .from('taller_config')
-        .select('precio_hora_trabajo')
-        .eq('taller_id', taller_id)
-        .single()
-      precioHoraTrabajo = configExtra?.precio_hora_trabajo || 0
-    } catch (err) {
-      // La columna no existe, usar 0 como fallback
-      console.log('ℹ️  precio_hora_trabajo no disponible, usando 0€')
-    }
+    const precioHoraTrabajo = config?.tarifa_hora || 0
 
     console.log(`✅ Configuración obtenida: Serie=${serieFactura}, IVA=${ivaPorcentaje}%, Precio hora=${precioHoraTrabajo}€`)
 
@@ -299,7 +286,7 @@ SOLUCIÓN: Verifica que el cliente "${orden.clientes?.nombre}" exista en Cliente
       })
 
       const { error: lineasError } = await supabase
-        .from('lineas_factura')
+        .from('detalles_factura')
         .insert(lineasFactura)
 
       if (lineasError) {
@@ -318,7 +305,7 @@ SOLUCIÓN: Verifica que el cliente "${orden.clientes?.nombre}" exista en Cliente
       // Si no hay líneas, crear una línea genérica
       // IMPORTANTE: total_linea es solo la BASE, el IVA se suma a nivel de factura
       const { error: lineaError } = await supabase
-        .from('lineas_factura')
+        .from('detalles_factura')
         .insert([{
           factura_id: factura.id,
           numero_linea: 1,
