@@ -36,9 +36,9 @@ export async function POST(request: Request) {
 
     const supabase = await createClient()
 
-    // Verificar si existe configuración
+    // ✅ Verificar si existe configuración en taller_config
     const { data: existing, error: checkError } = await supabase
-      .from('configuracion_taller')
+      .from('taller_config')
       .select('id')
       .eq('taller_id', taller_id)
       .single()
@@ -67,9 +67,9 @@ export async function POST(request: Request) {
 
     let response
     if (existing && !checkError) {
-      // Actualizar existente
+      // ✅ Actualizar existente en taller_config
       response = await supabase
-        .from('configuracion_taller')
+        .from('taller_config')
         .update({
           ...configData,
           updated_at: new Date().toISOString(),
@@ -78,9 +78,9 @@ export async function POST(request: Request) {
         .select()
         .single()
     } else {
-      // Crear nuevo
+      // ✅ Crear nuevo en taller_config
       response = await supabase
-        .from('configuracion_taller')
+        .from('taller_config')
         .insert([{
           taller_id,
           ...configData,

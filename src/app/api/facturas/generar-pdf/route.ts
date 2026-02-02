@@ -62,9 +62,9 @@ export async function GET(request: NextRequest) {
       .eq('id', factura.taller_id)
       .single()
 
-    // Obtener configuración del taller (incluye logo)
+    // Obtener configuración del taller desde taller_config (incluye logo, CIF, colores)
     const { data: tallerConfig } = await supabase
-      .from('configuracion_taller')
+      .from('taller_config')
       .select('*')
       .eq('taller_id', factura.taller_id)
       .single()
@@ -105,7 +105,8 @@ export async function GET(request: NextRequest) {
       serie: factura.numero_serie || '',
       fechaEmision: factura.fecha_emision,
       fechaVencimiento: factura.fecha_vencimiento,
-      logoUrl: tallerConfig?.logo_url || null,
+      // Fallback: Si no hay logo, usar el logo de R&S por defecto
+      logoUrl: tallerConfig?.logo_url || 'https://via.placeholder.com/150x80/E11D48/FFFFFF?text=R%26S',
       emisor: {
         nombre: tallerConfig?.nombre_empresa || taller?.nombre || 'Taller',
         nif: tallerConfig?.cif || taller?.nif || '',
@@ -161,9 +162,9 @@ export async function GET(request: NextRequest) {
       estado: factura.estado,
       verifactuNumero: factura.numero_verifactu,
       verifactuURL: factura.verifactu_qr_url,
-      // Colores personalizados del taller
-      colorPrimario: tallerConfig?.color_primario || '#0284c7',
-      colorSecundario: tallerConfig?.color_secundario || '#0369a1',
+      // Colores personalizados del taller (fallback a #E11D48 según lo especificado)
+      colorPrimario: tallerConfig?.color_primario || '#E11D48',
+      colorSecundario: tallerConfig?.color_secundario || '#B91C1C',
     }
 
     // Retornar datos como JSON para que el cliente genere el PDF

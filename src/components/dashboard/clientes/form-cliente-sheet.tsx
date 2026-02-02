@@ -27,9 +27,7 @@ interface FormClienteSheetProps {
 }
 
 interface ClienteFormData {
-  nombre: string
-  primerApellido?: string
-  segundoApellido?: string
+  nombre: string // Campo único: Nombre / Razón Social
   nif: string
   email?: string
   telefono?: string
@@ -65,9 +63,7 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
   const [guardando, setGuardando] = useState(false)
   const [errores, setErrores] = useState<Record<string, string>>({})
   const [formData, setFormData] = useState<ClienteFormData>({
-    nombre: '',
-    primerApellido: '',
-    segundoApellido: '',
+    nombre: '', // Campo único para Nombre / Razón Social
     nif: '',
     email: '',
     telefono: '',
@@ -141,11 +137,10 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
 
       // ✅ CORRECTO: Usar Server Action en lugar de fetch a API route
       // ✅ NO enviamos taller_id (la Server Action lo obtiene del servidor)
-      const apellidos = [formData.primerApellido, formData.segundoApellido].filter(Boolean).join(' ')
+      // ✅ nombre ahora es un campo único (Nombre / Razón Social)
 
       const resultado = await crearClienteAction({
-        nombre: formData.nombre,
-        apellidos,
+        nombre: formData.nombre, // Campo único, sin separar apellidos
         nif: formData.nif,
         email: formData.email,
         telefono: formData.telefono,
@@ -193,30 +188,15 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
             <h3 className="font-bold mb-3">👤 Datos Básicos</h3>
             <div className="space-y-3">
               <div>
-                <Label className="text-xs font-semibold">Nombre *</Label>
+                <Label className="text-xs font-semibold">Nombre / Razón Social *</Label>
                 <Input
-                  placeholder="Nombre"
+                  placeholder="Juan García, Taller Mecánico S.L., etc."
                   value={formData.nombre}
                   onChange={(e) => setFormData(prev => ({ ...prev, nombre: e.target.value }))}
                 />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label className="text-xs font-semibold">Primer Apellido</Label>
-                  <Input
-                    placeholder="Primer apellido"
-                    value={formData.primerApellido || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, primerApellido: e.target.value }))}
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs font-semibold">Segundo Apellido</Label>
-                  <Input
-                    placeholder="Segundo apellido"
-                    value={formData.segundoApellido || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, segundoApellido: e.target.value }))}
-                  />
-                </div>
+                <p className="text-[10px] text-gray-500 mt-1">
+                  Acepta cualquier formato: comas, puntos, personas o empresas
+                </p>
               </div>
               <div>
                 <Label className="text-xs font-semibold">NIF/CIF *</Label>

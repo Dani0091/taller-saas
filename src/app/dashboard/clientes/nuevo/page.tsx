@@ -18,8 +18,7 @@ export default function NuevoClientePage() {
   const [tallerId, setTallerId] = useState<string | null>(null)
 
   const [formData, setFormData] = useState({
-    nombre: '',
-    apellidos: '',
+    nombre: '', // Campo único para Nombre / Razón Social
     nif: '',
     email: '',
     telefono: '',
@@ -85,8 +84,7 @@ export default function NuevoClientePage() {
         },
         body: JSON.stringify({
           taller_id: tallerId,
-          nombre: formData.nombre,
-          apellidos: formData.apellidos || null,
+          nombre: formData.nombre, // Guarda directamente en la columna nombre
           nif: formData.nif || null,
           email: formData.email || null,
           telefono: formData.telefono || null,
@@ -130,29 +128,20 @@ export default function NuevoClientePage() {
       {/* Formulario */}
       <Card className="p-6 max-w-2xl">
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Nombre */}
+          {/* Nombre / Razón Social - Campo único sin validaciones de caracteres */}
           <div>
-            <Label htmlFor="nombre">Nombre *</Label>
+            <Label htmlFor="nombre">Nombre / Razón Social *</Label>
             <Input
               id="nombre"
               name="nombre"
-              placeholder="Juan"
+              placeholder="Juan García López, S.L. o Taller Mecánico, S.A."
               value={formData.nombre}
               onChange={handleChange}
               required
             />
-          </div>
-
-          {/* Apellidos */}
-          <div>
-            <Label htmlFor="apellidos">Apellidos</Label>
-            <Input
-              id="apellidos"
-              name="apellidos"
-              placeholder="García López"
-              value={formData.apellidos}
-              onChange={handleChange}
-            />
+            <p className="text-xs text-gray-500 mt-1">
+              Acepta cualquier formato: personas físicas, empresas, con comas, puntos, etc.
+            </p>
           </div>
 
           {/* NIF */}

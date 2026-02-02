@@ -162,8 +162,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 4. Generar número de factura
-    const numeroFactura = `${serieToUse}${siguienteNumero.toString().padStart(3, '0')}`
+    // 4. Generar número de factura en formato [prefijo]-[numero] (ej: RS-1, FA-123)
+    // Sin ceros extras, según lo especificado
+    const numeroFactura = `${serieToUse}-${siguienteNumero}`
 
     // 5. Actualizar factura con número y nuevo estado
     const { data: facturaEmitida, error: emitirError } = await supabase
