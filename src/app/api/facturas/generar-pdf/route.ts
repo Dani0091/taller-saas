@@ -1,9 +1,3 @@
-/**
- * API ENDPOINT: Generar PDF de Factura
- * * Genera un PDF profesional y descargable
- * con toda la información de la factura
- */
-
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -26,8 +20,7 @@ function traducirMetodoPago(codigo: string | null | undefined): string {
  */
 async function obtenerImagenBase64(url: string): Promise<string> {
   try {
-    // Si ya es base64 o no es una URL, retornamos tal cual
-    if (!url.startsWith('http')) return url;
+    if (!url || !url.startsWith('http')) return url;
 
     const response = await fetch(url, { cache: 'no-store' });
     if (!response.ok) throw new Error('Error al descargar imagen');
@@ -39,7 +32,6 @@ async function obtenerImagenBase64(url: string): Promise<string> {
     return `data:${contentType};base64,${buffer.toString('base64')}`;
   } catch (error) {
     console.error('Error convirtiendo imagen a Base64:', error);
-    // Retornamos la URL original como fallback
     return url;
   }
 }
@@ -56,7 +48,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Obtener factura con relaciones
+    // 1. Obtener factura
     const { data: factura, error: facturaError } = await supabase
       .from('facturas')
       .select('*')
@@ -70,34 +62,20 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Obtener cliente
-    const { data: cliente } = await supabase
-      .from('clientes')
-      .select('*')
-      .eq('id', factura.cliente_id)
-      .single()
+    // 2. Obtener datos relacionados (cliente, taller, config)
+    const [clienteRes, tallerRes, configRes, lineasRes] = await Promise.all([
+      supabase.from('clientes').select('*').eq('id', factura.cliente_id).single(),
+      supabase.from('talleres').select('*').eq('id', factura.taller_id).single(),
+      supabase.from('taller_config').select('*').eq('taller_id', factura.taller_id).single(),
+      supabase.from('detalles_factura').select('*').eq('factura_id', facturaId)
+    ])
 
-    // Obtener taller/emisor
-    const { data: taller } = await supabase
-      .from('talleres')
-      .select('*')
-      .eq('id', factura.taller_id)
-      .single()
+    const cliente = clienteRes.data
+    const taller = tallerRes.data
+    const tallerConfig = configRes.data
+    const lineas = lineasRes.data
 
-    // Obtener configuración del taller (incluye logo, CIF, colores)
-    const { data: tallerConfig } = await supabase
-      .from('taller_config')
-      .select('*')
-      .eq('taller_id', factura.taller_id)
-      .single()
-
-    // Obtener líneas
-    const { data: lineas } = await supabase
-      .from('detalles_factura')
-      .select('*')
-      .eq('factura_id', facturaId)
-
-    // Obtener vehículo
+    // 3. Obtener vehículo si existe orden
     let vehiculo = null
     if (factura.orden_id) {
       const { data: orden } = await supabase
@@ -116,5 +94,86 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Procesar Logo a Base64 (Solución al error del logo invisible)
-    const urlOriginalLogo = tallerConfig?.logo_url || '
+    // 4. Procesar Logo (Base64)
+    const urlOriginalLogo = tallerConfig?.logo_url || 'https://via.placeholder.com/150x80/E11D48/FFFFFF?text=R%26S';
+    const logoUrlFinal = await obtenerImagenBase64(urlOriginalLogo);
+
+    const nombreCompletoCliente = cliente?.apellidos
+      ? `${cliente.nombre} ${cliente.apellidos}`.trim()
+      : cliente?.nombre || 'Cliente'
+
+    // 5. Preparar objeto de datos para el PDF
+    const datosFactura = {
+      numeroFactura: factura.numero_factura,
+      serie: factura.numero_serie || '',
+      fechaEmision: factura.fecha_emision,
+      fechaVencimiento: factura.fecha_vencimiento,
+      logoUrl: logoUrlFinal,
+      emisor: {
+        nombre: tallerConfig?.nombre_empresa || taller?.nombre || 'Taller',
+        nif: tallerConfig?.cif || taller?.nif || 'B22757140',
+        direccion: tallerConfig?.direccion || taller?.direccion || '',
+        codigoPostal: taller?.codigo_postal || '',
+        ciudad: taller?.ciudad || '',
+        provincia: taller?.provincia || '',
+        pais: 'ESPAÑA',
+        telefono: tallerConfig?.telefono || taller?.telefono,
+        email: tallerConfig?.email || taller?.email,
+        web: taller?.web,
+      },
+      receptor: {
+        nombre: nombreCompletoCliente,
+        nif: cliente?.nif || '',
+        direccion: cliente?.direccion || '',
+        codigoPostal: cliente?.codigo_postal || '',
+        ciudad: cliente?.ciudad || '',
+        provincia: cliente?.provincia || '',
+        pais: 'ESPAÑA',
+        email: cliente?.email,
+        telefono: cliente?.telefono,
+      },
+      personaContacto: factura.persona_contacto || null,
+      telefonoContacto: factura.telefono_contacto || null,
+      vehiculo,
+      lineas: (lineas || []).map((l: any) => ({
+        concepto: l.concepto || 'Servicio',
+        descripcion: l.descripcion || l.concepto || 'Servicio',
+        cantidad: l.cantidad,
+        precioUnitario: l.precio_unitario,
+        baseImponible: l.base_imponible || (l.cantidad * l.precio_unitario),
+        ivaPercentaje: l.iva_porcentaje || 21,
+        ivaImporte: l.iva_importe || 0,
+        total: l.total_linea || l.importe_total || (l.cantidad * l.precio_unitario),
+        tipoLinea: l.tipo_linea || 'servicio',
+      })),
+      baseImponible: factura.base_imponible,
+      ivaPercentaje: factura.iva_porcentaje || 21,
+      cuotaIVA: factura.iva,
+      descuento: factura.descuento_global || 0,
+      envio: 0,
+      total: factura.total,
+      metodoPago: traducirMetodoPago(factura.metodo_pago),
+      condicionesPago: factura.condiciones_pago || tallerConfig?.condiciones_pago || null,
+      notas: factura.notas_internas,
+      notasLegales: tallerConfig?.notas_factura || null,
+      iban: tallerConfig?.iban || null,
+      metodoPagoCodigo: factura.metodo_pago,
+      estado: factura.estado,
+      verifactuNumero: factura.numero_verifactu,
+      verifactuURL: factura.verifactu_qr_url,
+      colorPrimario: tallerConfig?.color_primario || '#E11D48',
+      colorSecundario: tallerConfig?.color_secundario || '#B91C1C',
+    }
+
+    return NextResponse.json({
+      success: true,
+      datos: datosFactura,
+    })
+  } catch (error) {
+    console.error('Error:', error)
+    return NextResponse.json(
+      { error: 'Error al generar PDF' },
+      { status: 500 }
+    )
+  }
+}
