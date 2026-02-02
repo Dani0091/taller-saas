@@ -16,6 +16,10 @@ export async function POST(request: Request) {
       telefono,
       email,
       logo_url,
+      // Campos de dirección detallada
+      codigo_postal,
+      ciudad,
+      provincia,
       // Campos de facturación
       serie_factura,
       numero_factura_inicial,
@@ -55,10 +59,13 @@ export async function POST(request: Request) {
     if (nombre_empresa !== undefined) configData.nombre_empresa = nombre_empresa
     if (cif !== undefined) configData.cif = cif
     if (direccion !== undefined) configData.direccion = direccion
+    if (codigo_postal !== undefined) configData.codigo_postal = codigo_postal
+    if (ciudad !== undefined) configData.ciudad = ciudad
+    if (provincia !== undefined) configData.provincia = provincia
     if (telefono !== undefined) configData.telefono = telefono
     if (email !== undefined) configData.email = email
     if (logo_url !== undefined) configData.logo_url = logo_url
-    if (serie_factura !== undefined) configData.serie_factura_default = serie_factura
+    if (serie_factura !== undefined) configData.serie_factura = serie_factura
     if (iban !== undefined) configData.iban = iban
     if (condiciones_pago !== undefined) configData.condiciones_pago = condiciones_pago
     if (notas_factura !== undefined) configData.notas_factura = notas_factura

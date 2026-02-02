@@ -22,9 +22,13 @@ interface ConfigTaller {
   taller_id: string
   nombre_empresa?: string
   cif?: string
-  telefono: string
-  email: string
+  telefono?: string
+  email?: string
   direccion?: string
+  // Campos de dirección detallada
+  codigo_postal?: string | null
+  ciudad?: string | null
+  provincia?: string | null
   logo_url?: string | null
   tarifa_hora: number
   incluye_iva?: boolean
@@ -70,6 +74,9 @@ const CONFIG_DEFAULTS: ConfigTaller = {
   telefono: '',
   email: '',
   direccion: '',
+  codigo_postal: null,
+  ciudad: null,
+  provincia: null,
   logo_url: null,
   tarifa_hora: 45.00,
   porcentaje_iva: 21.00,
@@ -397,7 +404,7 @@ export default function ConfiguracionPage() {
                   <Input
                     id="nombre_empresa"
                     name="nombre_empresa"
-                    value={formData?.nombre_empresa || ''}
+                    value={formData?.nombre_empresa ?? ''}
                     onChange={handleChange}
                   />
                 </div>
@@ -407,7 +414,7 @@ export default function ConfiguracionPage() {
                     <Input
                       id="cif"
                       name="cif"
-                      value={formData?.cif || ''}
+                      value={formData?.cif ?? ''}
                       onChange={handleChange}
                     />
                   </div>
@@ -416,21 +423,53 @@ export default function ConfiguracionPage() {
                     <Input
                       id="telefono"
                       name="telefono"
-                      value={formData?.telefono || ''}
+                      value={formData?.telefono ?? ''}
                       onChange={handleChange}
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="direccion">Dirección Completa</Label>
-                  <Textarea
+                  <Label htmlFor="direccion">Dirección (Calle y Número)</Label>
+                  <Input
                     id="direccion"
                     name="direccion"
-                    value={formData?.direccion || ''}
+                    value={formData?.direccion ?? ''}
                     onChange={handleChange}
-                    rows={2}
-                    className="resize-none"
+                    placeholder="C/ Ejemplo, 123"
                   />
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="codigo_postal">C.P.</Label>
+                    <Input
+                      id="codigo_postal"
+                      name="codigo_postal"
+                      value={formData?.codigo_postal ?? ''}
+                      onChange={handleChange}
+                      placeholder="28001"
+                      maxLength={10}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ciudad">Ciudad</Label>
+                    <Input
+                      id="ciudad"
+                      name="ciudad"
+                      value={formData?.ciudad ?? ''}
+                      onChange={handleChange}
+                      placeholder="Madrid"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="provincia">Provincia</Label>
+                    <Input
+                      id="provincia"
+                      name="provincia"
+                      value={formData?.provincia ?? ''}
+                      onChange={handleChange}
+                      placeholder="Madrid"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -562,7 +601,7 @@ export default function ConfiguracionPage() {
                 <Input
                   id="iban"
                   name="iban"
-                  value={formData?.iban || ''}
+                  value={formData?.iban ?? ''}
                   onChange={handleChange}
                   className="font-mono"
                 />
@@ -574,7 +613,7 @@ export default function ConfiguracionPage() {
                 <Textarea
                   id="condiciones_pago"
                   name="condiciones_pago"
-                  value={formData?.condiciones_pago || ''}
+                  value={formData?.condiciones_pago ?? ''}
                   onChange={handleChange}
                   rows={2}
                   className="resize-none"
@@ -587,7 +626,7 @@ export default function ConfiguracionPage() {
                 <Textarea
                   id="notas_factura"
                   name="notas_factura"
-                  value={formData?.notas_factura || ''}
+                  value={formData?.notas_factura ?? ''}
                   onChange={handleChange}
                   rows={3}
                   className="resize-none"
