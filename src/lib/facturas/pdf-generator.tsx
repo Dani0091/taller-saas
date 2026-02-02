@@ -113,6 +113,14 @@ const createStyles = (colorPrimario: string, colorSecundario: string) => StyleSh
     flex: 1,
     paddingHorizontal: 4, // Reducido de 8
     fontSize: 8, // Reducido de 9
+    overflow: 'hidden', // Evitar desbordamiento
+  },
+  tableCellDescription: {
+    flex: 3, // Columna de descripción más ancha
+    paddingHorizontal: 4,
+    fontSize: 8,
+    overflow: 'hidden',
+    wordWrap: 'break-word', // Romper palabras largas
   },
   tableCellRight: {
     flex: 1,
@@ -270,6 +278,11 @@ interface PDFFacturaProps {
   // Colores personalizados
   colorPrimario?: string
   colorSecundario?: string
+  // Opciones de visualización
+  mostrarTelefono?: boolean
+  mostrarEmail?: boolean
+  mostrarKm?: boolean
+  mostrarDireccionCompleta?: boolean
 }
 
 /**
@@ -308,6 +321,11 @@ export const PDFFactura = ({
   esVerifactu = false,
   colorPrimario = '#0284c7',
   colorSecundario = '#0369a1',
+  // Opciones de visualización (por defecto true para retrocompatibilidad)
+  mostrarTelefono = true,
+  mostrarEmail = true,
+  mostrarKm = true,
+  mostrarDireccionCompleta = true,
 }: PDFFacturaProps) => {
   const styles = createStyles(colorPrimario, colorSecundario)
 
@@ -321,22 +339,31 @@ export const PDFFactura = ({
             {logoUrl && (
               <Image
                 src={logoUrl}
-                style={{ width: 50, height: 50, marginBottom: 5, objectFit: 'contain' }}
+                style={{
+                  maxWidth: 80,
+                  maxHeight: 60, // Altura máxima para evitar desbordamiento
+                  marginBottom: 5,
+                  objectFit: 'contain'
+                }}
               />
             )}
             <Text style={styles.title}>{emisor.nombre}</Text>
             <Text style={styles.subtitle}>CIF: {emisor.nif}</Text>
-            <Text style={styles.subtitle}>{emisor.direccion}</Text>
-            {emisor.codigoPostal && (
-              <Text style={styles.subtitle}>
-                {emisor.codigoPostal} {emisor.ciudad}
-                {emisor.provincia && `, ${emisor.provincia}`}
-              </Text>
+            {mostrarDireccionCompleta && (
+              <>
+                <Text style={styles.subtitle}>{emisor.direccion}</Text>
+                {emisor.codigoPostal && (
+                  <Text style={styles.subtitle}>
+                    {emisor.codigoPostal} {emisor.ciudad}
+                    {emisor.provincia && `, ${emisor.provincia}`}
+                  </Text>
+                )}
+              </>
             )}
-            {emisor.telefono && (
+            {mostrarTelefono && emisor.telefono && (
               <Text style={styles.subtitle}>Tel: {emisor.telefono}</Text>
             )}
-            {emisor.email && (
+            {mostrarEmail && emisor.email && (
               <Text style={styles.subtitle}>{emisor.email}</Text>
             )}
           </View>
@@ -417,7 +444,7 @@ export const PDFFactura = ({
                   Matrícula: {vehiculo.matricula}
                 </Text>
               )}
-              {vehiculo.km && (
+              {mostrarKm && vehiculo.km && (
                 <Text style={styles.dataValueSmall}>
                   Km: {vehiculo.km.toLocaleString('es-ES')}
                 </Text>
@@ -435,7 +462,7 @@ export const PDFFactura = ({
         <View style={styles.table}>
           {/* Header */}
           <View style={styles.tableHeader}>
-            <Text style={{ ...styles.tableCell, fontWeight: 'bold', flex: 3, color: colorSecundario }}>
+            <Text style={{ ...styles.tableCellDescription, fontWeight: 'bold', color: colorSecundario }}>
               DESCRIPCIÓN
             </Text>
             <Text style={{ ...styles.tableCellRight, fontWeight: 'bold', color: colorSecundario }}>
@@ -451,8 +478,8 @@ export const PDFFactura = ({
 
           {/* Rows */}
           {lineas.map((linea, idx) => (
-              <View key={idx} style={styles.tableRow}>
-                <Text style={{ ...styles.tableCell, flex: 3 }}>
+              <View key={idx} style={styles.tableRow} wrap={false}>
+                <Text style={styles.tableCellDescription} wrap>
                   {linea.descripcion}
                 </Text>
                 <Text style={styles.tableCellRight}>

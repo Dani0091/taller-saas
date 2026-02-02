@@ -49,6 +49,11 @@ interface ConfigTaller {
   color_secundario?: string | null
   serie_factura?: string | null
   numero_factura_inicial?: number | null
+  // Opciones de visualización en facturas
+  mostrar_telefono_factura?: boolean
+  mostrar_email_factura?: boolean
+  mostrar_km_factura?: boolean
+  mostrar_direccion_completa?: boolean
 }
 
 interface TarifaConfig {
@@ -99,7 +104,12 @@ const CONFIG_DEFAULTS: ConfigTaller = {
   color_primario: '#0284c7',
   color_secundario: '#0369a1',
   tarifa_con_iva: true,
-  incluye_iva: true
+  incluye_iva: true,
+  // Por defecto, mostrar todos los campos en facturas
+  mostrar_telefono_factura: true,
+  mostrar_email_factura: true,
+  mostrar_km_factura: true,
+  mostrar_direccion_completa: true
 }
 
 const TARIFA_DEFAULTS: TarifaConfig = {
@@ -630,6 +640,58 @@ export default function ConfiguracionPage() {
                     />
                   </div>
                 </div>
+              </div>
+
+              <div className="pt-4 border-t">
+                <Label className="text-sm font-semibold mb-3 block">Elementos Visibles en Facturas</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                    <input
+                      type="checkbox"
+                      name="mostrar_telefono_factura"
+                      checked={formData?.mostrar_telefono_factura ?? true}
+                      onChange={handleChange}
+                      className="w-4 h-4 text-sky-600 rounded focus:ring-sky-500"
+                    />
+                    <span className="text-sm text-gray-700">Mostrar teléfono de contacto</span>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                    <input
+                      type="checkbox"
+                      name="mostrar_email_factura"
+                      checked={formData?.mostrar_email_factura ?? true}
+                      onChange={handleChange}
+                      className="w-4 h-4 text-sky-600 rounded focus:ring-sky-500"
+                    />
+                    <span className="text-sm text-gray-700">Mostrar email de contacto</span>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                    <input
+                      type="checkbox"
+                      name="mostrar_km_factura"
+                      checked={formData?.mostrar_km_factura ?? true}
+                      onChange={handleChange}
+                      className="w-4 h-4 text-sky-600 rounded focus:ring-sky-500"
+                    />
+                    <span className="text-sm text-gray-700">Mostrar kilómetros del vehículo</span>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                    <input
+                      type="checkbox"
+                      name="mostrar_direccion_completa"
+                      checked={formData?.mostrar_direccion_completa ?? true}
+                      onChange={handleChange}
+                      className="w-4 h-4 text-sky-600 rounded focus:ring-sky-500"
+                    />
+                    <span className="text-sm text-gray-700">Mostrar dirección completa del taller</span>
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Estos ajustes controlan qué información se muestra en las facturas generadas
+                </p>
               </div>
             </div>
           </Card>
