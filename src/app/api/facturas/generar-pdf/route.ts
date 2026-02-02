@@ -1,7 +1,6 @@
 /**
  * API ENDPOINT: Generar PDF de Factura
- * 
- * Genera un PDF profesional y descargable
+ * * Genera un PDF profesional y descargable
  * con toda la información de la factura
  */
 
@@ -20,6 +19,29 @@ function traducirMetodoPago(codigo: string | null | undefined): string {
     'O': 'Otro'
   }
   return traducciones[codigo?.toUpperCase() || ''] || 'No especificado'
+}
+
+/**
+ * Descarga una imagen y la convierte a Base64 para evitar errores de CORS en el PDF
+ */
+async function obtenerImagenBase64(url: string): Promise<string> {
+  try {
+    // Si ya es base64 o no es una URL, retornamos tal cual
+    if (!url.startsWith('http')) return url;
+
+    const response = await fetch(url, { cache: 'no-store' });
+    if (!response.ok) throw new Error('Error al descargar imagen');
+    
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const contentType = response.headers.get('content-type') || 'image/png';
+    
+    return `data:${contentType};base64,${buffer.toString('base64')}`;
+  } catch (error) {
+    console.error('Error convirtiendo imagen a Base64:', error);
+    // Retornamos la URL original como fallback
+    return url;
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -62,7 +84,7 @@ export async function GET(request: NextRequest) {
       .eq('id', factura.taller_id)
       .single()
 
-    // Obtener configuración del taller desde taller_config (incluye logo, CIF, colores)
+    // Obtener configuración del taller (incluye logo, CIF, colores)
     const { data: tallerConfig } = await supabase
       .from('taller_config')
       .select('*')
@@ -75,7 +97,7 @@ export async function GET(request: NextRequest) {
       .select('*')
       .eq('factura_id', facturaId)
 
-    // Obtener vehículo (si existe orden)
+    // Obtener vehículo
     let vehiculo = null
     if (factura.orden_id) {
       const { data: orden } = await supabase
@@ -94,90 +116,5 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Construir nombre completo del cliente (incluyendo apellidos si existen)
-    const nombreCompletoCliente = cliente?.apellidos
-      ? `${cliente.nombre} ${cliente.apellidos}`.trim()
-      : cliente?.nombre || 'Cliente'
-
-    // Preparar datos para PDF (priorizar taller_config sobre talleres)
-    const datosFactura = {
-      numeroFactura: factura.numero_factura,
-      serie: factura.numero_serie || '',
-      fechaEmision: factura.fecha_emision,
-      fechaVencimiento: factura.fecha_vencimiento,
-      // Fallback: Si no hay logo, usar el logo de R&S por defecto
-      logoUrl: tallerConfig?.logo_url || 'https://via.placeholder.com/150x80/E11D48/FFFFFF?text=R%26S',
-      emisor: {
-        nombre: tallerConfig?.nombre_empresa || taller?.nombre || 'Taller',
-        nif: tallerConfig?.cif || taller?.nif || 'B22757140',
-        direccion: tallerConfig?.direccion || taller?.direccion || '',
-        codigoPostal: tallerConfig?.codigo_postal || taller?.codigo_postal || '',
-        ciudad: tallerConfig?.ciudad || taller?.ciudad || '',
-        provincia: tallerConfig?.provincia || taller?.provincia || '',
-        pais: 'ESPAÑA',
-        telefono: tallerConfig?.telefono || taller?.telefono,
-        email: tallerConfig?.email || taller?.email,
-        web: tallerConfig?.web || taller?.web,
-      },
-      receptor: {
-        nombre: nombreCompletoCliente,
-        nif: cliente?.nif || '',
-        direccion: cliente?.direccion || '',
-        codigoPostal: cliente?.codigo_postal || '',
-        ciudad: cliente?.ciudad || '',
-        provincia: cliente?.provincia || '',
-        pais: 'ESPAÑA',
-        email: cliente?.email,
-        telefono: cliente?.telefono,
-      },
-      // Persona de contacto (puede diferir del cliente)
-      personaContacto: factura.persona_contacto || null,
-      telefonoContacto: factura.telefono_contacto || null,
-      vehiculo,
-      lineas: (lineas || []).map((l: any) => ({
-        concepto: l.concepto || 'Servicio',
-        descripcion: l.descripcion || l.concepto || 'Servicio',
-        cantidad: l.cantidad,
-        precioUnitario: l.precio_unitario,
-        baseImponible: l.base_imponible || (l.cantidad * l.precio_unitario),
-        ivaPercentaje: l.iva_porcentaje || 21,
-        ivaImporte: l.iva_importe || 0,
-        total: l.total_linea || l.importe_total || (l.cantidad * l.precio_unitario),
-        tipoLinea: l.tipo_linea || 'servicio',
-      })),
-      baseImponible: factura.base_imponible,
-      ivaPercentaje: factura.iva_porcentaje || 21,
-      cuotaIVA: factura.iva,
-      descuento: factura.descuento_global || 0,
-      envio: 0,
-      total: factura.total,
-      metodoPago: traducirMetodoPago(factura.metodo_pago),
-      condicionesPago: factura.condiciones_pago || tallerConfig?.condiciones_pago || null,
-      notas: factura.notas_internas,
-      notasLegales: tallerConfig?.notas_factura || null,
-      iban: tallerConfig?.iban || null,
-      // Código del método de pago para lógica condicional
-      metodoPagoCodigo: factura.metodo_pago,
-      // Estado de la factura para mostrar si está pagada o pendiente
-      estado: factura.estado,
-      verifactuNumero: factura.numero_verifactu,
-      verifactuURL: factura.verifactu_qr_url,
-      // Colores personalizados del taller (fallback a #E11D48 según lo especificado)
-      colorPrimario: tallerConfig?.color_primario || '#E11D48',
-      colorSecundario: tallerConfig?.color_secundario || '#B91C1C',
-    }
-
-    // Retornar datos como JSON para que el cliente genere el PDF
-    // (alternativa a generar en servidor)
-    return NextResponse.json({
-      success: true,
-      datos: datosFactura,
-    })
-  } catch (error) {
-    console.error('Error:', error)
-    return NextResponse.json(
-      { error: 'Error al generar PDF' },
-      { status: 500 }
-    )
-  }
-}
+    // Procesar Logo a Base64 (Solución al error del logo invisible)
+    const urlOriginalLogo = tallerConfig?.logo_url || '
