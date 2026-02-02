@@ -16,32 +16,20 @@ import { useTaller } from '@/contexts/TallerContext'
 
 // ==================== INTERFACES ====================
 
+// ✅ Interface actualizada con columnas REALES de taller_config
 interface ConfigTaller {
   id?: string
   taller_id: string
-  nombre_taller?: string
   nombre_empresa?: string
-  nif?: string
   cif?: string
   telefono: string
   email: string
   direccion?: string
-  codigo_postal?: string
-  ciudad?: string
-  provincia?: string
-  pais?: string
   logo_url?: string | null
-  firma_url?: string | null
   tarifa_hora: number
-  iva_default?: number
   incluye_iva?: boolean
   porcentaje_iva?: number
   tarifa_con_iva?: boolean
-  porcentaje_anticipo?: number | null
-  plazo_pago_dias?: number | null
-  moneda?: string
-  idioma?: string
-  formato_fecha?: string
   iban?: string | null
   condiciones_pago?: string | null
   notas_factura?: string | null
@@ -49,11 +37,6 @@ interface ConfigTaller {
   color_secundario?: string | null
   serie_factura?: string | null
   numero_factura_inicial?: number | null
-  // Opciones de visualización en facturas
-  mostrar_telefono_factura?: boolean
-  mostrar_email_factura?: boolean
-  mostrar_km_factura?: boolean
-  mostrar_direccion_completa?: boolean
 }
 
 interface TarifaConfig {
@@ -79,37 +62,24 @@ interface SerieConfig {
 
 // ==================== VALORES POR DEFECTO ====================
 
+// ✅ Valores por defecto actualizados (solo columnas reales)
 const CONFIG_DEFAULTS: ConfigTaller = {
   taller_id: '',
-  nombre_taller: '',
-  nif: '',
+  nombre_empresa: '',
+  cif: '',
   telefono: '',
   email: '',
   direccion: '',
-  codigo_postal: '',
-  ciudad: '',
-  provincia: '',
-  pais: 'España',
   logo_url: null,
-  firma_url: null,
   tarifa_hora: 45.00,
-  iva_default: 21.00,
   porcentaje_iva: 21.00,
-  moneda: 'EUR',
-  idioma: 'es',
-  formato_fecha: 'dd/MM/yyyy',
+  tarifa_con_iva: true,
+  incluye_iva: true,
   iban: null,
   condiciones_pago: null,
   notas_factura: null,
   color_primario: '#0284c7',
-  color_secundario: '#0369a1',
-  tarifa_con_iva: true,
-  incluye_iva: true,
-  // Por defecto, mostrar todos los campos en facturas
-  mostrar_telefono_factura: true,
-  mostrar_email_factura: true,
-  mostrar_km_factura: true,
-  mostrar_direccion_completa: true
+  color_secundario: '#0369a1'
 }
 
 const TARIFA_DEFAULTS: TarifaConfig = {
@@ -144,9 +114,7 @@ export default function ConfiguracionPage() {
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState<ConfigTaller | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
-  const [firmaPreview, setFirmaPreview] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const firmaInputRef = useRef<HTMLInputElement>(null)
 
   const [tarifas, setTarifas] = useState<TarifaConfig[]>([])
   const [tarifaEditando, setTarifaEditando] = useState<string | null>(null)
@@ -185,7 +153,6 @@ export default function ConfiguracionPage() {
         setConfig(fullConfig)
         setFormData(fullConfig)
         if (configData.logo_url) setLogoPreview(configData.logo_url)
-        if (configData.firma_url) setFirmaPreview(configData.firma_url)
 
         if (tarifasData.tarifas) setTarifas(tarifasData.tarifas)
         if (seriesData.series) setSeries(seriesData.series)
@@ -211,7 +178,6 @@ export default function ConfiguracionPage() {
       setConfig(configData)
       setFormData(configData)
       if (data.logo_url) setLogoPreview(data.logo_url)
-      if (data.firma_url) setFirmaPreview(data.firma_url)
     } catch (error) {
       console.error('Error al recargar configuración:', error)
     }
@@ -251,7 +217,8 @@ export default function ConfiguracionPage() {
     })
   }
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'firma') => {
+  // ✅ Subida de archivo a Telegram Storage
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file || !tallerId) return
 
@@ -264,7 +231,7 @@ export default function ConfiguracionPage() {
       const formDataUpload = new FormData()
       formDataUpload.append('file', file)
       formDataUpload.append('taller_id', tallerId)
-      formDataUpload.append('tipo', type)
+      formDataUpload.append('tipo', 'logo')
 
       const response = await fetch('/api/taller/upload', {
         method: 'POST',
@@ -274,16 +241,15 @@ export default function ConfiguracionPage() {
       if (!response.ok) throw new Error('Error al subir archivo')
 
       const data = await response.json()
-      if (type === 'logo') {
-        setLogoPreview(data.url)
-        setFormData(prev => prev ? { ...prev, logo_url: data.url } : null)
-      } else {
-        setFirmaPreview(data.url)
-        setFormData(prev => prev ? { ...prev, firma_url: data.url } : null)
-      }
-      toast.success(`${type === 'logo' ? 'Logo' : 'Firma'} subida correctamente`)
+
+      // ✅ Guardar URL devuelta por Telegram en el estado
+      setLogoPreview(data.url)
+      setFormData(prev => prev ? { ...prev, logo_url: data.url } : null)
+
+      toast.success('Logo subido correctamente a Telegram Storage')
     } catch (error) {
-      toast.error(`Error al subir ${type}`)
+      toast.error('Error al subir logo')
+      console.error('Error subiendo logo:', error)
     }
   }
 
@@ -427,22 +393,44 @@ export default function ConfiguracionPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Nombre Comercial</Label>
-                  <Input name="nombre_taller" value={formData?.nombre_taller || ''} onChange={handleChange} placeholder="Ej: Taller Mecánico Pro" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Razón Social / Nombre Empresa</Label>
-                  <Input name="nombre_empresa" value={formData?.nombre_empresa || ''} onChange={handleChange} />
+                  <Label htmlFor="nombre_empresa">Nombre Empresa / Razón Social</Label>
+                  <Input
+                    id="nombre_empresa"
+                    name="nombre_empresa"
+                    value={formData?.nombre_empresa || ''}
+                    onChange={handleChange}
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>NIF / CIF</Label>
-                    <Input name="cif" value={formData?.cif || ''} onChange={handleChange} />
+                    <Label htmlFor="cif">NIF / CIF</Label>
+                    <Input
+                      id="cif"
+                      name="cif"
+                      value={formData?.cif || ''}
+                      onChange={handleChange}
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label>Teléfono</Label>
-                    <Input name="telefono" value={formData?.telefono || ''} onChange={handleChange} />
+                    <Label htmlFor="telefono">Teléfono</Label>
+                    <Input
+                      id="telefono"
+                      name="telefono"
+                      value={formData?.telefono || ''}
+                      onChange={handleChange}
+                    />
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="direccion">Dirección Completa</Label>
+                  <Textarea
+                    id="direccion"
+                    name="direccion"
+                    value={formData?.direccion || ''}
+                    onChange={handleChange}
+                    rows={2}
+                    className="resize-none"
+                  />
                 </div>
               </div>
 
@@ -450,7 +438,14 @@ export default function ConfiguracionPage() {
                 {logoPreview ? (
                   <div className="relative group">
                     <img src={logoPreview} alt="Logo" className="max-h-32 rounded-lg object-contain" />
-                    <button onClick={() => setLogoPreview(null)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLogoPreview(null)
+                        setFormData(prev => prev ? { ...prev, logo_url: null } : null)
+                      }}
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
@@ -458,12 +453,13 @@ export default function ConfiguracionPage() {
                   <div className="text-center">
                     <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
                     <p className="text-xs text-gray-500">Logo del taller (PNG, JPG)</p>
+                    <p className="text-xs text-gray-400 mt-1">Se guarda en Telegram Storage</p>
                   </div>
                 )}
-                <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
                   Seleccionar Logo
                 </Button>
-                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'logo')} />
+                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleFileUpload} />
               </div>
             </div>
           </Card>
@@ -562,24 +558,24 @@ export default function ConfiguracionPage() {
             </h2>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>IBAN (Cuenta Bancaria)</Label>
+                <Label htmlFor="iban">IBAN (Cuenta Bancaria)</Label>
                 <Input
+                  id="iban"
                   name="iban"
                   value={formData?.iban || ''}
                   onChange={handleChange}
-                  placeholder="ES00 0000 0000 0000 0000 0000"
                   className="font-mono"
                 />
                 <p className="text-xs text-gray-500">Se mostrará en las facturas para transferencias bancarias</p>
               </div>
 
               <div className="space-y-2">
-                <Label>Condiciones de Pago</Label>
+                <Label htmlFor="condiciones_pago">Condiciones de Pago</Label>
                 <Textarea
+                  id="condiciones_pago"
                   name="condiciones_pago"
                   value={formData?.condiciones_pago || ''}
                   onChange={handleChange}
-                  placeholder="Ej: Pago a 30 días desde la fecha de emisión"
                   rows={2}
                   className="resize-none"
                 />
@@ -587,12 +583,12 @@ export default function ConfiguracionPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Notas Legales / Texto Adicional</Label>
+                <Label htmlFor="notas_factura">Notas Legales / Texto Adicional</Label>
                 <Textarea
+                  id="notas_factura"
                   name="notas_factura"
                   value={formData?.notas_factura || ''}
                   onChange={handleChange}
-                  placeholder="Ej: Garantía de 12 meses en todas las reparaciones. No se aceptan devoluciones de piezas especiales."
                   rows={3}
                   className="resize-none"
                 />
@@ -601,10 +597,11 @@ export default function ConfiguracionPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Color Primario</Label>
+                  <Label htmlFor="color_primario">Color Primario</Label>
                   <div className="flex gap-2">
                     <Input
                       type="color"
+                      id="color_primario"
                       name="color_primario"
                       value={formData?.color_primario || '#0284c7'}
                       onChange={handleChange}
@@ -615,16 +612,17 @@ export default function ConfiguracionPage() {
                       name="color_primario"
                       value={formData?.color_primario || '#0284c7'}
                       onChange={handleChange}
-                      placeholder="#0284c7"
                       className="font-mono flex-1"
                     />
                   </div>
+                  <p className="text-xs text-gray-500">Color usado en facturas y documentos</p>
                 </div>
                 <div className="space-y-2">
-                  <Label>Color Secundario</Label>
+                  <Label htmlFor="color_secundario">Color Secundario</Label>
                   <div className="flex gap-2">
                     <Input
                       type="color"
+                      id="color_secundario"
                       name="color_secundario"
                       value={formData?.color_secundario || '#0369a1'}
                       onChange={handleChange}
@@ -635,63 +633,11 @@ export default function ConfiguracionPage() {
                       name="color_secundario"
                       value={formData?.color_secundario || '#0369a1'}
                       onChange={handleChange}
-                      placeholder="#0369a1"
                       className="font-mono flex-1"
                     />
                   </div>
+                  <p className="text-xs text-gray-500">Color complementario para encabezados</p>
                 </div>
-              </div>
-
-              <div className="pt-4 border-t">
-                <Label className="text-sm font-semibold mb-3 block">Elementos Visibles en Facturas</Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
-                    <input
-                      type="checkbox"
-                      name="mostrar_telefono_factura"
-                      checked={formData?.mostrar_telefono_factura ?? true}
-                      onChange={handleChange}
-                      className="w-4 h-4 text-sky-600 rounded focus:ring-sky-500"
-                    />
-                    <span className="text-sm text-gray-700">Mostrar teléfono de contacto</span>
-                  </label>
-
-                  <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
-                    <input
-                      type="checkbox"
-                      name="mostrar_email_factura"
-                      checked={formData?.mostrar_email_factura ?? true}
-                      onChange={handleChange}
-                      className="w-4 h-4 text-sky-600 rounded focus:ring-sky-500"
-                    />
-                    <span className="text-sm text-gray-700">Mostrar email de contacto</span>
-                  </label>
-
-                  <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
-                    <input
-                      type="checkbox"
-                      name="mostrar_km_factura"
-                      checked={formData?.mostrar_km_factura ?? true}
-                      onChange={handleChange}
-                      className="w-4 h-4 text-sky-600 rounded focus:ring-sky-500"
-                    />
-                    <span className="text-sm text-gray-700">Mostrar kilómetros del vehículo</span>
-                  </label>
-
-                  <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
-                    <input
-                      type="checkbox"
-                      name="mostrar_direccion_completa"
-                      checked={formData?.mostrar_direccion_completa ?? true}
-                      onChange={handleChange}
-                      className="w-4 h-4 text-sky-600 rounded focus:ring-sky-500"
-                    />
-                    <span className="text-sm text-gray-700">Mostrar dirección completa del taller</span>
-                  </label>
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Estos ajustes controlan qué información se muestra en las facturas generadas
-                </p>
               </div>
             </div>
           </Card>
