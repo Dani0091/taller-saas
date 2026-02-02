@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Sidebar } from '@/components/dashboard/sidebar'
 import { Header } from '@/components/dashboard/header'
+import { TallerProvider } from '@/contexts/TallerContext'
 import { Loader2 } from 'lucide-react'
 
 export default function DashboardLayout({
@@ -64,31 +65,33 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Overlay para cerrar sidebar en móvil */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+    <TallerProvider>
+      <div className="flex h-screen bg-gray-50">
+        {/* Overlay para cerrar sidebar en móvil */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
 
-      {/* Sidebar */}
-      <Sidebar
-        user={user}
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
-
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header
+        {/* Sidebar */}
+        <Sidebar
           user={user}
-          onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
         />
-        <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
-          {children}
-        </main>
+
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Header
+            user={user}
+            onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+          />
+          <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </TallerProvider>
   )
 }

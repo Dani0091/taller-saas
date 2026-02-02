@@ -2,7 +2,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -12,69 +12,32 @@ import { Label } from '@/components/ui/label'
 import { NumberInput } from '@/components/ui/number-input'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { createClient } from '@/lib/supabase/client'
 import { InputScanner } from '@/components/ui/input-scanner'
+import { useTaller } from '@/contexts/TallerContext'
 
 // Importaciones de conversión y tipos (Senior Level Architecture)
-import { 
-  toDbString, 
-  toDbNumber, 
-  createNumericHandler, 
+import {
+  toDbString,
+  toDbNumber,
+  createNumericHandler,
   createTextHandler,
   sanitizeMatricula,
   sanitizeKilometros,
-  sanitizeAño 
+  sanitizeAño
 } from '@/lib/utils/converters'
-import { 
-  VehiculoFormulario, 
-  VehiculoDefaults, 
+import {
+  VehiculoFormulario,
+  VehiculoDefaults,
   VehiculoValidationRules,
   vehiculoFormularioToBD,
-  TIPOS_COMBUSTIBLE_OPTIONS 
+  TIPOS_COMBUSTIBLE_OPTIONS
 } from '@/types/vehiculo'
 
 export default function NuevoVehiculoPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const [tallerId, setTallerId] = useState<string | null>(null)
-  const [loadingAuth, setLoadingAuth] = useState(true)
+  const { tallerId, loading: loadingAuth } = useTaller()
   const [formData, setFormData] = useState<VehiculoFormulario>(VehiculoDefaults)
-
-  // Obtener taller_id del usuario autenticado
-  useEffect(() => {
-    const obtenerTallerId = async () => {
-      try {
-        const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-
-        if (!user?.email) {
-          toast.error('No hay sesión activa')
-          setLoadingAuth(false)
-          return
-        }
-
-        const { data: usuario, error } = await supabase
-          .from('usuarios')
-          .select('taller_id')
-          .eq('email', user.email)
-          .single()
-
-        if (error || !usuario) {
-          toast.error('No se pudo obtener datos del usuario')
-          setLoadingAuth(false)
-          return
-        }
-
-        setTallerId(usuario.taller_id)
-      } catch (error) {
-        console.error('Error obteniendo taller_id:', error)
-        toast.error('Error de autenticación')
-      } finally {
-        setLoadingAuth(false)
-      }
-    }
-    obtenerTallerId()
-  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target

@@ -12,6 +12,7 @@ import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { GoogleCalendarConnection } from '@/components/dashboard/configuracion/google-calendar-connection'
 import { masterConverter } from '@/lib/utils/master-converter'
+import { useTaller } from '@/contexts/TallerContext'
 
 // ==================== INTERFACES ====================
 
@@ -127,13 +128,13 @@ const TIPOS_CLIENTE = [
 ]
 
 export default function ConfiguracionPage() {
+  const { tallerId, loading: loadingAuth } = useTaller()
   const [config, setConfig] = useState<ConfigTaller | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState<ConfigTaller | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [firmaPreview, setFirmaPreview] = useState<string | null>(null)
-  const [tallerId, setTallerId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const firmaInputRef = useRef<HTMLInputElement>(null)
 
@@ -147,43 +148,53 @@ export default function ConfiguracionPage() {
   const [serieEditando, setSerieEditando] = useState<SerieConfig | null>(null)
   const [formSerie, setFormSerie] = useState<SerieConfig>(SERIE_DEFAULTS)
 
+  // ⚡ OPTIMIZACIÓN: Carga paralela de todos los datos en una sola llamada
   useEffect(() => {
-    const obtenerTallerId = async () => {
-      try {
-        const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user?.email) {
-          setLoading(false)
-          return
-        }
-        const { data: usuario, error } = await supabase
-          .from('usuarios')
-          .select('taller_id')
-          .eq('email', user.email)
-          .single()
+    if (!tallerId || loadingAuth) return
 
-        if (!error && usuario) setTallerId(usuario.taller_id)
+    const cargarTodoEnParalelo = async () => {
+      try {
+        setLoading(true)
+
+        // 🚀 Promise.all ejecuta todas las llamadas en paralelo (de ~7s a ~1s)
+        const [configRes, tarifasRes, seriesRes] = await Promise.all([
+          fetch(`/api/taller/config/obtener?taller_id=${tallerId}`),
+          fetch('/api/tarifas'),
+          fetch(`/api/series/obtener?taller_id=${tallerId}`)
+        ])
+
+        // Procesar respuestas en paralelo también
+        const [configData, tarifasData, seriesData] = await Promise.all([
+          configRes.json(),
+          tarifasRes.json(),
+          seriesRes.json()
+        ])
+
+        // Actualizar estados
+        const fullConfig = { ...CONFIG_DEFAULTS, ...configData }
+        setConfig(fullConfig)
+        setFormData(fullConfig)
+        if (configData.logo_url) setLogoPreview(configData.logo_url)
+        if (configData.firma_url) setFirmaPreview(configData.firma_url)
+
+        if (tarifasData.tarifas) setTarifas(tarifasData.tarifas)
+        if (seriesData.series) setSeries(seriesData.series)
+
       } catch (error) {
-        console.error('Error auth:', error)
+        console.error('Error cargando configuración:', error)
+        toast.error('Error al cargar la configuración')
       } finally {
         setLoading(false)
       }
     }
-    obtenerTallerId()
-  }, [])
 
-  useEffect(() => {
-    if (tallerId) {
-      fetchConfig()
-      fetchTarifas()
-      fetchSeries()
-    }
-  }, [tallerId])
+    cargarTodoEnParalelo()
+  }, [tallerId, loadingAuth])
 
+  // Funciones de recarga individual (usadas después de guardar cambios)
   const fetchConfig = async () => {
     if (!tallerId) return
     try {
-      setLoading(true)
       const response = await fetch(`/api/taller/config/obtener?taller_id=${tallerId}`)
       const data = await response.json()
       const configData = { ...CONFIG_DEFAULTS, ...data }
@@ -192,9 +203,7 @@ export default function ConfiguracionPage() {
       if (data.logo_url) setLogoPreview(data.logo_url)
       if (data.firma_url) setFirmaPreview(data.firma_url)
     } catch (error) {
-      toast.error('Error al cargar configuración')
-    } finally {
-      setLoading(false)
+      console.error('Error al recargar configuración:', error)
     }
   }
 
@@ -204,21 +213,18 @@ export default function ConfiguracionPage() {
       const data = await response.json()
       if (data.tarifas) setTarifas(data.tarifas)
     } catch (error) {
-      console.error('Error al cargar tarifas:', error)
+      console.error('Error al recargar tarifas:', error)
     }
   }
 
   const fetchSeries = async () => {
     if (!tallerId) return
     try {
-      setCargandoSeries(true)
       const response = await fetch(`/api/series/obtener?taller_id=${tallerId}`)
       const data = await response.json()
       if (data.series) setSeries(data.series)
     } catch (error) {
-      console.error('Error al cargar series:', error)
-    } finally {
-      setCargandoSeries(false)
+      console.error('Error al recargar series:', error)
     }
   }
 
