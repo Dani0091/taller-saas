@@ -200,7 +200,7 @@ export function OrdenItemsTab({
           </h3>
 
           {/* Tabla unificada */}
-          <div className="border rounded-lg overflow-hidden bg-white">
+          <div className="border rounded-lg overflow-x-auto bg-white">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b">
                 <tr>
@@ -239,7 +239,7 @@ export function OrdenItemsTab({
                       <NumberInput
                         value={linea.cantidad}
                         onChange={(value) => onActualizarLinea(linea.id, 'cantidad', value ?? 0)}
-                        className="w-12 px-1 py-0.5 text-xs border border-gray-300 rounded text-center"
+                        className="w-16 text-xs text-center"
                         min={0.01}
                         step={linea.tipo === 'mano_obra' ? 0.25 : 1}
                       />
@@ -250,7 +250,7 @@ export function OrdenItemsTab({
                         <NumberInput
                           value={linea.precio_unitario}
                           onChange={(value) => onActualizarLinea(linea.id, 'precio_unitario', value ?? 0)}
-                          className="w-16 px-1 py-0.5 text-xs border border-gray-300 rounded text-center"
+                          className="w-20 text-xs text-center"
                           placeholder="0.00"
                           min={0}
                           step={0.01}
@@ -293,11 +293,11 @@ export function OrdenItemsTab({
           {/* Formulario rápido para añadir elementos */}
           <div className="mt-4 p-3 bg-sky-50 rounded-lg border border-sky-200">
             <p className="text-xs font-semibold text-sky-800 mb-2">➕ Añadir elemento rápido</p>
-            <div className="grid grid-cols-12 gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <select
                 value={piezaRapida.tipo || 'pieza'}
                 onChange={(e) => onPiezaRapidaChange({ ...piezaRapida, tipo: e.target.value })}
-                className="col-span-2 text-xs px-2 py-1 border border-gray-300 rounded"
+                className="w-20 text-xs px-2 py-1.5 border border-gray-300 rounded"
               >
                 <option value="pieza">📦 Pieza</option>
                 <option value="mano_obra">⏱️ M.O.</option>
@@ -308,28 +308,28 @@ export function OrdenItemsTab({
                 placeholder="Descripción..."
                 value={piezaRapida.descripcion}
                 onChange={(e) => onPiezaRapidaChange({ ...piezaRapida, descripcion: e.target.value })}
-                className="col-span-5 text-xs px-2 py-1 border border-gray-300 rounded"
+                className="flex-1 min-w-[120px] text-xs px-2 py-1.5 border border-gray-300 rounded"
               />
               <NumberInput
                 value={piezaRapida.cantidad}
                 onChange={(value) => onPiezaRapidaChange({ ...piezaRapida, cantidad: value ?? 1 })}
                 placeholder="Cant"
-                className="col-span-1 text-xs"
+                className="w-16 text-xs"
                 min={1}
                 step={piezaRapida.tipo === 'mano_obra' ? 0.25 : 1}
               />
               <NumberInput
                 value={piezaRapida.precio || 0}
                 onChange={(value) => onPiezaRapidaChange({ ...piezaRapida, precio: value ?? 0 })}
-                placeholder="Precio"
-                className="col-span-2 text-xs"
+                placeholder="€"
+                className="w-20 text-xs"
                 min={0}
                 step={0.01}
               />
               <Button
                 size="sm"
                 onClick={onAgregarPiezaRapida}
-                className="col-span-2 h-7 text-xs"
+                className="h-7 px-3 text-xs"
               >
                 <Plus className="w-3 h-3" />
               </Button>

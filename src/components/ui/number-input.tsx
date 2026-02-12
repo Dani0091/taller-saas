@@ -130,13 +130,13 @@ export function NumberInput({
   }
 
   return (
-    <div className="relative">
+    <div className={cn("relative", className)}>
       {prefix && (
-        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm pointer-events-none">
           {prefix}
         </span>
       )}
-      
+
       <Input
         ref={inputRef}
         type="text"
@@ -157,23 +157,24 @@ export function NumberInput({
         placeholder={placeholder}
         className={cn(
           'w-full',
+          prefix && 'pl-8',
+          (suffix || (allowEmpty && !suffix)) && 'pr-8',
           isFocused && 'ring-2 ring-blue-500',
-          className
         )}
         disabled={disabled}
         id={id}
         name={name}
         required={required}
       />
-      
+
       {suffix && (
-        <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+        <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm pointer-events-none">
           {suffix}
         </span>
       )}
-      
-      {(allowEmpty && !value && !isFocused) && (
-        <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs">
+
+      {(!suffix && allowEmpty && !value && !isFocused) && (
+        <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs pointer-events-none">
           Opcional
         </span>
       )}
