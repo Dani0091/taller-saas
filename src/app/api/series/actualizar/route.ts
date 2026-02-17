@@ -60,8 +60,8 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // Actualizar la serie
-        const updateData: any = { nombre, prefijo }
+        // Actualizar la serie (mantener serie sincronizado con prefijo)
+        const updateData: any = { nombre, prefijo, serie: prefijo }
         if (ultimo_numero !== undefined && ultimo_numero !== null) {
             updateData.ultimo_numero = ultimo_numero
         }
