@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
 
     // Obtener configuración del taller
     const { data: tallerConfig } = await supabase
-      .from('configuracion_taller')
+      .from('taller_config')
       .select('*')
       .eq('taller_id', orden.taller_id)
       .single()

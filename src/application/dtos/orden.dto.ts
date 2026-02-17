@@ -188,7 +188,7 @@ export interface TotalesOrdenDTO {
   servicios: number
   /** Subtotal general antes de IVA (pre-calculado en backend) */
   subtotal: number
-  /** IVA aplicado (pre-calculado en backend con porcentaje de configuracion_taller) */
+  /** IVA aplicado (pre-calculado en backend con porcentaje de taller_config) */
   iva: number
   /** Total final con IVA (pre-calculado en backend) */
   total: number
