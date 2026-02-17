@@ -865,7 +865,7 @@ export default function NuevaFacturaPage() {
                 <div>
                   <Label className="text-sm font-semibold">C.P.</Label>
                   <Input
-                    placeholder="28001"
+                    placeholder="46001"
                     value={nuevoCliente.codigo_postal}
                     onChange={(e) => setNuevoCliente({ ...nuevoCliente, codigo_postal: e.target.value })}
                     maxLength={10}
@@ -874,7 +874,7 @@ export default function NuevaFacturaPage() {
                 <div>
                   <Label className="text-sm font-semibold">Ciudad</Label>
                   <Input
-                    placeholder="Madrid"
+                    placeholder="Valencia"
                     value={nuevoCliente.ciudad}
                     onChange={(e) => setNuevoCliente({ ...nuevoCliente, ciudad: e.target.value })}
                   />
