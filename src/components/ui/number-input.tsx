@@ -41,7 +41,7 @@ export function NumberInput({
   min,
   max,
   step = 1,
-  placeholder = '0',
+  placeholder = '0.00',
   className,
   disabled = false,
   allowEmpty = true,
@@ -169,12 +169,6 @@ export function NumberInput({
       {suffix && (
         <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
           {suffix}
-        </span>
-      )}
-      
-      {(allowEmpty && !value && !isFocused) && (
-        <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-xs">
-          Opcional
         </span>
       )}
     </div>
