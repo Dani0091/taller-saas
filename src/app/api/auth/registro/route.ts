@@ -191,7 +191,7 @@ export async function POST(request: Request) {
     // 5. Crear configuración por defecto del taller
     console.log('📝 Creando configuración...')
     const { error: configError } = await supabaseAdmin
-      .from('configuracion_taller')
+      .from('taller_config')
       .insert({
         taller_id: taller.id,
         nombre_empresa: nombre_taller,

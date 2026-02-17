@@ -35,8 +35,8 @@ export async function POST(request: NextRequest) {
     // ==================== OBTENER CONFIGURACIÓN ====================
     console.log(`📋 Obteniendo configuración del taller...`)
     const { data: config, error: configError } = await supabase
-      .from('configuracion_taller')
-      .select('serie_factura_default, numero_factura_inicial, iban, condiciones_pago, notas_factura, porcentaje_iva, tarifa_hora')
+      .from('taller_config')
+      .select('serie_factura, porcentaje_iva, tarifa_hora, condiciones_pago')
       .eq('taller_id', taller_id)
       .single()
 
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const serieFactura = config?.serie_factura_default || 'FA'
+    const serieFactura = config?.serie_factura || 'FA'
     const ivaPorcentaje = config?.porcentaje_iva || 21
     const precioHoraTrabajo = config?.tarifa_hora || 0
 

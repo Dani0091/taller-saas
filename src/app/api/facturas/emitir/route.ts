@@ -85,12 +85,14 @@ export async function POST(request: NextRequest) {
     // OPERACIÓN ATÓMICA: Obtener siguiente número de la serie
     // 1. Buscar la serie
     let serieData = null
+    // Buscar por prefijo (campo legacy) O por serie (campo actual)
     const { data: serieExistente, error: serieError } = await supabase
       .from('series_facturacion')
-      .select('id, ultimo_numero, prefijo')
+      .select('id, ultimo_numero, prefijo, serie')
       .eq('taller_id', auth.tallerId)
-      .eq('prefijo', serieToUse)
-      .single()
+      .or(`prefijo.eq.${serieToUse},serie.eq.${serieToUse}`)
+      .limit(1)
+      .maybeSingle()
 
     if (serieError || !serieExistente) {
       // Serie no existe - crearla
@@ -121,6 +123,8 @@ export async function POST(request: NextRequest) {
           taller_id: auth.tallerId,
           nombre: `Serie ${serieToUse}`,
           prefijo: serieToUse,
+          serie: serieToUse,
+          año: new Date().getFullYear(),
           ultimo_numero: maxNumero
         }])
         .select()
@@ -162,9 +166,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // 4. Generar número de factura en formato [prefijo]-[numero] (ej: RS-1, FA-123)
-    // Sin ceros extras, según lo especificado
-    const numeroFactura = `${serieToUse}-${siguienteNumero}`
+    // 4. Generar número de factura en formato [prefijo]-[numero] (ej: RS-002, FA-123)
+    const numeroFactura = `${serieToUse}-${siguienteNumero.toString().padStart(3, '0')}`
 
     // 5. Actualizar factura con número y nuevo estado
     const { data: facturaEmitida, error: emitirError } = await supabase

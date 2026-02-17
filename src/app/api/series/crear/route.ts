@@ -46,13 +46,15 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // Crear la serie
+        // Crear la serie (con serie y año para compatibilidad con RPC)
         const { data: serie, error } = await supabase
             .from('series_facturacion')
             .insert([{
                 taller_id,
                 nombre,
                 prefijo,
+                serie: prefijo,
+                año: new Date().getFullYear(),
                 ultimo_numero: ultimo_numero || 0
             }])
             .select()
