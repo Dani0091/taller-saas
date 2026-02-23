@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
         // Obtener la serie actual para verificar el taller_id
         const { data: serieActual, error: errorActual } = await supabase
-            .from('series_facturacion')
+            .from('series_factura')
             .select('taller_id, prefijo')
             .eq('id', id)
             .single()
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
         // Si se cambió el prefijo, verificar que no exista otro con ese prefijo
         if (prefijo !== serieActual.prefijo) {
             const { data: existente } = await supabase
-                .from('series_facturacion')
+                .from('series_factura')
                 .select('id')
                 .eq('taller_id', serieActual.taller_id)
                 .eq('prefijo', prefijo)
@@ -60,14 +60,14 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // Actualizar la serie (mantener serie sincronizado con prefijo)
-        const updateData: any = { nombre, prefijo, serie: prefijo }
+        // Actualizar la serie
+        const updateData: any = { nombre, prefijo }
         if (ultimo_numero !== undefined && ultimo_numero !== null) {
             updateData.ultimo_numero = ultimo_numero
         }
 
         const { data: serie, error } = await supabase
-            .from('series_facturacion')
+            .from('series_factura')
             .update(updateData)
             .eq('id', id)
             .select()

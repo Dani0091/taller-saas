@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     // Obtener series del taller
     const { data: series, error } = await supabase
-      .from('series_facturacion')
+      .from('series_factura')
       .select('*')
       .eq('taller_id', taller_id)
       .order('nombre', { ascending: true })

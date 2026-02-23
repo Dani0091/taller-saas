@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
 
         // Verificar que la serie existe
         const { data: serie, error: errorSerie } = await supabase
-            .from('series_facturacion')
+            .from('series_factura')
             .select('prefijo')
             .eq('id', id)
             .single()
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
 
         // Eliminar la serie
         const { error } = await supabase
-            .from('series_facturacion')
+            .from('series_factura')
             .delete()
             .eq('id', id)
 

@@ -133,10 +133,6 @@ export default function NuevaFacturaPage() {
         if (configData) {
           setIvaPorDefecto(configData.porcentaje_iva || 21)
           setNuevaLinea(prev => ({ ...prev, ivaPorcentaje: String(configData.porcentaje_iva || 21) }))
-          setFormData(prev => ({
-            ...prev,
-            serie: configData.serie_factura || 'FA'
-          }))
         }
 
         if (seriesData.series && seriesData.series.length > 0) {
@@ -146,6 +142,16 @@ export default function NuevaFacturaPage() {
             nombre: s.nombre
           }))
           setSeriesDisponibles(seriesFormateadas)
+
+          // Prioridad: 1) es_predeterminada=true, 2) serie de config, 3) primera serie
+          const seriePredeterminada = seriesData.series.find((s: any) => s.es_predeterminada === true)
+          if (seriePredeterminada) {
+            setFormData(prev => ({ ...prev, serie: seriePredeterminada.prefijo }))
+          } else if (configData?.serie_factura) {
+            setFormData(prev => ({ ...prev, serie: configData.serie_factura }))
+          } else {
+            setFormData(prev => ({ ...prev, serie: seriesFormateadas[0].codigo }))
+          }
         }
 
       } catch (error) {
@@ -316,7 +322,6 @@ export default function NuevaFacturaPage() {
           persona_contacto: formData.persona_contacto,
           telefono_contacto: formData.telefono_contacto,
           numero_autorizacion: formData.numero_autorizacion || null,
-          referencia_externa: formData.referencia_externa || null,
           lineas: lineas.map(l => ({
             descripcion: l.descripcion,
             cantidad: l.cantidad,

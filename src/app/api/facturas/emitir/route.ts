@@ -83,22 +83,21 @@ export async function POST(request: NextRequest) {
     const serieToUse = factura.numero_serie || 'FA'
 
     // OPERACIÓN ATÓMICA: Obtener siguiente número de la serie
-    // 1. Buscar la serie
+    // 1. Buscar la serie en la tabla series_factura (tabla real)
     let serieData = null
-    // Buscar por prefijo (campo legacy) O por serie (campo actual)
     const { data: serieExistente, error: serieError } = await supabase
-      .from('series_facturacion')
-      .select('id, ultimo_numero, prefijo, serie')
+      .from('series_factura')
+      .select('id, ultimo_numero, prefijo')
       .eq('taller_id', auth.tallerId)
-      .or(`prefijo.eq.${serieToUse},serie.eq.${serieToUse}`)
+      .eq('prefijo', serieToUse)
       .limit(1)
       .maybeSingle()
 
     if (serieError || !serieExistente) {
-      // Serie no existe - crearla
+      // Serie no existe - crearla automáticamente
       console.log(`Serie "${serieToUse}" no existe, creándola...`)
 
-      // Buscar máximo número de facturas existentes
+      // Buscar máximo número de facturas existentes con esta serie
       let maxNumero = 0
       const { data: facturasExistentes } = await supabase
         .from('facturas')
@@ -118,12 +117,11 @@ export async function POST(request: NextRequest) {
       }
 
       const { data: nuevaSerie, error: crearSerieError } = await supabase
-        .from('series_facturacion')
+        .from('series_factura')
         .insert([{
           taller_id: auth.tallerId,
           nombre: `Serie ${serieToUse}`,
           prefijo: serieToUse,
-          serie: serieToUse,
           año: new Date().getFullYear(),
           ultimo_numero: maxNumero
         }])
@@ -152,7 +150,7 @@ export async function POST(request: NextRequest) {
     // 3. Actualizar la serie (ATÓMICO - reserva el número)
     console.log(`Actualizando serie ${serieToUse} a último_numero: ${siguienteNumero}`)
     const { error: updateError } = await supabase
-      .from('series_facturacion')
+      .from('series_factura')
       .update({ ultimo_numero: siguienteNumero })
       .eq('id', serieData.id)
 
@@ -184,7 +182,7 @@ export async function POST(request: NextRequest) {
     if (emitirError || !facturaEmitida) {
       // Revertir el número de serie si falla
       await supabase
-        .from('series_facturacion')
+        .from('series_factura')
         .update({ ultimo_numero: serieData.ultimo_numero })
         .eq('id', serieData.id)
 

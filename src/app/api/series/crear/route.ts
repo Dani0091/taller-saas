@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
         // Verificar que no exista ya una serie con ese prefijo para este taller
         const { data: existente } = await supabase
-            .from('series_facturacion')
+            .from('series_factura')
             .select('id')
             .eq('taller_id', taller_id)
             .eq('prefijo', prefijo)
@@ -46,14 +46,13 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // Crear la serie (con serie y año para compatibilidad con RPC)
+        // Crear la serie
         const { data: serie, error } = await supabase
-            .from('series_facturacion')
+            .from('series_factura')
             .insert([{
                 taller_id,
                 nombre,
                 prefijo,
-                serie: prefijo,
                 año: new Date().getFullYear(),
                 ultimo_numero: ultimo_numero || 0
             }])

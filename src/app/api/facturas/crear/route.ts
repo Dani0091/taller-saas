@@ -37,7 +37,6 @@ export async function POST(request: NextRequest) {
       notas_internas,
       // Campos adicionales para renting/flotas
       numero_autorizacion,
-      referencia_externa,
     } = body
 
     // Validaciones
@@ -69,17 +68,17 @@ export async function POST(request: NextRequest) {
     // Determinar serie a usar (del body o de la configuración del taller)
     let serieToUse = serie || 'FA'
 
-    // ✅ Obtener configuración del taller desde taller_config (IVA, serie, etc.)
+    // ✅ Obtener configuración del taller desde configuracion_taller (IVA, serie, etc.)
     const { data: tallerConfig } = await supabase
-      .from('taller_config')
-      .select('serie_factura, porcentaje_iva')
+      .from('configuracion_taller')
+      .select('serie_factura_default, porcentaje_iva')
       .eq('taller_id', taller_id)
       .single()
 
     const ivaPorcentajeConfig = tallerConfig?.porcentaje_iva || 21
 
-    if (!serie && tallerConfig?.serie_factura) {
-      serieToUse = tallerConfig.serie_factura
+    if (!serie && tallerConfig?.serie_factura_default) {
+      serieToUse = tallerConfig.serie_factura_default
     }
 
     // NUEVO FLUJO: Las facturas se crean siempre como BORRADOR sin número
@@ -118,9 +117,6 @@ export async function POST(request: NextRequest) {
     // Campos para renting/flotas
     if (numero_autorizacion) {
       facturaData.numero_autorizacion = numero_autorizacion
-    }
-    if (referencia_externa) {
-      facturaData.referencia_externa = referencia_externa
     }
 
     const { data: factura, error: facturaError } = await supabase
