@@ -108,7 +108,7 @@ export function useOrdenData(ordenId?: string | null): OrdenDataHookReturn {
 
       // Cargar configuración del taller
       const { data: config, error: configError } = await supabase
-        .from('taller_config')
+        .from('configuracion_taller')
         .select('tarifa_hora')
         .eq('taller_id', usuario.taller_id)
         .single()

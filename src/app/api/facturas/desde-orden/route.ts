@@ -34,25 +34,13 @@ export async function POST(request: NextRequest) {
 
     // ==================== OBTENER CONFIGURACIÓN ====================
     console.log(`📋 Obteniendo configuración del taller...`)
-    const { data: config, error: configError } = await supabase
-      .from('taller_config')
-      .select('serie_factura, porcentaje_iva, tarifa_hora, condiciones_pago')
+    const { data: config } = await supabase
+      .from('configuracion_taller')
+      .select('serie_factura_default, porcentaje_iva, tarifa_hora, condiciones_pago')
       .eq('taller_id', taller_id)
-      .single()
+      .maybeSingle()
 
-    if (configError) {
-      console.error('❌ Error obteniendo configuración:', configError)
-      return NextResponse.json(
-        {
-          error: 'No se pudo obtener la configuración del taller',
-          details: configError.message,
-          sugerencia: 'Verifica que el taller esté configurado correctamente en Configuración'
-        },
-        { status: 500 }
-      )
-    }
-
-    const serieFactura = config?.serie_factura || 'FA'
+    const serieFactura = config?.serie_factura_default || 'FA'
     const ivaPorcentaje = config?.porcentaje_iva || 21
     const precioHoraTrabajo = config?.tarifa_hora || 0
 
