@@ -6,9 +6,8 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Download, Printer, Loader2, CheckCircle, Zap } from 'lucide-react'
+import { ArrowLeft, Download, Printer, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { QRVerifactu } from '@/components/facturas/qr-verifactu'
 import { InformacionLegal } from '@/components/facturas/informacion-legal'
 import { CambiarEstado } from '@/components/facturas/cambiar-estado'
 import { useDescargarPDF } from '@/hooks/useDescargarPDF'
@@ -75,7 +74,6 @@ export default function VerFacturaPage() {
   const [factura, setFactura] = useState<Factura | null>(null)
   const [loading, setLoading] = useState(true)
   const [datosEmpresa, setDatosEmpresa] = useState<DatosEmpresa | null>(null)
-  const [generandoVerifactu, setGenerandoVerifactu] = useState(false)
   const [tallerId, setTallerId] = useState<string | null>(null)
 
   // Obtener taller_id del usuario autenticado
@@ -164,48 +162,6 @@ export default function VerFacturaPage() {
     }
   }
 
-  const handleGenerarVerifactu = async () => {
-    if (!factura || !tallerId) return
-
-    setGenerandoVerifactu(true)
-    try {
-      const response = await fetch('/api/facturas/generar-verifactu', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          facturaId: factura.id,
-          tallerId: tallerId,
-          numeroFactura: factura.numero_factura,
-          serieFactura: 'FA',
-          fechaEmision: factura.fecha_emision,
-          nifEmisor: datosEmpresa?.nif || '',
-          nombreEmisor: datosEmpresa?.nombre || '',
-          nifReceptor: factura.cliente?.nif || '',
-          nombreReceptor: factura.cliente?.nombre || '',
-          baseImponible: factura.base_imponible,
-          cuotaRepercutida: factura.iva,
-          descripcion: factura.lineas?.map(l => l.descripcion).join(', ') || 'Servicios',
-          formaPago: factura.metodo_pago || 'T',
-        }),
-      })
-
-      const data = await response.json()
-
-      if (data.error) {
-        toast.error(data.error)
-      } else {
-        toast.success('Verifactu generado correctamente')
-        const id = searchParams.get('id')
-        if (id) fetchFactura(id)
-      }
-    } catch (error) {
-      console.error(error)
-      toast.error('Error al generar Verifactu')
-    } finally {
-      setGenerandoVerifactu(false)
-    }
-  }
-
   const handleDescargarPDF = async () => {
     if (!factura) return
     await descargarFactura(factura.id, factura.numero_factura)
@@ -289,46 +245,7 @@ export default function VerFacturaPage() {
             )}
           </Button>
 
-          {/* VERIFACTU - Pendiente de activar
-          {!factura.numero_verifactu && (
-            <Button
-              onClick={handleGenerarVerifactu}
-              disabled={generandoVerifactu}
-              className="gap-2 bg-yellow-600 hover:bg-yellow-700"
-            >
-              {generandoVerifactu ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Generando...
-                </>
-              ) : (
-                <>
-                  <Zap className="w-4 h-4" />
-                  Generar Verifactu
-                </>
-              )}
-            </Button>
-          )}
-          {factura.numero_verifactu && (
-            <Button disabled className="gap-2 bg-green-600">
-              <CheckCircle className="w-4 h-4" />
-              Verifactu Listo
-            </Button>
-          )}
-          */}
         </div>
-
-        {/* VERIFACTU QR - Pendiente de activar
-        {factura.numero_verifactu && factura.verifactu_qr && (
-          <QRVerifactu
-            nifEmisor={datosEmpresa?.nif || ''}
-            numeroFactura={factura.numero_factura}
-            numeroVerificacion={factura.numero_verifactu}
-            urlVerificacion={factura.verifactu_qr_url || ''}
-            qrData={factura.verifactu_qr}
-          />
-        )}
-        */}
 
         {/* CAMBIAR ESTADO */}
         {factura.estado !== 'anulada' && (

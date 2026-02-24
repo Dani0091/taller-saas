@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
           taller_id: auth.tallerId,
           nombre: `Serie ${serieToUse}`,
           prefijo: serieToUse,
-          año: new Date().getFullYear(),
+          año: new Date(factura.fecha_emision).getFullYear(),
           ultimo_numero: maxNumero
         }])
         .select()
