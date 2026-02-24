@@ -82,92 +82,30 @@ export async function POST(request: NextRequest) {
 
     const serieToUse = factura.numero_serie || 'FA'
 
-    // OPERACIÓN ATÓMICA: Obtener siguiente número de la serie
-    // 1. Buscar la serie en la tabla series_factura (tabla real)
-    let serieData = null
-    const { data: serieExistente, error: serieError } = await supabase
-      .from('series_factura')
-      .select('id, ultimo_numero, prefijo')
-      .eq('taller_id', auth.tallerId)
-      .eq('prefijo', serieToUse)
-      .limit(1)
-      .maybeSingle()
+    // ── OPERACIÓN ATÓMICA via RPC ────────────────────────────────────────────
+    // asignar_numero_factura_v2 usa FOR UPDATE para bloquear la fila de la serie
+    // y garantizar numeración sin duplicados incluso con emisiones simultáneas.
+    // Formato devuelto: RS-007 (LPAD 3 dígitos, crece naturalmente a RS-1000).
+    const { data: rpcResult, error: rpcError } = await supabase
+      .rpc('asignar_numero_factura_v2', {
+        p_taller_id: auth.tallerId,
+        p_prefijo: serieToUse,
+      })
 
-    if (serieError || !serieExistente) {
-      // Serie no existe - crearla automáticamente
-      console.log(`Serie "${serieToUse}" no existe, creándola...`)
-
-      // Buscar máximo número de facturas existentes con esta serie
-      let maxNumero = 0
-      const { data: facturasExistentes } = await supabase
-        .from('facturas')
-        .select('numero_factura')
-        .eq('taller_id', auth.tallerId)
-        .eq('numero_serie', serieToUse)
-        .not('numero_factura', 'is', null)
-
-      if (facturasExistentes && facturasExistentes.length > 0) {
-        facturasExistentes.forEach((f: { numero_factura: string }) => {
-          const match = f.numero_factura.match(/(\d+)$/)
-          if (match) {
-            const num = parseInt(match[1], 10)
-            if (num > maxNumero) maxNumero = num
-          }
-        })
-      }
-
-      const { data: nuevaSerie, error: crearSerieError } = await supabase
-        .from('series_factura')
-        .insert([{
-          taller_id: auth.tallerId,
-          nombre: `Serie ${serieToUse}`,
-          prefijo: serieToUse,
-          año: new Date(factura.fecha_emision).getFullYear(),
-          ultimo_numero: maxNumero
-        }])
-        .select()
-        .single()
-
-      if (crearSerieError || !nuevaSerie) {
-        return NextResponse.json(
-          {
-            error: `No se pudo crear la serie "${serieToUse}"`,
-            details: crearSerieError?.message || 'Error desconocido',
-          },
-          { status: 500 }
-        )
-      }
-
-      serieData = nuevaSerie
-      console.log(`Serie "${serieToUse}" creada con ID: ${nuevaSerie.id}`)
-    } else {
-      serieData = serieExistente
-    }
-
-    // 2. Calcular siguiente número
-    const siguienteNumero = serieData.ultimo_numero + 1
-
-    // 3. Actualizar la serie (ATÓMICO - reserva el número)
-    console.log(`Actualizando serie ${serieToUse} a último_numero: ${siguienteNumero}`)
-    const { error: updateError } = await supabase
-      .from('series_factura')
-      .update({ ultimo_numero: siguienteNumero })
-      .eq('id', serieData.id)
-
-    if (updateError) {
+    if (rpcError || !rpcResult) {
       return NextResponse.json(
         {
-          error: 'Error al actualizar numeración de serie',
-          details: updateError.message
+          error: `Error al asignar número de la serie "${serieToUse}"`,
+          details: rpcError?.message ?? 'El RPC no devolvió resultado',
+          sugerencia: 'Verifica que la migración 20260224_rpc_numero_atomico_v2.sql se ejecutó en Supabase',
         },
         { status: 500 }
       )
     }
 
-    // 4. Generar número de factura en formato [prefijo]-[numero] (ej: RS-002, FA-123)
-    const numeroFactura = `${serieToUse}-${siguienteNumero.toString().padStart(3, '0')}`
+    const numeroFactura: string = rpcResult.numero_completo
 
-    // 5. Actualizar factura con número y nuevo estado
+    // Actualizar factura con número y nuevo estado
     const { data: facturaEmitida, error: emitirError } = await supabase
       .from('facturas')
       .update({
@@ -180,15 +118,15 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (emitirError || !facturaEmitida) {
-      // Revertir el número de serie si falla
-      await supabase
-        .from('series_factura')
-        .update({ ultimo_numero: serieData.ultimo_numero })
-        .eq('id', serieData.id)
+      // El número ya fue reservado por el RPC (committed). Si el UPDATE de
+      // facturas falla, el número queda asignado pero sin factura — registrar
+      // para auditoría manual. No intentamos revertir (generaría race condition).
+      console.error(`❌ Número ${numeroFactura} reservado pero UPDATE de factura falló:`, emitirError?.message)
 
       return NextResponse.json(
         {
-          error: 'Error al emitir factura',
+          error: 'Error al emitir factura tras asignar número',
+          numero_reservado: numeroFactura,
           details: emitirError?.message
         },
         { status: 500 }

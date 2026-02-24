@@ -291,15 +291,15 @@ export default function NuevaFacturaPage() {
 
     setLoading(true)
     try {
-      const baseImponible = lineas.reduce(
-        (sum, l) => sum + l.cantidad * l.precioUnitario,
-        0
-      )
-      const iva = lineas.reduce(
-        (sum, l) => sum + (l.cantidad * l.precioUnitario * l.ivaPorcentaje / 100),
-        0
-      )
-      const total = baseImponible + iva
+      // Redondeo a 2dp por componente antes de sumar para evitar inconsistencias
+      // de punto flotante al almacenar en columnas NUMERIC de Supabase.
+      const baseImponible = Math.round(
+        lineas.reduce((sum, l) => sum + l.cantidad * l.precioUnitario, 0) * 100
+      ) / 100
+      const iva = Math.round(
+        lineas.reduce((sum, l) => sum + (l.cantidad * l.precioUnitario * l.ivaPorcentaje / 100), 0) * 100
+      ) / 100
+      const total = Math.round((baseImponible + iva) * 100) / 100
 
       // PASO 1: Crear borrador (sin número)
       toast.loading('Creando borrador de factura...')
@@ -315,11 +315,13 @@ export default function NuevaFacturaPage() {
           base_imponible: baseImponible,
           iva,
           total,
-          metodo_pago: formData.metodo_pago,
-          notas_internas: formData.notas,
-          condiciones_pago: formData.condiciones_pago,
-          persona_contacto: formData.persona_contacto,
-          telefono_contacto: formData.telefono_contacto,
+          metodo_pago: formData.metodo_pago || null,
+          // Campos opcionales: enviar null explícito si están vacíos para evitar
+          // que strings "" lleguen a columnas TEXT nullable de Supabase.
+          notas_internas:      formData.notas               || null,
+          condiciones_pago:    formData.condiciones_pago    || null,
+          persona_contacto:    formData.persona_contacto    || null,
+          telefono_contacto:   formData.telefono_contacto   || null,
           numero_autorizacion: formData.numero_autorizacion || null,
           lineas: lineas.map(l => ({
             descripcion: l.descripcion,
