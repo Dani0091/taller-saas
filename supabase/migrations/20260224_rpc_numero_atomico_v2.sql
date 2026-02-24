@@ -109,5 +109,15 @@ ON CONFLICT (key) DO UPDATE
   WHERE app_config.value IS DISTINCT FROM '1.1.0';
 
 -- ============================================
+-- PERMISOS DE EJECUCIÓN (CRÍTICO PARA PRODUCCIÓN)
+-- ============================================
+-- El cliente Supabase en modo auth usa el rol 'authenticated'.
+-- Sin este GRANT el RPC devuelve permission denied y no se emite ninguna factura.
+-- 'anon' NO recibe permiso: emitir facturas requiere sesión autenticada.
+
+GRANT EXECUTE ON FUNCTION asignar_numero_factura_v2(UUID, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION asignar_numero_factura_v2(UUID, TEXT) TO service_role;
+
+-- ============================================
 -- FIN DE MIGRACIÓN
 -- ============================================
