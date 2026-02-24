@@ -479,10 +479,10 @@ export class SupabaseFacturaRepository implements IFacturaRepository {
       const supabase = await createClient()
 
       const { data, error } = await supabase
-        .from('series_facturacion')
-        .select('ultimo_numero, serie')
+        .from('series_factura')
+        .select('ultimo_numero, prefijo')
         .eq('taller_id', tallerId)
-        .eq('serie', serie)
+        .eq('prefijo', serie)
         .eq('año', año)
         .single()
 

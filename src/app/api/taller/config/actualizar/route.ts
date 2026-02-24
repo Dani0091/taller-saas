@@ -35,9 +35,9 @@ export async function POST(request: Request) {
 
     const supabase = await createClient()
 
-    // ✅ Verificar si existe configuración en configuracion_taller
+    // ✅ Verificar si existe configuración en taller_config
     const { data: existing, error: checkError } = await supabase
-      .from('configuracion_taller')
+      .from('taller_config')
       .select('id')
       .eq('taller_id', taller_id)
       .single()
@@ -56,8 +56,8 @@ export async function POST(request: Request) {
     if (telefono !== undefined) configData.telefono = telefono
     if (email !== undefined) configData.email = email
     if (logo_url !== undefined) configData.logo_url = logo_url
-    // serie_factura en el frontend corresponde a serie_factura_default en la BD
-    if (serie_factura !== undefined) configData.serie_factura_default = serie_factura
+    // serie_factura: nombre real de la columna en taller_config
+    if (serie_factura !== undefined) configData.serie_factura = serie_factura
     if (iban !== undefined) configData.iban = iban
     if (condiciones_pago !== undefined) configData.condiciones_pago = condiciones_pago
     if (notas_factura !== undefined) configData.notas_factura = notas_factura
@@ -66,9 +66,9 @@ export async function POST(request: Request) {
 
     let response
     if (existing && !checkError) {
-      // ✅ Actualizar existente en configuracion_taller
+      // ✅ Actualizar existente en taller_config
       response = await supabase
-        .from('configuracion_taller')
+        .from('taller_config')
         .update({
           ...configData,
           updated_at: new Date().toISOString(),
@@ -77,9 +77,9 @@ export async function POST(request: Request) {
         .select()
         .single()
     } else {
-      // ✅ Crear nuevo en configuracion_taller
+      // ✅ Crear nuevo en taller_config
       response = await supabase
-        .from('configuracion_taller')
+        .from('taller_config')
         .insert([{
           taller_id,
           ...configData,
