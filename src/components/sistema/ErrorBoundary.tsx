@@ -78,7 +78,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
       caches.keys().then(names => {
         names.forEach(name => caches.delete(name))
       }).catch(() => {}).finally(() => window.location.reload())
-    } else {
+    } else if (typeof window !== 'undefined') {
       window.location.reload()
     }
   }
