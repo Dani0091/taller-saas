@@ -278,7 +278,7 @@ export function DetalleOrdenSheet({
 
       // Cargar configuración del taller (para tarifa hora e IVA)
       const { data: tallerConfig } = await supabase
-        .from('taller_config')
+        .from('configuracion_taller')
         .select('tarifa_hora, porcentaje_iva')
         .eq('taller_id', usuario.taller_id)
         .single()

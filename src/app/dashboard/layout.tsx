@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 import { Sidebar } from '@/components/dashboard/sidebar'
 import { Header } from '@/components/dashboard/header'
 import { TallerProvider } from '@/contexts/TallerContext'
+import { SystemStatusWrapper } from '@/components/sistema/SystemStatusWrapper'
+import { ErrorBoundary } from '@/components/sistema/ErrorBoundary'
 import { Loader2 } from 'lucide-react'
 
 export default function DashboardLayout({
@@ -65,33 +67,37 @@ export default function DashboardLayout({
   }
 
   return (
-    <TallerProvider>
-      <div className="flex h-screen bg-gray-50">
-        {/* Overlay para cerrar sidebar en móvil */}
-        {sidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
+    <SystemStatusWrapper>
+      <ErrorBoundary usuarioId={user?.id}>
+        <TallerProvider>
+          <div className="flex h-screen bg-gray-50">
+            {/* Overlay para cerrar sidebar en móvil */}
+            {sidebarOpen && (
+              <div
+                className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
+                onClick={() => setSidebarOpen(false)}
+              />
+            )}
 
-        {/* Sidebar */}
-        <Sidebar
-          user={user}
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-        />
+            {/* Sidebar */}
+            <Sidebar
+              user={user}
+              isOpen={sidebarOpen}
+              onClose={() => setSidebarOpen(false)}
+            />
 
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header
-            user={user}
-            onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-          />
-          <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
-            {children}
-          </main>
-        </div>
-      </div>
-    </TallerProvider>
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <Header
+                user={user}
+                onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+              />
+              <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
+                {children}
+              </main>
+            </div>
+          </div>
+        </TallerProvider>
+      </ErrorBoundary>
+    </SystemStatusWrapper>
   )
 }

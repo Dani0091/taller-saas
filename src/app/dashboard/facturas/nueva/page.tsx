@@ -74,7 +74,6 @@ export default function NuevaFacturaPage() {
     telefono_contacto: '',
     // Campos para renting/flotas
     numero_autorizacion: '',
-    referencia_externa: '',
   })
 
   // Nueva línea
@@ -133,10 +132,6 @@ export default function NuevaFacturaPage() {
         if (configData) {
           setIvaPorDefecto(configData.porcentaje_iva || 21)
           setNuevaLinea(prev => ({ ...prev, ivaPorcentaje: String(configData.porcentaje_iva || 21) }))
-          setFormData(prev => ({
-            ...prev,
-            serie: configData.serie_factura || 'FA'
-          }))
         }
 
         if (seriesData.series && seriesData.series.length > 0) {
@@ -146,6 +141,16 @@ export default function NuevaFacturaPage() {
             nombre: s.nombre
           }))
           setSeriesDisponibles(seriesFormateadas)
+
+          // Prioridad: 1) es_predeterminada=true, 2) serie de config, 3) primera serie
+          const seriePredeterminada = seriesData.series.find((s: any) => s.es_predeterminada === true)
+          if (seriePredeterminada) {
+            setFormData(prev => ({ ...prev, serie: seriePredeterminada.prefijo }))
+          } else if (configData?.serie_factura) {
+            setFormData(prev => ({ ...prev, serie: configData.serie_factura }))
+          } else {
+            setFormData(prev => ({ ...prev, serie: seriesFormateadas[0].codigo }))
+          }
         }
 
       } catch (error) {
@@ -286,15 +291,15 @@ export default function NuevaFacturaPage() {
 
     setLoading(true)
     try {
-      const baseImponible = lineas.reduce(
-        (sum, l) => sum + l.cantidad * l.precioUnitario,
-        0
-      )
-      const iva = lineas.reduce(
-        (sum, l) => sum + (l.cantidad * l.precioUnitario * l.ivaPorcentaje / 100),
-        0
-      )
-      const total = baseImponible + iva
+      // Redondeo a 2dp por componente antes de sumar para evitar inconsistencias
+      // de punto flotante al almacenar en columnas NUMERIC de Supabase.
+      const baseImponible = Math.round(
+        lineas.reduce((sum, l) => sum + l.cantidad * l.precioUnitario, 0) * 100
+      ) / 100
+      const iva = Math.round(
+        lineas.reduce((sum, l) => sum + (l.cantidad * l.precioUnitario * l.ivaPorcentaje / 100), 0) * 100
+      ) / 100
+      const total = Math.round((baseImponible + iva) * 100) / 100
 
       // PASO 1: Crear borrador (sin número)
       toast.loading('Creando borrador de factura...')
@@ -310,13 +315,14 @@ export default function NuevaFacturaPage() {
           base_imponible: baseImponible,
           iva,
           total,
-          metodo_pago: formData.metodo_pago,
-          notas_internas: formData.notas,
-          condiciones_pago: formData.condiciones_pago,
-          persona_contacto: formData.persona_contacto,
-          telefono_contacto: formData.telefono_contacto,
+          metodo_pago: formData.metodo_pago || null,
+          // Campos opcionales: enviar null explícito si están vacíos para evitar
+          // que strings "" lleguen a columnas TEXT nullable de Supabase.
+          notas_internas:      formData.notas               || null,
+          condiciones_pago:    formData.condiciones_pago    || null,
+          persona_contacto:    formData.persona_contacto    || null,
+          telefono_contacto:   formData.telefono_contacto   || null,
           numero_autorizacion: formData.numero_autorizacion || null,
-          referencia_externa: formData.referencia_externa || null,
           lineas: lineas.map(l => ({
             descripcion: l.descripcion,
             cantidad: l.cantidad,
@@ -475,19 +481,6 @@ export default function NuevaFacturaPage() {
                   placeholder="Ej: GT-123456"
                   value={formData.numero_autorizacion}
                   onChange={(e) => setFormData({ ...formData, numero_autorizacion: e.target.value })}
-                />
-              </div>
-
-              {/* Referencia Externa */}
-              <div>
-                <Label className="block text-sm font-semibold mb-2">
-                  Ref. Externa
-                  <span className="text-xs text-gray-400 ml-1">(Opcional)</span>
-                </Label>
-                <Input
-                  placeholder="Referencia del cliente"
-                  value={formData.referencia_externa}
-                  onChange={(e) => setFormData({ ...formData, referencia_externa: e.target.value })}
                 />
               </div>
 

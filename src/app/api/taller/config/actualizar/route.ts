@@ -9,17 +9,12 @@ export async function POST(request: Request) {
       tarifa_hora,
       incluye_iva,
       porcentaje_iva,
-      tarifa_con_iva,
       nombre_empresa,
       cif,
       direccion,
       telefono,
       email,
       logo_url,
-      // Campos de dirección detallada
-      codigo_postal,
-      ciudad,
-      provincia,
       // Campos de facturación
       serie_factura,
       numero_factura_inicial,
@@ -40,32 +35,29 @@ export async function POST(request: Request) {
 
     const supabase = await createClient()
 
-    // ✅ Verificar si existe configuración en taller_config
+    // ✅ Verificar si existe configuración en configuracion_taller
     const { data: existing, error: checkError } = await supabase
-      .from('taller_config')
+      .from('configuracion_taller')
       .select('id')
       .eq('taller_id', taller_id)
       .single()
 
-    // Solo incluir campos que no sean undefined
+    // Solo incluir campos que no sean undefined y existan en la tabla
     const configData: Record<string, any> = {}
     if (tarifa_hora !== undefined) configData.tarifa_hora = Number(tarifa_hora)
     if (incluye_iva !== undefined) configData.incluye_iva = incluye_iva
     if (porcentaje_iva !== undefined) configData.porcentaje_iva = Number(porcentaje_iva)
-    if (tarifa_con_iva !== undefined) configData.tarifa_con_iva = Number(tarifa_con_iva)
     if (numero_factura_inicial !== undefined && numero_factura_inicial !== null) {
       configData.numero_factura_inicial = Number(numero_factura_inicial)
     }
     if (nombre_empresa !== undefined) configData.nombre_empresa = nombre_empresa
     if (cif !== undefined) configData.cif = cif
     if (direccion !== undefined) configData.direccion = direccion
-    if (codigo_postal !== undefined) configData.codigo_postal = codigo_postal
-    if (ciudad !== undefined) configData.ciudad = ciudad
-    if (provincia !== undefined) configData.provincia = provincia
     if (telefono !== undefined) configData.telefono = telefono
     if (email !== undefined) configData.email = email
     if (logo_url !== undefined) configData.logo_url = logo_url
-    if (serie_factura !== undefined) configData.serie_factura = serie_factura
+    // serie_factura en el frontend corresponde a serie_factura_default en la BD
+    if (serie_factura !== undefined) configData.serie_factura_default = serie_factura
     if (iban !== undefined) configData.iban = iban
     if (condiciones_pago !== undefined) configData.condiciones_pago = condiciones_pago
     if (notas_factura !== undefined) configData.notas_factura = notas_factura
@@ -74,9 +66,9 @@ export async function POST(request: Request) {
 
     let response
     if (existing && !checkError) {
-      // ✅ Actualizar existente en taller_config
+      // ✅ Actualizar existente en configuracion_taller
       response = await supabase
-        .from('taller_config')
+        .from('configuracion_taller')
         .update({
           ...configData,
           updated_at: new Date().toISOString(),
@@ -85,9 +77,9 @@ export async function POST(request: Request) {
         .select()
         .single()
     } else {
-      // ✅ Crear nuevo en taller_config
+      // ✅ Crear nuevo en configuracion_taller
       response = await supabase
-        .from('taller_config')
+        .from('configuracion_taller')
         .insert([{
           taller_id,
           ...configData,
@@ -103,14 +95,14 @@ export async function POST(request: Request) {
       )
     }
 
-    // SINCRONIZAR SERIE CON TABLA series_facturacion
+    // SINCRONIZAR SERIE CON TABLA series_factura
     // Si se configura una serie, asegurarse de que exista en la tabla de series
     if (serie_factura) {
       const prefijo = serie_factura.toUpperCase().trim()
 
       // Verificar si ya existe la serie
       const { data: serieExistente } = await supabase
-        .from('series_facturacion')
+        .from('series_factura')
         .select('id, ultimo_numero')
         .eq('taller_id', taller_id)
         .eq('prefijo', prefijo)
@@ -118,14 +110,15 @@ export async function POST(request: Request) {
 
       if (!serieExistente) {
         // Crear la serie si no existe
-        const numeroInicial = (numero_factura_inicial || 1) - 1 // Restamos 1 porque se incrementa al crear factura
+        const numeroInicial = (numero_factura_inicial || 1) - 1
 
         await supabase
-          .from('series_facturacion')
+          .from('series_factura')
           .insert([{
             taller_id,
             nombre: `Serie ${prefijo}`,
             prefijo: prefijo,
+            año: new Date().getFullYear(),
             ultimo_numero: numeroInicial >= 0 ? numeroInicial : 0
           }])
       } else if (numero_factura_inicial !== undefined) {
@@ -133,7 +126,7 @@ export async function POST(request: Request) {
         const nuevoUltimoNumero = (numero_factura_inicial || 1) - 1
         if (nuevoUltimoNumero >= 0) {
           await supabase
-            .from('series_facturacion')
+            .from('series_factura')
             .update({ ultimo_numero: nuevoUltimoNumero })
             .eq('id', serieExistente.id)
         }

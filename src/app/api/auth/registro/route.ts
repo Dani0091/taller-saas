@@ -190,7 +190,32 @@ export async function POST(request: Request) {
 
     // 5. Crear configuración por defecto del taller
     console.log('📝 Creando configuración...')
+
+    // Insertar en configuracion_taller (fuente de verdad para datos fiscales)
     const { error: configError } = await supabaseAdmin
+      .from('configuracion_taller')
+      .insert({
+        taller_id: taller.id,
+        nombre_empresa: nombre_taller,
+        cif: cif,
+        direccion: direccion || null,
+        telefono: telefono || null,
+        email: email_taller || email_usuario,
+        tarifa_hora: 45,
+        porcentaje_iva: 21,
+        incluye_iva: true,
+        serie_factura_default: 'FA',
+        numero_factura_inicial: 1,
+      })
+
+    if (configError) {
+      console.error('⚠️ Error creando configuracion_taller (no crítico):', configError.message)
+    } else {
+      console.log('✅ Configuración creada en configuracion_taller')
+    }
+
+    // Insertar también en taller_config (necesario para Google Calendar y otros campos legacy)
+    const { error: legacyConfigError } = await supabaseAdmin
       .from('taller_config')
       .insert({
         taller_id: taller.id,
@@ -207,10 +232,8 @@ export async function POST(request: Request) {
         numero_factura_inicial: 1,
       })
 
-    if (configError) {
-      console.error('⚠️ Error creando config (no crítico):', configError.message)
-    } else {
-      console.log('✅ Configuración creada')
+    if (legacyConfigError) {
+      console.error('⚠️ Error creando taller_config (no crítico):', legacyConfigError.message)
     }
 
     console.log('🎉 Registro completado exitosamente')

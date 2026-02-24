@@ -37,7 +37,6 @@ export async function POST(request: NextRequest) {
       notas_internas,
       // Campos adicionales para renting/flotas
       numero_autorizacion,
-      referencia_externa,
     } = body
 
     // Validaciones
@@ -69,18 +68,14 @@ export async function POST(request: NextRequest) {
     // Determinar serie a usar (del body o de la configuración del taller)
     let serieToUse = serie || 'FA'
 
-    // ✅ Obtener configuración del taller desde taller_config (IVA, serie, etc.)
+    // Obtener IVA configurado del taller desde taller_config
     const { data: tallerConfig } = await supabase
       .from('taller_config')
-      .select('serie_factura, porcentaje_iva')
+      .select('porcentaje_iva')
       .eq('taller_id', taller_id)
       .single()
 
-    const ivaPorcentajeConfig = tallerConfig?.porcentaje_iva || 21
-
-    if (!serie && tallerConfig?.serie_factura) {
-      serieToUse = tallerConfig.serie_factura
-    }
+    const ivaPorcentajeConfig: number = tallerConfig?.porcentaje_iva ?? 21
 
     // NUEVO FLUJO: Las facturas se crean siempre como BORRADOR sin número
     // El número se asigna al EMITIR la factura (endpoint /emitir)
@@ -93,11 +88,12 @@ export async function POST(request: NextRequest) {
       numero_factura: null, // Sin número aún - se asignará al emitir
       numero_serie: serieToUse, // Guardamos la serie para usar después
       fecha_emision: fecha_emision || new Date().toISOString().split('T')[0],
-      fecha_vencimiento,
-      base_imponible: base_imponible || 0,
-      iva: iva || 0,
-      total: total || 0,
-      metodo_pago,
+      fecha_vencimiento: fecha_vencimiento || null,
+      // Redondeo a 2 decimales antes de enviar a columnas NUMERIC
+      base_imponible: Math.round((base_imponible || 0) * 100) / 100,
+      iva:            Math.round((iva            || 0) * 100) / 100,
+      total:          Math.round((total          || 0) * 100) / 100,
+      metodo_pago: metodo_pago || null,
       estado: 'borrador', // SIEMPRE crear como borrador - se cambia al emitir
       iva_porcentaje: ivaPorcentajeConfig,
     }
@@ -118,9 +114,6 @@ export async function POST(request: NextRequest) {
     // Campos para renting/flotas
     if (numero_autorizacion) {
       facturaData.numero_autorizacion = numero_autorizacion
-    }
-    if (referencia_externa) {
-      facturaData.referencia_externa = referencia_externa
     }
 
     const { data: factura, error: facturaError } = await supabase
@@ -149,10 +142,10 @@ export async function POST(request: NextRequest) {
         const ivaPorcentajeLinea = parseFloat(linea.iva_porcentaje) || ivaPorcentajeConfig
         const tipoLinea = linea.tipo_linea || 'servicio'
 
-        // Calcular importes
-        // IMPORTANTE: total_linea es solo la BASE, el IVA se suma a nivel de factura
-        const baseImponibleLinea = cantidad * precioUnitario
-        const ivaImporte = baseImponibleLinea * (ivaPorcentajeLinea / 100)
+        // Calcular importes con redondeo a 2dp para evitar errores de float JS
+        // total_linea / importe_total = solo base; el IVA se consolida a nivel factura
+        const baseImponibleLinea = Math.round(cantidad * precioUnitario * 100) / 100
+        const ivaImporte         = Math.round(baseImponibleLinea * (ivaPorcentajeLinea / 100) * 100) / 100
 
         return {
           factura_id: facturaId,
