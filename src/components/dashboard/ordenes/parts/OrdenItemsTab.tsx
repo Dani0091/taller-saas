@@ -141,7 +141,13 @@ export function OrdenItemsTab({
     rec.onend = () => setEscuchando(false)
     rec.onerror = (e: any) => {
       setEscuchando(false)
-      if (e.error !== 'no-speech') setVozError('Error de voz: ' + e.error)
+      if (e.error === 'not-allowed' || e.error === 'permission-denied') {
+        setVozError('Por favor, permite el acceso al micrófono para dictar')
+      } else if (e.error === 'network') {
+        setVozError('Sin conexión para reconocimiento de voz. Comprueba la red.')
+      } else if (e.error !== 'no-speech') {
+        setVozError('Error de voz: ' + e.error)
+      }
     }
     rec.onresult = (e: any) => {
       const texto = e.results[0][0].transcript

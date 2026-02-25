@@ -37,6 +37,8 @@ interface Vehiculo {
   matricula: string
   marca: string
   modelo: string
+  año?: number
+  kilometros?: number
 }
 
 interface NuevoCliente {
@@ -505,8 +507,8 @@ export function OrdenInfoTab({
         )}
       </Card>
 
-      {/* Vehículo */}
-      {formData.cliente_id && (
+      {/* Vehículo — solo mostrar selector secundario si no hay vehículo ya seleccionado por matrícula */}
+      {formData.cliente_id && !formData.vehiculo_id && (
         <Card className="p-4">
           <div className="flex items-center justify-between mb-2">
             <Label className="text-sm font-semibold">Vehículo</Label>

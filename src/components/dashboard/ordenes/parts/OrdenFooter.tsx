@@ -172,14 +172,14 @@ export function OrdenFooter({
         <Button
           onClick={onCobroRapido}
           disabled={generandoFactura || guardando}
-          className="w-full gap-2 bg-violet-600 hover:bg-violet-700 py-3 text-base"
+          className="w-full gap-3 bg-violet-600 hover:bg-violet-700 active:bg-violet-800 py-5 text-lg font-bold min-h-[56px] shadow-md"
         >
           {generandoFactura ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
-            <Zap className="w-4 h-4" />
+            <Zap className="w-5 h-5" />
           )}
-          {generandoFactura ? 'Procesando...' : `⚡ Cobro Rápido — ${totalOrden.toFixed(2)} €`}
+          {generandoFactura ? 'Procesando...' : `Cobro Rápido — ${totalOrden.toFixed(2)} €`}
         </Button>
       )}
 
