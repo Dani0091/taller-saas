@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
       fechaVencimiento: factura.fecha_vencimiento,
       logoUrl: logoUrlFinal,
       emisor: {
-        nombre: tallerConfig?.nombre_empresa || taller?.nombre || 'Taller',
+        nombre: tallerConfig?.nombre_taller || tallerConfig?.nombre_empresa || taller?.nombre || 'Taller',
         nif: tallerConfig?.cif || taller?.nif || 'B22757140',
         direccion: tallerConfig?.direccion || taller?.direccion || '',
         codigoPostal: taller?.codigo_postal || '',

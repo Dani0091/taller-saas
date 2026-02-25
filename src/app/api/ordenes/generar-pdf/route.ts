@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
     const datosOrden = {
       // Datos del taller
       taller: {
-        nombre: tallerConfig?.nombre_empresa || taller?.nombre || 'Taller',
+        nombre: tallerConfig?.nombre_taller || tallerConfig?.nombre_empresa || taller?.nombre || 'Taller',
         cif: tallerConfig?.cif || taller?.cif || '',
         direccion: tallerConfig?.direccion || taller?.direccion || '',
         telefono: tallerConfig?.telefono || taller?.telefono || '',

@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json()
-        const { id, nombre, prefijo, ultimo_numero } = body
+        const { id, nombre, prefijo, ultimo_numero, es_predeterminada } = body
 
         // Validaciones
         if (!id || !nombre || !prefijo) {
@@ -60,10 +60,21 @@ export async function POST(request: NextRequest) {
             }
         }
 
+        // Si se establece como predeterminada, limpiar las demás del mismo taller
+        if (es_predeterminada === true) {
+            await supabase
+                .from('series_factura')
+                .update({ es_predeterminada: false })
+                .eq('taller_id', serieActual.taller_id)
+        }
+
         // Actualizar la serie
         const updateData: any = { nombre, prefijo }
         if (ultimo_numero !== undefined && ultimo_numero !== null) {
             updateData.ultimo_numero = ultimo_numero
+        }
+        if (es_predeterminada !== undefined) {
+            updateData.es_predeterminada = es_predeterminada
         }
 
         const { data: serie, error } = await supabase

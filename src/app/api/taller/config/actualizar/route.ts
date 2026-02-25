@@ -9,6 +9,7 @@ export async function POST(request: Request) {
       tarifa_hora,
       incluye_iva,
       porcentaje_iva,
+      nombre_taller,
       nombre_empresa,
       cif,
       direccion,
@@ -50,7 +51,13 @@ export async function POST(request: Request) {
     if (numero_factura_inicial !== undefined && numero_factura_inicial !== null) {
       configData.numero_factura_inicial = Number(numero_factura_inicial)
     }
-    if (nombre_empresa !== undefined) configData.nombre_empresa = nombre_empresa
+    // nombre_taller es la columna real; nombre_empresa se mantiene en sync para PDFs
+    if (nombre_taller !== undefined) {
+      configData.nombre_taller = nombre_taller
+      configData.nombre_empresa = nombre_taller
+    } else if (nombre_empresa !== undefined) {
+      configData.nombre_empresa = nombre_empresa
+    }
     if (cif !== undefined) configData.cif = cif
     if (direccion !== undefined) configData.direccion = direccion
     if (telefono !== undefined) configData.telefono = telefono
@@ -98,7 +105,7 @@ export async function POST(request: Request) {
     // SINCRONIZAR SERIE CON TABLA series_factura
     // Si se configura una serie, asegurarse de que exista en la tabla de series
     if (serie_factura) {
-      const prefijo = serie_factura.toUpperCase().trim()
+      const prefijo = serie_factura.trim()  // usar el prefijo tal cual (RS-, SCR-, etc.)
 
       // Verificar si ya existe la serie
       const { data: serieExistente } = await supabase

@@ -100,7 +100,7 @@ export async function GET(
       aceptado: !!orden.fecha_aceptacion_cliente,
 
       taller: {
-        nombre: tallerConfig?.nombre_empresa || taller?.nombre || 'Taller',
+        nombre: tallerConfig?.nombre_taller || tallerConfig?.nombre_empresa || taller?.nombre || 'Taller',
         direccion: tallerConfig?.direccion || taller?.direccion || '',
         telefono: tallerConfig?.telefono || taller?.telefono || '',
         email: tallerConfig?.email || taller?.email || '',

@@ -7,7 +7,7 @@ import { NumberInput } from '@/components/ui/number-input'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Loader2, Settings, Upload, X, Image as ImageIcon, FileText, CreditCard, Palette, Users, Save, Plus, Trash2, Edit2, List } from 'lucide-react'
+import { Loader2, Settings, Upload, X, Image as ImageIcon, FileText, CreditCard, Palette, Users, Save, Plus, Trash2, Edit2, List, Star } from 'lucide-react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { GoogleCalendarConnection } from '@/components/dashboard/configuracion/google-calendar-connection'
@@ -20,7 +20,8 @@ import { useTaller } from '@/contexts/TallerContext'
 interface ConfigTaller {
   id?: string
   taller_id: string
-  nombre_empresa?: string
+  nombre_taller?: string   // columna real en taller_config (fuente de verdad del nombre)
+  nombre_empresa?: string  // columna fiscal — se mantiene en sync al guardar
   cif?: string
   telefono?: string
   email?: string
@@ -61,7 +62,7 @@ interface SerieConfig {
   nombre: string
   prefijo: string
   ultimo_numero: number
-  activa: boolean
+  es_predeterminada: boolean
 }
 
 // ==================== VALORES POR DEFECTO ====================
@@ -69,6 +70,7 @@ interface SerieConfig {
 // ✅ Valores por defecto actualizados (solo columnas reales)
 const CONFIG_DEFAULTS: ConfigTaller = {
   taller_id: '',
+  nombre_taller: '',
   nombre_empresa: '',
   cif: '',
   telefono: '',
@@ -104,7 +106,7 @@ const SERIE_DEFAULTS: SerieConfig = {
   nombre: '',
   prefijo: '',
   ultimo_numero: 0,
-  activa: true,
+  es_predeterminada: false,
 }
 
 const TIPOS_CLIENTE = [
@@ -304,6 +306,43 @@ export default function ConfiguracionPage() {
     }
   }
 
+  // Establecer una serie como predeterminada y sincronizar taller_config
+  const handleSetPredeterminada = async (serie: SerieConfig) => {
+    if (!tallerId || !serie.id) return
+    try {
+      // Marcar como predeterminada en series_factura (actualizar limpia las demás)
+      const res = await fetch('/api/series/actualizar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: serie.id,
+          nombre: serie.nombre,
+          prefijo: serie.prefijo,
+          ultimo_numero: serie.ultimo_numero,
+          es_predeterminada: true,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || data.error) {
+        toast.error(data.error || 'Error al establecer serie predeterminada')
+        return
+      }
+
+      // Sincronizar serie_factura en taller_config con el prefijo seleccionado
+      await fetch('/api/taller/config/actualizar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taller_id: tallerId, serie_factura: serie.prefijo }),
+      })
+
+      toast.success(`Serie "${serie.prefijo}" establecida como predeterminada`)
+      fetchSeries()
+      fetchConfig()
+    } catch {
+      toast.error('Error al establecer serie predeterminada')
+    }
+  }
+
   // ✅ FIX: Separar CREAR de ACTUALIZAR
   const handleGuardarSerie = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -327,16 +366,15 @@ export default function ConfiguracionPage() {
         ? {
             taller_id: tallerId,
             nombre: formSerie.nombre,
-            prefijo: formSerie.prefijo.toUpperCase(),
+            prefijo: formSerie.prefijo,  // prefijo tal cual, sin transformar
             ultimo_numero: formSerie.ultimo_numero || 0,
-            activa: true
           }
         : {
             id: serieEditando!.id,
             nombre: formSerie.nombre,
-            prefijo: formSerie.prefijo.toUpperCase(),
+            prefijo: formSerie.prefijo,  // prefijo tal cual, sin transformar
             ultimo_numero: formSerie.ultimo_numero,
-            activa: formSerie.activa ?? true
+            es_predeterminada: formSerie.es_predeterminada ?? false,
           }
 
       const response = await fetch(endpoint, {
@@ -400,11 +438,11 @@ export default function ConfiguracionPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="nombre_empresa">Nombre Empresa / Razón Social</Label>
+                  <Label htmlFor="nombre_taller">Nombre del Taller / Razón Social</Label>
                   <Input
-                    id="nombre_empresa"
-                    name="nombre_empresa"
-                    value={formData?.nombre_empresa ?? ''}
+                    id="nombre_taller"
+                    name="nombre_taller"
+                    value={formData?.nombre_taller ?? formData?.nombre_empresa ?? ''}
                     onChange={handleChange}
                   />
                 </div>
@@ -697,12 +735,26 @@ export default function ConfiguracionPage() {
 
             <div className="space-y-3">
               {series.map(serie => (
-                <div key={serie.id} className="p-3 border rounded-lg flex items-center justify-between bg-white group">
+                <div key={serie.id} className={`p-3 border rounded-lg flex items-center justify-between bg-white group ${serie.es_predeterminada ? 'border-sky-400 bg-sky-50' : ''}`}>
                   <div>
-                    <p className="font-medium text-sm text-gray-900">{serie.nombre}</p>
-                    <p className="text-xs text-gray-500">Prefijo: <span className="font-mono font-bold text-sky-600">{serie.prefijo}</span> | Nº: {serie.ultimo_numero}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-sm text-gray-900">{serie.nombre}</p>
+                      {serie.es_predeterminada && (
+                        <span className="text-[10px] font-bold text-sky-700 bg-sky-100 px-1.5 py-0.5 rounded">PREDETERMINADA</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      Prefijo: <span className="font-mono font-bold text-sky-600">{serie.prefijo}</span>
+                      {' | '}Último Nº: <span className="font-mono font-bold">{serie.ultimo_numero}</span>
+                      {' → '}Siguiente: <span className="font-mono font-bold text-emerald-600">{serie.prefijo}{serie.ultimo_numero + 1}</span>
+                    </p>
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {!serie.es_predeterminada && (
+                      <Button variant="ghost" size="sm" title="Establecer como predeterminada" onClick={() => handleSetPredeterminada(serie)}>
+                        <Star className="w-3 h-3 text-amber-400" />
+                      </Button>
+                    )}
                     <Button variant="ghost" size="sm" onClick={() => { setSerieEditando(serie); setFormSerie(serie); setMostrarFormSerie(true); }}>
                       <Edit2 className="w-3 h-3" />
                     </Button>
