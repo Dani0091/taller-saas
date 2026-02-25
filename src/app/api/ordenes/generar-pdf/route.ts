@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
 
     // Obtener configuración del taller
     const { data: tallerConfig } = await supabase
-      .from('configuracion_taller')
+      .from('taller_config')
       .select('*')
       .eq('taller_id', orden.taller_id)
       .single()
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
     const datosOrden = {
       // Datos del taller
       taller: {
-        nombre: tallerConfig?.nombre_empresa || taller?.nombre || 'Taller',
+        nombre: tallerConfig?.nombre_taller || tallerConfig?.nombre_empresa || taller?.nombre || 'Taller',
         cif: tallerConfig?.cif || taller?.cif || '',
         direccion: tallerConfig?.direccion || taller?.direccion || '',
         telefono: tallerConfig?.telefono || taller?.telefono || '',

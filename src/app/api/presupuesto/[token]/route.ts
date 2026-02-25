@@ -80,7 +80,7 @@ export async function GET(
 
     // Obtener config del taller
     const { data: tallerConfig } = await supabaseAdmin
-      .from('configuracion_taller')
+      .from('taller_config')
       .select('nombre_empresa, logo_url, direccion, telefono, email, color_primario')
       .eq('taller_id', orden.taller_id)
       .single()
@@ -100,7 +100,7 @@ export async function GET(
       aceptado: !!orden.fecha_aceptacion_cliente,
 
       taller: {
-        nombre: tallerConfig?.nombre_empresa || taller?.nombre || 'Taller',
+        nombre: tallerConfig?.nombre_taller || tallerConfig?.nombre_empresa || taller?.nombre || 'Taller',
         direccion: tallerConfig?.direccion || taller?.direccion || '',
         telefono: tallerConfig?.telefono || taller?.telefono || '',
         email: tallerConfig?.email || taller?.email || '',

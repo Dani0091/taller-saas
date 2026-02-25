@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     const [clienteRes, tallerRes, configRes, lineasRes] = await Promise.all([
       supabase.from('clientes').select('*').eq('id', factura.cliente_id).single(),
       supabase.from('talleres').select('*').eq('id', factura.taller_id).single(),
-      supabase.from('configuracion_taller').select('*').eq('taller_id', factura.taller_id).single(),
+      supabase.from('taller_config').select('*').eq('taller_id', factura.taller_id).single(),
       supabase.from('detalles_factura').select('*').eq('factura_id', facturaId)
     ])
 
@@ -94,7 +94,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 4. Procesar Logo (Base64) - buscar en configuracion_taller primero, luego en talleres
+    // 4. Procesar Logo (Base64) - buscar en taller_config primero, luego en talleres
     const urlOriginalLogo = tallerConfig?.logo_url || taller?.logo_url || null;
     const logoUrlFinal = urlOriginalLogo ? await obtenerImagenBase64(urlOriginalLogo) : null;
 
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
       fechaVencimiento: factura.fecha_vencimiento,
       logoUrl: logoUrlFinal,
       emisor: {
-        nombre: tallerConfig?.nombre_empresa || taller?.nombre || 'Taller',
+        nombre: tallerConfig?.nombre_taller || tallerConfig?.nombre_empresa || taller?.nombre || 'Taller',
         nif: tallerConfig?.cif || taller?.nif || 'B22757140',
         direccion: tallerConfig?.direccion || taller?.direccion || '',
         codigoPostal: taller?.codigo_postal || '',

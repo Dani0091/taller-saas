@@ -15,9 +15,9 @@ export async function GET(request: Request) {
 
     const supabase = await createClient()
 
-    // ✅ Consultar desde configuracion_taller
+    // ✅ Consultar desde taller_config
     const { data, error } = await supabase
-      .from('configuracion_taller')
+      .from('taller_config')
       .select('*')
       .eq('taller_id', taller_id)
       .single()
@@ -40,11 +40,8 @@ export async function GET(request: Request) {
       })
     }
 
-    // Normalizar serie_factura_default → serie_factura para compatibilidad con el frontend
-    return NextResponse.json({
-      ...data,
-      serie_factura: data.serie_factura_default ?? null,
-    })
+    // taller_config ya tiene la columna serie_factura directamente
+    return NextResponse.json(data)
   } catch (error) {
     console.error('Error:', error)
     return NextResponse.json(
