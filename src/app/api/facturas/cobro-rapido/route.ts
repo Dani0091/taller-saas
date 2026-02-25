@@ -145,6 +145,7 @@ export async function POST(request: NextRequest) {
         taller_id: auth.tallerId,
         cliente_id: orden.cliente_id,
         orden_id,
+        vehiculo_id: orden.vehiculo_id || null, // Trazabilidad legal vehículo
         numero_factura: null,
         numero_serie: serie,
         fecha_emision: hoy,
@@ -197,7 +198,7 @@ export async function POST(request: NextRequest) {
 
     // ── 7. Asignar número atómico via RPC ────────────────────────────────────
     const { data: rpcResult, error: rpcError } = await supabase
-      .rpc('asignar_numero_factura_v2', {
+      .rpc('asignar_numero_factura_v3', {
         p_taller_id: auth.tallerId,
         p_prefijo: serie,
       })

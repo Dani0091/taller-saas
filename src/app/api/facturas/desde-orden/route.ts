@@ -167,6 +167,7 @@ export async function POST(request: NextRequest) {
         taller_id,
         cliente_id: orden.cliente_id,
         orden_id: orden_id, // Vincular factura con orden
+        vehiculo_id: orden.vehiculo_id || null, // Trazabilidad legal vehículo
         numero_factura: null, // SIN NÚMERO - se asigna al emitir
         numero_serie: serieFactura,
         fecha_emision: new Date().toISOString().split('T')[0],

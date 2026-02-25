@@ -106,11 +106,11 @@ export async function POST(request: NextRequest) {
     const serieToUse = factura.numero_serie || 'FA'
 
     // ── OPERACIÓN ATÓMICA via RPC ────────────────────────────────────────────
-    // asignar_numero_factura_v2 usa FOR UPDATE para bloquear la fila de la serie
+    // asignar_numero_factura_v3 usa FOR UPDATE para bloquear la fila de la serie
     // y garantizar numeración sin duplicados incluso con emisiones simultáneas.
-    // Formato devuelto: RS-007 (LPAD 3 dígitos, crece naturalmente a RS-1000).
+    // Formato devuelto: RS-2026-008 (año anual + LPAD 3 dígitos).
     const { data: rpcResult, error: rpcError } = await supabase
-      .rpc('asignar_numero_factura_v2', {
+      .rpc('asignar_numero_factura_v3', {
         p_taller_id: auth.tallerId,
         p_prefijo: serieToUse,
       })
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
         {
           error: `Error al asignar número de la serie "${serieToUse}"`,
           details: rpcError?.message ?? 'El RPC no devolvió resultado',
-          sugerencia: 'Verifica que la migración 20260224_rpc_numero_atomico_v2.sql se ejecutó en Supabase',
+          sugerencia: 'Verifica que la migración 20260225_final_consolidation.sql se ejecutó en Supabase',
         },
         { status: 500 }
       )
