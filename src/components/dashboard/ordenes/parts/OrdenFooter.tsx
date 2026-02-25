@@ -14,7 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Loader2, Share2, Copy, Link, Printer, FileText, ChevronDown, Save } from 'lucide-react'
+import { Loader2, Share2, Copy, Link, Printer, FileText, ChevronDown, Save, Zap } from 'lucide-react'
 import { GoogleCalendarButton } from '../google-calendar-button'
 import { ESTADOS_FACTURABLES } from '@/lib/constants'
 
@@ -54,6 +54,8 @@ interface OrdenFooterProps {
   onMostrarPDF: () => void
   onCrearBorradorFactura: () => void
   onEmitirFacturaDirecta: () => void
+  onCobroRapido: () => void
+  totalOrden: number
   onGuardar: () => void
   onClose: () => void
 }
@@ -78,6 +80,8 @@ export function OrdenFooter({
   onMostrarPDF,
   onCrearBorradorFactura,
   onEmitirFacturaDirecta,
+  onCobroRapido,
+  totalOrden,
   onGuardar,
   onClose,
 }: OrdenFooterProps) {
@@ -161,6 +165,22 @@ export function OrdenFooter({
             vehiculoInfo={vehiculoSeleccionado ? `${vehiculoSeleccionado.marca} ${vehiculoSeleccionado.modelo} - ${vehiculoSeleccionado.matricula}` : undefined}
           />
         </div>
+      )}
+
+      {/* Cobro Rápido — Factura simplificada (< 3000€) */}
+      {!modoCrear && ESTADOS_FACTURABLES.includes(estado as any) && totalOrden > 0 && totalOrden < 3000 && (
+        <Button
+          onClick={onCobroRapido}
+          disabled={generandoFactura || guardando}
+          className="w-full gap-2 bg-violet-600 hover:bg-violet-700 py-3 text-base"
+        >
+          {generandoFactura ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Zap className="w-4 h-4" />
+          )}
+          {generandoFactura ? 'Procesando...' : `⚡ Cobro Rápido — ${totalOrden.toFixed(2)} €`}
+        </Button>
       )}
 
       {/* Generar Factura */}

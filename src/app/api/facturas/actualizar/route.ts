@@ -31,8 +31,48 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    // Obtener estado actual para validar inmutabilidad (normativa fiscal española)
+    const { data: facturaActual } = await supabase
+      .from('facturas')
+      .select('estado')
+      .eq('id', id)
+      .eq('taller_id', auth.tallerId)
+      .single()
+
+    if (!facturaActual) {
+      return NextResponse.json({ error: 'Factura no encontrada' }, { status: 404 })
+    }
+
+    const estadoActual = facturaActual.estado
+
+    if (estadoActual === 'pagada' || estadoActual === 'anulada') {
+      return NextResponse.json(
+        { error: `Las facturas ${estadoActual === 'pagada' ? 'pagadas' : 'anuladas'} son inmutables. Emite una factura rectificativa.` },
+        { status: 403 }
+      )
+    }
+
+    if (estadoActual === 'emitida') {
+      // Solo se permite marcar como pagada y actualizar método de pago
+      if (body.estado && body.estado !== 'pagada') {
+        return NextResponse.json(
+          { error: 'Una factura emitida solo puede pasar a estado "pagada".' },
+          { status: 403 }
+        )
+      }
+      const camposNoPermitidos = Object.keys(body).filter(k => !['estado', 'metodo_pago'].includes(k) && body[k] !== undefined)
+      if (camposNoPermitidos.length > 0) {
+        return NextResponse.json(
+          { error: 'Las facturas emitidas son inmutables. Solo se puede actualizar el estado y el método de pago.' },
+          { status: 403 }
+        )
+      }
+    }
+
     // Campos válidos que existen en la base de datos
-    const camposValidos = ['estado', 'metodo_pago', 'notas', 'fecha_vencimiento']
+    const camposValidos = estadoActual === 'emitida'
+      ? ['estado', 'metodo_pago']
+      : ['estado', 'metodo_pago', 'notas', 'fecha_vencimiento', 'condiciones_pago']
     const datosActualizar: Record<string, any> = {}
 
     for (const campo of camposValidos) {

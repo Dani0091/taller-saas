@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
     console.log(`✅ No existe factura previa, procediendo...`)
 
     // Verificar que la orden esté completada o en estado válido para facturar
-    const estadosValidos = ['aprobado', 'en_reparacion', 'completado', 'entregado']
+    const estadosValidos = ['aprobado', 'en_progreso', 'finalizado', 'facturado']
     if (!estadosValidos.includes(orden.estado)) {
       return NextResponse.json(
         { error: 'La orden debe estar aprobada o completada para generar factura' },
