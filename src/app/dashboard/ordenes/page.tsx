@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Plus, Search, Filter, Menu, Loader2, AlertCircle } from 'lucide-react'
+import { Plus, Search, Loader2, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -13,17 +13,17 @@ import { listarOrdenesAction } from '@/actions/ordenes'
 import type { OrdenListItemDTO } from '@/application/dtos/orden.dto'
 
 const ESTADO_CONFIG = {
-  recibido: { label: 'Recibido', color: 'bg-blue-100 text-blue-800', icon: '📋', badge: 'bg-blue-500' },
-  diagnostico: { label: 'Diagnóstico', color: 'bg-purple-100 text-purple-800', icon: '🔍', badge: 'bg-purple-500' },
-  presupuestado: { label: 'Presupuestado', color: 'bg-yellow-100 text-yellow-800', icon: '💰', badge: 'bg-yellow-500' },
-  aprobado: { label: 'Aprobado', color: 'bg-cyan-100 text-cyan-800', icon: '✓', badge: 'bg-cyan-500' },
-  en_reparacion: { label: 'En Reparación', color: 'bg-amber-100 text-amber-800', icon: '🔧', badge: 'bg-amber-500' },
-  completado: { label: 'Completado', color: 'bg-green-100 text-green-800', icon: '✅', badge: 'bg-green-500' },
-  entregado: { label: 'Entregado', color: 'bg-emerald-100 text-emerald-800', icon: '🚗', badge: 'bg-emerald-600' },
-  cancelado: { label: 'Cancelado', color: 'bg-red-100 text-red-800', icon: '❌', badge: 'bg-red-500' }
+  recibido:      { label: 'Recibido',      color: 'bg-blue-100 text-blue-800',    icon: '📋', badge: '#3b82f6' },
+  en_diagnostico:{ label: 'Diagnóstico',   color: 'bg-purple-100 text-purple-800', icon: '🔍', badge: '#8b5cf6' },
+  presupuestado: { label: 'Presupuestado', color: 'bg-yellow-100 text-yellow-800', icon: '💰', badge: '#eab308' },
+  aprobado:      { label: 'Aprobado',      color: 'bg-cyan-100 text-cyan-800',     icon: '✓',  badge: '#06b6d4' },
+  en_progreso:   { label: 'En Reparación', color: 'bg-amber-100 text-amber-800',   icon: '🔧', badge: '#f59e0b' },
+  finalizado:    { label: 'Finalizado',    color: 'bg-green-100 text-green-800',   icon: '✅', badge: '#22c55e' },
+  facturado:     { label: 'Facturado',     color: 'bg-emerald-100 text-emerald-800',icon: '🚗', badge: '#059669' },
+  cancelado:     { label: 'Cancelado',     color: 'bg-red-100 text-red-800',       icon: '❌', badge: '#ef4444' },
 } as Record<string, any>
 
-const FILTROS = ['todos', 'recibido', 'diagnostico', 'presupuestado', 'aprobado', 'en_reparacion', 'completado', 'entregado', 'cancelado']
+const FILTROS = ['todos', 'recibido', 'en_diagnostico', 'presupuestado', 'aprobado', 'en_progreso', 'finalizado', 'facturado', 'cancelado']
 
 export default function OrdenesPage() {
   const [ordenes, setOrdenes] = useState<OrdenListItemDTO[]>([])
@@ -31,7 +31,6 @@ export default function OrdenesPage() {
   const [error, setError] = useState<string | null>(null)
   const [filtroActivo, setFiltroActivo] = useState('todos')
   const [busqueda, setBusqueda] = useState('')
-  const [mostrarMenu, setMostrarMenu] = useState(false)
   const [ordenSeleccionada, setOrdenSeleccionada] = useState<string | null>(null)
   const [modoCrear, setModoCrear] = useState(false)
 
@@ -92,13 +91,6 @@ export default function OrdenesPage() {
               <Plus className="w-4 h-4" />
               <span className="hidden sm:inline">Nueva</span>
             </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setMostrarMenu(!mostrarMenu)}
-            >
-              <Menu className="w-4 h-4" />
-            </Button>
           </div>
         </div>
 
@@ -113,30 +105,22 @@ export default function OrdenesPage() {
           />
         </div>
 
-        {/* MENÚ/FILTROS */}
-        {mostrarMenu && (
-          <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="text-xs font-semibold text-gray-700 mb-2">Filtrar por estado:</p>
-            <div className="flex flex-wrap gap-2">
-              {FILTROS.map(filtro => (
-                <button
-                  key={filtro}
-                  onClick={() => {
-                    setFiltroActivo(filtro)
-                    setMostrarMenu(false)
-                  }}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                    filtroActivo === filtro
-                      ? 'bg-sky-600 text-white'
-                      : 'bg-white text-gray-700 border border-gray-300'
-                  }`}
-                >
-                  {filtro === 'todos' ? 'Todas' : (ESTADO_CONFIG[filtro]?.label || filtro)}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* FILTROS POR ESTADO — siempre visibles */}
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          {FILTROS.map(filtro => (
+            <button
+              key={filtro}
+              onClick={() => setFiltroActivo(filtro)}
+              className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                filtroActivo === filtro
+                  ? 'bg-sky-600 text-white'
+                  : 'bg-white text-gray-700 border border-gray-300'
+              }`}
+            >
+              {filtro === 'todos' ? 'Todas' : (ESTADO_CONFIG[filtro]?.label || filtro)}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* CONTENIDO */}

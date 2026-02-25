@@ -8,7 +8,8 @@
  */
 'use client'
 
-import { Plus, Trash2 } from 'lucide-react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { Plus, Trash2, Mic, MicOff, Loader2 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -65,6 +66,39 @@ interface OrdenItemsTabProps {
   onAgregarPiezaRapida: () => void
 }
 
+/** Extrae cantidad y descripción de un texto dictado por voz.
+ *  Ejemplos:
+ *    "3 filtros de aceite"     → { cantidad: 3,   descripcion: "filtros de aceite" }
+ *    "dos pastillas de freno"  → { cantidad: 2,   descripcion: "pastillas de freno" }
+ *    "cambio de aceite"        → { cantidad: 1,   descripcion: "cambio de aceite" }
+ */
+function parsearVoz(texto: string): { cantidad: number; descripcion: string } {
+  const palabrasNumericas: Record<string, number> = {
+    un: 1, uno: 1, una: 1,
+    dos: 2, tres: 3, cuatro: 4, cinco: 5,
+    seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10,
+  }
+  const texto2 = texto.trim()
+  // Número al inicio (entero o decimal)
+  const matchNum = texto2.match(/^(\d+(?:[.,]\d+)?)\s+(.+)$/)
+  if (matchNum) {
+    return {
+      cantidad: parseFloat(matchNum[1].replace(',', '.')),
+      descripcion: matchNum[2].trim(),
+    }
+  }
+  // Palabra numérica al inicio
+  const palabras = texto2.toLowerCase().split(/\s+/)
+  const primeraPalabra = palabras[0]
+  if (palabrasNumericas[primeraPalabra]) {
+    return {
+      cantidad: palabrasNumericas[primeraPalabra],
+      descripcion: palabras.slice(1).join(' ').trim() || texto2,
+    }
+  }
+  return { cantidad: 1, descripcion: texto2 }
+}
+
 export function OrdenItemsTab({
   lineas,
   nuevaLinea,
@@ -78,6 +112,58 @@ export function OrdenItemsTab({
   onPiezaRapidaChange,
   onAgregarPiezaRapida,
 }: OrdenItemsTabProps) {
+  const [escuchando, setEscuchando] = useState(false)
+  const [vozError, setVozError] = useState<string | null>(null)
+  const recognitionRef = useRef<any>(null)
+
+  // Limpia el error después de 4s
+  useEffect(() => {
+    if (vozError) {
+      const t = setTimeout(() => setVozError(null), 4000)
+      return () => clearTimeout(t)
+    }
+  }, [vozError])
+
+  const iniciarVoz = useCallback(() => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      setVozError('Tu navegador no soporta reconocimiento de voz')
+      return
+    }
+    const rec = new SpeechRecognition()
+    rec.lang = 'es-ES'
+    rec.interimResults = false
+    rec.maxAlternatives = 1
+    recognitionRef.current = rec
+
+    rec.onstart = () => setEscuchando(true)
+    rec.onend = () => setEscuchando(false)
+    rec.onerror = (e: any) => {
+      setEscuchando(false)
+      if (e.error !== 'no-speech') setVozError('Error de voz: ' + e.error)
+    }
+    rec.onresult = (e: any) => {
+      const texto = e.results[0][0].transcript
+      const { cantidad, descripcion } = parsearVoz(texto)
+      onNuevaLineaChange({
+        ...nuevaLinea,
+        descripcion,
+        cantidad,
+        // Auto-precio si es mano de obra
+        precio_unitario: nuevaLinea.tipo === 'mano_obra' && nuevaLinea.precio_unitario === 0
+          ? tarifaHora
+          : nuevaLinea.precio_unitario,
+      })
+    }
+    rec.start()
+  }, [nuevaLinea, onNuevaLineaChange, tarifaHora])
+
+  const detenerVoz = useCallback(() => {
+    recognitionRef.current?.stop()
+    setEscuchando(false)
+  }, [])
+
   return (
     <>
       {/* Añadir línea */}
@@ -123,11 +209,35 @@ export function OrdenItemsTab({
 
           <div>
             <Label className="text-xs text-gray-600 mb-1 block">Descripción del trabajo</Label>
-            <Input
-              value={nuevaLinea.descripcion}
-              onChange={(e) => onNuevaLineaChange({ ...nuevaLinea, descripcion: e.target.value })}
-              placeholder="Ej: Cambio de aceite y filtro"
-            />
+            <div className="flex gap-2">
+              <Input
+                value={nuevaLinea.descripcion}
+                onChange={(e) => onNuevaLineaChange({ ...nuevaLinea, descripcion: e.target.value })}
+                placeholder="Ej: Cambio de aceite y filtro"
+                className="flex-1"
+              />
+              <button
+                type="button"
+                onClick={escuchando ? detenerVoz : iniciarVoz}
+                title={escuchando ? 'Detener dictado' : 'Dictar descripción por voz'}
+                className={`shrink-0 h-10 w-10 flex items-center justify-center rounded-lg border transition-all ${
+                  escuchando
+                    ? 'bg-red-500 border-red-500 text-white animate-pulse'
+                    : 'bg-white border-gray-300 text-gray-500 hover:border-sky-400 hover:text-sky-600'
+                }`}
+              >
+                {escuchando ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+              </button>
+            </div>
+            {escuchando && (
+              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                <span className="inline-block w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                Escuchando… di la cantidad y la descripción
+              </p>
+            )}
+            {vozError && (
+              <p className="text-xs text-amber-600 mt-1">{vozError}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">

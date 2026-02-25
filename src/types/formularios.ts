@@ -79,9 +79,10 @@ export interface OrdenFormulario {
   renuncia_presupuesto: boolean
   accion_imprevisto: string
   recoger_piezas: boolean
-  danos_carroceria: boolean
+  danos_carroceria: string | null
   coste_diario_estancia: number | null
   kilometros_entrada: number | null
+  kilometros_salida: number | null
 }
 
 /**
@@ -195,9 +196,10 @@ export const VALORES_POR_DEFECTO = {
     renuncia_presupuesto: false,
     accion_imprevisto: 'avisar',
     recoger_piezas: false,
-    danos_carroceria: false,
+    danos_carroceria: '',
     coste_diario_estancia: null,
-    kilometros_entrada: 0,
+    kilometros_entrada: null,
+    kilometros_salida: null,
   } as OrdenFormulario,
   
   factura: {
@@ -465,35 +467,7 @@ export function useFormulario<T extends Record<string, any>>(
 // TIPOS DE ORDENES DE TRABAJO
 // ============================================================================
 
-/**
- * Formulario de Orden de Reparación - Tipos específicos para órdenes
- */
-export interface OrdenFormulario {
-  estado: string
-  cliente_id: string | null
-  vehiculo_id: string | null
-  descripcion_problema: string
-  diagnostico: string
-  trabajos_realizados: string
-  notas: string
-  presupuesto_aprobado_por_cliente: boolean
-  tiempo_estimado_horas: number
-  tiempo_real_horas: number
-  subtotal_mano_obra: number
-  subtotal_piezas: number
-  iva_amount: number
-  total_con_iva: number
-  fotos_entrada: string
-  fotos_salida: string
-  fotos_diagnostico: string
-  nivel_combustible: string | null
-  renuncia_presupuesto: boolean
-  accion_imprevisto: string
-  recoger_piezas: boolean
-  danos_carroceria: boolean
-  coste_diario_estancia: number | null
-  kilometros_entrada: number | null
-}
+// OrdenFormulario ya definido arriba — sin duplicados
 
 /**
  * Formulario de Nueva Orden - Para crear desde cero
@@ -506,24 +480,7 @@ export interface OrdenNuevoFormulario extends Omit<OrdenFormulario, 'id' | 'nume
 // TIPOS DE FACTURACIÓN
 // ============================================================================
 
-/**
- * Formulario de Factura - Tipos financieros estrictos
- */
-export interface FacturaFormulario {
-  numero_factura: string
-  cliente_id: string | null
-  serie_factura: string | null
-  base_imponible: number
-  iva: number
-  total: number
-  metodo_pago: string | null
-  fecha_emision: string
-  fecha_vencimiento: string
-  notas_factura: string | null
-  condiciones_pago: string | null
-  persona_contacto: string | null
-  telefono_contacto: string | null
-}
+// FacturaFormulario ya definido arriba — sin duplicados
 
 /**
  * Formulario de Nueva Factura - Para crear desde cero
@@ -536,28 +493,7 @@ export interface FacturaNuevoFormulario extends Omit<FacturaFormulario, 'id'> {
 // TIPOS DE CONFIGURACIÓN DEL TALLER
 // ============================================================================
 
-/**
- * Formulario de Configuración del Taller - Tipos específicos
- */
-export interface ConfiguracionFormulario {
-  tarifa_hora: number
-  incluye_iva: boolean
-  porcentaje_iva: number
-  tarifa_con_iva: boolean
-  nombre_empresa: string | null
-  cif: string | null
-  direccion: string | null
-  telefono: string | null
-  email: string | null
-  logo_url: string | null
-  serie_factura: string | null
-  numero_factura_inicial: number | null
-  iban: string | null
-  condiciones_pago: string | null
-  notas_factura: string | null
-  color_primario: string | null
-  color_secundario: string | null
-}
+// ConfiguracionFormulario ya definido arriba — sin duplicados
 
 // ============================================================================
 // UTILIDADES DE TIPOS

@@ -13,12 +13,12 @@
  */
 export const ESTADOS_ORDEN = [
   { value: 'recibido', label: 'Recibido', color: 'bg-blue-500', icon: '📋', description: 'Vehículo recién ingresado al taller' },
-  { value: 'diagnostico', label: 'En Diagnóstico', color: 'bg-purple-500', icon: '🔍', description: 'Evaluando el problema del vehículo' },
+  { value: 'en_diagnostico', label: 'En Diagnóstico', color: 'bg-purple-500', icon: '🔍', description: 'Evaluando el problema del vehículo' },
   { value: 'presupuestado', label: 'Presupuestado', color: 'bg-yellow-500', icon: '💰', description: 'Presupuesto elaborado, pendiente de aprobación' },
   { value: 'aprobado', label: 'Aprobado', color: 'bg-cyan-500', icon: '✓', description: 'Cliente ha aprobado el presupuesto' },
-  { value: 'en_reparacion', label: 'En Reparación', color: 'bg-amber-500', icon: '🔧', description: 'Trabajo en progreso' },
-  { value: 'completado', label: 'Completado', color: 'bg-green-500', icon: '✅', description: 'Reparación finalizada' },
-  { value: 'entregado', label: 'Entregado', color: 'bg-emerald-600', icon: '🚗', description: 'Vehículo entregado al cliente' },
+  { value: 'en_progreso', label: 'En Reparación', color: 'bg-amber-500', icon: '🔧', description: 'Trabajo en progreso' },
+  { value: 'finalizado', label: 'Finalizado', color: 'bg-green-500', icon: '✅', description: 'Reparación finalizada' },
+  { value: 'facturado', label: 'Facturado', color: 'bg-emerald-600', icon: '🚗', description: 'Orden facturada y vehículo entregado' },
   { value: 'cancelado', label: 'Cancelado', color: 'bg-red-500', icon: '❌', description: 'Orden cancelada' },
 ] as const
 
@@ -28,7 +28,7 @@ export type EstadoOrden = typeof ESTADOS_ORDEN[number]['value']
 /**
  * Estados que permiten generar factura
  */
-export const ESTADOS_FACTURABLES: EstadoOrden[] = ['aprobado', 'en_reparacion', 'completado', 'entregado']
+export const ESTADOS_FACTURABLES: EstadoOrden[] = ['aprobado', 'en_progreso', 'finalizado', 'facturado']
 
 /**
  * Obtiene la información de un estado por su valor
