@@ -8,6 +8,7 @@
  */
 'use client'
 
+import { useState, useRef, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -17,7 +18,7 @@ import { NumberInput } from '@/components/ui/number-input'
 import { InputScanner } from '@/components/ui/input-scanner'
 import { FotoUploader } from '../foto-uploader'
 import { getFotoByKey } from '@/lib/utils'
-import { UserPlus, Car, Loader2, Edit2 } from 'lucide-react'
+import { UserPlus, Car, Loader2, Edit2, Search, X } from 'lucide-react'
 import type {
   VehiculoNuevoFormulario,
   VehiculoEdicionFormulario
@@ -27,6 +28,7 @@ interface Cliente {
   id: string
   nombre: string
   apellidos?: string
+  primer_apellido?: string
   nif?: string
 }
 
@@ -52,6 +54,7 @@ interface FormData {
   descripcion_problema?: string
   nivel_combustible?: string
   kilometros_entrada?: number
+  kilometros_salida?: number
   coste_diario_estancia?: number
   presupuesto_aprobado_por_cliente?: boolean
   renuncia_presupuesto?: boolean
@@ -134,6 +137,34 @@ export function OrdenInfoTab({
   onGuardarVehiculo,
   vehiculoSeleccionado,
 }: OrdenInfoTabProps) {
+  const [busquedaCliente, setBusquedaCliente] = useState('')
+  const [comboAbierto, setComboAbierto] = useState(false)
+  const comboRef = useRef<HTMLDivElement>(null)
+
+  // Cierra el combo si se hace clic fuera
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (comboRef.current && !comboRef.current.contains(e.target as Node)) {
+        setComboAbierto(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const clientesFiltrados = clientes.filter(c => {
+    if (!busquedaCliente) return true
+    const q = busquedaCliente.toLowerCase()
+    const apellido = (c.primer_apellido || c.apellidos || '').toLowerCase()
+    return (
+      c.nombre.toLowerCase().includes(q) ||
+      apellido.includes(q) ||
+      (c.nif || '').toLowerCase().includes(q)
+    )
+  })
+
+  const clienteActual = clientes.find(c => c.id === formData.cliente_id)
+
   return (
     <>
       {/* Cliente */}
@@ -153,18 +184,68 @@ export function OrdenInfoTab({
         </div>
 
         {!mostrarFormCliente ? (
-          <select
-            value={formData.cliente_id}
-            onChange={(e) => onFormDataChange({ cliente_id: e.target.value, vehiculo_id: '' })}
-            className="w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white"
-          >
-            <option value="">Seleccionar cliente...</option>
-            {clientes.map(c => (
-              <option key={c.id} value={c.id}>
-                {c.nombre} {c.apellidos ? c.apellidos : ''} {c.nif ? `(${c.nif})` : ''}
-              </option>
-            ))}
-          </select>
+          <div ref={comboRef} className="relative">
+            {/* Input de búsqueda */}
+            <div className="flex items-center gap-2 px-3 py-2.5 border rounded-xl bg-white focus-within:ring-2 focus-within:ring-sky-500">
+              <Search className="w-4 h-4 text-gray-400 shrink-0" />
+              <input
+                type="text"
+                placeholder={clienteActual
+                  ? `${clienteActual.nombre} ${clienteActual.primer_apellido || clienteActual.apellidos || ''}`.trim()
+                  : 'Buscar cliente por nombre, apellido o NIF...'}
+                value={busquedaCliente}
+                onChange={(e) => { setBusquedaCliente(e.target.value); setComboAbierto(true) }}
+                onFocus={() => setComboAbierto(true)}
+                className="flex-1 outline-none text-sm bg-transparent"
+              />
+              {(formData.cliente_id || busquedaCliente) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBusquedaCliente('')
+                    onFormDataChange({ cliente_id: '', vehiculo_id: '' })
+                    setComboAbierto(false)
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Dropdown de resultados */}
+            {comboAbierto && (
+              <div className="absolute z-30 mt-1 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-56 overflow-y-auto">
+                {clientesFiltrados.length === 0 ? (
+                  <div className="px-4 py-3 text-sm text-gray-500 text-center">
+                    Sin resultados
+                  </div>
+                ) : (
+                  clientesFiltrados.map(c => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onMouseDown={() => {
+                        onFormDataChange({ cliente_id: c.id, vehiculo_id: '' })
+                        setBusquedaCliente('')
+                        setComboAbierto(false)
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-sky-50 transition-colors ${
+                        formData.cliente_id === c.id ? 'bg-sky-50 font-medium' : ''
+                      }`}
+                    >
+                      <span className="text-gray-900">
+                        {c.nombre} {c.primer_apellido || c.apellidos || ''}
+                      </span>
+                      {c.nif && (
+                        <span className="ml-2 text-xs text-gray-400 font-mono">{c.nif}</span>
+                      )}
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
         ) : (
           <div className="space-y-3 p-3 bg-blue-50 rounded-xl border border-blue-200">
             <h4 className="font-semibold text-blue-800 text-sm flex items-center gap-2">
@@ -504,17 +585,30 @@ export function OrdenInfoTab({
           </div>
         </div>
 
-        {/* KM de entrada */}
-        <div className="mb-4">
-          <Label className="text-xs text-gray-500 mb-1 block">Kilómetros de entrada</Label>
-          <NumberInput
-            value={formData.kilometros_entrada}
-            onChange={(value) => onFormDataChange({ kilometros_entrada: value || undefined })}
-            placeholder="Ej: 145000"
-            className="font-mono"
-            min={0}
-            allowEmpty={true}
-          />
+        {/* KM entrada / salida */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div>
+            <Label className="text-xs text-gray-500 mb-1 block">KM entrada</Label>
+            <NumberInput
+              value={formData.kilometros_entrada}
+              onChange={(value) => onFormDataChange({ kilometros_entrada: value || undefined })}
+              placeholder="Ej: 145000"
+              className="font-mono"
+              min={0}
+              allowEmpty={true}
+            />
+          </div>
+          <div>
+            <Label className="text-xs text-gray-500 mb-1 block">KM salida</Label>
+            <NumberInput
+              value={formData.kilometros_salida}
+              onChange={(value) => onFormDataChange({ kilometros_salida: value || undefined })}
+              placeholder="Ej: 145020"
+              className="font-mono"
+              min={0}
+              allowEmpty={true}
+            />
+          </div>
         </div>
 
         {/* Coste diario de estancia */}

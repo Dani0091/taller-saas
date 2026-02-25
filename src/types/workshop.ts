@@ -63,6 +63,7 @@ export interface Orden {
   danos_carroceria?: string | null
   coste_diario_estancia?: number | null
   kilometros_entrada?: number | null
+  kilometros_salida?: number | null
   estado?: EstadoOrden
 }
 
@@ -87,7 +88,7 @@ export type LineaOrdenFormulario = Omit<LineaOrden, 'id' | 'orden_id'>
 // ==================== TIPOS ADICIONALES ====================
 
 export type TipoLinea = 'mano_obra' | 'pieza' | 'servicio' | 'suplido' | 'reembolso'
-export type EstadoOrden = 'recibido' | 'en_diagnostico' | 'presupuestado' | 'aprobado' | 'en_progreso' | 'finalizado' | 'facturado'
+export type EstadoOrden = 'recibido' | 'en_diagnostico' | 'presupuestado' | 'aprobado' | 'en_progreso' | 'finalizado' | 'facturado' | 'cancelado'
 export type TipoCombustible = 'Gasolina' | 'Diésel' | 'Eléctrico' | 'Híbrido'
 
 // ==================== UTILIDADES DE VALIDACIÓN ====================

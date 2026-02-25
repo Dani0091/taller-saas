@@ -55,7 +55,6 @@ export async function GET(request: NextRequest) {
       `)
       .eq('taller_id', usuario.taller_id)
       .order('fecha_entrada', { ascending: false })
-      .limit(50)
 
     // Filtrar eliminadas por defecto
     if (!incluirEliminadas) {
@@ -177,7 +176,10 @@ export async function PATCH(request: NextRequest) {
       'fecha_entrada', 'fecha_salida_estimada', 'fecha_salida_real',
       'tiempo_estimado_horas', 'tiempo_real_horas',
       'subtotal_mano_obra', 'subtotal_piezas', 'iva_amount', 'total_con_iva',
-      'presupuesto_aprobado_por_cliente', 'notas', 'fotos_entrada', 'fotos_salida'
+      'presupuesto_aprobado_por_cliente', 'notas', 'fotos_entrada', 'fotos_salida',
+      'kilometros_entrada', 'kilometros_salida', 'nivel_combustible',
+      'danos_carroceria', 'renuncia_presupuesto', 'recoger_piezas',
+      'accion_imprevisto', 'coste_diario_estancia', 'fotos_diagnostico'
     ]
 
     // Filtrar solo campos válidos
