@@ -11,7 +11,7 @@
 
 import { useEffect, useState } from 'react'
 import { Card } from '@/components/ui/card'
-import { TrendingUp, Wrench, CheckCircle, AlertCircle, Banknote, Receipt, FileText, Calculator, Gauge, Plus, Users, ArrowRight, Loader2 } from 'lucide-react'
+import { TrendingUp, Wrench, CheckCircle, AlertCircle, Banknote, Receipt, FileText, Calculator, Gauge, Plus, Users, ArrowRight, Loader2, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { obtenerMetricasDashboardAction } from '@/actions/dashboard'
@@ -273,6 +273,23 @@ export default function DashboardPage() {
                 </div>
               </div>
               <ArrowRight className="w-5 h-5 text-gray-400 group-hover:translate-x-1 transition-transform" />
+            </div>
+          </Card>
+        </Link>
+
+        <Link href="/dashboard/facturas/rapida" className="group">
+          <Card className="p-4 md:p-5 border-2 border-violet-200 bg-violet-50 hover:bg-violet-100 hover:border-violet-300 transition-all duration-300 cursor-pointer">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md shadow-violet-500/30">
+                  <Zap className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className="font-bold text-gray-900">Factura Rápida</p>
+                  <p className="text-xs text-violet-600">Serie FS · Sin orden</p>
+                </div>
+              </div>
+              <ArrowRight className="w-5 h-5 text-violet-400 group-hover:translate-x-1 transition-transform" />
             </div>
           </Card>
         </Link>
