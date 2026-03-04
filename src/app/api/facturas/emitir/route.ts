@@ -8,6 +8,29 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
+import crypto from 'crypto'
+
+/** Calcula la huella SHA-256 para el encadenamiento VeriFACTU */
+function calcularHuellaVeriFACTU(params: {
+  tallerId: string
+  numeroFactura: string
+  fechaEmision: string
+  baseImponible: number
+  iva: number
+  total: number
+  clienteId: string
+}): string {
+  const datos = [
+    params.tallerId,
+    params.numeroFactura,
+    params.fechaEmision,
+    params.baseImponible.toFixed(2),
+    params.iva.toFixed(2),
+    params.total.toFixed(2),
+    params.clienteId,
+  ].join('|')
+  return crypto.createHash('sha256').update(datos, 'utf8').digest('hex').toUpperCase()
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -83,11 +106,11 @@ export async function POST(request: NextRequest) {
     const serieToUse = factura.numero_serie || 'FA'
 
     // ── OPERACIÓN ATÓMICA via RPC ────────────────────────────────────────────
-    // asignar_numero_factura_v2 usa FOR UPDATE para bloquear la fila de la serie
+    // asignar_numero_factura_v3 usa FOR UPDATE para bloquear la fila de la serie
     // y garantizar numeración sin duplicados incluso con emisiones simultáneas.
-    // Formato devuelto: RS-007 (LPAD 3 dígitos, crece naturalmente a RS-1000).
+    // Formato devuelto: RS-2026-008 (año anual + LPAD 3 dígitos).
     const { data: rpcResult, error: rpcError } = await supabase
-      .rpc('asignar_numero_factura_v2', {
+      .rpc('asignar_numero_factura_v3', {
         p_taller_id: auth.tallerId,
         p_prefijo: serieToUse,
       })
@@ -97,7 +120,7 @@ export async function POST(request: NextRequest) {
         {
           error: `Error al asignar número de la serie "${serieToUse}"`,
           details: rpcError?.message ?? 'El RPC no devolvió resultado',
-          sugerencia: 'Verifica que la migración 20260224_rpc_numero_atomico_v2.sql se ejecutó en Supabase',
+          sugerencia: 'Verifica que la migración 20260225_final_consolidation.sql se ejecutó en Supabase',
         },
         { status: 500 }
       )
@@ -105,12 +128,39 @@ export async function POST(request: NextRequest) {
 
     const numeroFactura: string = rpcResult.numero_completo
 
-    // Actualizar factura con número y nuevo estado
+    // ── VeriFACTU: calcular huella y encadenamiento ──────────────────────────
+    const huellaHash = calcularHuellaVeriFACTU({
+      tallerId: auth.tallerId,
+      numeroFactura,
+      fechaEmision: factura.fecha_emision || new Date().toISOString().split('T')[0],
+      baseImponible: Number(factura.base_imponible) || 0,
+      iva: Number(factura.iva) || 0,
+      total: Number(factura.total) || 0,
+      clienteId: factura.cliente_id,
+    })
+
+    // Obtener la huella de la última factura emitida de este taller para encadenar
+    const { data: facturaAnterior } = await supabase
+      .from('facturas')
+      .select('huella_hash')
+      .eq('taller_id', auth.tallerId)
+      .neq('id', factura_id)
+      .in('estado', ['emitida', 'pagada'])
+      .not('numero_factura', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    const encadenamientoAnterior = facturaAnterior?.huella_hash || null
+
+    // Actualizar factura con número, estado y huellas VeriFACTU
     const { data: facturaEmitida, error: emitirError } = await supabase
       .from('facturas')
       .update({
         numero_factura: numeroFactura,
         estado: estado_final,
+        huella_hash: huellaHash,
+        encadenamiento_anterior: encadenamientoAnterior,
         updated_at: new Date().toISOString()
       })
       .eq('id', factura_id)

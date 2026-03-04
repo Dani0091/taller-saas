@@ -191,6 +191,11 @@ export function DetalleOrdenSheet({
     potencia_cv: null
   })
 
+  // Matricula-first search
+  const [matriculaInput, setMatriculaInput] = useState('')
+  const [buscandoMatricula, setBuscandoMatricula] = useState(false)
+  const [matriculaNoEncontrada, setMatriculaNoEncontrada] = useState(false)
+
   // Estado para editar vehículo existente
   const [editandoVehiculo, setEditandoVehiculo] = useState(false)
   const [guardandoVehiculo, setGuardandoVehiculo] = useState(false)
@@ -213,11 +218,12 @@ export function DetalleOrdenSheet({
     inicializar()
   }, [])
 
-  // Cargar vehículos cuando cambia el cliente
+  // Cargar vehículos cuando cambia el cliente (solo si no hay vehículo seleccionado por matrícula)
   useEffect(() => {
     if (formData.cliente_id && tallerId) {
       cargarVehiculos(formData.cliente_id)
-    } else {
+    } else if (!formData.vehiculo_id) {
+      // Solo limpiar si no hay vehículo ya seleccionado (p.ej. desde búsqueda por matrícula)
       setVehiculos([])
       setMostrarFormVehiculo(false)
     }
@@ -339,6 +345,7 @@ export function DetalleOrdenSheet({
           danos_carroceria: ordenData.danos_carroceria || '',
           coste_diario_estancia: ordenData.coste_diario_estancia || undefined,
           kilometros_entrada: ordenData.kilometros_entrada || undefined,
+          kilometros_salida: ordenData.kilometros_salida || undefined,
         })
 
         // Cargar vehículos del cliente
@@ -398,6 +405,51 @@ export function DetalleOrdenSheet({
       .order('matricula')
 
     setVehiculos(data || [])
+  }
+
+  // Buscar vehículo por matrícula (flujo matricula-first)
+  const buscarPorMatricula = async () => {
+    const matriculaNorm = matriculaInput.toUpperCase().replace(/\s/g, '')
+    if (!matriculaNorm || !tallerId) return
+
+    setBuscandoMatricula(true)
+    setMatriculaNoEncontrada(false)
+
+    try {
+      const { data } = await supabase
+        .from('vehiculos')
+        .select('id, matricula, marca, modelo, año, color, kilometros, tipo_combustible, vin, bastidor_vin, cliente_id, clientes(id, nombre, apellidos, nif, telefono)')
+        .eq('taller_id', tallerId)
+        .ilike('matricula', matriculaNorm)
+        .is('deleted_at', null)
+        .limit(1)
+        .maybeSingle()
+
+      if (!data) {
+        // No encontrado — pre-rellenar formulario de creación
+        setMatriculaNoEncontrada(true)
+        setNuevoVehiculo(prev => ({ ...prev, matricula: matriculaNorm }))
+        setMostrarFormVehiculo(true)
+      } else {
+        // Encontrado — seleccionar vehículo (y su cliente si lo tiene)
+        setVehiculos([data])
+        setFormData(prev => ({
+          ...prev,
+          vehiculo_id: data.id,
+          cliente_id: data.cliente_id || prev.cliente_id,
+        }))
+        if (data.cliente_id && (data as any).clientes) {
+          setClientes(prev => {
+            const existe = prev.find(c => c.id === data.cliente_id)
+            return existe ? prev : [...prev, (data as any).clientes]
+          })
+        }
+        setMatriculaNoEncontrada(false)
+        setMostrarFormVehiculo(false)
+      }
+    } finally {
+      setBuscandoMatricula(false)
+    }
   }
 
   // Crear cliente nuevo
@@ -467,8 +519,8 @@ export function DetalleOrdenSheet({
       return
     }
 
-    if (!formData.cliente_id || !tallerId) {
-      toast.error('Selecciona un cliente primero')
+    if (!tallerId) {
+      toast.error('Error: taller no identificado')
       return
     }
 
@@ -478,7 +530,7 @@ export function DetalleOrdenSheet({
         .from('vehiculos')
         .insert({
           taller_id: tallerId,
-          cliente_id: formData.cliente_id,
+          cliente_id: formData.cliente_id || null, // Client is optional in matricula-first flow
           matricula: nuevoVehiculo.matricula.toUpperCase().replace(/\s/g, ''),
           marca: nuevoVehiculo.marca || null,
           modelo: nuevoVehiculo.modelo || null,
@@ -785,6 +837,7 @@ export function DetalleOrdenSheet({
         danos_carroceria: formData.danos_carroceria,
         coste_diario_estancia: formData.coste_diario_estancia,
         kilometros_entrada: formData.kilometros_entrada,
+        kilometros_salida: (formData as any).kilometros_salida || null,
         updated_at: new Date().toISOString()
       }
 
@@ -960,6 +1013,7 @@ export function DetalleOrdenSheet({
         danos_carroceria: formData.danos_carroceria,
         coste_diario_estancia: formData.coste_diario_estancia,
         kilometros_entrada: formData.kilometros_entrada,
+        kilometros_salida: (formData as any).kilometros_salida || null,
         updated_at: new Date().toISOString()
       }
 
@@ -1081,6 +1135,44 @@ export function DetalleOrdenSheet({
         router.push(`/dashboard/facturas/ver?id=${dataBorrador.id}`)
       }
     } catch (error: any) {
+      toast.error(error.message)
+    } finally {
+      setGenerandoFactura(false)
+    }
+  }
+
+  // Cobro Rápido — Factura simplificada (< 3000€)
+  const cobroRapido = async () => {
+    if (!ordenSeleccionada || !tallerId) {
+      toast.error('Datos incompletos')
+      return
+    }
+
+    setGuardando(true)
+    const guardado = await guardarOrdenAntesDeFacturar()
+    setGuardando(false)
+    if (!guardado) return
+
+    setGenerandoFactura(true)
+    try {
+      toast.loading('Procesando cobro rápido...')
+      const res = await fetch('/api/facturas/cobro-rapido', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orden_id: ordenSeleccionada }),
+      })
+      const data = await res.json()
+      toast.dismiss()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Error en cobro rápido')
+      }
+
+      toast.success(`⚡ ${data.message || `Factura ${data.numero_factura} emitida y pagada`}`)
+      onActualizar()
+      router.push(`/dashboard/facturas?ref=${data.id}`)
+    } catch (error: any) {
+      toast.dismiss()
       toast.error(error.message)
     } finally {
       setGenerandoFactura(false)
@@ -1216,6 +1308,11 @@ export function DetalleOrdenSheet({
               onCrearVehiculo={crearVehiculo}
               onGuardarVehiculo={guardarEdicionVehiculo}
               vehiculoSeleccionado={vehiculoSeleccionado}
+              matriculaInput={matriculaInput}
+              buscandoMatricula={buscandoMatricula}
+              matriculaNoEncontrada={matriculaNoEncontrada}
+              onMatriculaInputChange={setMatriculaInput}
+              onBuscarMatricula={buscarPorMatricula}
             />
           )}
 
@@ -1312,6 +1409,8 @@ export function DetalleOrdenSheet({
           onMostrarPDF={() => setMostrarPDF(true)}
           onCrearBorradorFactura={crearBorradorFactura}
           onEmitirFacturaDirecta={emitirFacturaDirecta}
+          onCobroRapido={cobroRapido}
+          totalOrden={totales.total}
           onGuardar={handleGuardar}
           onClose={onClose}
         />

@@ -36,6 +36,7 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const clienteId = searchParams.get('cliente_id')
+    const matriculaBusqueda = searchParams.get('matricula')
 
     let query = supabase
       .from('vehiculos')
@@ -45,6 +46,11 @@ export async function GET(request: Request) {
     // Filtrar por cliente si se especifica
     if (clienteId) {
       query = query.eq('cliente_id', clienteId)
+    }
+
+    // Búsqueda por matrícula (parcial, para autocompletado en Factura Rápida)
+    if (matriculaBusqueda) {
+      query = query.ilike('matricula', `%${matriculaBusqueda.toUpperCase()}%`)
     }
 
     const { data, error } = await query.order('matricula', { ascending: true })

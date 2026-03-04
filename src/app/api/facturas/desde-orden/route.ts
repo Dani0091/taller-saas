@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
     console.log(`✅ No existe factura previa, procediendo...`)
 
     // Verificar que la orden esté completada o en estado válido para facturar
-    const estadosValidos = ['aprobado', 'en_reparacion', 'completado', 'entregado']
+    const estadosValidos = ['aprobado', 'en_progreso', 'finalizado', 'facturado']
     if (!estadosValidos.includes(orden.estado)) {
       return NextResponse.json(
         { error: 'La orden debe estar aprobada o completada para generar factura' },
@@ -167,6 +167,7 @@ export async function POST(request: NextRequest) {
         taller_id,
         cliente_id: orden.cliente_id,
         orden_id: orden_id, // Vincular factura con orden
+        vehiculo_id: orden.vehiculo_id || null, // Trazabilidad legal vehículo
         numero_factura: null, // SIN NÚMERO - se asigna al emitir
         numero_serie: serieFactura,
         fecha_emision: new Date().toISOString().split('T')[0],
