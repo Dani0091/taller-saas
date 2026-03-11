@@ -60,7 +60,10 @@ interface ClienteOption {
   direccion?: string
 }
 
-type MetodoPago = 'E' | 'T' | 'B'
+type MetodoPagoSimple = 'E' | 'T' | 'B'
+type MetodoPago = MetodoPagoSimple | 'M'
+
+const NOMBRES_METODO: Record<MetodoPagoSimple, string> = { E: 'Efectivo', T: 'Tarjeta', B: 'Bizum' }
 
 // ─── Constante de límite ─────────────────────────────────────────────────────
 const LIMITE_SIN_CLIENTE = 400
@@ -106,6 +109,11 @@ export default function FacturaRapidaPage() {
   // Método de pago
   const [metodoPago, setMetodoPago] = useState<MetodoPago>('E')
 
+  // Pago mixto (partido entre dos métodos)
+  const [metodoPago1, setMetodoPago1] = useState<MetodoPagoSimple>('E')
+  const [importe1, setImporte1] = useState(0)
+  const [metodoPago2, setMetodoPago2] = useState<MetodoPagoSimple>('B')
+
   // Emisión
   const [emitiendo, setEmitiendo] = useState(false)
   const [resultado, setResultado] = useState<{
@@ -126,6 +134,13 @@ export default function FacturaRapidaPage() {
   const iva = baseImponible * (IVA_DEFAULT / 100)
   const total = baseImponible + iva
   const requiereCliente = total > LIMITE_SIN_CLIENTE
+
+  // Pago mixto: el segundo importe es el resto
+  const importe2 = Math.max(0, Math.round((total - importe1) * 100) / 100)
+  // String descriptivo que se envía al API (acepta texto libre en metodo_pago)
+  const metodoPagoEnviar = metodoPago === 'M'
+    ? `${NOMBRES_METODO[metodoPago1]} ${importe1.toFixed(2)}€ + ${NOMBRES_METODO[metodoPago2]} ${importe2.toFixed(2)}€`
+    : metodoPago
 
   // ── Cargar plantillas ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -240,7 +255,7 @@ export default function FacturaRapidaPage() {
           cliente_id: clienteSeleccionado?.id ?? null,
           lineas_items: lineas,
           iva_porcentaje: IVA_DEFAULT,
-          metodo_pago: metodoPago,
+          metodo_pago: metodoPagoEnviar,
         }),
       })
 
@@ -329,7 +344,10 @@ export default function FacturaRapidaPage() {
 
           {/* Método de pago */}
           <div className="text-center text-xs text-gray-400">
-            Pago: {metodoPago === 'E' ? 'Efectivo' : metodoPago === 'T' ? 'Tarjeta' : 'Bizum'}
+            {metodoPago === 'M'
+              ? `${NOMBRES_METODO[metodoPago1]} ${importe1.toFixed(2)}€ + ${NOMBRES_METODO[metodoPago2]} ${importe2.toFixed(2)}€`
+              : `Pago: ${NOMBRES_METODO[metodoPago as MetodoPagoSimple]}`
+            }
           </div>
         </div>
 
@@ -597,8 +615,8 @@ export default function FacturaRapidaPage() {
         {/* Método de pago */}
         <div>
           <Label>Método de pago</Label>
-          <div className="grid grid-cols-3 gap-2 mt-1">
-            {([['E', 'Efectivo'], ['T', 'Tarjeta'], ['B', 'Bizum']] as [MetodoPago, string][]).map(([code, label]) => (
+          <div className="grid grid-cols-4 gap-2 mt-1">
+            {(['E', 'T', 'B'] as MetodoPagoSimple[]).map(code => (
               <button
                 key={code}
                 onClick={() => setMetodoPago(code)}
@@ -608,10 +626,79 @@ export default function FacturaRapidaPage() {
                     : 'border-gray-200 text-gray-600 hover:border-gray-300'
                 }`}
               >
-                {label}
+                {NOMBRES_METODO[code]}
               </button>
             ))}
+            <button
+              onClick={() => {
+                setMetodoPago('M')
+                // Inicializar importe1 al 50% del total actual
+                setImporte1(Math.round(total / 2 * 100) / 100)
+              }}
+              className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition-all active:scale-95 ${
+                metodoPago === 'M'
+                  ? 'border-violet-500 bg-violet-50 text-violet-700'
+                  : 'border-gray-200 text-gray-600 hover:border-gray-300'
+              }`}
+            >
+              Mixto
+            </button>
           </div>
+
+          {/* Panel de pago partido — solo visible cuando se selecciona Mixto */}
+          {metodoPago === 'M' && (
+            <div className="mt-3 p-3 bg-violet-50 rounded-xl border border-violet-200 space-y-2">
+              <p className="text-xs text-violet-700 font-semibold mb-1">Detalle del pago mixto</p>
+
+              {/* Primer pago */}
+              <div className="flex items-center gap-2">
+                <select
+                  value={metodoPago1}
+                  onChange={e => setMetodoPago1(e.target.value as MetodoPagoSimple)}
+                  className="px-2 py-1.5 text-sm border border-gray-300 rounded-lg bg-white w-28"
+                >
+                  {(['E', 'T', 'B'] as MetodoPagoSimple[]).map(c => (
+                    <option key={c} value={c}>{NOMBRES_METODO[c]}</option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  min={0}
+                  max={total}
+                  step={0.01}
+                  value={importe1}
+                  onChange={e => setImporte1(Math.min(total, Math.max(0, parseFloat(e.target.value) || 0)))}
+                  className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg text-right bg-white"
+                />
+                <span className="text-sm text-gray-500">€</span>
+              </div>
+
+              {/* Segundo pago (resto automático) */}
+              <div className="flex items-center gap-2">
+                <select
+                  value={metodoPago2}
+                  onChange={e => setMetodoPago2(e.target.value as MetodoPagoSimple)}
+                  className="px-2 py-1.5 text-sm border border-gray-300 rounded-lg bg-white w-28"
+                >
+                  {(['E', 'T', 'B'] as MetodoPagoSimple[]).map(c => (
+                    <option key={c} value={c}>{NOMBRES_METODO[c]}</option>
+                  ))}
+                </select>
+                <div className="flex-1 px-2 py-1.5 text-sm border border-gray-200 rounded-lg text-right bg-gray-100 text-gray-700 font-medium">
+                  {importe2.toFixed(2)}
+                </div>
+                <span className="text-sm text-gray-500">€</span>
+              </div>
+
+              {/* Validación visual */}
+              {Math.abs(importe1 + importe2 - total) > 0.01 && (
+                <p className="text-xs text-amber-600 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  Los importes no suman el total ({total.toFixed(2)} €)
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Selector de cliente (solo si total > 400€) */}
