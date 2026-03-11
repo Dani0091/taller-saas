@@ -242,6 +242,8 @@ interface PDFFacturaProps {
   // Persona de contacto (puede diferir del cliente)
   personaContacto?: string
   telefonoContacto?: string
+  // Renting/flotas: número de autorización obligatorio para cobro
+  numeroAutorizacion?: string
   vehiculo?: {
     marca?: string
     modelo?: string
@@ -299,6 +301,7 @@ export const PDFFactura = ({
   receptor,
   personaContacto,
   telefonoContacto,
+  numeroAutorizacion,
   vehiculo,
   lineas,
   baseImponible,
@@ -457,6 +460,27 @@ export const PDFFactura = ({
             </View>
           )}
         </View>
+
+        {/* NÚMERO DE AUTORIZACIÓN (renting/flotas) - campo crítico para cobro */}
+        {numeroAutorizacion && (
+          <View style={{
+            backgroundColor: '#fffbeb',
+            borderWidth: 1,
+            borderColor: '#f59e0b',
+            borderRadius: 3,
+            padding: 8,
+            marginBottom: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+          }}>
+            <Text style={{ fontSize: 7, fontWeight: 'bold', color: '#92400e', width: 110 }}>
+              Nº Autorización Renting:
+            </Text>
+            <Text style={{ fontSize: 10, fontWeight: 'bold', color: '#92400e', fontFamily: 'Courier' }}>
+              {numeroAutorizacion}
+            </Text>
+          </View>
+        )}
 
         {/* TABLA DE LÍNEAS */}
         <View style={styles.table}>
