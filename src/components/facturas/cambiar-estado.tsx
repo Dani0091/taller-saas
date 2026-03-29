@@ -58,13 +58,26 @@ export function CambiarEstado({
 
     setCargando(true)
     try {
-      const response = await fetch(`/api/facturas/actualizar?id=${facturaId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          estado: nuevoEstado,
-        }),
-      })
+      let response
+
+      // Borrador → emitida/pagada: usar /emitir que asigna número correlativo
+      if (estadoActual === 'borrador' && (nuevoEstado === 'emitida' || nuevoEstado === 'pagada')) {
+        response = await fetch(`/api/facturas/emitir`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            factura_id: facturaId,
+            estado_final: nuevoEstado,
+          }),
+        })
+      } else {
+        // Resto de transiciones: emitida → pagada, emitida → anulada, etc.
+        response = await fetch(`/api/facturas/actualizar?id=${facturaId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ estado: nuevoEstado }),
+        })
+      }
 
       const data = await response.json()
 
