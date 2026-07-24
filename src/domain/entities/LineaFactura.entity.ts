@@ -53,11 +53,6 @@ export class LineaFacturaEntity {
   }
 
   public static create(props: LineaFacturaProps): LineaFacturaEntity {
-    // Validar descripción
-    if (!props.descripcion || props.descripcion.trim().length === 0) {
-      throw new ValidationError('La descripción es obligatoria', 'descripcion')
-    }
-
     // Validar cantidad
     if (props.cantidad <= 0) {
       throw new ValidationError('La cantidad debe ser mayor a 0', 'cantidad')
