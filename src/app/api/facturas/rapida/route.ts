@@ -154,6 +154,7 @@ export async function POST(request: NextRequest) {
       .eq('taller_id', auth.tallerId)
       .not('numero_factura', 'is', null)
       .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
       .limit(1)
       .maybeSingle()
 

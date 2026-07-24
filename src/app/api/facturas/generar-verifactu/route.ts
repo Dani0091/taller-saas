@@ -77,6 +77,7 @@ export async function POST(request: NextRequest) {
         .eq('taller_id', tallerId)
         .not('verifactu_huella', 'is', null)
         .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
         .limit(1)
         .single()
 

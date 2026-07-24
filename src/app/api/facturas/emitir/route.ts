@@ -148,6 +148,7 @@ export async function POST(request: NextRequest) {
       .in('estado', ['emitida', 'pagada'])
       .not('numero_factura', 'is', null)
       .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
       .limit(1)
       .maybeSingle()
 
