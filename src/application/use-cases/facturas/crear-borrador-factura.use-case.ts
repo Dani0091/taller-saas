@@ -90,6 +90,7 @@ export class CrearBorradorFacturaUseCase {
       ordenId: datosValidados.ordenId,
       clienteId: datosValidados.clienteId,
       clienteNIF,
+      vehiculoId: datosValidados.vehiculoId,
       fechaEmision,
       fechaVencimiento,
       lineas,

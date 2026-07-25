@@ -362,7 +362,7 @@ export class SupabaseFacturaRepository implements IFacturaRepository {
       // Construir query base
       let query = supabase
         .from('facturas')
-        .select('*, lineas:detalles_factura(*)', { count: 'exact' })
+        .select('*, lineas:detalles_factura(*), vehiculo:vehiculo_id(id, matricula, marca, modelo)', { count: 'exact' })
         .eq('taller_id', tallerId) // 🔒 FILTRO DE SEGURIDAD
 
       // Aplicar filtros

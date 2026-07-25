@@ -63,6 +63,8 @@ export class ListarFacturasUseCase {
         estado: dto.estado,
         clienteId: dto.clienteId,
         clienteNIF: dto.clienteNIF,
+        vehiculoId: dto.vehiculoId,
+        vehiculo: dto.vehiculo,
         fechaEmision: dto.fechaEmision,
         fechaVencimiento: dto.fechaVencimiento,
         total: dto.total,

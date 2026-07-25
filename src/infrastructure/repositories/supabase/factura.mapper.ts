@@ -26,6 +26,14 @@ export interface FacturaDBRecord {
   orden_id?: string
   cliente_id: string
   cliente_nif?: string
+  vehiculo_id?: string
+  // Relación embebida (join a vehiculos), presente cuando el SELECT la solicita
+  vehiculo?: {
+    id: string
+    matricula: string
+    marca?: string
+    modelo?: string
+  } | null
   fecha_emision: string
   fecha_vencimiento?: string
   base_imponible: number
@@ -156,6 +164,15 @@ export class FacturaMapper {
       ordenId: record.orden_id,
       clienteId: record.cliente_id,
       clienteNIF,
+      vehiculoId: record.vehiculo_id || record.vehiculo?.id,
+      vehiculo: record.vehiculo
+        ? {
+            id: record.vehiculo.id,
+            matricula: record.vehiculo.matricula,
+            marca: record.vehiculo.marca,
+            modelo: record.vehiculo.modelo
+          }
+        : undefined,
       fechaEmision: new Date(record.fecha_emision),
       fechaVencimiento: record.fecha_vencimiento
         ? new Date(record.fecha_vencimiento)
@@ -196,6 +213,7 @@ export class FacturaMapper {
       orden_id: plain.orden_id,
       cliente_id: plain.cliente_id,
       cliente_nif: plain.cliente_nif,
+      vehiculo_id: plain.vehiculo_id,
       fecha_emision: plain.fecha_emision,
       fecha_vencimiento: plain.fecha_vencimiento,
       porcentaje_retencion: plain.porcentaje_retencion,

@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
       .select(`
         *,
         cliente:cliente_id(*),
+        vehiculo:vehiculo_id(id, matricula, marca, modelo, año, color, vin, bastidor_vin),
         lineas:detalles_factura(*)
       `)
       .eq('id', id)

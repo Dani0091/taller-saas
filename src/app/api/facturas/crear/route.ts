@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
     const {
       taller_id,
       cliente_id,
+      vehiculo_id,
       serie,
       fecha_emision,
       fecha_vencimiento,
@@ -85,6 +86,7 @@ export async function POST(request: NextRequest) {
     const facturaData: Record<string, any> = {
       taller_id,
       cliente_id,
+      vehiculo_id: vehiculo_id || null,
       numero_factura: null, // Sin número aún - se asignará al emitir
       numero_serie: serieToUse, // Guardamos la serie para usar después
       fecha_emision: fecha_emision || new Date().toISOString().split('T')[0],

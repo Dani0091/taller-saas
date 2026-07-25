@@ -13,6 +13,7 @@ import { ArrowLeft, Loader2, Plus, X, Check, UserPlus, FileText } from 'lucide-r
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { useTaller } from '@/contexts/TallerContext'
+import { VehiculoSelector, type VehiculoSeleccionado } from '@/components/dashboard/facturas/VehiculoSelector'
 
 interface Cliente {
   id: string
@@ -43,6 +44,7 @@ export default function NuevaFacturaPage() {
   const [cargandoClientes, setCargandoClientes] = useState(true)
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [lineas, setLineas] = useState<LineaFactura[]>([])
+  const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState<VehiculoSeleccionado | null>(null)
 
   // Series disponibles
   const [seriesDisponibles, setSeriesDisponibles] = useState<SerieFactura[]>([])
@@ -309,6 +311,7 @@ export default function NuevaFacturaPage() {
         body: JSON.stringify({
           taller_id: tallerId,
           cliente_id: formData.cliente_id,
+          vehiculo_id: vehiculoSeleccionado?.id ?? null,
           serie: formData.serie,
           fecha_emision: formData.fecha_emision,
           fecha_vencimiento: fechaVencimiento,
@@ -449,6 +452,16 @@ export default function NuevaFacturaPage() {
                     </Button>
                   </div>
                 )}
+              </div>
+
+              {/* Vehículo (opcional) */}
+              <div>
+                <VehiculoSelector
+                  value={vehiculoSeleccionado}
+                  onChange={setVehiculoSeleccionado}
+                  clienteId={formData.cliente_id || undefined}
+                  label="Vehículo (opcional)"
+                />
               </div>
 
               {/* Persona de contacto */}

@@ -157,6 +157,7 @@ export default function FacturasPage() {
                 <tr>
                   <th className="px-4 md:px-6 py-3 text-left text-sm font-semibold text-gray-700">Número</th>
                   <th className="px-4 md:px-6 py-3 text-left text-sm font-semibold text-gray-700 hidden sm:table-cell">Fecha</th>
+                  <th className="px-4 md:px-6 py-3 text-left text-sm font-semibold text-gray-700 hidden md:table-cell">Matrícula</th>
                   <th className="px-4 md:px-6 py-3 text-left text-sm font-semibold text-gray-700">Total</th>
                   <th className="px-4 md:px-6 py-3 text-left text-sm font-semibold text-gray-700">Estado</th>
                   <th className="px-4 md:px-6 py-3 text-center text-sm font-semibold text-gray-700">Acciones</th>
@@ -168,6 +169,15 @@ export default function FacturasPage() {
                     <td className="px-4 md:px-6 py-4 font-semibold text-gray-900">{factura.numeroFactura || '—'}</td>
                     <td className="px-4 md:px-6 py-4 text-gray-600 hidden sm:table-cell">
                       {new Date(factura.fechaEmision).toLocaleDateString('es-ES')}
+                    </td>
+                    <td className="px-4 md:px-6 py-4 hidden md:table-cell">
+                      {factura.vehiculo?.matricula ? (
+                        <span className="font-mono font-semibold text-gray-700 tracking-wider">
+                          {factura.vehiculo.matricula}
+                        </span>
+                      ) : (
+                        <span className="text-gray-300">—</span>
+                      )}
                     </td>
                     <td className="px-4 md:px-6 py-4 font-semibold text-gray-900">
                       {factura.totalFormateado}

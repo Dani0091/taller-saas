@@ -75,9 +75,27 @@ export async function GET(request: NextRequest) {
     const tallerConfig = configRes.data
     const lineas = lineasRes.data
 
-    // 3. Obtener vehículo si existe orden
-    let vehiculo = null
-    if (factura.orden_id) {
+    // 3. Obtener vehículo — prioridad: vehiculo_id directo en la factura;
+    //    si no existe (datos legacy), caer al vehículo de la orden de origen.
+    let vehiculo: { marca?: string; modelo?: string; matricula?: string; km?: number; bastidor?: string } | null = null
+
+    if (factura.vehiculo_id) {
+      const { data: v } = await supabase
+        .from('vehiculos')
+        .select('marca, modelo, matricula, kilometros, bastidor_vin')
+        .eq('id', factura.vehiculo_id)
+        .single()
+
+      if (v) {
+        vehiculo = {
+          marca: v.marca || undefined,
+          modelo: v.modelo || undefined,
+          matricula: v.matricula,
+          km: v.kilometros || undefined,
+          bastidor: v.bastidor_vin || undefined,
+        }
+      }
+    } else if (factura.orden_id) {
       const { data: orden } = await supabase
         .from('ordenes_reparacion')
         .select('*, vehiculos(*)')
@@ -86,10 +104,11 @@ export async function GET(request: NextRequest) {
 
       if (orden?.vehiculos) {
         vehiculo = {
-          modelo: `${orden.vehiculos.marca} ${orden.vehiculos.modelo}`,
+          marca: orden.vehiculos.marca || undefined,
+          modelo: orden.vehiculos.modelo || undefined,
           matricula: orden.vehiculos.matricula,
-          km: orden.vehiculos.km_actual,
-          vin: orden.vehiculos.vin,
+          km: orden.vehiculos.kilometros || undefined,
+          bastidor: orden.vehiculos.bastidor_vin || undefined,
         }
       }
     }

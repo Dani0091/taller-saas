@@ -31,6 +31,7 @@ export const CrearLineaFacturaSchema = z.object({
 export const CrearBorradorFacturaSchema = z.object({
   clienteId: z.string().uuid('ID de cliente inválido'),
   clienteNIF: z.string().max(20).optional(),
+  vehiculoId: z.string().uuid('ID de vehículo inválido').optional(),
   ordenId: z.string().uuid('ID de orden inválido').optional(),
   tipo: z.nativeEnum(TipoFactura).default(TipoFactura.NORMAL),
   fechaEmision: z.string().datetime().optional(),
@@ -144,6 +145,16 @@ export interface LineaFacturaResponseDTO {
 }
 
 /**
+ * DTO con los datos mínimos del vehículo asociado a una factura
+ */
+export interface VehiculoInfoDTO {
+  id: string
+  matricula: string
+  marca?: string
+  modelo?: string
+}
+
+/**
  * DTO de factura para respuestas (completo)
  */
 export interface FacturaResponseDTO {
@@ -155,6 +166,8 @@ export interface FacturaResponseDTO {
   ordenId?: string
   clienteId: string
   clienteNIF?: string
+  vehiculoId?: string
+  vehiculo?: VehiculoInfoDTO
   fechaEmision: string
   fechaVencimiento?: string
   lineas: LineaFacturaResponseDTO[]
@@ -189,6 +202,8 @@ export interface FacturaListadoDTO {
   estado: EstadoFactura
   clienteId: string
   clienteNIF?: string
+  vehiculoId?: string
+  vehiculo?: VehiculoInfoDTO
   fechaEmision: string
   fechaVencimiento?: string
   total: number
