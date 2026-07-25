@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Download, Printer, Loader2, Car } from 'lucide-react'
+import { ArrowLeft, Download, Printer, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { InformacionLegal } from '@/components/facturas/informacion-legal'
 import { CambiarEstado } from '@/components/facturas/cambiar-estado'
@@ -292,16 +292,20 @@ export default function VerFacturaPage() {
             {/* Vehículo */}
             {factura.vehiculo && (
               <div className="border-l-4 border-orange-500 pl-4">
-                <h3 className="font-semibold text-gray-700 mb-2 text-sm uppercase flex items-center gap-1.5">
-                  <Car className="w-4 h-4 text-orange-500" />
-                  Vehículo
+                <h3 className="font-semibold text-gray-700 mb-2 text-sm uppercase">
+                  🚗 Vehículo
                 </h3>
+                <p className="font-mono font-bold text-sky-600 text-xl tracking-wider">
+                  {factura.vehiculo.matricula}
+                </p>
                 {(factura.vehiculo.marca || factura.vehiculo.modelo) && (
-                  <p className="font-semibold text-gray-900 text-lg">
+                  <p className="text-gray-900">
                     {factura.vehiculo.marca} {factura.vehiculo.modelo}
                   </p>
                 )}
-                <p className="text-gray-600 font-mono tracking-wider">{factura.vehiculo.matricula}</p>
+                {factura.vehiculo.año && (
+                  <p className="text-gray-500 text-xs mt-1">{factura.vehiculo.año}</p>
+                )}
                 {factura.vehiculo.bastidor_vin && (
                   <p className="text-gray-500 text-xs mt-2">VIN: {factura.vehiculo.bastidor_vin}</p>
                 )}

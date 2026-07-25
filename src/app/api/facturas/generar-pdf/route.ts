@@ -77,20 +77,32 @@ export async function GET(request: NextRequest) {
 
     // 3. Obtener vehículo — prioridad: vehiculo_id directo en la factura;
     //    si no existe (datos legacy), caer al vehículo de la orden de origen.
-    let vehiculo: { marca?: string; modelo?: string; matricula?: string; km?: number; bastidor?: string } | null = null
+    let vehiculo: { marca?: string; modelo?: string; matricula?: string; año?: number; km?: number; bastidor?: string } | null = null
 
     if (factura.vehiculo_id) {
+      // Nota: la 'ñ' de "año" rompe el parser de tipos de .select() de supabase-js
+      // (ParserError / GenericStringError). Se fuerza el tipo de retorno con .returns<T>()
+      // para evitar depender del parseo literal de la cadena de select.
       const { data: v } = await supabase
         .from('vehiculos')
-        .select('marca, modelo, matricula, kilometros, bastidor_vin')
+        .select('marca, modelo, matricula, año, kilometros, bastidor_vin')
         .eq('id', factura.vehiculo_id)
         .single()
+        .returns<{
+          marca: string | null
+          modelo: string | null
+          matricula: string
+          año: number | null
+          kilometros: number | null
+          bastidor_vin: string | null
+        }>()
 
       if (v) {
         vehiculo = {
           marca: v.marca || undefined,
           modelo: v.modelo || undefined,
           matricula: v.matricula,
+          año: v.año || undefined,
           km: v.kilometros || undefined,
           bastidor: v.bastidor_vin || undefined,
         }
@@ -107,6 +119,7 @@ export async function GET(request: NextRequest) {
           marca: orden.vehiculos.marca || undefined,
           modelo: orden.vehiculos.modelo || undefined,
           matricula: orden.vehiculos.matricula,
+          año: orden.vehiculos.año || undefined,
           km: orden.vehiculos.kilometros || undefined,
           bastidor: orden.vehiculos.bastidor_vin || undefined,
         }

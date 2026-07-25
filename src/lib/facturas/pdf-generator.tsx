@@ -248,6 +248,7 @@ interface PDFFacturaProps {
     marca?: string
     modelo?: string
     matricula?: string
+    año?: number
     km?: number
     bastidor?: string
   }
@@ -433,18 +434,23 @@ export const PDFFactura = ({
             )}
           </View>
 
-          {/* VEHÍCULO */}
+          {/* VEHÍCULO — la matrícula es el dato principal (identifica el vehículo de un vistazo) */}
           {vehiculo && (vehiculo.matricula || vehiculo.modelo) && (
             <View style={styles.dataBlockVehicle}>
               <Text style={styles.dataLabel}>Vehículo:</Text>
-              {vehiculo.marca && vehiculo.modelo && (
-                <Text style={styles.dataValue}>
+              {vehiculo.matricula && (
+                <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#111827', marginBottom: 2, fontFamily: 'Courier-Bold' }}>
+                  {vehiculo.matricula}
+                </Text>
+              )}
+              {(vehiculo.marca || vehiculo.modelo) && (
+                <Text style={styles.dataValueSmall}>
                   {vehiculo.marca} {vehiculo.modelo}
                 </Text>
               )}
-              {vehiculo.matricula && (
+              {vehiculo.año && (
                 <Text style={styles.dataValueSmall}>
-                  Matrícula: {vehiculo.matricula}
+                  Año: {vehiculo.año}
                 </Text>
               )}
               {mostrarKm && vehiculo.km && (

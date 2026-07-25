@@ -266,9 +266,11 @@ export default function NuevaFacturaPage() {
     setLineas(lineas.filter((l) => l.id !== id))
   }
 
-  // Cuando se selecciona un cliente, auto-rellenar contacto
+  // Cuando se selecciona un cliente, auto-rellenar contacto y limpiar vehículo
+  // (un vehículo elegido para el cliente anterior no aplica al nuevo)
   const handleClienteChange = (clienteId: string) => {
     setFormData({ ...formData, cliente_id: clienteId })
+    setVehiculoSeleccionado(null)
     const cliente = clientes.find(c => c.id === clienteId)
     if (cliente) {
       setFormData(prev => ({
