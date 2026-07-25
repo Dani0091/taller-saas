@@ -7,6 +7,7 @@
  */
 
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer'
+import { PDF_VEHICLE_THEME, PDF_BRAND_THEME_DEFAULT } from './pdf-theme'
 
 /**
  * Crea estilos dinámicos basados en colores personalizados
@@ -71,9 +72,10 @@ const createStyles = (colorPrimario: string, colorSecundario: string) => StyleSh
   },
   dataBlockVehicle: {
     flex: 1,
-    borderLeftWidth: 2, // Reducido de 3
-    borderLeftColor: '#f97316',
-    paddingLeft: 8, // Reducido de 12
+    borderLeftWidth: 4,
+    borderLeftColor: PDF_VEHICLE_THEME.borderColor,
+    backgroundColor: PDF_VEHICLE_THEME.backgroundColor,
+    padding: 8,
   },
   dataLabel: {
     fontSize: 7, // Reducido de 8
@@ -323,8 +325,8 @@ export const PDFFactura = ({
   verifactuQRImage,
   verifactuHuella,
   esVerifactu = false,
-  colorPrimario = '#0284c7',
-  colorSecundario = '#0369a1',
+  colorPrimario = PDF_BRAND_THEME_DEFAULT.colorPrimario,
+  colorSecundario = PDF_BRAND_THEME_DEFAULT.colorSecundario,
   // Opciones de visualización (por defecto true para retrocompatibilidad)
   mostrarTelefono = true,
   mostrarEmail = true,
@@ -437,29 +439,29 @@ export const PDFFactura = ({
           {/* VEHÍCULO — la matrícula es el dato principal (identifica el vehículo de un vistazo) */}
           {vehiculo && (vehiculo.matricula || vehiculo.modelo) && (
             <View style={styles.dataBlockVehicle}>
-              <Text style={styles.dataLabel}>Vehículo:</Text>
+              <Text style={{ ...styles.dataLabel, color: PDF_VEHICLE_THEME.textColor }}>Vehículo:</Text>
               {vehiculo.matricula && (
-                <Text style={{ fontSize: 13, fontWeight: 'bold', color: '#111827', marginBottom: 2, fontFamily: 'Courier-Bold' }}>
+                <Text style={{ fontSize: 14, fontWeight: 'bold', color: PDF_VEHICLE_THEME.matriculaColor, marginBottom: 2, fontFamily: 'Courier-Bold' }}>
                   {vehiculo.matricula}
                 </Text>
               )}
               {(vehiculo.marca || vehiculo.modelo) && (
-                <Text style={styles.dataValueSmall}>
+                <Text style={{ ...styles.dataValueSmall, color: PDF_VEHICLE_THEME.textColor }}>
                   {vehiculo.marca} {vehiculo.modelo}
                 </Text>
               )}
               {vehiculo.año && (
-                <Text style={styles.dataValueSmall}>
+                <Text style={{ ...styles.dataValueSmall, color: PDF_VEHICLE_THEME.textColor }}>
                   Año: {vehiculo.año}
                 </Text>
               )}
               {mostrarKm && vehiculo.km && (
-                <Text style={styles.dataValueSmall}>
+                <Text style={{ ...styles.dataValueSmall, color: PDF_VEHICLE_THEME.textColor }}>
                   Km: {vehiculo.km.toLocaleString('es-ES')}
                 </Text>
               )}
               {vehiculo.bastidor && (
-                <Text style={styles.dataValueSmall}>
+                <Text style={{ ...styles.dataValueSmall, color: PDF_VEHICLE_THEME.textColor }}>
                   VIN: {vehiculo.bastidor}
                 </Text>
               )}
