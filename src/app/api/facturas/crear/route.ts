@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
       taller_id,
       cliente_id,
       vehiculo_id,
+      matricula,
       serie,
       fecha_emision,
       fecha_vencimiento,
@@ -116,6 +117,11 @@ export async function POST(request: NextRequest) {
     // Campos para renting/flotas
     if (numero_autorizacion) {
       facturaData.numero_autorizacion = numero_autorizacion
+    }
+    // Matrícula en texto libre: sólo cuando no hay vehiculo_id vinculado
+    // (si lo hay, la matrícula se obtiene de vehiculos al generar el PDF)
+    if (!vehiculo_id && matricula) {
+      facturaData.matricula = matricula
     }
 
     const { data: factura, error: facturaError } = await supabase

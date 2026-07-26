@@ -45,6 +45,7 @@ export default function NuevaFacturaPage() {
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [lineas, setLineas] = useState<LineaFactura[]>([])
   const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState<VehiculoSeleccionado | null>(null)
+  const [matriculaDirecta, setMatriculaDirecta] = useState('')
 
   // Series disponibles
   const [seriesDisponibles, setSeriesDisponibles] = useState<SerieFactura[]>([])
@@ -314,6 +315,7 @@ export default function NuevaFacturaPage() {
           taller_id: tallerId,
           cliente_id: formData.cliente_id,
           vehiculo_id: vehiculoSeleccionado?.id ?? null,
+          matricula: vehiculoSeleccionado?.matricula ?? (matriculaDirecta.trim() || null),
           serie: formData.serie,
           fecha_emision: formData.fecha_emision,
           fecha_vencimiento: fechaVencimiento,
@@ -460,10 +462,21 @@ export default function NuevaFacturaPage() {
               <div>
                 <VehiculoSelector
                   value={vehiculoSeleccionado}
-                  onChange={setVehiculoSeleccionado}
+                  onChange={(v) => {
+                    setVehiculoSeleccionado(v)
+                    if (v) setMatriculaDirecta('')
+                  }}
                   clienteId={formData.cliente_id || undefined}
                   label="Matrícula (opcional)"
                 />
+                {!vehiculoSeleccionado && (
+                  <Input
+                    className="mt-1"
+                    placeholder="O escribir matrícula directamente (sin crear vehículo)"
+                    value={matriculaDirecta}
+                    onChange={(e) => setMatriculaDirecta(e.target.value.toUpperCase())}
+                  />
+                )}
               </div>
 
               {/* Persona de contacto */}

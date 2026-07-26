@@ -124,6 +124,9 @@ export async function GET(request: NextRequest) {
           bastidor: orden.vehiculos.bastidor_vin || undefined,
         }
       }
+    } else if (factura.matricula) {
+      // Matrícula en texto libre, sin vehículo vinculado (alta rápida)
+      vehiculo = { matricula: factura.matricula }
     }
 
     // 4. Procesar Logo (Base64) - buscar en taller_config primero, luego en talleres
