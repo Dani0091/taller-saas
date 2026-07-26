@@ -309,8 +309,12 @@ export class SupabaseVehiculoRepository implements IVehiculoRepository {
         .select('*', { count: 'exact' })
         .eq('taller_id', tallerId) // 🔒 FILTRO DE SEGURIDAD
 
-      // Ordenar por fecha de creación (más recientes primero)
-      query = query.order('created_at', { ascending: false })
+      // Ordenar según preferencia del usuario
+      if (filtros.sortBy === 'antiguos') {
+        query = query.order('created_at', { ascending: true })
+      } else {
+        query = query.order('created_at', { ascending: false })
+      }
 
       // Aplicar paginación
       const from = (paginacion.page - 1) * paginacion.pageSize

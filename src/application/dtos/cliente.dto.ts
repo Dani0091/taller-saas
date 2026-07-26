@@ -76,6 +76,7 @@ export const FiltrosClienteSchema = z.object({
   ciudad: z.string().optional(),
   provincia: z.string().optional(),
   incluirEliminados: z.boolean().default(false),
+  sortBy: z.enum(['recientes', 'antiguos', 'alfabetico']).default('recientes'),
   page: z.number().int().positive().default(1),
   pageSize: z.number().int().positive().max(100).default(20)
 })

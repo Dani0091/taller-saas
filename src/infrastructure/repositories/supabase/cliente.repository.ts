@@ -352,8 +352,18 @@ export class SupabaseClienteRepository implements IClienteRepository {
         )
       }
 
-      // Ordenar por fecha de creación (más recientes primero)
-      query = query.order('created_at', { ascending: false })
+      // Ordenar según preferencia del usuario
+      switch (filtros.sortBy) {
+        case 'antiguos':
+          query = query.order('created_at', { ascending: true })
+          break
+        case 'alfabetico':
+          query = query.order('nombre', { ascending: true })
+          break
+        case 'recientes':
+        default:
+          query = query.order('created_at', { ascending: false })
+      }
 
       // Aplicar paginación
       const from = (paginacion.page - 1) * paginacion.pageSize

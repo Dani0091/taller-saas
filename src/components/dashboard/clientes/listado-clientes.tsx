@@ -13,22 +13,25 @@ import { FormClienteSheet } from './form-cliente-sheet'
 interface ListadoClientesProps {
   clientes: ClienteListadoDTO[]
   onActualizar: () => void
+  sortBy?: 'recientes' | 'antiguos' | 'alfabetico'
+  onSortByChange?: (sortBy: 'recientes' | 'antiguos' | 'alfabetico') => void
 }
 
-export function ListadoClientes({ clientes, onActualizar }: ListadoClientesProps) {
+export function ListadoClientes({ clientes, onActualizar, sortBy = 'recientes', onSortByChange }: ListadoClientesProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [clienteEditando, setClienteEditando] = useState<string | null>(null)
   const [mostrarFormulario, setMostrarFormulario] = useState(false)
   const [cargando, setCargando] = useState(false)
 
-  const clientesFiltrados = clientes
-    .filter(c =>
-      !searchTerm ||
-      c.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.nif?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.telefono?.includes(searchTerm)
-    )
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  // El orden ya lo aplica el servidor según `sortBy`; aquí sólo se filtra por
+  // búsqueda, sin re-ordenar (evita pisar "alfabético"/"antiguos" con un
+  // orden fijo por fecha).
+  const clientesFiltrados = clientes.filter(c =>
+    !searchTerm ||
+    c.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.nif?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.telefono?.includes(searchTerm)
+  )
 
   const handleEliminar = async (id: string) => {
     if (!confirm('¿Eliminar cliente? (Se archivará, no se borrará)')) return
@@ -63,6 +66,15 @@ export function ListadoClientes({ clientes, onActualizar }: ListadoClientesProps
             className="pl-10"
           />
         </div>
+        <select
+          value={sortBy}
+          onChange={(e) => onSortByChange?.(e.target.value as 'recientes' | 'antiguos' | 'alfabetico')}
+          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent text-sm"
+        >
+          <option value="recientes">Más recientes</option>
+          <option value="antiguos">Más antiguos</option>
+          <option value="alfabetico">Alfabético A-Z</option>
+        </select>
         <Button
           onClick={() => setMostrarFormulario(true)}
           className="gap-2 bg-blue-600 hover:bg-blue-700"

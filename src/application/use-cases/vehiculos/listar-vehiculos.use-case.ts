@@ -33,7 +33,8 @@ export class ListarVehiculosUseCase {
       busqueda: filtrosValidados.busqueda,
       incluirEliminados: filtrosValidados.incluirEliminados,
       soloSinCliente: filtrosValidados.soloSinCliente,
-      soloConDatosCompletos: filtrosValidados.soloConDatosCompletos
+      soloConDatosCompletos: filtrosValidados.soloConDatosCompletos,
+      sortBy: filtrosValidados.sortBy
     }
 
     const paginacion: PaginacionOpciones = {

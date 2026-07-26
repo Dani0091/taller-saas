@@ -13,6 +13,7 @@ export default function ClientesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
+  const [sortBy, setSortBy] = useState<'recientes' | 'antiguos' | 'alfabetico'>('recientes')
   const initRef = useRef(false)
 
   useEffect(() => {
@@ -26,6 +27,10 @@ export default function ClientesPage() {
     }
   }, [mounted])
 
+  useEffect(() => {
+    if (initRef.current) cargarClientes()
+  }, [sortBy])
+
   const cargarClientes = async () => {
     try {
       setLoading(true)
@@ -34,6 +39,7 @@ export default function ClientesPage() {
       // Usar Server Action blindada en lugar de API route o Supabase directo
       const resultado = await listarClientesAction({
         incluirEliminados: false,
+        sortBy,
         page: 1,
         pageSize: 100
       })
@@ -75,7 +81,7 @@ export default function ClientesPage() {
           <Loader2 className="w-8 h-8 animate-spin text-sky-600" />
         </div>
       ) : (
-        <ListadoClientes clientes={clientes} onActualizar={cargarClientes} />
+        <ListadoClientes clientes={clientes} onActualizar={cargarClientes} sortBy={sortBy} onSortByChange={setSortBy} />
       )}
     </div>
   )

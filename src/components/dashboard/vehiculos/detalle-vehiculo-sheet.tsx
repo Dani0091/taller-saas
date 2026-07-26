@@ -123,6 +123,7 @@ export function DetalleVehiculoSheet({
       // ✅ Cargar clientes del taller usando Server Action
       const resultadoClientes = await listarClientesAction({
         incluirEliminados: false,
+        sortBy: 'alfabetico',
         page: 1,
         pageSize: 100
       })

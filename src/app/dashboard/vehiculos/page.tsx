@@ -32,6 +32,7 @@ export default function VehiculosPage() {
   const [error, setError] = useState<string | null>(null)
   const [filtroActivo, setFiltroActivo] = useState('todos')
   const [busqueda, setBusqueda] = useState('')
+  const [sortBy, setSortBy] = useState<'recientes' | 'antiguos'>('recientes')
   const [mostrarMenu, setMostrarMenu] = useState(false)
   const [vehiculoSeleccionado, setVehiculoSeleccionado] = useState<string | null>(null)
   const initRef = useRef(false)
@@ -43,6 +44,10 @@ export default function VehiculosPage() {
     }
   }, [])
 
+  useEffect(() => {
+    if (initRef.current) cargarVehiculos()
+  }, [sortBy])
+
   const cargarVehiculos = async () => {
     try {
       setLoading(true)
@@ -53,6 +58,7 @@ export default function VehiculosPage() {
         incluirEliminados: false,
         soloSinCliente: false,
         soloConDatosCompletos: false,
+        sortBy,
         page: 1,
         pageSize: 100
       })
@@ -114,14 +120,24 @@ export default function VehiculosPage() {
         </div>
 
         {/* BÚSQUEDA */}
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-          <Input
-            placeholder="Buscar matrícula, marca, modelo, cliente..."
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            className="pl-9"
-          />
+        <div className="flex gap-2 mb-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+            <Input
+              placeholder="Buscar matrícula, marca, modelo, cliente..."
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as 'recientes' | 'antiguos')}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent text-sm"
+          >
+            <option value="recientes">Más recientes</option>
+            <option value="antiguos">Más antiguos</option>
+          </select>
         </div>
 
         {/* MENÚ/FILTROS */}

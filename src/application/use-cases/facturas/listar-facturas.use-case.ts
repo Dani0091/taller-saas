@@ -42,7 +42,8 @@ export class ListarFacturasUseCase {
         ? new Date(filtrosValidados.fechaHasta)
         : undefined,
       vencidas: filtrosValidados.vencidas,
-      busqueda: filtrosValidados.busqueda
+      busqueda: filtrosValidados.busqueda,
+      sortBy: filtrosValidados.sortBy
     }
 
     const paginacion = {

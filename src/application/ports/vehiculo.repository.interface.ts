@@ -25,6 +25,7 @@ export interface VehiculoFiltros {
   incluirEliminados?: boolean
   soloSinCliente?: boolean // Vehículos sin cliente asignado
   soloConDatosCompletos?: boolean // Vehículos con marca, modelo, año y VIN
+  sortBy?: 'recientes' | 'antiguos'
 }
 
 /**

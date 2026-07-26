@@ -89,6 +89,7 @@ export const FiltrosFacturaSchema = z.object({
   fechaHasta: z.string().datetime().optional(),
   vencidas: z.boolean().optional(),
   busqueda: z.string().optional(),
+  sortBy: z.enum(['recientes', 'antiguos', 'fecha_emision']).default('recientes'),
   page: z.number().int().positive().default(1),
   pageSize: z.number().int().positive().max(100).default(20)
 })

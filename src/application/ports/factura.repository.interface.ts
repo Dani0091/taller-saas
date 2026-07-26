@@ -28,6 +28,7 @@ export interface FacturaFiltros {
   fechaHasta?: Date
   vencidas?: boolean // Solo facturas vencidas
   busqueda?: string // Búsqueda por número o cliente
+  sortBy?: 'recientes' | 'antiguos' | 'fecha_emision'
 }
 
 /**

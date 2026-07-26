@@ -25,11 +25,12 @@ export default function FacturasPage() {
   const [error, setError] = useState<string | null>(null)
   const [filtroEstado, setFiltroEstado] = useState<EstadoFactura | ''>('')
   const [busqueda, setBusqueda] = useState<string>('')
+  const [sortBy, setSortBy] = useState<'recientes' | 'antiguos' | 'fecha_emision'>('recientes')
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     fetchFacturas()
-  }, [filtroEstado])
+  }, [filtroEstado, sortBy])
 
   const fetchFacturas = async () => {
     try {
@@ -39,6 +40,7 @@ export default function FacturasPage() {
       // Usar Server Action blindada en lugar de API route
       const resultado = await listarFacturasAction({
         estado: filtroEstado || undefined,
+        sortBy,
         page: 1,
         pageSize: 100
       })
@@ -104,7 +106,7 @@ export default function FacturasPage() {
 
       {/* FILTROS */}
       <Card className="p-4 md:p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-semibold mb-2">Buscar</label>
             <Input
@@ -125,6 +127,18 @@ export default function FacturasPage() {
               <option value="emitida">Emitida</option>
               <option value="pagada">Pagada</option>
               <option value="anulada">Anulada</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-semibold mb-2">Ordenar por</label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'recientes' | 'antiguos' | 'fecha_emision')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+            >
+              <option value="recientes">Más recientes</option>
+              <option value="antiguos">Más antiguos</option>
+              <option value="fecha_emision">Por fecha emisión</option>
             </select>
           </div>
         </div>

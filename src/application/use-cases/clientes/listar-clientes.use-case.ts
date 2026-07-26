@@ -18,7 +18,8 @@ export class ListarClientesUseCase {
       busqueda: filtrosValidados.busqueda,
       ciudad: filtrosValidados.ciudad,
       provincia: filtrosValidados.provincia,
-      incluirEliminados: filtrosValidados.incluirEliminados
+      incluirEliminados: filtrosValidados.incluirEliminados,
+      sortBy: filtrosValidados.sortBy
     }
 
     const paginacion = {

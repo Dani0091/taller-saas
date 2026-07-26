@@ -74,6 +74,7 @@ export const FiltrosVehiculoSchema = z.object({
   incluirEliminados: z.boolean().default(false),
   soloSinCliente: z.boolean().default(false),
   soloConDatosCompletos: z.boolean().default(false),
+  sortBy: z.enum(['recientes', 'antiguos']).default('recientes'),
   page: z.number().int().positive().default(1),
   pageSize: z.number().int().positive().max(100).default(20)
 })

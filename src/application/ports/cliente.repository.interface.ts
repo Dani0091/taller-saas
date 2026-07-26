@@ -21,6 +21,7 @@ export interface ClienteFiltros {
   ciudad?: string
   provincia?: string
   incluirEliminados?: boolean
+  sortBy?: 'recientes' | 'antiguos' | 'alfabetico'
 }
 
 /**
