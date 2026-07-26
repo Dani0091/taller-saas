@@ -43,14 +43,16 @@ export async function GET(request: Request) {
       .select('*')
       .eq('taller_id', auth.tallerId) // Solo vehículos del taller del usuario
 
-    // Filtrar por cliente si se especifica
-    if (clienteId) {
-      query = query.eq('cliente_id', clienteId)
-    }
-
-    // Búsqueda por matrícula (parcial, para autocompletado en Factura Rápida)
     if (matriculaBusqueda) {
+      // Búsqueda por matrícula: se busca en TODO el taller, no sólo en los
+      // vehículos ya vinculados al cliente indicado — un vehículo puede
+      // pertenecer a otro cliente (flota, cambio de titular) o no tener
+      // cliente asignado todavía. Filtrar por cliente_id aquí lo dejaba
+      // fuera del autocompletado sin forma de seleccionarlo.
       query = query.ilike('matricula', `%${matriculaBusqueda.toUpperCase()}%`)
+    } else if (clienteId) {
+      // Sin búsqueda de matrícula: listado de vehículos de un cliente concreto
+      query = query.eq('cliente_id', clienteId)
     }
 
     const { data, error } = await query.order('matricula', { ascending: true })
@@ -62,7 +64,12 @@ export async function GET(request: Request) {
       )
     }
 
-    return NextResponse.json(data, { status: 200 })
+    // Priorizar (no excluir) los vehículos ya vinculados al cliente indicado
+    const resultado = clienteId && matriculaBusqueda && data
+      ? [...data].sort((a, b) => Number(b.cliente_id === clienteId) - Number(a.cliente_id === clienteId))
+      : data
+
+    return NextResponse.json(resultado, { status: 200 })
   } catch (error) {
     return NextResponse.json(
       { error: 'Error en servidor' },

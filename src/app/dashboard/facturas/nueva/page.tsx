@@ -462,7 +462,7 @@ export default function NuevaFacturaPage() {
                   value={vehiculoSeleccionado}
                   onChange={setVehiculoSeleccionado}
                   clienteId={formData.cliente_id || undefined}
-                  label="Vehículo (opcional)"
+                  label="Matrícula (opcional)"
                 />
               </div>
 
