@@ -162,6 +162,7 @@ export function VehiculoSelector({ value, onChange, clienteId, label = 'Vehícul
         open={mostrarModal}
         onClose={() => setMostrarModal(false)}
         matriculaInicial={matriculaInput}
+        clienteId={clienteId}
         onCreado={(v) => {
           onChange(v)
           setMatriculaInput(v.matricula)

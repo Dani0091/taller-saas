@@ -21,6 +21,8 @@ interface NuevoVehiculoModalProps {
   onCreado?: (vehiculo: { id: string; matricula: string; marca?: string; modelo?: string }) => void
   /** Matrícula prerellenada desde el campo de búsqueda */
   matriculaInicial?: string
+  /** Cliente al que vincular el vehículo recién creado, si se conoce */
+  clienteId?: string
 }
 
 const MARCAS_COMUNES = ['Audi', 'BMW', 'Citroën', 'Fiat', 'Ford', 'Honda', 'Hyundai', 'Kia',
@@ -32,7 +34,7 @@ function esMatricula(value: string): boolean {
   return /^[0-9]{4}[BCDFGHJKLMNPRSTUVWXYZ]{3}$/i.test(value.trim())
 }
 
-export function NuevoVehiculoModal({ open, onClose, onCreado, matriculaInicial = '' }: NuevoVehiculoModalProps) {
+export function NuevoVehiculoModal({ open, onClose, onCreado, matriculaInicial = '', clienteId }: NuevoVehiculoModalProps) {
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
     matricula: matriculaInicial.toUpperCase(),
@@ -73,6 +75,7 @@ export function NuevoVehiculoModal({ open, onClose, onCreado, matriculaInicial =
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           matricula: form.matricula.trim(),
+          cliente_id: clienteId || null,
           marca: form.marca || null,
           modelo: form.modelo || null,
           año: form.año ? parseInt(form.año) : null,
