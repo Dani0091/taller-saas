@@ -458,7 +458,7 @@ export default function NuevaFacturaPage() {
                 )}
               </div>
 
-              {/* Vehículo (opcional) — un único campo: busca, permite dar de alta,
+              {/* Vehículo — un único campo: busca, permite dar de alta,
                   o si el usuario escribe y no selecciona nada, se guarda como
                   matrícula en texto libre */}
               <div>
@@ -467,8 +467,8 @@ export default function NuevaFacturaPage() {
                   onChange={setVehiculoSeleccionado}
                   onInputChange={setMatriculaDirecta}
                   clienteId={formData.cliente_id || undefined}
-                  label="Matrícula (opcional)"
-                  placeholder="Matrícula (opcional) - buscar o escribir"
+                  label="Matrícula"
+                  placeholder="Matrícula - buscar o escribir"
                 />
               </div>
 
