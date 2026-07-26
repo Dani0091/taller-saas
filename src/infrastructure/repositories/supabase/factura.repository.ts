@@ -403,8 +403,8 @@ export class SupabaseFacturaRepository implements IFacturaRepository {
         query = query.or(`numero_factura.ilike.%${filtros.busqueda}%,cliente_nif.ilike.%${filtros.busqueda}%`)
       }
 
-      // Ordenar por fecha de emisión (más recientes primero)
-      query = query.order('fecha_emision', { ascending: false })
+      // Ordenar por fecha de creación (más recientes primero)
+      query = query.order('created_at', { ascending: false })
 
       // Aplicar paginación
       const from = (paginacion.page - 1) * paginacion.pageSize
