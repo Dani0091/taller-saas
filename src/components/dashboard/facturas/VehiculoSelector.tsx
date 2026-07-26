@@ -26,9 +26,16 @@ interface VehiculoSelectorProps {
   /** Si se indica, prioriza vehículos ya vinculados a este cliente */
   clienteId?: string
   label?: string
+  placeholder?: string
+  /**
+   * Texto tal cual está escrito en el campo, en cada cambio. Permite al
+   * formulario padre guardar la matrícula como texto libre si el usuario
+   * escribe pero nunca llega a seleccionar ni dar de alta un vehículo.
+   */
+  onInputChange?: (texto: string) => void
 }
 
-export function VehiculoSelector({ value, onChange, clienteId, label = 'Vehículo' }: VehiculoSelectorProps) {
+export function VehiculoSelector({ value, onChange, clienteId, label = 'Vehículo', placeholder = '1234ABC', onInputChange }: VehiculoSelectorProps) {
   const [matriculaInput, setMatriculaInput] = useState(value?.matricula || '')
   const [sugerencias, setSugerencias] = useState<VehiculoSeleccionado[]>([])
   const [buscando, setBuscando] = useState(false)
@@ -62,6 +69,7 @@ export function VehiculoSelector({ value, onChange, clienteId, label = 'Vehícul
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value.toUpperCase().replace(/\s/g, '')
     setMatriculaInput(val)
+    onInputChange?.(val)
     if (value) onChange(null)
     buscar(val)
   }
@@ -69,12 +77,14 @@ export function VehiculoSelector({ value, onChange, clienteId, label = 'Vehícul
   const seleccionar = (v: VehiculoSeleccionado) => {
     onChange(v)
     setMatriculaInput(v.matricula)
+    onInputChange?.(v.matricula)
     setSugerencias([])
   }
 
   const limpiar = () => {
     onChange(null)
     setMatriculaInput('')
+    onInputChange?.('')
     setSugerencias([])
   }
 
@@ -85,7 +95,7 @@ export function VehiculoSelector({ value, onChange, clienteId, label = 'Vehícul
         <Input
           value={matriculaInput}
           onChange={handleChange}
-          placeholder="1234ABC"
+          placeholder={placeholder}
           className="font-mono tracking-widest uppercase pr-8"
           autoComplete="off"
         />
@@ -166,6 +176,7 @@ export function VehiculoSelector({ value, onChange, clienteId, label = 'Vehícul
         onCreado={(v) => {
           onChange(v)
           setMatriculaInput(v.matricula)
+          onInputChange?.(v.matricula)
         }}
       />
     </div>

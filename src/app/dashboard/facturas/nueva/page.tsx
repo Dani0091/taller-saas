@@ -458,25 +458,18 @@ export default function NuevaFacturaPage() {
                 )}
               </div>
 
-              {/* Vehículo (opcional) */}
+              {/* Vehículo (opcional) — un único campo: busca, permite dar de alta,
+                  o si el usuario escribe y no selecciona nada, se guarda como
+                  matrícula en texto libre */}
               <div>
                 <VehiculoSelector
                   value={vehiculoSeleccionado}
-                  onChange={(v) => {
-                    setVehiculoSeleccionado(v)
-                    if (v) setMatriculaDirecta('')
-                  }}
+                  onChange={setVehiculoSeleccionado}
+                  onInputChange={setMatriculaDirecta}
                   clienteId={formData.cliente_id || undefined}
                   label="Matrícula (opcional)"
+                  placeholder="Matrícula (opcional) - buscar o escribir"
                 />
-                {!vehiculoSeleccionado && (
-                  <Input
-                    className="mt-1"
-                    placeholder="O escribir matrícula directamente (sin crear vehículo)"
-                    value={matriculaDirecta}
-                    onChange={(e) => setMatriculaDirecta(e.target.value.toUpperCase())}
-                  />
-                )}
               </div>
 
               {/* Persona de contacto */}
