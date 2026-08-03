@@ -63,6 +63,7 @@ interface Orden {
   danos_carroceria?: string
   coste_diario_estancia?: number
   kilometros_entrada?: number
+  kilometros_salida?: number
 }
 
 interface DetalleOrdenSheetProps {
@@ -105,6 +106,8 @@ export function DetalleOrdenSheet({
   const [guardando, setGuardando] = useState(false)
   const [generandoFactura, setGenerandoFactura] = useState(false)
   const [tab, setTab] = useState<'info' | 'fotos' | 'trabajo' | 'items'>('info')
+  // Wizard mobile-first, sólo activo en modoCrear — edición sigue usando las tabs libres de arriba
+  const [stepCrear, setStepCrear] = useState<1 | 2 | 3 | 4>(1)
   const [lineas, setLineas] = useState<Linea[]>([])
   const [clientes, setClientes] = useState<any[]>([])
   const [vehiculos, setVehiculos] = useState<any[]>([])
@@ -837,7 +840,7 @@ export function DetalleOrdenSheet({
         danos_carroceria: formData.danos_carroceria,
         coste_diario_estancia: formData.coste_diario_estancia,
         kilometros_entrada: formData.kilometros_entrada,
-        kilometros_salida: (formData as any).kilometros_salida || null,
+        kilometros_salida: formData.kilometros_salida || null,
         updated_at: new Date().toISOString()
       }
 
@@ -1013,7 +1016,7 @@ export function DetalleOrdenSheet({
         danos_carroceria: formData.danos_carroceria,
         coste_diario_estancia: formData.coste_diario_estancia,
         kilometros_entrada: formData.kilometros_entrada,
-        kilometros_salida: (formData as any).kilometros_salida || null,
+        kilometros_salida: formData.kilometros_salida || null,
         updated_at: new Date().toISOString()
       }
 
@@ -1257,31 +1260,50 @@ export function DetalleOrdenSheet({
           onToggleEstados={setMostrarEstados}
         />
 
-        {/* Tabs */}
-        <div className="bg-white border-b flex shrink-0 overflow-x-auto">
-          {[
-            { id: 'info', label: 'Info', icon: '📋' },
-            { id: 'fotos', label: 'Fotos', icon: '📸' },
-            { id: 'trabajo', label: 'Trabajo', icon: '🔧' },
-            { id: 'items', label: 'Elementos', icon: '💰' },
-          ].map(t => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id as any)}
-              className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap px-2 ${
-                tab === t.id
-                  ? 'border-sky-600 text-sky-600 bg-sky-50'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}>
-              <span className="mr-1">{t.icon}</span>
-              {t.label}
-            </button>
-          ))}
-        </div>
+        {/* Tabs (edición) / Indicador de paso (creación) */}
+        {modoCrear ? (
+          <div className="bg-white border-b shrink-0 px-4 py-3">
+            <div className="flex items-center justify-between text-xs font-medium text-gray-500 mb-2">
+              <span>Paso {stepCrear} de 4</span>
+              <span>{['Cliente y vehículo', 'Trabajo', 'Elementos', 'Revisar y guardar'][stepCrear - 1]}</span>
+            </div>
+            <div className="flex gap-1.5">
+              {[1, 2, 3, 4].map(s => (
+                <div
+                  key={s}
+                  className={`h-1.5 flex-1 rounded-full transition-colors ${
+                    s <= stepCrear ? 'bg-sky-600' : 'bg-gray-200'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white border-b flex shrink-0 overflow-x-auto">
+            {[
+              { id: 'info', label: 'Info', icon: '📋' },
+              { id: 'fotos', label: 'Fotos', icon: '📸' },
+              { id: 'trabajo', label: 'Trabajo', icon: '🔧' },
+              { id: 'items', label: 'Elementos', icon: '💰' },
+            ].map(t => (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id as any)}
+                className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap px-2 ${
+                  tab === t.id
+                    ? 'border-sky-600 text-sky-600 bg-sky-50'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}>
+                <span className="mr-1">{t.icon}</span>
+                {t.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Contenido */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {tab === 'info' && (
+          {(modoCrear ? stepCrear === 1 : tab === 'info') && (
             <OrdenInfoTab
               modoCrear={modoCrear}
               ordenSeleccionada={ordenSeleccionada}
@@ -1317,7 +1339,7 @@ export function DetalleOrdenSheet({
           )}
 
 
-          {tab === 'fotos' && (
+          {!modoCrear && tab === 'fotos' && (
             <OrdenFotosTab
               modoCrear={modoCrear}
               ordenSeleccionada={ordenSeleccionada}
@@ -1331,7 +1353,7 @@ export function DetalleOrdenSheet({
             />
           )}
 
-          {tab === 'trabajo' && (
+          {(modoCrear ? stepCrear === 2 : tab === 'trabajo') && (
             <OrdenTrabajoTab
               modoCrear={modoCrear}
               ordenSeleccionada={ordenSeleccionada}
@@ -1349,7 +1371,7 @@ export function DetalleOrdenSheet({
             />
           )}
 
-          {tab === 'items' && (
+          {(modoCrear ? stepCrear === 3 : tab === 'items') && (
             <OrdenItemsTab
               lineas={lineas}
               nuevaLinea={nuevaLinea}
@@ -1386,9 +1408,86 @@ export function DetalleOrdenSheet({
               }}
             />
           )}
+
+          {modoCrear && stepCrear === 4 && (
+            <div className="space-y-4">
+              <Card className="p-4">
+                <h3 className="text-sm font-semibold mb-3">Cliente y vehículo</h3>
+                <p className="text-sm text-gray-700">
+                  {clientes.find(c => c.id === formData.cliente_id)?.nombre || 'Sin cliente seleccionado'}
+                </p>
+                {vehiculoSeleccionado && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    {vehiculoSeleccionado.matricula} — {vehiculoSeleccionado.marca} {vehiculoSeleccionado.modelo}
+                  </p>
+                )}
+              </Card>
+
+              <Card className="p-4">
+                <h3 className="text-sm font-semibold mb-3">Trabajo</h3>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                  {formData.descripcion_problema || 'Sin descripción del problema'}
+                </p>
+                {formData.diagnostico && (
+                  <p className="text-sm text-gray-500 mt-2 whitespace-pre-wrap">{formData.diagnostico}</p>
+                )}
+              </Card>
+
+              <Card className="p-4">
+                <h3 className="text-sm font-semibold mb-3">Elementos ({lineas.length})</h3>
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>Mano de obra</span>
+                  <span>€{totales.manoObra.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>Piezas</span>
+                  <span>€{totales.piezas.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm font-semibold mt-2 pt-2 border-t">
+                  <span>Total</span>
+                  <span>€{totales.total.toFixed(2)}</span>
+                </div>
+              </Card>
+            </div>
+          )}
         </div>
 
-        {/* Footer */}
+        {/* Footer: navegación del wizard (creación) / acciones completas (edición) */}
+        {modoCrear ? (
+          <div className="bg-white border-t shrink-0 p-3 flex gap-2">
+            {stepCrear > 1 && (
+              <Button
+                variant="outline"
+                className="flex-1 h-12"
+                onClick={() => setStepCrear(prev => (prev - 1) as 1 | 2 | 3 | 4)}
+              >
+                Atrás
+              </Button>
+            )}
+            {stepCrear < 4 ? (
+              <Button
+                className="flex-1 h-12 bg-sky-600 hover:bg-sky-700"
+                onClick={() => {
+                  if (stepCrear === 1 && !formData.cliente_id) {
+                    toast.error('Selecciona un cliente antes de continuar')
+                    return
+                  }
+                  setStepCrear(prev => (prev + 1) as 1 | 2 | 3 | 4)
+                }}
+              >
+                Siguiente
+              </Button>
+            ) : (
+              <Button
+                className="flex-1 h-12 bg-sky-600 hover:bg-sky-700"
+                disabled={guardando}
+                onClick={handleGuardar}
+              >
+                {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar orden'}
+              </Button>
+            )}
+          </div>
+        ) : (
         <OrdenFooter
           modoCrear={modoCrear}
           ordenSeleccionada={ordenSeleccionada}
@@ -1414,6 +1513,7 @@ export function DetalleOrdenSheet({
           onGuardar={handleGuardar}
           onClose={onClose}
         />
+        )}
 
         {/* Modal PDF */}
         {mostrarPDF && ordenSeleccionada && (
