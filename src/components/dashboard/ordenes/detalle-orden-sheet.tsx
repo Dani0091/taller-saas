@@ -30,6 +30,9 @@ import { OrdenTrabajoTab } from './parts/OrdenTrabajoTab'
 import { OrdenItemsTab } from './parts/OrdenItemsTab'
 import { OrdenFotosTab } from './parts/OrdenFotosTab'
 import { OrdenInfoTab } from './parts/OrdenInfoTab'
+import { OrdenClienteStep } from './parts/OrdenClienteStep'
+import { OrdenVehiculoStep } from './parts/OrdenVehiculoStep'
+import { OrdenDescripcionStep } from './parts/OrdenDescripcionStep'
 import { OrdenFooter } from './parts/OrdenFooter'
 import { FotoUploader } from './foto-uploader'
 import { OrdenPDFViewer } from './orden-pdf-viewer'
@@ -43,6 +46,7 @@ interface Orden {
   cliente_id: string
   vehiculo_id: string
   descripcion_problema?: string
+  observaciones_cliente?: string
   diagnostico?: string
   trabajos_realizados?: string
   notas?: string
@@ -135,6 +139,7 @@ export function DetalleOrdenSheet({
     cliente_id: '',
     vehiculo_id: '',
     descripcion_problema: '',
+    observaciones_cliente: '',
     diagnostico: '',
     trabajos_realizados: '',
     notas: '',
@@ -328,6 +333,7 @@ export function DetalleOrdenSheet({
           cliente_id: ordenData.cliente_id || '',
           vehiculo_id: ordenData.vehiculo_id || '',
           descripcion_problema: ordenData.descripcion_problema || '',
+          observaciones_cliente: ordenData.observaciones_cliente || '',
           diagnostico: ordenData.diagnostico || '',
           trabajos_realizados: ordenData.trabajos_realizados || '',
           notas: ordenData.notas || '',
@@ -820,6 +826,7 @@ export function DetalleOrdenSheet({
         cliente_id: formData.cliente_id || null,
         vehiculo_id: formData.vehiculo_id || null,
         descripcion_problema: formData.descripcion_problema,
+        observaciones_cliente: formData.observaciones_cliente || null,
         diagnostico: formData.diagnostico,
         trabajos_realizados: formData.trabajos_realizados,
         notas: formData.notas,
@@ -873,6 +880,14 @@ export function DetalleOrdenSheet({
     setDebounceTimer(timer)
   }, [debounceTimer, ordenSeleccionada, modoCrear, totales, formData])
 
+  const mensajeAmigable = (error: any): string => {
+    const msg = String(error?.message || '')
+    if (/duplicate key|unique constraint/i.test(msg)) return 'Ya existe un registro con estos datos'
+    if (/foreign key|violates/i.test(msg)) return 'Datos relacionados no válidos, revisa cliente y vehículo'
+    if (!msg || /^[A-Za-z0-9]{5,}$/.test(msg)) return 'No se pudo guardar la orden. Inténtalo de nuevo'
+    return msg
+  }
+
   const handleGuardar = async () => {
     if (!tallerId) {
       toast.error('Error: Taller no identificado')
@@ -881,6 +896,11 @@ export function DetalleOrdenSheet({
 
     if (!formData.cliente_id) {
       toast.error('Selecciona un cliente')
+      return
+    }
+
+    if (!modoCrear && !ordenSeleccionada) {
+      toast.error('No se pudo identificar la orden a actualizar')
       return
     }
 
@@ -893,6 +913,7 @@ export function DetalleOrdenSheet({
         cliente_id: formData.cliente_id || null,
         vehiculo_id: formData.vehiculo_id || null,
         descripcion_problema: formData.descripcion_problema,
+        observaciones_cliente: formData.observaciones_cliente || null,
         diagnostico: formData.diagnostico,
         trabajos_realizados: formData.trabajos_realizados,
         notas: formData.notas,
@@ -980,7 +1001,7 @@ export function DetalleOrdenSheet({
       onClose()
     } catch (error: any) {
       console.error('Error guardando:', error)
-      toast.error(error.message || 'Error al guardar')
+      toast.error(mensajeAmigable(error))
     } finally {
       setGuardando(false)
     }
@@ -996,6 +1017,7 @@ export function DetalleOrdenSheet({
         cliente_id: formData.cliente_id || null,
         vehiculo_id: formData.vehiculo_id || null,
         descripcion_problema: formData.descripcion_problema,
+        observaciones_cliente: formData.observaciones_cliente || null,
         diagnostico: formData.diagnostico,
         trabajos_realizados: formData.trabajos_realizados,
         notas: formData.notas,
@@ -1262,21 +1284,33 @@ export function DetalleOrdenSheet({
 
         {/* Tabs (edición) / Indicador de paso (creación) */}
         {modoCrear ? (
-          <div className="bg-white border-b shrink-0 px-4 py-3">
-            <div className="flex items-center justify-between text-xs font-medium text-gray-500 mb-2">
-              <span>Paso {stepCrear} de 4</span>
-              <span>{['Cliente y vehículo', 'Trabajo', 'Elementos', 'Revisar y guardar'][stepCrear - 1]}</span>
-            </div>
-            <div className="flex gap-1.5">
+          <div className="bg-white border-b shrink-0 px-4 py-4">
+            <div className="flex items-center mb-3">
               {[1, 2, 3, 4].map(s => (
-                <div
-                  key={s}
-                  className={`h-1.5 flex-1 rounded-full transition-colors ${
-                    s <= stepCrear ? 'bg-sky-600' : 'bg-gray-200'
-                  }`}
-                />
+                <div key={s} className="flex items-center flex-1 last:flex-none">
+                  <div
+                    className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
+                      s < stepCrear
+                        ? 'bg-green-600 text-white'
+                        : s === stepCrear
+                        ? 'bg-sky-600 text-white'
+                        : 'bg-gray-200 text-gray-400'
+                    }`}
+                  >
+                    {s < stepCrear ? <Check className="w-4 h-4" /> : s}
+                  </div>
+                  {s < 4 && (
+                    <div className="flex-1 h-1 mx-1 rounded-full bg-gray-200 overflow-hidden">
+                      <div
+                        className={`h-full bg-sky-600 transition-all duration-300 ${s < stepCrear ? 'w-full' : 'w-0'}`}
+                      />
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
+            <p className="text-lg font-bold text-gray-900">Paso {stepCrear} de 4</p>
+            <p className="text-sm text-gray-500">{['Selecciona Cliente', 'Selecciona Vehículo', 'Describe el Trabajo', 'Revisar Orden'][stepCrear - 1]}</p>
           </div>
         ) : (
           <div className="bg-white border-b flex shrink-0 overflow-x-auto">
@@ -1303,7 +1337,109 @@ export function DetalleOrdenSheet({
 
         {/* Contenido */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {(modoCrear ? stepCrear === 1 : tab === 'info') && (
+          {/* Wizard de creación — 4 pasos cortos: cliente, vehículo, descripción, revisar */}
+          {modoCrear && stepCrear === 1 && (
+            <OrdenClienteStep
+              clienteId={formData.cliente_id}
+              clientes={clientes}
+              mostrarFormCliente={mostrarFormCliente}
+              creandoCliente={creandoCliente}
+              nuevoCliente={nuevoCliente}
+              onClienteIdChange={(id) => setFormData(prev => ({ ...prev, cliente_id: id }))}
+              onToggleFormCliente={() => setMostrarFormCliente(!mostrarFormCliente)}
+              onNuevoClienteChange={(data) => setNuevoCliente((prev: any) => ({ ...prev, ...data }))}
+              onCrearCliente={crearCliente}
+            />
+          )}
+
+          {modoCrear && stepCrear === 2 && (
+            <OrdenVehiculoStep
+              vehiculoId={formData.vehiculo_id}
+              clienteId={formData.cliente_id}
+              vehiculos={vehiculos}
+              vehiculoSeleccionado={vehiculoSeleccionado}
+              mostrarFormVehiculo={mostrarFormVehiculo}
+              editandoVehiculo={editandoVehiculo}
+              creandoVehiculo={creandoVehiculo}
+              guardandoVehiculo={guardandoVehiculo}
+              nuevoVehiculo={nuevoVehiculo}
+              vehiculoEditado={vehiculoEditado}
+              matriculaInput={matriculaInput}
+              buscandoMatricula={buscandoMatricula}
+              matriculaNoEncontrada={matriculaNoEncontrada}
+              onVehiculoIdChange={(id) => setFormData(prev => ({ ...prev, vehiculo_id: id }))}
+              onToggleFormVehiculo={() => setMostrarFormVehiculo(!mostrarFormVehiculo)}
+              onToggleEditandoVehiculo={() => setEditandoVehiculo(!editandoVehiculo)}
+              onNuevoVehiculoChange={(data) => setNuevoVehiculo((prev: VehiculoNuevoFormulario) => ({ ...prev, ...data }))}
+              onVehiculoEditadoChange={(data) => setVehiculoEditado((prev: VehiculoEdicionFormulario) => ({ ...prev, ...data }))}
+              onCrearVehiculo={crearVehiculo}
+              onGuardarVehiculo={guardarEdicionVehiculo}
+              onMatriculaInputChange={setMatriculaInput}
+              onBuscarMatricula={buscarPorMatricula}
+            />
+          )}
+
+          {modoCrear && stepCrear === 3 && (
+            <OrdenDescripcionStep
+              descripcionProblema={formData.descripcion_problema || ''}
+              observaciones={formData.observaciones_cliente || ''}
+              onDescripcionChange={(value) => setFormData(prev => ({ ...prev, descripcion_problema: value }))}
+              onObservacionesChange={(value) => setFormData(prev => ({ ...prev, observaciones_cliente: value }))}
+            />
+          )}
+
+          {modoCrear && stepCrear === 4 && (
+            <div className="space-y-4">
+              <Card className="p-4 divide-y divide-gray-100">
+                <div className="pb-3">
+                  <h3 className="text-xs font-semibold text-gray-500 mb-1">👤 Cliente</h3>
+                  {(() => {
+                    const cliente = clientes.find(c => c.id === formData.cliente_id)
+                    return cliente ? (
+                      <p className="text-sm text-gray-900">
+                        {cliente.nombre} {cliente.primer_apellido || cliente.apellidos || ''}
+                        {cliente.telefono ? ` · ${cliente.telefono}` : ''}
+                      </p>
+                    ) : (
+                      <p className="text-sm text-gray-400">Sin cliente seleccionado</p>
+                    )
+                  })()}
+                </div>
+
+                <div className="py-3">
+                  <h3 className="text-xs font-semibold text-gray-500 mb-1">🚗 Vehículo</h3>
+                  {vehiculoSeleccionado ? (
+                    <p className="text-sm text-gray-900">
+                      {vehiculoSeleccionado.marca} {vehiculoSeleccionado.modelo} · {vehiculoSeleccionado.matricula}
+                      {vehiculoSeleccionado.kilometros ? ` · ${vehiculoSeleccionado.kilometros.toLocaleString()} km` : ''}
+                    </p>
+                  ) : (
+                    <p className="text-sm text-gray-400">Sin vehículo seleccionado</p>
+                  )}
+                </div>
+
+                <div className="pt-3">
+                  <h3 className="text-xs font-semibold text-gray-500 mb-1">🔧 Trabajo</h3>
+                  <p className="text-sm text-gray-900 whitespace-pre-wrap">
+                    {formData.descripcion_problema || 'Sin descripción del problema'}
+                  </p>
+                  {formData.observaciones_cliente && (
+                    <>
+                      <h3 className="text-xs font-semibold text-gray-500 mb-1 mt-3">📝 Observaciones</h3>
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{formData.observaciones_cliente}</p>
+                    </>
+                  )}
+                </div>
+              </Card>
+
+              <p className="text-xs text-gray-400 text-center px-4">
+                Podrás añadir fotos, elementos y más detalles justo después de crear la orden.
+              </p>
+            </div>
+          )}
+
+          {/* Edición — tabs libres, sin wizard */}
+          {!modoCrear && tab === 'info' && (
             <OrdenInfoTab
               modoCrear={modoCrear}
               ordenSeleccionada={ordenSeleccionada}
@@ -1338,7 +1474,6 @@ export function DetalleOrdenSheet({
             />
           )}
 
-
           {!modoCrear && tab === 'fotos' && (
             <OrdenFotosTab
               modoCrear={modoCrear}
@@ -1353,7 +1488,7 @@ export function DetalleOrdenSheet({
             />
           )}
 
-          {(modoCrear ? stepCrear === 2 : tab === 'trabajo') && (
+          {!modoCrear && tab === 'trabajo' && (
             <OrdenTrabajoTab
               modoCrear={modoCrear}
               ordenSeleccionada={ordenSeleccionada}
@@ -1371,7 +1506,7 @@ export function DetalleOrdenSheet({
             />
           )}
 
-          {(modoCrear ? stepCrear === 3 : tab === 'items') && (
+          {!modoCrear && tab === 'items' && (
             <OrdenItemsTab
               lineas={lineas}
               nuevaLinea={nuevaLinea}
@@ -1408,48 +1543,6 @@ export function DetalleOrdenSheet({
               }}
             />
           )}
-
-          {modoCrear && stepCrear === 4 && (
-            <div className="space-y-4">
-              <Card className="p-4">
-                <h3 className="text-sm font-semibold mb-3">Cliente y vehículo</h3>
-                <p className="text-sm text-gray-700">
-                  {clientes.find(c => c.id === formData.cliente_id)?.nombre || 'Sin cliente seleccionado'}
-                </p>
-                {vehiculoSeleccionado && (
-                  <p className="text-sm text-gray-500 mt-1">
-                    {vehiculoSeleccionado.matricula} — {vehiculoSeleccionado.marca} {vehiculoSeleccionado.modelo}
-                  </p>
-                )}
-              </Card>
-
-              <Card className="p-4">
-                <h3 className="text-sm font-semibold mb-3">Trabajo</h3>
-                <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                  {formData.descripcion_problema || 'Sin descripción del problema'}
-                </p>
-                {formData.diagnostico && (
-                  <p className="text-sm text-gray-500 mt-2 whitespace-pre-wrap">{formData.diagnostico}</p>
-                )}
-              </Card>
-
-              <Card className="p-4">
-                <h3 className="text-sm font-semibold mb-3">Elementos ({lineas.length})</h3>
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>Mano de obra</span>
-                  <span>€{totales.manoObra.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>Piezas</span>
-                  <span>€{totales.piezas.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between text-sm font-semibold mt-2 pt-2 border-t">
-                  <span>Total</span>
-                  <span>€{totales.total.toFixed(2)}</span>
-                </div>
-              </Card>
-            </div>
-          )}
         </div>
 
         {/* Footer: navegación del wizard (creación) / acciones completas (edición) */}
@@ -1458,7 +1551,8 @@ export function DetalleOrdenSheet({
             {stepCrear > 1 && (
               <Button
                 variant="outline"
-                className="flex-1 h-12"
+                size="xl"
+                className="flex-1"
                 onClick={() => setStepCrear(prev => (prev - 1) as 1 | 2 | 3 | 4)}
               >
                 Atrás
@@ -1466,10 +1560,15 @@ export function DetalleOrdenSheet({
             )}
             {stepCrear < 4 ? (
               <Button
-                className="flex-1 h-12 bg-sky-600 hover:bg-sky-700"
+                size="xl"
+                className="flex-1 bg-sky-600 hover:bg-sky-700"
+                disabled={
+                  (stepCrear === 1 && !formData.cliente_id) ||
+                  (stepCrear === 2 && !formData.vehiculo_id)
+                }
                 onClick={() => {
-                  if (stepCrear === 1 && !formData.cliente_id) {
-                    toast.error('Selecciona un cliente antes de continuar')
+                  if (stepCrear === 3 && !formData.descripcion_problema?.trim()) {
+                    toast.error('Describe el problema antes de continuar')
                     return
                   }
                   setStepCrear(prev => (prev + 1) as 1 | 2 | 3 | 4)
@@ -1479,11 +1578,20 @@ export function DetalleOrdenSheet({
               </Button>
             ) : (
               <Button
-                className="flex-1 h-12 bg-sky-600 hover:bg-sky-700"
+                size="xl"
+                className="flex-1 bg-green-600 hover:bg-green-700 gap-2"
                 disabled={guardando}
                 onClick={handleGuardar}
               >
-                {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Guardar orden'}
+                {guardando ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" /> Guardando...
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-5 h-5" /> Guardar Orden
+                  </>
+                )}
               </Button>
             )}
           </div>

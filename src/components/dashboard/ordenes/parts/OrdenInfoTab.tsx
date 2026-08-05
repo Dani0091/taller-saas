@@ -288,6 +288,24 @@ export function OrdenInfoTab({
                 <p className="text-xs text-amber-600 mt-1">Pulsa "Nuevo manual" para registrar este vehículo</p>
               </div>
             )}
+
+            {formData.cliente_id && vehiculos.length > 0 && (
+              <div className="pt-2 border-t">
+                <p className="text-xs text-gray-500 mb-2">O elige un vehículo ya registrado de este cliente:</p>
+                <select
+                  value=""
+                  onChange={(e) => e.target.value && onFormDataChange({ vehiculo_id: e.target.value })}
+                  className="w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white"
+                >
+                  <option value="">Seleccionar vehículo del cliente...</option>
+                  {vehiculos.map(v => (
+                    <option key={v.id} value={v.id}>
+                      {v.matricula} - {v.marca} {v.modelo}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
         )}
 
@@ -325,9 +343,10 @@ export function OrdenInfoTab({
             </div>
             <Button
               type="button"
+              size="xl"
               onClick={onCrearVehiculo}
               disabled={creandoVehiculo || !nuevoVehiculo.matricula.trim()}
-              className="w-full gap-2 bg-green-600 hover:bg-green-700 py-3"
+              className="w-full gap-2 bg-green-600 hover:bg-green-700"
             >
               {creandoVehiculo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Car className="w-4 h-4" />}
               {creandoVehiculo ? 'Creando...' : 'Crear Vehículo'}
@@ -492,6 +511,7 @@ export function OrdenInfoTab({
             {/* Botón crear */}
             <Button
               type="button"
+              size="xl"
               onClick={onCrearCliente}
               disabled={creandoCliente || !nuevoCliente.nombre.trim()}
               className="w-full gap-2 bg-blue-600 hover:bg-blue-700"
@@ -506,214 +526,6 @@ export function OrdenInfoTab({
           </div>
         )}
       </Card>
-
-      {/* Vehículo — solo mostrar selector secundario si no hay vehículo ya seleccionado por matrícula */}
-      {formData.cliente_id && !formData.vehiculo_id && (
-        <Card className="p-4">
-          <div className="flex items-center justify-between mb-2">
-            <Label className="text-sm font-semibold">Vehículo</Label>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={onToggleFormVehiculo}
-              className="gap-1 text-xs"
-            >
-              <Car className="w-3 h-3" />
-              {mostrarFormVehiculo ? 'Cancelar' : 'Nuevo'}
-            </Button>
-          </div>
-
-          {!mostrarFormVehiculo ? (
-            <>
-              {vehiculos.length > 0 ? (
-                <select
-                  value={formData.vehiculo_id}
-                  onChange={(e) => onFormDataChange({ vehiculo_id: e.target.value })}
-                  className="w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white"
-                >
-                  <option value="">Seleccionar vehículo...</option>
-                  {vehiculos.map(v => (
-                    <option key={v.id} value={v.id}>
-                      {v.matricula} - {v.marca} {v.modelo}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <div className="text-center py-4 bg-amber-50 rounded-xl border border-amber-200">
-                  <Car className="w-8 h-8 text-amber-500 mx-auto mb-2" />
-                  <p className="text-sm text-amber-700 font-medium">
-                    Este cliente no tiene vehículos
-                  </p>
-                  <p className="text-xs text-amber-600 mt-1">
-                    Pulsa "Nuevo" para añadir uno
-                  </p>
-                </div>
-              )}
-
-              {/* Mostrar info del vehículo seleccionado con botón editar */}
-              {vehiculoSeleccionado && !editandoVehiculo && (
-                <div className="mt-3 p-3 bg-gray-50 rounded-xl border">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <p className="font-semibold text-gray-900">
-                        {vehiculoSeleccionado.marca} {vehiculoSeleccionado.modelo}
-                      </p>
-                      <p className="text-sm text-gray-600">Matrícula: {vehiculoSeleccionado.matricula}</p>
-                    </div>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={onToggleEditandoVehiculo}
-                      className="gap-1 text-xs"
-                    >
-                      <Edit2 className="w-3 h-3" />
-                      Editar
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Formulario de edición de vehículo */}
-              {vehiculoSeleccionado && editandoVehiculo && (
-                <div className="mt-3 space-y-3 p-3 bg-purple-50 rounded-xl border border-purple-200">
-                  <h4 className="font-semibold text-purple-800 text-sm flex items-center gap-2">
-                    <Edit2 className="w-4 h-4" />
-                    Editar Vehículo
-                  </h4>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label className="text-xs text-gray-600 mb-1 block">Marca</Label>
-                      <Input
-                        value={vehiculoEditado.marca || ''}
-                        onChange={(e) => onVehiculoEditadoChange({ marca: e.target.value })}
-                        placeholder="Ej: Seat"
-                        className="bg-white"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs text-gray-600 mb-1 block">Modelo</Label>
-                      <Input
-                        value={vehiculoEditado.modelo || ''}
-                        onChange={(e) => onVehiculoEditadoChange({ modelo: e.target.value })}
-                        placeholder="Ej: Ibiza"
-                        className="bg-white"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label className="text-xs text-gray-600 mb-1 block">Bastidor (VIN)</Label>
-                    <Input
-                      value={vehiculoEditado.vin || ''}
-                      onChange={(e) => onVehiculoEditadoChange({ vin: e.target.value })}
-                      placeholder="Ej: WVWZZZ1KZBW123456"
-                      className="bg-white font-mono"
-                    />
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={onToggleEditandoVehiculo}
-                      disabled={guardandoVehiculo}
-                      className="flex-1"
-                    >
-                      Cancelar
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={onGuardarVehiculo}
-                      disabled={guardandoVehiculo}
-                      className="flex-1 bg-purple-600 hover:bg-purple-700"
-                    >
-                      {guardandoVehiculo && (
-                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                      )}
-                      {guardandoVehiculo ? 'Guardando...' : 'Guardar'}
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="space-y-3 p-3 bg-green-50 rounded-xl border border-green-200">
-              <h4 className="font-semibold text-green-800 text-sm flex items-center gap-2">
-                <Car className="w-4 h-4" />
-                Nuevo Vehículo
-              </h4>
-
-              {/* Matrícula - obligatorio */}
-              <div>
-                <Label className="text-xs text-gray-600 mb-1 block">Matrícula *</Label>
-                <div className="flex gap-2">
-                  <Input
-                    value={nuevoVehiculo.matricula}
-                    onChange={(e) => onNuevoVehiculoChange({ matricula: e.target.value.toUpperCase() })}
-                    placeholder="1234ABC"
-                    className="font-mono uppercase flex-1"
-                  />
-                  <InputScanner
-                    tipo="matricula"
-                    onResult={(val) => onNuevoVehiculoChange({ matricula: val })}
-                  />
-                </div>
-              </div>
-
-              {/* Marca y Modelo */}
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label className="text-xs text-gray-600 mb-1 block">Marca</Label>
-                  <Input
-                    value={nuevoVehiculo.marca || ''}
-                    onChange={(e) => onNuevoVehiculoChange({ marca: e.target.value })}
-                    placeholder="Ej: Seat"
-                    className="bg-white"
-                  />
-                </div>
-                <div>
-                  <Label className="text-xs text-gray-600 mb-1 block">Modelo</Label>
-                  <Input
-                    value={nuevoVehiculo.modelo || ''}
-                    onChange={(e) => onNuevoVehiculoChange({ modelo: e.target.value })}
-                    placeholder="Ej: Ibiza"
-                    className="bg-white"
-                  />
-                </div>
-              </div>
-
-              {/* Bastidor */}
-              <div>
-                <Label className="text-xs text-gray-600 mb-1 block">Bastidor (VIN)</Label>
-                <Input
-                  value={nuevoVehiculo.vin || ''}
-                  onChange={(e) => onNuevoVehiculoChange({ vin: e.target.value })}
-                  placeholder="Ej: WVWZZZ1KZBW123456"
-                  className="bg-white font-mono"
-                />
-              </div>
-
-              {/* Botón crear */}
-              <Button
-                type="button"
-                onClick={onCrearVehiculo}
-                disabled={creandoVehiculo || !nuevoVehiculo.matricula.trim()}
-                className="w-full gap-2 bg-green-600 hover:bg-green-700"
-              >
-                {creandoVehiculo ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Car className="w-4 h-4" />
-                )}
-                {creandoVehiculo ? 'Creando...' : 'Crear Vehículo'}
-              </Button>
-            </div>
-          )}
-        </Card>
-      )}
 
       {/* Descripción del problema */}
       <Card className="p-4">
