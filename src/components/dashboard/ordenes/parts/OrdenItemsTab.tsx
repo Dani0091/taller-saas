@@ -64,7 +64,18 @@ interface OrdenItemsTabProps {
   // Callbacks para pieza rápida
   onPiezaRapidaChange: (pieza: PiezaRapida) => void
   onAgregarPiezaRapida: () => void
+
+  /** Orden facturada — todos los campos quedan de solo lectura */
+  readOnly?: boolean
 }
+
+const GRUPOS_TIPO: { tipo: TipoLinea; etiqueta: string; icono: string; badgeClass: string }[] = [
+  { tipo: 'mano_obra', etiqueta: 'Mano de obra', icono: '⏱️', badgeClass: 'bg-blue-100 text-blue-700' },
+  { tipo: 'pieza', etiqueta: 'Recambios', icono: '📦', badgeClass: 'bg-purple-100 text-purple-700' },
+  { tipo: 'servicio', etiqueta: 'Servicios', icono: '🔧', badgeClass: 'bg-green-100 text-green-700' },
+  { tipo: 'suplido', etiqueta: 'Suplidos', icono: '💶', badgeClass: 'bg-amber-100 text-amber-700' },
+  { tipo: 'reembolso', etiqueta: 'Reembolsos', icono: '↩️', badgeClass: 'bg-gray-100 text-gray-700' },
+]
 
 /** Extrae cantidad y descripción de un texto dictado por voz.
  *  Ejemplos:
@@ -111,6 +122,7 @@ export function OrdenItemsTab({
   onEliminarLinea,
   onPiezaRapidaChange,
   onAgregarPiezaRapida,
+  readOnly = false,
 }: OrdenItemsTabProps) {
   const [escuchando, setEscuchando] = useState(false)
   const [vozError, setVozError] = useState<string | null>(null)
@@ -171,7 +183,7 @@ export function OrdenItemsTab({
   }, [])
 
   return (
-    <>
+    <fieldset disabled={readOnly} className="contents">
       {/* Añadir línea */}
       <Card className="p-4 border-2 border-dashed border-sky-200 bg-sky-50/50">
         <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
@@ -308,103 +320,106 @@ export function OrdenItemsTab({
         </div>
       </Card>
 
-      {/* Lista de elementos unificada */}
+      {/* Lista de elementos agrupada por tipo */}
       {lineas.length > 0 && (
         <Card className="p-4">
           <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
             📋 Elementos de la orden ({lineas.length})
           </h3>
 
-          {/* Tabla unificada */}
-          <div className="border rounded-lg overflow-x-auto bg-white">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-3 py-2 text-left font-semibold text-gray-700">Concepto</th>
-                  <th className="px-2 py-2 text-center font-semibold text-gray-700 w-16">Tipo</th>
-                  <th className="px-2 py-2 text-center font-semibold text-gray-700 w-16">Cant</th>
-                  <th className="px-2 py-2 text-right font-semibold text-gray-700 w-24">Precio</th>
-                  <th className="px-2 py-2 text-center font-semibold text-gray-700 w-24">Estado</th>
-                  <th className="px-2 py-2 text-right font-semibold text-gray-700 w-20">Total</th>
-                  <th className="px-2 py-2 w-10"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {lineas.map(linea => (
-                  <tr key={linea.id} className="hover:bg-gray-50">
-                    <td className="px-3 py-3">
-                      <div className="font-medium text-gray-900">{linea.descripcion}</div>
-                      {linea.precio_unitario === 0 && (
-                        <div className="text-xs text-amber-600">⏳ Precio pendiente</div>
-                      )}
-                    </td>
-                    <td className="px-2 py-3 text-center">
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        linea.tipo === 'mano_obra' ? 'bg-blue-100 text-blue-700' :
-                        linea.tipo === 'pieza' ? 'bg-purple-100 text-purple-700' :
-                        linea.tipo === 'servicio' ? 'bg-green-100 text-green-700' :
-                        'bg-gray-100 text-gray-700'
-                      }`}>
-                        {linea.tipo === 'mano_obra' ? '⏱️ M.O.' :
-                         linea.tipo === 'pieza' ? '📦 Pieza' :
-                         linea.tipo === 'servicio' ? '🔧 Serv.' :
-                         linea.tipo}
-                      </span>
-                    </td>
-                    <td className="px-2 py-3">
-                      <NumberInput
-                        value={linea.cantidad}
-                        onChange={(value) => onActualizarLinea(linea.id, 'cantidad', value ?? 0)}
-                        className="w-16 px-2 py-2 text-sm border border-gray-300 rounded text-center"
-                        min={0.01}
-                        step={linea.tipo === 'mano_obra' ? 0.25 : 1}
-                      />
-                    </td>
-                    <td className="px-2 py-3">
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs text-gray-500">€</span>
-                        <NumberInput
-                          value={linea.precio_unitario}
-                          onChange={(value) => onActualizarLinea(linea.id, 'precio_unitario', value ?? 0)}
-                          className="w-20 px-2 py-2 text-sm border border-gray-300 rounded text-center"
-                          placeholder="0.00"
-                          min={0}
-                          step={0.01}
-                        />
-                      </div>
-                    </td>
-                    <td className="px-2 py-3 text-center">
-                      {linea.tipo === 'pieza' ? (
-                        <select
-                          value={linea.estado || 'presupuestado'}
-                          onChange={(e) => onActualizarLinea(linea.id, 'estado', e.target.value)}
-                          className="text-sm px-2 py-2 border border-gray-300 rounded"
-                        >
-                          <option value="presupuestado">📋 Presup.</option>
-                          <option value="confirmado">✅ Confirm.</option>
-                          <option value="recibido">📦 Recib.</option>
-                        </select>
-                      ) : (
-                        <span className="text-xs text-gray-400">-</span>
-                      )}
-                    </td>
-                    <td className="px-2 py-3 text-right font-mono text-sm font-semibold">
-                      €{(linea.cantidad * linea.precio_unitario).toFixed(2)}
-                    </td>
-                    <td className="px-2 py-3">
-                      <button
-                        onClick={() => onEliminarLinea(linea.id)}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded"
-                        title="Eliminar línea"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {GRUPOS_TIPO.map(grupo => {
+            const lineasGrupo = lineas.filter(l => l.tipo === grupo.tipo)
+            if (lineasGrupo.length === 0) return null
+
+            const subtotalGrupo = lineasGrupo.reduce((acc, l) => acc + l.cantidad * l.precio_unitario, 0)
+
+            return (
+              <div key={grupo.tipo} className="mb-4 last:mb-0">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className={`text-xs font-semibold px-2 py-1 rounded-full inline-flex items-center gap-1 ${grupo.badgeClass}`}>
+                    {grupo.icono} {grupo.etiqueta} ({lineasGrupo.length})
+                  </h4>
+                  <span className="text-xs font-mono text-gray-500">€{subtotalGrupo.toFixed(2)}</span>
+                </div>
+
+                <div className="border rounded-lg overflow-x-auto bg-white">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 border-b">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-700">Concepto</th>
+                        <th className="px-2 py-2 text-center font-semibold text-gray-700 w-16">Cant</th>
+                        <th className="px-2 py-2 text-right font-semibold text-gray-700 w-24">Precio</th>
+                        <th className="px-2 py-2 text-center font-semibold text-gray-700 w-24">Estado</th>
+                        <th className="px-2 py-2 text-right font-semibold text-gray-700 w-20">Total</th>
+                        <th className="px-2 py-2 w-10"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {lineasGrupo.map(linea => (
+                        <tr key={linea.id} className="hover:bg-gray-50">
+                          <td className="px-3 py-3">
+                            <div className="font-medium text-gray-900">{linea.descripcion}</div>
+                            {linea.precio_unitario === 0 && (
+                              <div className="text-xs text-red-600 font-medium">⚠️ Precio requerido</div>
+                            )}
+                          </td>
+                          <td className="px-2 py-3">
+                            <NumberInput
+                              value={linea.cantidad}
+                              onChange={(value) => onActualizarLinea(linea.id, 'cantidad', value ?? 0)}
+                              className="w-16 px-2 py-2 text-sm border border-gray-300 rounded text-center"
+                              min={0.01}
+                              step={linea.tipo === 'mano_obra' ? 0.25 : 1}
+                            />
+                          </td>
+                          <td className="px-2 py-3">
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-gray-500">€</span>
+                              <NumberInput
+                                value={linea.precio_unitario}
+                                onChange={(value) => onActualizarLinea(linea.id, 'precio_unitario', value ?? 0)}
+                                className="w-20 px-2 py-2 text-sm border border-gray-300 rounded text-center"
+                                placeholder="0.00"
+                                min={0}
+                                step={0.01}
+                              />
+                            </div>
+                          </td>
+                          <td className="px-2 py-3 text-center">
+                            {linea.tipo === 'pieza' ? (
+                              <select
+                                value={linea.estado || 'presupuestado'}
+                                onChange={(e) => onActualizarLinea(linea.id, 'estado', e.target.value)}
+                                className="text-sm px-2 py-2 border border-gray-300 rounded"
+                              >
+                                <option value="presupuestado">📋 Presup.</option>
+                                <option value="confirmado">✅ Confirm.</option>
+                                <option value="recibido">📦 Recib.</option>
+                              </select>
+                            ) : (
+                              <span className="text-xs text-gray-400">-</span>
+                            )}
+                          </td>
+                          <td className="px-2 py-3 text-right font-mono text-sm font-semibold">
+                            €{(linea.cantidad * linea.precio_unitario).toFixed(2)}
+                          </td>
+                          <td className="px-2 py-3">
+                            <button
+                              onClick={() => onEliminarLinea(linea.id)}
+                              className="p-2 text-red-500 hover:bg-red-50 rounded"
+                              title="Eliminar línea"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )
+          })}
 
           {/* Formulario rápido para añadir elementos */}
           <div className="mt-4 p-3 bg-sky-50 rounded-lg border border-sky-200 space-y-2">
@@ -455,8 +470,8 @@ export function OrdenItemsTab({
         </Card>
       )}
 
-      {/* Resumen de totales con componente extraído */}
+      {/* Resumen de totales con componente extraído — nunca se bloquea, es solo lectura */}
       <OrdenTotalSummary totales={totales} />
-    </>
+    </fieldset>
   )
 }

@@ -8,24 +8,33 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
+import { ESTADOS_FACTURABLES } from '@/lib/constants'
+import { syncOrdenCalendarEvent } from '@/app/api/calendar/google/events/route'
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await getAuthenticatedUser()
+    if (isAuthError(auth)) {
+      return authErrorResponse(auth)
+    }
+    const taller_id = auth.tallerId
+
     const supabase = await createClient()
     const body = await request.json()
-    const { orden_id, taller_id } = body
+    const { orden_id, serie: serieSolicitada } = body
 
     // ==================== VALIDACIONES INICIALES ====================
     console.log(`🚀 Iniciando creación de factura`)
     console.log(`   - Orden ID: ${orden_id}`)
     console.log(`   - Taller ID: ${taller_id}`)
 
-    if (!orden_id || !taller_id) {
+    if (!orden_id) {
       console.error('❌ Faltan parámetros requeridos')
       return NextResponse.json(
         {
           error: 'Faltan datos requeridos',
-          details: 'Se requieren orden_id y taller_id',
+          details: 'Se requiere orden_id',
           sugerencia: 'Verifica que la orden esté seleccionada correctamente'
         },
         { status: 400 }
@@ -40,7 +49,28 @@ export async function POST(request: NextRequest) {
       .eq('taller_id', taller_id)
       .maybeSingle()
 
-    const serieFactura = config?.serie_factura || 'FA'
+    let serieFactura = config?.serie_factura || 'FA'
+
+    // Si se pide una serie específica (ej. desde el selector de la orden), debe ser
+    // una serie ya configurada para ESTE taller — evita crear series "fantasma" vía
+    // auto-creación del RPC de numeración con un prefijo arbitrario del body.
+    if (serieSolicitada) {
+      const { data: serieValida } = await supabase
+        .from('series_factura')
+        .select('prefijo')
+        .eq('taller_id', taller_id)
+        .eq('prefijo', serieSolicitada)
+        .maybeSingle()
+
+      if (!serieValida) {
+        return NextResponse.json(
+          { error: `La serie "${serieSolicitada}" no está configurada para este taller` },
+          { status: 400 }
+        )
+      }
+      serieFactura = serieValida.prefijo
+    }
+
     const ivaPorcentaje = config?.porcentaje_iva || 21
     const precioHoraTrabajo = config?.tarifa_hora || 0
 
@@ -111,8 +141,7 @@ export async function POST(request: NextRequest) {
     console.log(`✅ No existe factura previa, procediendo...`)
 
     // Verificar que la orden esté completada o en estado válido para facturar
-    const estadosValidos = ['aprobado', 'en_progreso', 'finalizado', 'facturado']
-    if (!estadosValidos.includes(orden.estado)) {
+    if (!ESTADOS_FACTURABLES.includes(orden.estado)) {
       return NextResponse.json(
         { error: 'La orden debe estar aprobada o completada para generar factura' },
         { status: 400 }
@@ -322,6 +351,9 @@ SOLUCIÓN: Verifica que el cliente "${orden.clientes?.nombre}" exista en Cliente
         updated_at: new Date().toISOString()
       })
       .eq('id', orden_id)
+
+    // Sincronizar evento de Google Calendar si la orden lo tiene (best-effort, no bloquea)
+    syncOrdenCalendarEvent(supabase, orden_id, { notaExtra: `Factura creada (borrador ${factura.id})` }).catch(() => {})
 
     // ==================== ÉXITO - BORRADOR CREADO ====================
     console.log(`✅ ¡BORRADOR DE FACTURA CREADO EXITOSAMENTE!`)

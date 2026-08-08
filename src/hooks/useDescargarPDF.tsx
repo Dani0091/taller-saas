@@ -98,6 +98,7 @@ export function useDescargarPDF() {
   return {
     descargarFactura,
     imprimirFactura,
+    generarPDFBlob,
     cargando
   }
 }

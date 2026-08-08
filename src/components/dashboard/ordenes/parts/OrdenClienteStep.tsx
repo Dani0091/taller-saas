@@ -54,6 +54,7 @@ export function OrdenClienteStep({
 }: OrdenClienteStepProps) {
   const [busquedaCliente, setBusquedaCliente] = useState('')
   const [comboAbierto, setComboAbierto] = useState(false)
+  const [mostrarMasDetalles, setMostrarMasDetalles] = useState(false)
   const comboRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -186,54 +187,65 @@ export function OrdenClienteStep({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label className="text-xs text-gray-600 mb-1 block">Primer Apellido</Label>
-                <Input
-                  value={nuevoCliente.primer_apellido}
-                  onChange={(e) => onNuevoClienteChange({ primer_apellido: e.target.value })}
-                  placeholder="Primer apellido"
-                />
-              </div>
-              <div>
-                <Label className="text-xs text-gray-600 mb-1 block">Segundo Apellido</Label>
-                <Input
-                  value={nuevoCliente.segundo_apellido}
-                  onChange={(e) => onNuevoClienteChange({ segundo_apellido: e.target.value })}
-                  placeholder="Segundo apellido"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label className="text-xs text-gray-600 mb-1 block">NIF/CIF</Label>
-                <Input
-                  value={nuevoCliente.nif}
-                  onChange={(e) => onNuevoClienteChange({ nif: e.target.value.toUpperCase() })}
-                  placeholder="12345678A"
-                  className="font-mono"
-                />
-              </div>
-              <div>
-                <Label className="text-xs text-gray-600 mb-1 block">Teléfono</Label>
-                <Input
-                  value={nuevoCliente.telefono}
-                  onChange={(e) => onNuevoClienteChange({ telefono: e.target.value })}
-                  placeholder="666 123 456"
-                />
-              </div>
-            </div>
-
             <div>
-              <Label className="text-xs text-gray-600 mb-1 block">Email</Label>
+              <Label className="text-xs text-gray-600 mb-1 block">Teléfono <span className="text-gray-400 font-normal">(opcional)</span></Label>
               <Input
-                type="email"
-                value={nuevoCliente.email}
-                onChange={(e) => onNuevoClienteChange({ email: e.target.value })}
-                placeholder="cliente@email.com"
+                value={nuevoCliente.telefono}
+                onChange={(e) => onNuevoClienteChange({ telefono: e.target.value })}
+                placeholder="666 123 456"
               />
             </div>
+
+            {!mostrarMasDetalles ? (
+              <button
+                type="button"
+                onClick={() => setMostrarMasDetalles(true)}
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              >
+                + Añadir más detalles (apellidos, NIF, email)
+              </button>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs text-gray-600 mb-1 block">Primer Apellido</Label>
+                    <Input
+                      value={nuevoCliente.primer_apellido}
+                      onChange={(e) => onNuevoClienteChange({ primer_apellido: e.target.value })}
+                      placeholder="Primer apellido"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-gray-600 mb-1 block">Segundo Apellido</Label>
+                    <Input
+                      value={nuevoCliente.segundo_apellido}
+                      onChange={(e) => onNuevoClienteChange({ segundo_apellido: e.target.value })}
+                      placeholder="Segundo apellido"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs text-gray-600 mb-1 block">NIF/CIF</Label>
+                  <Input
+                    value={nuevoCliente.nif}
+                    onChange={(e) => onNuevoClienteChange({ nif: e.target.value.toUpperCase() })}
+                    placeholder="12345678A"
+                    className="font-mono"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs text-gray-600 mb-1 block">Email</Label>
+                  <Input
+                    type="email"
+                    value={nuevoCliente.email}
+                    onChange={(e) => onNuevoClienteChange({ email: e.target.value })}
+                    placeholder="cliente@email.com"
+                  />
+                </div>
+              </>
+            )}
 
             <Button
               type="button"

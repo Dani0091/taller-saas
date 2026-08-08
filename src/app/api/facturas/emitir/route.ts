@@ -189,6 +189,21 @@ export async function POST(request: NextRequest) {
     console.log(`   - Cliente: ${factura.cliente?.nombre || 'N/A'}`)
     console.log(`   - Total: ${factura.total}€`)
 
+    // Al emitir (asignar número), la orden pasa a "facturado" y queda bloqueada.
+    // Los borradores (sin número) NUNCA tocan el estado de la orden — solo la emisión final.
+    if (facturaEmitida.orden_id) {
+      const { error: ordenUpdateError } = await supabase
+        .from('ordenes_reparacion')
+        .update({ estado: 'facturado', updated_at: new Date().toISOString() })
+        .eq('id', facturaEmitida.orden_id)
+
+      if (ordenUpdateError) {
+        console.error(`⚠️  No se pudo auto-transicionar la orden ${facturaEmitida.orden_id} a "facturado":`, ordenUpdateError.message)
+      } else {
+        console.log(`   ℹ️  Orden ${facturaEmitida.orden_id} auto-transicionada a "facturado" tras emisión`)
+      }
+    }
+
     // 📢 TELEGRAM: Enviar notificación de factura emitida
     try {
       const botToken = process.env.TELEGRAM_BOT_TOKEN

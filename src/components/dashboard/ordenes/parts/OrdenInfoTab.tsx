@@ -65,6 +65,7 @@ interface FormData {
   danos_carroceria?: string
   notas?: string
   fotos_diagnostico?: string
+  fecha_prevista_entrega?: string | null
 }
 
 // Props for the matricula-first vehicle search
@@ -119,6 +120,9 @@ interface OrdenInfoTabProps extends MatriculaSearchProps {
 
   // Vehículo seleccionado
   vehiculoSeleccionado?: Vehiculo | null
+
+  /** Orden facturada — todos los campos quedan de solo lectura */
+  readOnly?: boolean
 }
 
 export function OrdenInfoTab({
@@ -147,6 +151,7 @@ export function OrdenInfoTab({
   onCrearVehiculo,
   onGuardarVehiculo,
   vehiculoSeleccionado,
+  readOnly = false,
   matriculaInput,
   buscandoMatricula,
   matriculaNoEncontrada,
@@ -182,7 +187,7 @@ export function OrdenInfoTab({
   const clienteActual = clientes.find(c => c.id === formData.cliente_id)
 
   return (
-    <>
+    <fieldset disabled={readOnly} className="contents">
       {/* ══ VEHÍCULO — sección principal (matricula-first) ══ */}
       <Card className="p-4">
         <div className="flex items-center justify-between mb-3">
@@ -226,6 +231,15 @@ export function OrdenInfoTab({
             >
               <X className="w-4 h-4" />
             </button>
+          </div>
+        )}
+
+        {/* Vehículo asignado pero aún cargando sus datos (evita que no se muestre nada
+            durante el fetch async de `vehiculos`, lo que podía parecer "pide de nuevo") */}
+        {formData.vehiculo_id && !vehiculoSeleccionado && (
+          <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl flex items-center gap-2 text-gray-400">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            <span className="text-sm">Cargando vehículo...</span>
           </div>
         )}
 
@@ -604,6 +618,20 @@ export function OrdenInfoTab({
             allowEmpty
           />
         </div>
+
+        {/* Fecha prevista de entrega */}
+        <div className="mt-4">
+          <Label className="text-xs text-gray-500 mb-1 block">
+            Fecha prevista de entrega <span className="text-gray-400 font-normal">(opcional — para sincronizar con Google Calendar)</span>
+          </Label>
+          <input
+            type="date"
+            value={formData.fecha_prevista_entrega ? formData.fecha_prevista_entrega.slice(0, 10) : ''}
+            onChange={(e) => onFormDataChange({ fecha_prevista_entrega: e.target.value || null })}
+            placeholder="Selecciona fecha"
+            className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white text-sm"
+          />
+        </div>
       </Card>
 
       {/* Autorizaciones legales */}
@@ -742,6 +770,6 @@ export function OrdenInfoTab({
           )}
         </div>
       </Card>
-    </>
+    </fieldset>
   )
 }

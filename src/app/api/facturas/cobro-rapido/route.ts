@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     if (isAuthError(auth)) return authErrorResponse(auth)
 
     const supabase = await createClient()
-    const { orden_id } = await request.json()
+    const { orden_id, serie: serieSolicitada } = await request.json()
 
     if (!orden_id) {
       return NextResponse.json({ error: 'orden_id es requerido' }, { status: 400 })
@@ -92,7 +92,26 @@ export async function POST(request: NextRequest) {
       .eq('taller_id', auth.tallerId)
       .maybeSingle()
 
-    const serie = config?.serie_factura || 'FA'
+    let serie = config?.serie_factura || 'FA'
+
+    // Igual que en desde-orden: solo permitir una serie ya configurada para este taller.
+    if (serieSolicitada) {
+      const { data: serieValida } = await supabase
+        .from('series_factura')
+        .select('prefijo')
+        .eq('taller_id', auth.tallerId)
+        .eq('prefijo', serieSolicitada)
+        .maybeSingle()
+
+      if (!serieValida) {
+        return NextResponse.json(
+          { error: `La serie "${serieSolicitada}" no está configurada para este taller` },
+          { status: 400 }
+        )
+      }
+      serie = serieValida.prefijo
+    }
+
     const ivaPct = Number(config?.porcentaje_iva) || 21
     const precioHora = Number(config?.tarifa_hora) || 0
 

@@ -9,6 +9,7 @@ import { useState, useEffect, useRef } from 'react'
 import { X, Printer, Share2, Loader2, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+import { formatCurrency } from '@/lib/utils'
 
 interface OrdenPDFViewerProps {
   ordenId: string
@@ -124,7 +125,7 @@ export function OrdenPDFViewer({ ordenId, onClose }: OrdenPDFViewerProps) {
       `📝 Matrícula: ${datos.vehiculo.matricula}\n` +
       `⏱️ KM: ${datos.vehiculo.kilometros?.toLocaleString() || 'N/A'}\n\n` +
       `📌 Problema: ${datos.orden.descripcionProblema || 'Sin especificar'}\n\n` +
-      `💰 Total estimado: €${datos.totales.total.toFixed(2)}\n\n` +
+      `💰 Total estimado: ${formatCurrency(datos.totales.total)}\n\n` +
       `Estado: ${datos.orden.estado.toUpperCase()}`
     )
 
@@ -293,7 +294,7 @@ export function OrdenPDFViewer({ ordenId, onClose }: OrdenPDFViewerProps) {
                 <div>
                   <strong>Coste diario estancia:</strong>
                   <p className="mt-1">
-                    {datos.legal.costeDiarioEstancia ? `€${datos.legal.costeDiarioEstancia.toFixed(2)}/día` : '—'}
+                    {datos.legal.costeDiarioEstancia ? `${formatCurrency(datos.legal.costeDiarioEstancia)}/día` : '—'}
                   </p>
                 </div>
               </div>
@@ -396,8 +397,8 @@ export function OrdenPDFViewer({ ordenId, onClose }: OrdenPDFViewerProps) {
                         </td>
                         <td className="border px-2 py-1">{linea.descripcion}</td>
                         <td className="border px-2 py-1 text-center">{linea.cantidad}</td>
-                        <td className="border px-2 py-1 text-right">€{linea.precioUnitario.toFixed(2)}</td>
-                        <td className="border px-2 py-1 text-right font-medium">€{linea.total.toFixed(2)}</td>
+                        <td className="border px-2 py-1 text-right">{formatCurrency(linea.precioUnitario)}</td>
+                        <td className="border px-2 py-1 text-right font-medium">{formatCurrency(linea.total)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -410,19 +411,19 @@ export function OrdenPDFViewer({ ordenId, onClose }: OrdenPDFViewerProps) {
               <div className="w-64 border rounded-lg overflow-hidden">
                 <div className="flex justify-between px-4 py-2 bg-gray-50">
                   <span>Mano de obra:</span>
-                  <span className="font-medium">€{datos.totales.subtotalManoObra.toFixed(2)}</span>
+                  <span className="font-medium">{formatCurrency(datos.totales.subtotalManoObra)}</span>
                 </div>
                 <div className="flex justify-between px-4 py-2 border-t bg-gray-50">
                   <span>Repuestos:</span>
-                  <span className="font-medium">€{datos.totales.subtotalPiezas.toFixed(2)}</span>
+                  <span className="font-medium">{formatCurrency(datos.totales.subtotalPiezas)}</span>
                 </div>
                 <div className="flex justify-between px-4 py-2 border-t">
                   <span>IVA (21%):</span>
-                  <span className="font-medium">€{datos.totales.iva.toFixed(2)}</span>
+                  <span className="font-medium">{formatCurrency(datos.totales.iva)}</span>
                 </div>
                 <div className="flex justify-between px-4 py-3 border-t bg-sky-600 text-white">
                   <span className="font-bold">TOTAL:</span>
-                  <span className="font-bold text-lg">€{datos.totales.total.toFixed(2)}</span>
+                  <span className="font-bold text-lg">{formatCurrency(datos.totales.total)}</span>
                 </div>
               </div>
             </div>

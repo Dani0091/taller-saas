@@ -49,7 +49,7 @@ export async function calcularTotalesOrdenAction(
     // 3. OBTENER LÍNEAS DE LA ORDEN
     const { data: lineas, error: lineasError } = await supabase
       .from('lineas_orden')
-      .select('id, tipo, cantidad, precio_unitario')
+      .select('id, tipo, cantidad, precio_unitario, iva_porcentaje')
       .eq('orden_id', ordenId)
 
     if (lineasError) {
@@ -67,10 +67,15 @@ export async function calcularTotalesOrdenAction(
     const porcentajeIVA = config?.porcentaje_iva || 21
 
     // 5. CALCULAR TOTALES EN EL SERVIDOR (única fuente de verdad)
+    // Respeta el iva_porcentaje propio de cada línea si existe (p.ej. suplidos al 0%),
+    // igual que hace la generación real de factura en desde-orden/route.ts — si aquí
+    // se usara siempre el % del taller, el total mostrado en pantalla no coincidiría
+    // con el total real de la factura para órdenes con líneas de tipo suplido.
     const totales = (lineas || []).reduce(
       (acc, linea) => {
         const subtotalLinea = linea.cantidad * linea.precio_unitario
-        const ivaLinea = subtotalLinea * (porcentajeIVA / 100)
+        const ivaPorcentajeLinea = parseFloat(String(linea.iva_porcentaje)) || porcentajeIVA
+        const ivaLinea = subtotalLinea * (ivaPorcentajeLinea / 100)
 
         return {
           manoObra: linea.tipo === 'mano_obra' ? acc.manoObra + subtotalLinea : acc.manoObra,

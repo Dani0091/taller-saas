@@ -7,6 +7,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { syncOrdenCalendarEvent } from '@/app/api/calendar/google/events/route'
 
 // Función para crear cliente admin
 function getSupabaseAdmin() {
@@ -219,6 +220,9 @@ export async function POST(
     if (updateError) {
       throw updateError
     }
+
+    // Sincronizar evento de Google Calendar si la orden lo tiene (best-effort, no bloquea)
+    syncOrdenCalendarEvent(supabaseAdmin, orden.id, { notaExtra: 'Presupuesto aprobado por el cliente' }).catch(() => {})
 
     return NextResponse.json({
       success: true,

@@ -38,6 +38,9 @@ interface OrdenTrabajoTabProps {
 
   // Validaciones
   validarHorasTrabajo: (horas: number, campo: string) => boolean
+
+  /** Orden facturada — todos los campos quedan de solo lectura */
+  readOnly?: boolean
 }
 
 export function OrdenTrabajoTab({
@@ -54,9 +57,10 @@ export function OrdenTrabajoTab({
   onTiempoRealChange,
   onFotosDiagnosticoChange,
   validarHorasTrabajo,
+  readOnly = false,
 }: OrdenTrabajoTabProps) {
   return (
-    <>
+    <fieldset disabled={readOnly} className="contents">
       {/* Diagnóstico */}
       <Card className="p-4">
         <Label className="text-sm font-semibold mb-2 block">Diagnóstico técnico</Label>
@@ -177,6 +181,6 @@ export function OrdenTrabajoTab({
           </div>
         </div>
       </Card>
-    </>
+    </fieldset>
   )
 }

@@ -32,10 +32,11 @@ export async function GET() {
     }
 
     // Verificar si hay tokens guardados
+    // NOTA: user_id referencia auth.users(id) directamente, no el id interno de `usuarios`
     const { data: tokens } = await supabase
       .from('google_calendar_tokens')
-      .select('google_email, calendar_id, created_at, expires_at')
-      .eq('usuario_id', usuario.id)
+      .select('google_email, created_at')
+      .eq('user_id', user.id)
       .single()
 
     if (!tokens) {
@@ -49,7 +50,6 @@ export async function GET() {
       connected: true,
       configured: true,
       google_email: tokens.google_email,
-      calendar_id: tokens.calendar_id,
       connected_at: tokens.created_at,
     })
   } catch (error: any) {
@@ -92,10 +92,11 @@ export async function DELETE() {
     }
 
     // Obtener tokens para revocarlos
+    // NOTA: user_id referencia auth.users(id) directamente, no el id interno de `usuarios`
     const { data: tokens } = await supabase
       .from('google_calendar_tokens')
       .select('access_token, refresh_token')
-      .eq('usuario_id', usuario.id)
+      .eq('user_id', user.id)
       .single()
 
     if (tokens) {
@@ -114,7 +115,7 @@ export async function DELETE() {
     const { error: deleteError } = await supabase
       .from('google_calendar_tokens')
       .delete()
-      .eq('usuario_id', usuario.id)
+      .eq('user_id', user.id)
 
     if (deleteError) {
       throw deleteError
@@ -124,7 +125,7 @@ export async function DELETE() {
     await supabase
       .from('google_calendar_events')
       .delete()
-      .eq('usuario_id', usuario.id)
+      .eq('user_id', user.id)
 
     return NextResponse.json({ success: true })
   } catch (error: any) {

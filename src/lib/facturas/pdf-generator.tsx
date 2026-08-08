@@ -8,6 +8,7 @@
 
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer'
 import { PDF_VEHICLE_THEME, PDF_BRAND_THEME_DEFAULT } from './pdf-theme'
+import { formatCurrency } from '@/lib/utils'
 
 /**
  * Crea estilos dinámicos basados en colores personalizados
@@ -518,10 +519,10 @@ export const PDFFactura = ({
                   {linea.cantidad}
                 </Text>
                 <Text style={styles.tableCellRight}>
-                  €{linea.precioUnitario.toFixed(2)}
+                  {formatCurrency(linea.precioUnitario)}
                 </Text>
                 <Text style={{ ...styles.tableCellRight, fontWeight: 'bold' }}>
-                  €{linea.total.toFixed(2)}
+                  {formatCurrency(linea.total)}
                 </Text>
               </View>
           ))}
@@ -531,36 +532,36 @@ export const PDFFactura = ({
         <View style={styles.totalsBox}>
           <View style={styles.totalRow}>
             <Text>Subtotal:</Text>
-            <Text>€{baseImponible.toFixed(2)}</Text>
+            <Text>{formatCurrency(baseImponible)}</Text>
           </View>
 
           {descuento > 0 && (
             <View style={styles.totalRow}>
               <Text>Descuento:</Text>
-              <Text>-€{descuento.toFixed(2)}</Text>
+              <Text>-{formatCurrency(descuento)}</Text>
             </View>
           )}
 
           {envio > 0 && (
             <View style={styles.totalRow}>
               <Text>Envío/Manipulación:</Text>
-              <Text>€{envio.toFixed(2)}</Text>
+              <Text>{formatCurrency(envio)}</Text>
             </View>
           )}
 
           <View style={styles.totalRowBold}>
             <Text>Base Imponible:</Text>
-            <Text>€{baseImponible.toFixed(2)}</Text>
+            <Text>{formatCurrency(baseImponible)}</Text>
           </View>
 
           <View style={styles.totalRowBold}>
             <Text>IVA ({ivaPercentaje}%):</Text>
-            <Text>€{cuotaIVA.toFixed(2)}</Text>
+            <Text>{formatCurrency(cuotaIVA)}</Text>
           </View>
 
           <View style={styles.totalFinal}>
             <Text style={{ color: '#ffffff' }}>TOTAL A PAGAR:</Text>
-            <Text style={{ color: '#ffffff' }}>€{total.toFixed(2)}</Text>
+            <Text style={{ color: '#ffffff' }}>{formatCurrency(total)}</Text>
           </View>
         </View>
 

@@ -4,6 +4,7 @@
  */
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -19,6 +20,22 @@ interface Vehiculo {
   modelo: string
   año?: number
   kilometros?: number
+  vin?: string | null
+}
+
+export interface VehiculoResultadoBusqueda {
+  id: string
+  matricula: string
+  marca: string
+  modelo: string
+  año?: number | null
+  color?: string | null
+  kilometros?: number | null
+  tipo_combustible?: string | null
+  vin?: string | null
+  bastidor_vin?: string | null
+  cliente_id: string | null
+  clientes?: { id: string; nombre: string; apellidos?: string | null; nif?: string | null; telefono?: string | null } | null
 }
 
 interface OrdenVehiculoStepProps {
@@ -35,6 +52,8 @@ interface OrdenVehiculoStepProps {
   matriculaInput: string
   buscandoMatricula: boolean
   matriculaNoEncontrada: boolean
+  resultadosBusqueda: VehiculoResultadoBusqueda[]
+  dropdownAbierto: boolean
   onVehiculoIdChange: (id: string) => void
   onToggleFormVehiculo: () => void
   onToggleEditandoVehiculo: () => void
@@ -44,6 +63,14 @@ interface OrdenVehiculoStepProps {
   onGuardarVehiculo: () => void
   onMatriculaInputChange: (value: string) => void
   onBuscarMatricula: () => void
+  onSeleccionarResultado: (vehiculo: VehiculoResultadoBusqueda) => void
+  onCerrarDropdown: () => void
+}
+
+function etiquetaVehiculo(v: VehiculoResultadoBusqueda): string {
+  const marcaModelo = [v.marca, v.modelo].filter(Boolean).join(' ')
+  const año = v.año ? ` (${v.año})` : ''
+  return `${v.matricula}${marcaModelo ? ` - ${marcaModelo}` : ''}${año}`
 }
 
 export function OrdenVehiculoStep({
@@ -60,6 +87,8 @@ export function OrdenVehiculoStep({
   matriculaInput,
   buscandoMatricula,
   matriculaNoEncontrada,
+  resultadosBusqueda,
+  dropdownAbierto,
   onVehiculoIdChange,
   onToggleFormVehiculo,
   onToggleEditandoVehiculo,
@@ -69,15 +98,83 @@ export function OrdenVehiculoStep({
   onGuardarVehiculo,
   onMatriculaInputChange,
   onBuscarMatricula,
+  onSeleccionarResultado,
+  onCerrarDropdown,
 }: OrdenVehiculoStepProps) {
+  const [highlightIndex, setHighlightIndex] = useState(0)
+  const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    setHighlightIndex(0)
+  }, [resultadosBusqueda])
+
+  useEffect(() => {
+    return () => {
+      if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current)
+    }
+  }, [])
+
   const abrirFormVehiculo = () => {
     // Si el usuario ya escribió una matrícula en el buscador, no la perdemos
     // al abrir el formulario de creación manual.
     if (matriculaInput.trim() && !nuevoVehiculo.matricula) {
       onNuevoVehiculoChange({ matricula: matriculaInput.trim() })
     }
+    onCerrarDropdown()
     onToggleFormVehiculo()
   }
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowDown') {
+      if (dropdownAbierto && resultadosBusqueda.length > 0) {
+        e.preventDefault()
+        setHighlightIndex(i => Math.min(i + 1, resultadosBusqueda.length - 1))
+      }
+      return
+    }
+    if (e.key === 'ArrowUp') {
+      if (dropdownAbierto && resultadosBusqueda.length > 0) {
+        e.preventDefault()
+        setHighlightIndex(i => Math.max(i - 1, 0))
+      }
+      return
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (dropdownAbierto && resultadosBusqueda.length > 0) {
+        onSeleccionarResultado(resultadosBusqueda[highlightIndex] ?? resultadosBusqueda[0])
+      } else {
+        onBuscarMatricula()
+      }
+      return
+    }
+    if (e.key === 'Escape') {
+      if (dropdownAbierto) {
+        e.preventDefault()
+        onCerrarDropdown()
+      }
+      return
+    }
+    if (e.key === 'Tab') {
+      onCerrarDropdown()
+    }
+  }
+
+  // Pequeño delay antes de cerrar por blur: deja que el mousedown sobre un
+  // resultado del dropdown se registre primero (si no, el dropdown se
+  // desmontaría antes de que el click llegue a disparar la selección).
+  const handleInputBlur = () => {
+    blurTimeoutRef.current = setTimeout(() => onCerrarDropdown(), 150)
+  }
+
+  const handleInputFocus = () => {
+    if (blurTimeoutRef.current) {
+      clearTimeout(blurTimeoutRef.current)
+      blurTimeoutRef.current = null
+    }
+  }
+
+  const mostrarDropdown = dropdownAbierto && matriculaInput.trim().length >= 2
 
   return (
     <>
@@ -149,29 +246,81 @@ export function OrdenVehiculoStep({
         </div>
       )}
 
-      {/* Sin vehículo — búsqueda por matrícula */}
+      {/* Sin vehículo — búsqueda por matrícula con autocomplete en vivo */}
       {!vehiculoId && (
         <div className="space-y-3">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={matriculaInput}
-              onChange={(e) => onMatriculaInputChange(e.target.value.toUpperCase().replace(/\s/g, ''))}
-              onKeyDown={(e) => e.key === 'Enter' && onBuscarMatricula()}
-              placeholder="Escribe la matrícula (ej: 1234ABC)"
-              className="flex-1 px-3 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white font-mono text-center text-lg tracking-widest uppercase shadow-sm"
-              autoFocus
-            />
-            <button
-              type="button"
-              onClick={onBuscarMatricula}
-              disabled={buscandoMatricula || !matriculaInput.trim()}
-              className="px-4 py-3 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white rounded-xl flex items-center gap-2 font-medium min-w-[56px] justify-center"
-            >
-              {buscandoMatricula ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
-            </button>
+          <div className="relative">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={matriculaInput}
+                onChange={(e) => onMatriculaInputChange(e.target.value)}
+                onKeyDown={handleInputKeyDown}
+                onBlur={handleInputBlur}
+                onFocus={handleInputFocus}
+                placeholder="Escribe la matrícula (ej: 1234ABC)"
+                className="flex-1 px-3 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white font-mono text-center text-lg tracking-widest uppercase shadow-sm"
+                autoFocus
+                autoComplete="off"
+                role="combobox"
+                aria-expanded={mostrarDropdown}
+                aria-autocomplete="list"
+              />
+              <button
+                type="button"
+                onClick={onBuscarMatricula}
+                disabled={buscandoMatricula || !matriculaInput.trim()}
+                className="px-4 py-3 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white rounded-xl flex items-center gap-2 font-medium min-w-[56px] justify-center"
+              >
+                {buscandoMatricula ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
+              </button>
+            </div>
+
+            {/* Dropdown de autocomplete */}
+            {mostrarDropdown && (
+              <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-[300px] overflow-y-auto">
+                {buscandoMatricula && resultadosBusqueda.length === 0 ? (
+                  <div className="px-4 py-3 text-sm text-gray-500 flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Buscando...
+                  </div>
+                ) : resultadosBusqueda.length === 0 ? (
+                  <div>
+                    <div className="px-4 py-3 text-sm text-gray-500">No hay vehículos</div>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        abrirFormVehiculo()
+                      }}
+                      className="w-full text-left px-4 py-3 text-sm text-sky-600 hover:bg-sky-50 font-medium flex items-center gap-1.5 border-t"
+                    >
+                      <Car className="w-4 h-4" /> Crear nuevo vehículo
+                    </button>
+                  </div>
+                ) : (
+                  resultadosBusqueda.map((v, i) => (
+                    <button
+                      type="button"
+                      key={v.id}
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        onSeleccionarResultado(v)
+                      }}
+                      onMouseEnter={() => setHighlightIndex(i)}
+                      className={`w-full text-left px-4 py-3 text-sm ${
+                        i === highlightIndex ? 'bg-sky-100' : 'hover:bg-sky-50'
+                      } ${i > 0 ? 'border-t border-gray-100' : ''}`}
+                    >
+                      <span className="font-mono font-semibold text-gray-900">{v.matricula}</span>
+                      <span className="text-gray-600"> - {[v.marca, v.modelo].filter(Boolean).join(' ')}{v.año ? ` (${v.año})` : ''}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
           </div>
-          <p className="text-xs text-gray-400 text-center">Pulsa Buscar o Enter para buscar en el sistema</p>
+
+          <p className="text-xs text-gray-400 text-center">Escribe para buscar, o pulsa Buscar / Enter</p>
           {matriculaNoEncontrada && (
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
               <p className="text-sm text-amber-700 font-medium">Matrícula no encontrada</p>
@@ -241,8 +390,11 @@ export function OrdenVehiculoStep({
               </div>
             </div>
             <div>
-              <Label className="text-xs text-gray-600 mb-1 block">Bastidor (VIN)</Label>
-              <Input value={nuevoVehiculo.vin || ''} onChange={(e) => onNuevoVehiculoChange({ vin: e.target.value })} placeholder="WVWZZZ1KZBW123456" className="font-mono" />
+              <Label className="text-xs text-gray-600 mb-1 block">Bastidor (VIN) <span className="text-gray-400 font-normal">(opcional)</span></Label>
+              <div className="flex gap-2">
+                <Input value={nuevoVehiculo.vin || ''} onChange={(e) => onNuevoVehiculoChange({ vin: e.target.value })} placeholder="WVWZZZ1KZBW123456" className="font-mono flex-1" />
+                <InputScanner tipo="vin" onResult={(val) => onNuevoVehiculoChange({ vin: val })} />
+              </div>
             </div>
             <Button
               type="button"
