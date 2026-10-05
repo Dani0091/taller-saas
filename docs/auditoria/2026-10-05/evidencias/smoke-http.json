@@ -1,0 +1,366 @@
+[
+  {
+    "method": "GET",
+    "path": "/auth/login",
+    "expected": 200,
+    "status": 200,
+    "pass": true,
+    "ms": 20,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/auth/registro",
+    "expected": 200,
+    "status": 200,
+    "pass": true,
+    "ms": 3,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/auth/recuperar",
+    "expected": 200,
+    "status": 200,
+    "pass": true,
+    "ms": 1,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/dashboard/ordenes",
+    "expected": 200,
+    "status": 200,
+    "pass": true,
+    "ms": 2,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/ordenes",
+    "expected": 401,
+    "status": 500,
+    "pass": false,
+    "ms": 5,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/vehiculos",
+    "expected": 401,
+    "status": 401,
+    "pass": true,
+    "ms": 3,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/citas",
+    "expected": 401,
+    "status": 401,
+    "pass": true,
+    "ms": 2,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/diagnostico",
+    "expected": 401,
+    "status": 401,
+    "pass": true,
+    "ms": 3,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/series/obtener",
+    "expected": 401,
+    "status": 401,
+    "pass": true,
+    "ms": 2,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/taller/plan",
+    "expected": 401,
+    "status": 401,
+    "pass": true,
+    "ms": 2,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/configuracion/api-keys",
+    "expected": 401,
+    "status": 401,
+    "pass": true,
+    "ms": 2,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/calendar/google/status",
+    "expected": 401,
+    "status": 401,
+    "pass": true,
+    "ms": 2,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/facturas/crear",
+    "expected": 401,
+    "status": 401,
+    "pass": true,
+    "ms": 3,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/facturas/desde-orden",
+    "expected": 401,
+    "status": 401,
+    "pass": true,
+    "ms": 2,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/facturas/emitir",
+    "expected": 401,
+    "status": 401,
+    "pass": true,
+    "ms": 2,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/facturas/cobro-rapido",
+    "expected": 401,
+    "status": 401,
+    "pass": true,
+    "ms": 1,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/facturas/rapida",
+    "expected": 401,
+    "status": 401,
+    "pass": true,
+    "ms": 1,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/clientes/crear",
+    "expected": 401,
+    "status": 400,
+    "pass": false,
+    "ms": 3,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/ordenes/compartir",
+    "expected": 401,
+    "status": 400,
+    "pass": false,
+    "ms": 2,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/factura/lineas/agregar",
+    "expected": 401,
+    "status": 400,
+    "pass": false,
+    "ms": 4,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/facturas/generar-verifactu",
+    "expected": 401,
+    "status": 400,
+    "pass": false,
+    "ms": 2,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "POST",
+    "path": "/api/taller/config/actualizar",
+    "expected": 401,
+    "status": 400,
+    "pass": false,
+    "ms": 2,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/clientes",
+    "expected": 401,
+    "status": 200,
+    "pass": false,
+    "ms": 2,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/facturas/detalles",
+    "expected": 401,
+    "status": 400,
+    "pass": false,
+    "ms": 1,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/config/sistema",
+    "expected": 200,
+    "status": 200,
+    "pass": true,
+    "ms": 753,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/image/proxy?url=https%3A%2F%2Fexample.com%2Fx.jpg",
+    "expected": 403,
+    "status": 403,
+    "pass": true,
+    "ms": 54,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/api/facturas/DISABLED_obtener",
+    "expected": 404,
+    "status": 400,
+    "pass": false,
+    "ms": 3,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/dashboard/facturas/DISABLED_generar",
+    "expected": 404,
+    "status": 200,
+    "pass": false,
+    "ms": 5,
+    "headers": {
+      "frame": "DENY",
+      "nosniff": "nosniff",
+      "csp": null
+    }
+  }
+]

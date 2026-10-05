@@ -18,6 +18,7 @@ import type {
   VehiculoNuevoFormulario,
   VehiculoEdicionFormulario 
 } from '@/types/formularios'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
@@ -69,6 +70,32 @@ interface Orden {
   kilometros_entrada?: number
   kilometros_salida?: number
   fecha_prevista_entrega?: string | null
+  iva_porcentaje?: number
+}
+
+const FORM_DATA_INICIAL: Orden = {
+  estado: 'recibido',
+  cliente_id: '',
+  vehiculo_id: '',
+  descripcion_problema: '',
+  observaciones_cliente: '',
+  diagnostico: '',
+  trabajos_realizados: '',
+  notas: '',
+  presupuesto_aprobado_por_cliente: false,
+  tiempo_estimado_horas: 0,
+  tiempo_real_horas: 0,
+  fotos_entrada: '',
+  fotos_salida: '',
+  fotos_diagnostico: '',
+  nivel_combustible: '',
+  renuncia_presupuesto: false,
+  accion_imprevisto: 'avisar',
+  recoger_piezas: false,
+  danos_carroceria: '',
+  coste_diario_estancia: undefined,
+  kilometros_entrada: undefined,
+  iva_porcentaje: 21,
 }
 
 interface DetalleOrdenSheetProps {
@@ -140,29 +167,7 @@ export function DetalleOrdenSheet({
     total: 0,
   })
 
-  const [formData, setFormData] = useState<Orden>({
-    estado: 'recibido',
-    cliente_id: '',
-    vehiculo_id: '',
-    descripcion_problema: '',
-    observaciones_cliente: '',
-    diagnostico: '',
-    trabajos_realizados: '',
-    notas: '',
-    presupuesto_aprobado_por_cliente: false,
-    tiempo_estimado_horas: 0,
-    tiempo_real_horas: 0,
-    fotos_entrada: '',
-    fotos_salida: '',
-    fotos_diagnostico: '',
-    nivel_combustible: '',
-    renuncia_presupuesto: false,
-    accion_imprevisto: 'avisar',
-    recoger_piezas: false,
-    danos_carroceria: '',
-    coste_diario_estancia: undefined,
-    kilometros_entrada: undefined,
-  })
+  const [formData, setFormData] = useState<Orden>(FORM_DATA_INICIAL)
 
   const [nuevaLinea, setNuevaLinea] = useState<{
     tipo: TipoLinea
@@ -261,8 +266,12 @@ export function DetalleOrdenSheet({
   }, [])
 
   // Persistencia del wizard de creación (localStorage) — solo en modoCrear, nunca al editar.
-  // Evita perder el progreso si el usuario refresca a mitad del wizard.
+  // En vez de restaurar en silencio, se pregunta explícitamente: un borrador solo guarda
+  // vehiculo_id (FK) sin el objeto vehículo cargado, así que restaurar sin más dejaba el
+  // paso 1 en blanco (sin tarjeta de vehículo ni formulario) — confuso y bloqueante.
   const wizardRestauradoRef = useRef(false)
+  const [mostrarModalBorrador, setMostrarModalBorrador] = useState(false)
+  const borradorPendienteRef = useRef<{ formData: Partial<Orden>; stepCrear: 1 | 2 | 3 | 4 } | null>(null)
 
   useEffect(() => {
     if (!modoCrear) return
@@ -270,9 +279,13 @@ export function DetalleOrdenSheet({
       const guardado = localStorage.getItem('orden_form_wizard')
       if (guardado) {
         const { formData: fd, stepCrear: sc } = JSON.parse(guardado)
-        if (fd) setFormData(prev => ({ ...prev, ...fd }))
-        if (sc) setStepCrear(sc)
-        toast.info('Se restauró un borrador de orden guardado')
+        const tieneContenido = fd && (fd.vehiculo_id || fd.cliente_id || (fd.descripcion_problema && fd.descripcion_problema.trim()))
+        if (tieneContenido) {
+          borradorPendienteRef.current = { formData: fd, stepCrear: sc || 1 }
+          setMostrarModalBorrador(true)
+        } else {
+          localStorage.removeItem('orden_form_wizard')
+        }
       }
     } catch {
       // Ignorar borradores corruptos
@@ -282,8 +295,42 @@ export function DetalleOrdenSheet({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modoCrear])
 
+  const continuarBorrador = async () => {
+    const borrador = borradorPendienteRef.current
+    setMostrarModalBorrador(false)
+    if (!borrador) return
+
+    const { formData: fd, stepCrear: sc } = borrador
+    setFormData(prev => ({ ...prev, ...fd }))
+    setStepCrear(sc)
+
+    // Sin esto, `vehiculoSeleccionado` (vehiculos.find) no encuentra nada y el paso 1
+    // se renderiza en blanco pese a tener vehiculo_id ya asignado.
+    if (fd.vehiculo_id) {
+      const { data } = await supabase
+        .from('vehiculos')
+        .select('id, matricula, marca, modelo, año, kilometros, vin')
+        .eq('id', fd.vehiculo_id)
+        .maybeSingle() as { data: any }
+      if (data) {
+        setVehiculos(prev => (prev.some((v: any) => v.id === data.id) ? prev : [...prev, data]))
+      }
+    }
+    toast.info('Borrador restaurado')
+  }
+
+  const empezarDeNuevo = () => {
+    localStorage.removeItem('orden_form_wizard')
+    borradorPendienteRef.current = null
+    setMostrarModalBorrador(false)
+    setFormData(FORM_DATA_INICIAL)
+    setStepCrear(1)
+    setVehiculos([])
+    setMostrarFormVehiculo(false)
+  }
+
   useEffect(() => {
-    if (!modoCrear || !wizardRestauradoRef.current) return
+    if (!modoCrear || !wizardRestauradoRef.current || mostrarModalBorrador) return
     const t = setTimeout(() => {
       try {
         localStorage.setItem('orden_form_wizard', JSON.stringify({ formData, stepCrear }))
@@ -292,7 +339,7 @@ export function DetalleOrdenSheet({
       }
     }, 500)
     return () => clearTimeout(t)
-  }, [modoCrear, formData, stepCrear])
+  }, [modoCrear, formData, stepCrear, mostrarModalBorrador])
 
   // Cargar vehículos cuando cambia el cliente (solo si no hay vehículo seleccionado por matrícula)
   useEffect(() => {
@@ -439,6 +486,7 @@ export function DetalleOrdenSheet({
           kilometros_entrada: ordenData.kilometros_entrada || undefined,
           kilometros_salida: ordenData.kilometros_salida || undefined,
           fecha_prevista_entrega: ordenData.fecha_prevista_entrega || null,
+          iva_porcentaje: ordenData.iva_porcentaje ?? 21,
         })
 
         // Cargar vehículos del cliente
@@ -497,7 +545,18 @@ export function DetalleOrdenSheet({
       .eq('cliente_id', clienteId)
       .order('matricula')
 
-    setVehiculos(data || [])
+    setVehiculos((prev: any[]) => {
+      const lista: any[] = data || []
+      // Si ya hay un vehículo seleccionado (p.ej. elegido por búsqueda de matrícula) y esta
+      // lista filtrada por cliente no lo incluye, se conserva — de lo contrario la selección
+      // "desaparecería" del estado en cuanto cambia el cliente, aunque formData.vehiculo_id
+      // siga correctamente asignado (Step 4 mostraría "Sin vehículo seleccionado").
+      if (formData.vehiculo_id && !lista.some((v: any) => v.id === formData.vehiculo_id)) {
+        const seleccionadoActual = prev.find((v: any) => v.id === formData.vehiculo_id)
+        return seleccionadoActual ? [...lista, seleccionadoActual] : lista
+      }
+      return lista
+    })
   }
 
   // Autocomplete en vivo: busca según se escribe (debounced), muestra varios resultados
@@ -551,6 +610,10 @@ export function DetalleOrdenSheet({
 
   // Selección explícita de un vehículo (click o Enter sobre un resultado del dropdown)
   const seleccionarVehiculoBusqueda = (vehiculo: VehiculoResultadoBusqueda) => {
+    if (debounceMatriculaRef.current) {
+      clearTimeout(debounceMatriculaRef.current)
+      debounceMatriculaRef.current = null
+    }
     setVehiculos([vehiculo as any])
     setFormData(prev => ({
       ...prev,
@@ -570,9 +633,15 @@ export function DetalleOrdenSheet({
     setResultadosMatricula([])
   }
 
-  // Fallback: Enter sin dropdown abierto (p.ej. pegar matrícula completa y confirmar directo)
+  // Fallback: Enter sin dropdown abierto (p.ej. pegar matrícula completa y confirmar directo).
+  // NUNCA "adivina" entre varias coincidencias parciales — solo auto-selecciona si hay
+  // coincidencia exacta, o si la búsqueda parcial deja un único resultado posible. Si hay
+  // ambigüedad real, abre el dropdown con los candidatos en vez de elegir uno al azar.
   const buscarPorMatricula = async () => {
-    if (debounceMatriculaRef.current) clearTimeout(debounceMatriculaRef.current)
+    if (debounceMatriculaRef.current) {
+      clearTimeout(debounceMatriculaRef.current)
+      debounceMatriculaRef.current = null
+    }
     const matriculaNorm = matriculaInput.toUpperCase().replace(/\s/g, '')
     if (!matriculaNorm || !tallerId) return
 
@@ -581,29 +650,53 @@ export function DetalleOrdenSheet({
     setDropdownMatriculaAbierto(false)
 
     try {
-      const { data, error } = await supabase
+      // 1. Coincidencia exacta primero — inequívoca por definición.
+      const { data: exacto, error: errorExacto } = await supabase
+        .from('vehiculos')
+        .select('id, matricula, marca, modelo, año, color, kilometros, tipo_combustible, vin, bastidor_vin, cliente_id, clientes(id, nombre, apellidos, nif, telefono)')
+        .eq('taller_id', tallerId)
+        .ilike('matricula', matriculaNorm)
+        .maybeSingle()
+
+      if (errorExacto) {
+        console.error('Error buscando vehículo por matrícula:', errorExacto)
+        toast.error('Error al buscar el vehículo')
+        return
+      }
+
+      if (exacto) {
+        seleccionarVehiculoBusqueda(exacto as unknown as VehiculoResultadoBusqueda)
+        return
+      }
+
+      // 2. Sin coincidencia exacta — buscar por coincidencia parcial (hasta 8).
+      const { data: parciales, error: errorParcial } = await supabase
         .from('vehiculos')
         .select('id, matricula, marca, modelo, año, color, kilometros, tipo_combustible, vin, bastidor_vin, cliente_id, clientes(id, nombre, apellidos, nif, telefono)')
         .eq('taller_id', tallerId)
         .ilike('matricula', `%${matriculaNorm}%`)
         .order('matricula')
-        .limit(1)
-        .maybeSingle()
+        .limit(8)
 
-      if (error) {
-        console.error('Error buscando vehículo por matrícula:', error)
+      if (errorParcial) {
+        console.error('Error buscando vehículo por matrícula:', errorParcial)
         toast.error('Error al buscar el vehículo')
         return
       }
 
-      if (!data) {
+      if (!parciales || parciales.length === 0) {
         // No encontrado — pre-rellenar formulario de creación
         setMatriculaNoEncontrada(true)
         setResultadosMatricula([])
         setNuevoVehiculo(prev => ({ ...prev, matricula: matriculaNorm }))
         setMostrarFormVehiculo(true)
+      } else if (parciales.length === 1) {
+        // Un único candidato posible — sin ambigüedad, seleccionar directamente.
+        seleccionarVehiculoBusqueda(parciales[0] as unknown as VehiculoResultadoBusqueda)
       } else {
-        seleccionarVehiculoBusqueda(data as unknown as VehiculoResultadoBusqueda)
+        // Varias coincidencias — nunca elegir por el usuario. Mostrar el dropdown.
+        setResultadosMatricula(parciales as unknown as VehiculoResultadoBusqueda[])
+        setDropdownMatriculaAbierto(true)
       }
     } finally {
       setBuscandoMatricula(false)
@@ -868,10 +961,14 @@ export function DetalleOrdenSheet({
     if (!ordenSeleccionada || modoCrear) {
       // En modo crear, calcular totales localmente temporalmente
       // hasta que se guarde la orden y tengamos un ID
+      // El % de IVA de la orden (toggle "Aplicar IVA") manda para todas las líneas,
+      // salvo los suplidos, que por normativa siempre van al 0% independientemente del toggle.
+      const ivaOrdenPct = formData.iva_porcentaje ?? ivaConfigTaller
       const totalesTemp = lineas.reduce(
         (acc, linea) => {
           const subtotal = linea.cantidad * linea.precio_unitario
-          const iva = subtotal * (ivaConfigTaller / 100) // ✅ Dinámico desde taller_config
+          const ivaPctLinea = linea.tipo === 'suplido' ? 0 : ivaOrdenPct
+          const iva = subtotal * (ivaPctLinea / 100)
           return {
             manoObra: linea.tipo === 'mano_obra' ? acc.manoObra + subtotal : acc.manoObra,
             piezas: linea.tipo === 'pieza' ? acc.piezas + subtotal : acc.piezas,
@@ -898,7 +995,7 @@ export function DetalleOrdenSheet({
       console.error('Error cargando totales:', error)
       toast.error('Error al cargar totales')
     }
-  }, [ordenSeleccionada, modoCrear, lineas, ivaConfigTaller])
+  }, [ordenSeleccionada, modoCrear, lineas, ivaConfigTaller, formData.iva_porcentaje])
 
   // Actualizar totales cuando cambien las líneas
   useEffect(() => {
@@ -985,8 +1082,10 @@ export function DetalleOrdenSheet({
           descripcion: desc,
           cantidad: qty,
           precio_unitario: precio,
-          importe_total,
-          estado: precio === 0 ? 'presupuestado' : 'confirmado'
+          importe_total
+          // "estado" (presupuestado/confirmado/recibido) es solo un concepto de UI para
+          // piezas — lineas_orden no tiene esa columna. Insertarlo aquí rompía SIEMPRE
+          // este insert con "column lineas_orden.estado does not exist".
         })
         .select('id')
         .single()
@@ -1064,7 +1163,9 @@ export function DetalleOrdenSheet({
 
     // Igual que en agregarLinea: si ya está persistida (no es un id temporal "new-"),
     // guardar el cambio de inmediato para que el Resumen Económico quede sincronizado.
-    if (!id.startsWith('new-')) {
+    // "estado" es solo un concepto de UI para piezas (lineas_orden no tiene esa columna),
+    // así que ese campo se queda solo en estado local y nunca se manda a la BD.
+    if (!id.startsWith('new-') && campo !== 'estado') {
       const linea = lineasActualizadas.find(l => l.id === id)
       if (linea) {
         const { error } = await supabase
@@ -1148,6 +1249,7 @@ export function DetalleOrdenSheet({
         kilometros_entrada: formData.kilometros_entrada,
         kilometros_salida: formData.kilometros_salida || null,
         fecha_prevista_entrega: formData.fecha_prevista_entrega || null,
+        iva_porcentaje: formData.iva_porcentaje ?? 21,
         updated_at: new Date().toISOString()
       }
 
@@ -1241,6 +1343,7 @@ export function DetalleOrdenSheet({
         coste_diario_estancia: formData.coste_diario_estancia || null,
         kilometros_entrada: formData.kilometros_entrada || null,
         fecha_prevista_entrega: formData.fecha_prevista_entrega || null,
+        iva_porcentaje: formData.iva_porcentaje ?? 21,
       }
 
       let ordenId = ordenSeleccionada
@@ -1354,6 +1457,7 @@ export function DetalleOrdenSheet({
         kilometros_entrada: formData.kilometros_entrada,
         kilometros_salida: formData.kilometros_salida || null,
         fecha_prevista_entrega: formData.fecha_prevista_entrega || null,
+        iva_porcentaje: formData.iva_porcentaje ?? 21,
         updated_at: new Date().toISOString()
       }
 
@@ -1599,7 +1703,6 @@ export function DetalleOrdenSheet({
           estadoActual={formData.estado}
           onCambiarEstado={cambiarEstado}
           onClose={onClose}
-          onImprimir={() => setMostrarPDF(true)}
           mostrarEstados={mostrarEstados}
           onToggleEstados={setMostrarEstados}
           bloqueado={ordenBloqueada}
@@ -1776,6 +1879,7 @@ export function DetalleOrdenSheet({
             <OrdenInfoTab
               modoCrear={modoCrear}
               ordenSeleccionada={ordenSeleccionada}
+              ivaConfigTaller={ivaConfigTaller}
               formData={formData}
               clientes={clientes}
               vehiculos={vehiculos}
@@ -1951,6 +2055,38 @@ export function DetalleOrdenSheet({
             ordenId={ordenSeleccionada}
             onClose={() => setMostrarPDF(false)}
           />
+        )}
+
+        {modoCrear && mostrarModalBorrador && (
+          <Dialog open={mostrarModalBorrador} onOpenChange={() => {}}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Orden borrador encontrada</DialogTitle>
+                <DialogDescription>
+                  Tienes una orden en borrador. ¿Qué quieres hacer?
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter className="flex-col gap-2 sm:flex-col">
+                <Button
+                  type="button"
+                  size="xl"
+                  onClick={continuarBorrador}
+                  className="w-full bg-sky-600 hover:bg-sky-700"
+                >
+                  Continuar con borrador
+                </Button>
+                <Button
+                  type="button"
+                  size="xl"
+                  variant="outline"
+                  onClick={empezarDeNuevo}
+                  className="w-full"
+                >
+                  Empezar de nuevo
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         )}
       </div>
     </div>

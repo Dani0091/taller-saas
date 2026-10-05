@@ -66,6 +66,7 @@ interface FormData {
   notas?: string
   fotos_diagnostico?: string
   fecha_prevista_entrega?: string | null
+  iva_porcentaje?: number
 }
 
 // Props for the matricula-first vehicle search
@@ -123,6 +124,9 @@ interface OrdenInfoTabProps extends MatriculaSearchProps {
 
   /** Orden facturada — todos los campos quedan de solo lectura */
   readOnly?: boolean
+
+  /** % de IVA configurado por defecto en el taller — valor que se aplica al marcar el checkbox */
+  ivaConfigTaller?: number
 }
 
 export function OrdenInfoTab({
@@ -152,6 +156,7 @@ export function OrdenInfoTab({
   onGuardarVehiculo,
   vehiculoSeleccionado,
   readOnly = false,
+  ivaConfigTaller = 21,
   matriculaInput,
   buscandoMatricula,
   matriculaNoEncontrada,
@@ -632,6 +637,26 @@ export function OrdenInfoTab({
             className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white text-sm"
           />
         </div>
+      </Card>
+
+      {/* Aplicar IVA */}
+      <Card className="p-4">
+        <label className="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={(formData.iva_porcentaje ?? ivaConfigTaller) !== 0}
+            onChange={(e) => onFormDataChange({ iva_porcentaje: e.target.checked ? ivaConfigTaller : 0 })}
+            className="w-5 h-5 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+          />
+          <div>
+            <span className="font-medium text-gray-900">Aplicar IVA ({ivaConfigTaller}%)</span>
+            <p className="text-xs text-gray-500">
+              {(formData.iva_porcentaje ?? ivaConfigTaller) !== 0
+                ? 'Se aplica el IVA a todas las líneas (los suplidos siempre van al 0%).'
+                : 'Sin IVA — el total de la orden, presupuesto y factura no incluirá IVA.'}
+            </p>
+          </div>
+        </label>
       </Card>
 
       {/* Autorizaciones legales */}

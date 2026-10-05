@@ -82,16 +82,40 @@ export async function GET(
     // Obtener config del taller
     const { data: tallerConfig } = await supabaseAdmin
       .from('taller_config')
-      .select('nombre_empresa, logo_url, direccion, telefono, email, color_primario')
+      .select('nombre_empresa, logo_url, direccion, telefono, email, color_primario, porcentaje_iva')
       .eq('taller_id', orden.taller_id)
       .single()
 
     // Obtener líneas
     const { data: lineas } = await supabaseAdmin
       .from('lineas_orden')
-      .select('tipo, descripcion, cantidad, precio_unitario, importe_total')
+      .select('tipo, descripcion, cantidad, precio_unitario, importe_total, iva_porcentaje')
       .eq('orden_id', orden.id)
       .order('created_at')
+
+    // Calcular totales EN VIVO desde las líneas — igual que calcular-totales-orden.action.ts
+    // y desde-orden/route.ts. orden.subtotal_mano_obra/iva_amount/total_con_iva son columnas
+    // cacheadas que solo se refrescan en un autosave general; si el cliente añade líneas sin
+    // tocar otro campo del formulario, ese caché queda obsoleto y el presupuesto compartido
+    // mostraba un total desincronizado de las líneas realmente listadas.
+    const porcentajeIvaTaller = tallerConfig?.porcentaje_iva || 21
+    // El % de IVA de la ORDEN (toggle "Aplicar IVA") manda — salvo suplidos, siempre 0%.
+    const ivaPorcentajeOrden = orden.iva_porcentaje ?? porcentajeIvaTaller
+    const totalesCalculados = (lineas || []).reduce(
+      (acc, l) => {
+        const subtotalLinea = l.cantidad * l.precio_unitario
+        const ivaPorcentajeLinea = l.tipo === 'suplido' ? 0 : ivaPorcentajeOrden
+        const ivaLinea = subtotalLinea * (ivaPorcentajeLinea / 100)
+        return {
+          manoObra: l.tipo === 'mano_obra' ? acc.manoObra + subtotalLinea : acc.manoObra,
+          piezas: l.tipo === 'pieza' ? acc.piezas + subtotalLinea : acc.piezas,
+          subtotal: acc.subtotal + subtotalLinea,
+          iva: acc.iva + ivaLinea,
+          total: acc.total + subtotalLinea + ivaLinea,
+        }
+      },
+      { manoObra: 0, piezas: 0, subtotal: 0, iva: 0, total: 0 }
+    )
 
     // Preparar respuesta (solo datos necesarios, sin info sensible)
     const presupuesto = {
@@ -134,10 +158,10 @@ export async function GET(
       })),
 
       totales: {
-        manoObra: orden.subtotal_mano_obra || 0,
-        piezas: orden.subtotal_piezas || 0,
-        iva: orden.iva_amount || 0,
-        total: orden.total_con_iva || 0,
+        manoObra: totalesCalculados.manoObra,
+        piezas: totalesCalculados.piezas,
+        iva: totalesCalculados.iva,
+        total: totalesCalculados.total,
       },
     }
 

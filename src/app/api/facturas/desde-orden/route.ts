@@ -154,6 +154,10 @@ export async function POST(request: NextRequest) {
       .select('*')
       .eq('orden_id', orden_id)
 
+    // El % de IVA de la ORDEN (toggle "Aplicar IVA") manda para todas sus líneas al
+    // facturar — salvo los suplidos, que por normativa van siempre al 0%.
+    const ivaPorcentajeOrden = orden.iva_porcentaje ?? ivaPorcentaje
+
     // Calcular totales CORRECTAMENTE desde las líneas
     let baseImponibleTotal = 0
     let ivaTotal = 0
@@ -162,7 +166,7 @@ export async function POST(request: NextRequest) {
       lineasOrden.forEach((linea: any) => {
         const cantidad = parseFloat(linea.cantidad) || 1
         const precioUnitario = parseFloat(linea.precio_unitario) || 0
-        const ivaPorcentajeLinea = parseFloat(linea.iva_porcentaje) || ivaPorcentaje
+        const ivaPorcentajeLinea = linea.tipo === 'suplido' ? 0 : ivaPorcentajeOrden
 
         const baseLinea = cantidad * precioUnitario
         const ivaLinea = baseLinea * (ivaPorcentajeLinea / 100)
@@ -173,7 +177,7 @@ export async function POST(request: NextRequest) {
     } else {
       // Fallback si no hay líneas
       baseImponibleTotal = orden.total_sin_iva || (orden.subtotal_mano_obra || 0) + (orden.subtotal_piezas || 0) || 0
-      ivaTotal = orden.iva_amount || baseImponibleTotal * (ivaPorcentaje / 100)
+      ivaTotal = orden.iva_amount || baseImponibleTotal * (ivaPorcentajeOrden / 100)
     }
 
     const baseImponible = baseImponibleTotal
@@ -259,7 +263,7 @@ SOLUCIÓN: Verifica que el cliente "${orden.clientes?.nombre}" exista en Cliente
           console.log(`   ℹ️  Aplicando precio hora trabajo: ${precioHoraTrabajo}€ a línea de mano de obra`)
         }
 
-        const ivaPorcentajeLinea = parseFloat(linea.iva_porcentaje) || ivaPorcentaje
+        const ivaPorcentajeLinea = linea.tipo === 'suplido' ? 0 : ivaPorcentajeOrden
 
         // Determinar concepto y tipo basado en el tipo de línea
         let concepto = 'Servicio'

@@ -49,3 +49,6 @@ tsconfig.tsbuildinfo
 
 # Docker (no subir imágenes locales)
 .docker/
+
+# Local pre-migration snapshots (row counts + policy state, may reference real data)
+backups/

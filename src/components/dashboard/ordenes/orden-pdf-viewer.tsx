@@ -418,7 +418,11 @@ export function OrdenPDFViewer({ ordenId, onClose }: OrdenPDFViewerProps) {
                   <span className="font-medium">{formatCurrency(datos.totales.subtotalPiezas)}</span>
                 </div>
                 <div className="flex justify-between px-4 py-2 border-t">
-                  <span>IVA (21%):</span>
+                  <span>
+                    {datos.totales.iva === 0 && (datos.totales.subtotalManoObra + datos.totales.subtotalPiezas) > 0
+                      ? 'IVA (sin aplicar):'
+                      : 'IVA:'}
+                  </span>
                   <span className="font-medium">{formatCurrency(datos.totales.iva)}</span>
                 </div>
                 <div className="flex justify-between px-4 py-3 border-t bg-sky-600 text-white">

@@ -8,7 +8,7 @@
  */
 'use client'
 
-import { X, ChevronDown, Check, Printer, Lock } from 'lucide-react'
+import { X, ChevronDown, Check, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { ESTADOS_ORDEN } from '@/lib/constants'
@@ -25,7 +25,6 @@ interface OrdenHeaderProps {
 
   // Acciones
   onClose: () => void
-  onImprimir?: () => void
 
   // UI State
   mostrarEstados: boolean
@@ -42,7 +41,6 @@ export function OrdenHeader({
   estadoActual: estadoValue,
   onCambiarEstado,
   onClose,
-  onImprimir,
   mostrarEstados,
   onToggleEstados,
   bloqueado = false,
@@ -129,20 +127,6 @@ export function OrdenHeader({
         </div>
       </div>
 
-      {/* Botón de imprimir */}
-      {!modoCrear && onImprimir && (
-        <div className="bg-white border-b px-4 py-3 shrink-0">
-          <Button
-            onClick={onImprimir}
-            variant="outline"
-            className="w-full gap-2"
-            size="sm"
-          >
-            <Printer className="w-4 h-4" />
-            Ver / Imprimir Orden
-          </Button>
-        </div>
-      )}
     </>
   )
 }

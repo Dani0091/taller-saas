@@ -10,6 +10,7 @@ import { ArrowLeft, Download, Printer, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { InformacionLegal } from '@/components/facturas/informacion-legal'
 import { CambiarEstado } from '@/components/facturas/cambiar-estado'
+import { formatCurrency } from '@/lib/utils'
 import { useDescargarPDF } from '@/hooks/useDescargarPDF'
 import { createClient } from '@/lib/supabase/client'
 
@@ -347,9 +348,9 @@ export default function VerFacturaPage() {
                     <tr key={idx} className="border-b hover:bg-gray-50">
                       <td className="py-3 px-2">{linea.descripcion}</td>
                       <td className="text-center py-3 px-2">{linea.cantidad}</td>
-                      <td className="text-right py-3 px-2">€{linea.precio_unitario?.toFixed(2)}</td>
+                      <td className="text-right py-3 px-2">{formatCurrency(linea.precio_unitario)}</td>
                       <td className="text-right py-3 px-2 font-semibold">
-                        €{(linea.cantidad * linea.precio_unitario).toFixed(2)}
+                        {formatCurrency(linea.cantidad * linea.precio_unitario)}
                       </td>
                     </tr>
                   ))}
@@ -363,15 +364,15 @@ export default function VerFacturaPage() {
             <div className="w-full md:w-96">
               <div className="flex justify-between py-2 border-b border-gray-300 text-sm">
                 <span className="text-gray-600">Base Imponible:</span>
-                <span className="font-semibold">€{factura.base_imponible?.toFixed(2)}</span>
+                <span className="font-semibold">{formatCurrency(factura.base_imponible)}</span>
               </div>
               <div className="flex justify-between py-2 border-b border-gray-300 text-sm">
                 <span className="text-gray-600">IVA (21%):</span>
-                <span className="font-semibold">€{factura.iva?.toFixed(2)}</span>
+                <span className="font-semibold">{formatCurrency(factura.iva)}</span>
               </div>
               <div className="flex justify-between py-3 text-lg bg-gradient-to-r from-sky-600 to-sky-700 text-white p-2 rounded font-bold mt-2">
                 <span>Total:</span>
-                <span>€{factura.total?.toFixed(2)}</span>
+                <span>{formatCurrency(factura.total)}</span>
               </div>
             </div>
           </div>

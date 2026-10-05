@@ -121,6 +121,9 @@ export async function POST(request: NextRequest) {
       .select('*')
       .eq('orden_id', orden_id)
 
+    // El % de IVA de la ORDEN (toggle "Aplicar IVA") manda — salvo suplidos, siempre 0%.
+    const ivaPctOrden = orden.iva_porcentaje ?? ivaPct
+
     let baseImponible = 0
     let ivaTotal = 0
 
@@ -131,14 +134,14 @@ export async function POST(request: NextRequest) {
         if (l.tipo === 'mano_obra' && precioUnitario === 0 && precioHora > 0) {
           precioUnitario = precioHora
         }
-        const ivaPorLinea = Number(l.iva_porcentaje) || ivaPct
+        const ivaPorLinea = l.tipo === 'suplido' ? 0 : ivaPctOrden
         const base = cantidad * precioUnitario
         baseImponible += base
         ivaTotal += base * (ivaPorLinea / 100)
       }
     } else {
       baseImponible = Number(orden.subtotal_mano_obra || 0) + Number(orden.subtotal_piezas || 0)
-      ivaTotal = baseImponible * (ivaPct / 100)
+      ivaTotal = baseImponible * (ivaPctOrden / 100)
     }
 
     const totalFactura = baseImponible + ivaTotal
@@ -170,7 +173,7 @@ export async function POST(request: NextRequest) {
         fecha_emision: hoy,
         fecha_vencimiento: vencimiento,
         base_imponible: baseImponible,
-        iva_porcentaje: ivaPct,
+        iva_porcentaje: ivaPctOrden,
         iva: ivaTotal,
         total: totalFactura,
         metodo_pago: 'E', // Efectivo por defecto en cobro rápido
@@ -195,7 +198,7 @@ export async function POST(request: NextRequest) {
         if (l.tipo === 'mano_obra' && precioUnitario === 0 && precioHora > 0) {
           precioUnitario = precioHora
         }
-        const ivaPorLinea = Number(l.iva_porcentaje) || ivaPct
+        const ivaPorLinea = l.tipo === 'suplido' ? 0 : ivaPctOrden
         const base = cantidad * precioUnitario
         return {
           factura_id: borrador.id,
