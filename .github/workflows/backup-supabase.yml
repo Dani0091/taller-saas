@@ -1,0 +1,50 @@
+name: Backup Supabase diario
+
+on:
+  schedule:
+    # 02:00 UTC = 03:00 en invierno / 04:00 en verano (Europe/Madrid).
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    container: postgres:18.4
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Comprobar herramientas de cifrado
+        run: |
+          if ! command -v openssl >/dev/null 2>&1; then
+            apt-get update
+            apt-get install -y --no-install-recommends openssl
+          fi
+      - name: Copia de lectura y comprobación del archivo cifrado
+        env:
+          PGHOST: ${{ secrets.BACKUP_PGHOST }}
+          PGPORT: '5432'
+          PGDATABASE: postgres
+          PGUSER: ${{ secrets.BACKUP_PGUSER }}
+          PGPASSWORD: ${{ secrets.BACKUP_PGPASSWORD }}
+          BACKUP_ENCRYPTION_PASSWORD: ${{ secrets.BACKUP_ENCRYPTION_PASSWORD }}
+        run: node scripts/backup-supabase.cjs
+      - name: Guardar únicamente copias completas y cifradas
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-backup-${{ github.run_id }}
+          path: |
+            backups/supabase/taller-saas_*/database.dump.enc
+            backups/supabase/taller-saas_*/manifest.json
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
