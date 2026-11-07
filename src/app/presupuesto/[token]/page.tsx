@@ -7,6 +7,7 @@
 import { useState, useEffect, use } from 'react'
 import { Check, Loader2, Download, Share2, Printer, AlertCircle, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { formatCurrency } from '@/lib/utils'
 
 interface Presupuesto {
   numero: string
@@ -318,8 +319,8 @@ export default function PresupuestoPublico({ params }: { params: Promise<{ token
                             <span className="break-words">{linea.descripcion}</span>
                           </td>
                           <td className="px-2 sm:px-4 py-3 text-center">{linea.cantidad}</td>
-                          <td className="px-2 sm:px-4 py-3 text-right whitespace-nowrap">€{linea.precio.toFixed(2)}</td>
-                          <td className="px-3 sm:px-4 py-3 text-right font-medium whitespace-nowrap">€{linea.total.toFixed(2)}</td>
+                          <td className="px-2 sm:px-4 py-3 text-right whitespace-nowrap">{formatCurrency(linea.precio)}</td>
+                          <td className="px-3 sm:px-4 py-3 text-right font-medium whitespace-nowrap">{formatCurrency(linea.total)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -333,22 +334,26 @@ export default function PresupuestoPublico({ params }: { params: Promise<{ token
               <div className="w-full sm:w-72 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Mano de obra:</span>
-                  <span>€{presupuesto.totales.manoObra.toFixed(2)}</span>
+                  <span>{formatCurrency(presupuesto.totales.manoObra)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Repuestos:</span>
-                  <span>€{presupuesto.totales.piezas.toFixed(2)}</span>
+                  <span>{formatCurrency(presupuesto.totales.piezas)}</span>
                 </div>
                 <div className="flex justify-between text-sm border-t pt-2">
-                  <span className="text-gray-600">IVA (21%):</span>
-                  <span>€{presupuesto.totales.iva.toFixed(2)}</span>
+                  <span className="text-gray-600">
+                    {presupuesto.totales.iva === 0 && (presupuesto.totales.manoObra + presupuesto.totales.piezas) > 0
+                      ? 'IVA (sin aplicar):'
+                      : 'IVA:'}
+                  </span>
+                  <span>{formatCurrency(presupuesto.totales.iva)}</span>
                 </div>
                 <div
                   className="flex justify-between text-lg font-bold p-3 rounded-lg text-white"
                   style={{ backgroundColor: colorPrimario }}
                 >
                   <span>TOTAL:</span>
-                  <span>€{presupuesto.totales.total.toFixed(2)}</span>
+                  <span>{formatCurrency(presupuesto.totales.total)}</span>
                 </div>
               </div>
             </div>

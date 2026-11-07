@@ -9,6 +9,7 @@ import { SupabaseErrorMapper } from '@/infrastructure/errors/SupabaseErrorMapper
 import { AppError } from '@/domain/errors/AppError'
 import type { CambiarEstadoOrdenDTO, OrdenResponseDTO } from '@/application/dtos/orden.dto'
 import { obtenerUsuarioConFallback } from '@/lib/auth/obtener-usuario-fallback'
+import { syncOrdenCalendarEvent } from '@/app/api/calendar/google/events/route'
 
 type ActionResult<T> = { success: true; data: T } | { success: false; error: string }
 
@@ -55,6 +56,9 @@ export async function cambiarEstadoOrdenAction(
     revalidatePath('/ordenes')
     revalidatePath(`/ordenes/${id}`)
     revalidatePath('/dashboard')
+
+    // Sincronizar evento de Google Calendar si la orden lo tiene (best-effort, no bloquea)
+    syncOrdenCalendarEvent(supabase, id).catch(() => {})
 
     return { success: true, data: ordenActualizada }
 

@@ -5,13 +5,14 @@
  * Llama a asignar_numero_factura_v3(taller_id, 'FS') para numeración atómica.
  * Calcula huella VeriFACTU y encadenamiento con la FS anterior.
  *
- * Regla de negocio R&S:
+ * Regla de negocio:
  *   total > 400 € → cliente_id obligatorio con NIF y dirección completos.
  */
 
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
+import { asignarNumeroFactura } from '@/lib/facturas/numeracion'
 import crypto from 'crypto'
 
 const LIMITE_SIN_CLIENTE = 400
@@ -117,24 +118,20 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Número atómico vía RPC v3 ────────────────────────────────────────────
-    const { data: rpcResult, error: rpcError } = await supabase
-      .rpc('asignar_numero_factura_v3', {
-        p_taller_id: auth.tallerId,
-        p_prefijo: 'FS',
-      })
+    const numeracion = await asignarNumeroFactura(supabase, auth.tallerId, 'FS')
 
-    if (rpcError || !rpcResult) {
+    if (!numeracion.ok) {
       return NextResponse.json(
         {
           error: 'Error al asignar número de la serie FS',
-          details: rpcError?.message ?? 'RPC no devolvió resultado',
+          details: numeracion.errorMessage ?? 'RPC no devolvió resultado',
           sugerencia: 'Verifica que la migración 20260304_factura_rapida.sql se ejecutó en Supabase',
         },
         { status: 500 }
       )
     }
 
-    const numeroFactura: string = rpcResult.numero_completo
+    const numeroFactura: string = numeracion.numeroCompleto
     const fecha = new Date().toISOString().split('T')[0]
 
     // ── VeriFACTU: huella y encadenamiento ──────────────────────────────────

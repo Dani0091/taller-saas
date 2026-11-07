@@ -157,7 +157,7 @@ export function NumberInput({
         placeholder={placeholder}
         className={cn(
           'w-full',
-          isFocused && 'ring-2 ring-blue-500',
+          isFocused && 'ring-2 ring-sky-500',
           className
         )}
         disabled={disabled}

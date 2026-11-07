@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { NumberInput } from '@/components/ui/number-input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
+import { formatCurrency } from '@/lib/utils'
 
 interface LineasTableProps {
   lineas: LineaOrden[]
@@ -217,7 +218,7 @@ export function LineasTable({
               <div className="flex justify-between text-gray-600">
                 <span>Margen por unidad:</span>
                 <span className={formData.precio_unitario - formData.precio_coste >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
-                  €{(formData.precio_unitario - formData.precio_coste).toFixed(2)}
+                  {formatCurrency(formData.precio_unitario - formData.precio_coste)}
                   {formData.precio_coste > 0 && (
                     <span className="ml-1">
                       ({((formData.precio_unitario - formData.precio_coste) / formData.precio_unitario * 100).toFixed(1)}%)
@@ -270,12 +271,12 @@ export function LineasTable({
                   <div className="flex-1">
                     <p className="font-semibold text-gray-900">{linea.descripcion}</p>
                     <p className="text-gray-600">
-                      {linea.cantidad} x €{linea.precio_unitario.toFixed(2)} = €{linea.importe_total.toFixed(2)}
+                      {linea.cantidad} x {formatCurrency(linea.precio_unitario)} = {formatCurrency(linea.importe_total)}
                     </p>
                     {linea.horas && <p className="text-gray-500">{linea.horas}h</p>}
                     {tieneCoste && (
                       <p className="text-green-600">
-                        Coste: €{linea.precio_coste?.toFixed(2)} · Margen: €{margenTotal.toFixed(2)}
+                        Coste: {formatCurrency(linea.precio_coste)} · Margen: {formatCurrency(margenTotal)}
                       </p>
                     )}
                     {linea.proveedor && (
@@ -325,25 +326,25 @@ export function LineasTable({
       <div className="pt-3 border-t border-gray-200 space-y-1 text-xs sm:text-sm">
         <div className="flex justify-between font-semibold">
           <span>Subtotal:</span>
-          <span>€{total.toFixed(2)}</span>
+          <span>{formatCurrency(total)}</span>
         </div>
         <div className="flex justify-between text-gray-600">
           <span>IVA 21%:</span>
-          <span>€{(total * 0.21).toFixed(2)}</span>
+          <span>{formatCurrency(total * 0.21)}</span>
         </div>
         <div className="flex justify-between font-bold text-lg">
           <span>Total:</span>
-          <span className="text-blue-600">€{totalConIva.toFixed(2)}</span>
+          <span className="text-blue-600">{formatCurrency(totalConIva)}</span>
         </div>
         {totalCoste > 0 && (
           <div className="pt-2 mt-2 border-t border-gray-100 space-y-1">
             <div className="flex justify-between text-gray-500">
               <span>Coste piezas:</span>
-              <span>€{totalCoste.toFixed(2)}</span>
+              <span>{formatCurrency(totalCoste)}</span>
             </div>
             <div className="flex justify-between font-semibold text-green-600">
               <span>Beneficio bruto:</span>
-              <span>€{beneficioBruto.toFixed(2)}</span>
+              <span>{formatCurrency(beneficioBruto)}</span>
             </div>
           </div>
         )}

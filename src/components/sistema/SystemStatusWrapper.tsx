@@ -127,7 +127,7 @@ export function SystemStatusWrapper({ children }: Props) {
         sessionStorage.clear()
       } catch { /* modo privado */ }
 
-      if ('caches' in window) {
+      if (typeof caches !== 'undefined') {
         caches.keys()
           .then(names => Promise.all(names.map(n => caches.delete(n))))
           .catch(() => {})

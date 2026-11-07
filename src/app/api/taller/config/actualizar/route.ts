@@ -1,11 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
+import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const auth = await getAuthenticatedUser()
+    if (isAuthError(auth)) return authErrorResponse(auth)
+
     const body = await request.json()
     const {
-      taller_id,
       tarifa_hora,
       incluye_iva,
       porcentaje_iva,
@@ -27,13 +31,7 @@ export async function POST(request: Request) {
       color_secundario,
     } = body
 
-    if (!taller_id) {
-      return NextResponse.json(
-        { error: 'taller_id es requerido' },
-        { status: 400 }
-      )
-    }
-
+    const taller_id = auth.tallerId
     const supabase = await createClient()
 
     // ✅ Verificar si existe configuración en taller_config

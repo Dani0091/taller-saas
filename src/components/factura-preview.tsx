@@ -1,5 +1,7 @@
 'use client'
 
+import { formatCurrency } from '@/lib/utils'
+
 interface FacturaPreviewProps {
   tarifaHora: number
   horasReales: number
@@ -57,9 +59,9 @@ export function FacturaPreview({
                 <td className="py-3 px-2">Mano de Obra</td>
                 <td className="text-center py-3 px-2">{horasReales.toFixed(1)}h</td>
                 <td className="text-right py-3 px-2">
-                  €{tarifaConIva ? (tarifaHora / (1 + porcentajeIva / 100)).toFixed(2) : tarifaHora.toFixed(2)}
+                  {formatCurrency(tarifaConIva ? tarifaHora / (1 + porcentajeIva / 100) : tarifaHora)}
                 </td>
-                <td className="text-right py-3 px-2 font-semibold">€{manoObraBase.toFixed(2)}</td>
+                <td className="text-right py-3 px-2 font-semibold">{formatCurrency(manoObraBase)}</td>
               </tr>
             )}
 
@@ -68,7 +70,7 @@ export function FacturaPreview({
                 <td className="py-3 px-2">Piezas y Materiales</td>
                 <td className="text-center py-3 px-2">—</td>
                 <td className="text-right py-3 px-2">—</td>
-                <td className="text-right py-3 px-2 font-semibold">€{totalPiezas.toFixed(2)}</td>
+                <td className="text-right py-3 px-2 font-semibold">{formatCurrency(totalPiezas)}</td>
               </tr>
             )}
 
@@ -77,7 +79,7 @@ export function FacturaPreview({
               <td colSpan={3} className="py-3 px-2 text-right">
                 Subtotal (Base):
               </td>
-              <td className="text-right py-3 px-2">€{subtotal.toFixed(2)}</td>
+              <td className="text-right py-3 px-2">{formatCurrency(subtotal)}</td>
             </tr>
 
             {/* IVA */}
@@ -87,7 +89,7 @@ export function FacturaPreview({
                   IVA ({porcentajeIva.toFixed(2)}%):
                 </td>
                 <td className="text-right py-3 px-2 font-semibold text-orange-600">
-                  €{ivaTotal.toFixed(2)}
+                  {formatCurrency(ivaTotal)}
                 </td>
               </tr>
             )}
@@ -98,7 +100,7 @@ export function FacturaPreview({
                 TOTAL:
               </td>
               <td className="text-right py-3 px-2 text-green-600">
-                €{(includeIva ? totalConIva : subtotal).toFixed(2)}
+                {formatCurrency(includeIva ? totalConIva : subtotal)}
               </td>
             </tr>
           </tbody>
@@ -109,25 +111,25 @@ export function FacturaPreview({
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
         <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
           <p className="text-gray-600 text-xs uppercase font-semibold">Mano de Obra</p>
-          <p className="text-xl font-bold text-blue-600 mt-1">€{manoObraBase.toFixed(2)}</p>
+          <p className="text-xl font-bold text-blue-600 mt-1">{formatCurrency(manoObraBase)}</p>
         </div>
 
         <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
           <p className="text-gray-600 text-xs uppercase font-semibold">Piezas</p>
-          <p className="text-xl font-bold text-purple-600 mt-1">€{totalPiezas.toFixed(2)}</p>
+          <p className="text-xl font-bold text-purple-600 mt-1">{formatCurrency(totalPiezas)}</p>
         </div>
 
         {includeIva && (
           <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
             <p className="text-gray-600 text-xs uppercase font-semibold">IVA</p>
-            <p className="text-xl font-bold text-orange-600 mt-1">€{ivaTotal.toFixed(2)}</p>
+            <p className="text-xl font-bold text-orange-600 mt-1">{formatCurrency(ivaTotal)}</p>
           </div>
         )}
 
         <div className="p-3 bg-green-50 rounded-lg border border-green-200">
           <p className="text-gray-600 text-xs uppercase font-semibold">Total</p>
           <p className="text-xl font-bold text-green-600 mt-1">
-            €{(includeIva ? totalConIva : subtotal).toFixed(2)}
+            {formatCurrency(includeIva ? totalConIva : subtotal)}
           </p>
         </div>
       </div>

@@ -26,7 +26,7 @@ export function cn(...inputs: ClassValue[]) {
  * @param amount - Cantidad a formatear
  * @param showSymbol - Si mostrar el símbolo € (default: true)
  * @returns Cadena formateada con el importe
- * @example formatCurrency(1234.5) // "1.234,50 €"
+ * @example formatCurrency(1234.5) // "1.234,50€"
  */
 export function formatCurrency(amount: number | null | undefined, showSymbol = true): string {
   const value = amount ?? 0
@@ -34,7 +34,7 @@ export function formatCurrency(amount: number | null | undefined, showSymbol = t
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   })
-  return showSymbol ? `${formatted} €` : formatted
+  return showSymbol ? `${formatted}€` : formatted
 }
 
 /**

@@ -69,6 +69,36 @@ export async function GET(request: NextRequest) {
       .eq('orden_id', ordenId)
       .order('created_at')
 
+    // Obtener % IVA del taller (fallback si una línea no trae el suyo propio)
+    const { data: tallerIvaConfig } = await supabase
+      .from('taller_config')
+      .select('porcentaje_iva')
+      .eq('taller_id', orden.taller_id)
+      .maybeSingle()
+
+    // Totales EN VIVO desde las líneas — igual que calcular-totales-orden.action.ts y el
+    // presupuesto público. orden.subtotal_mano_obra/iva_amount/total_con_iva son columnas
+    // cacheadas que solo se refrescan en un autosave general; si se añaden líneas sin tocar
+    // otro campo del formulario, el PDF mostraba un total desincronizado de la tabla de líneas.
+    const porcentajeIvaTaller = tallerIvaConfig?.porcentaje_iva || 21
+    // El % de IVA de la ORDEN (toggle "Aplicar IVA") manda — salvo suplidos, siempre 0%.
+    const ivaPorcentajeOrden = orden.iva_porcentaje ?? porcentajeIvaTaller
+    const totalesCalculados = (lineas || []).reduce(
+      (acc: any, l: any) => {
+        const subtotalLinea = l.cantidad * l.precio_unitario
+        const ivaPorcentajeLinea = l.tipo === 'suplido' ? 0 : ivaPorcentajeOrden
+        const ivaLinea = subtotalLinea * (ivaPorcentajeLinea / 100)
+        return {
+          manoObra: l.tipo === 'mano_obra' ? acc.manoObra + subtotalLinea : acc.manoObra,
+          piezas: l.tipo === 'pieza' ? acc.piezas + subtotalLinea : acc.piezas,
+          subtotal: acc.subtotal + subtotalLinea,
+          iva: acc.iva + ivaLinea,
+          total: acc.total + subtotalLinea + ivaLinea,
+        }
+      },
+      { manoObra: 0, piezas: 0, subtotal: 0, iva: 0, total: 0 }
+    )
+
     // Preparar datos para PDF de orden de trabajo
     const datosOrden = {
       // Datos del taller
@@ -144,10 +174,10 @@ export async function GET(request: NextRequest) {
 
       // Totales
       totales: {
-        subtotalManoObra: orden.subtotal_mano_obra || 0,
-        subtotalPiezas: orden.subtotal_piezas || 0,
-        iva: orden.iva_amount || 0,
-        total: orden.total_con_iva || 0,
+        subtotalManoObra: totalesCalculados.manoObra,
+        subtotalPiezas: totalesCalculados.piezas,
+        iva: totalesCalculados.iva,
+        total: totalesCalculados.total,
       },
     }
 

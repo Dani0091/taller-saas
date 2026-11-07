@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input'
 import { NumberInput } from '@/components/ui/number-input'
 import { Badge } from '@/components/ui/badge'
 import type { LineaOrden, TipoLinea } from '@/types/workshop'
+import { formatCurrency } from '@/lib/utils'
 
 interface TablaTrabajosProps {
   lineas: LineaOrden[]
@@ -246,7 +247,7 @@ export function TablaTrabajos({
                     </div>
                     <div className="bg-gray-50 p-2 rounded">
                       <span className="text-gray-500 text-xs block mb-1">Precio/U</span>
-                      <p className="font-semibold text-base text-green-700">€{(linea.precio_unitario || 0).toFixed(2)}</p>
+                      <p className="font-semibold text-base text-green-700">{formatCurrency(linea.precio_unitario || 0)}</p>
                     </div>
                   </div>
                 </div>
@@ -321,7 +322,7 @@ export function TablaTrabajos({
                           className="w-full text-right"
                         />
                       ) : (
-                        <span className="whitespace-nowrap">€{(linea.precio_unitario || 0).toFixed(2)}</span>
+                        <span className="whitespace-nowrap">{formatCurrency(linea.precio_unitario || 0)}</span>
                       )}
                     </td>
 

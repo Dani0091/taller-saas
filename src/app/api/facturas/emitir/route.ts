@@ -8,6 +8,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
+import { asignarNumeroFactura } from '@/lib/facturas/numeracion'
+import { formatCurrency } from '@/lib/utils'
 import crypto from 'crypto'
 
 /** Calcula la huella SHA-256 para el encadenamiento VeriFACTU */
@@ -109,24 +111,20 @@ export async function POST(request: NextRequest) {
     // asignar_numero_factura_v3 usa FOR UPDATE para bloquear la fila de la serie
     // y garantizar numeración sin duplicados incluso con emisiones simultáneas.
     // Formato devuelto: RS-2026-008 (año anual + LPAD 3 dígitos).
-    const { data: rpcResult, error: rpcError } = await supabase
-      .rpc('asignar_numero_factura_v3', {
-        p_taller_id: auth.tallerId,
-        p_prefijo: serieToUse,
-      })
+    const numeracion = await asignarNumeroFactura(supabase, auth.tallerId, serieToUse)
 
-    if (rpcError || !rpcResult) {
+    if (!numeracion.ok) {
       return NextResponse.json(
         {
           error: `Error al asignar número de la serie "${serieToUse}"`,
-          details: rpcError?.message ?? 'El RPC no devolvió resultado',
+          details: numeracion.errorMessage ?? 'El RPC no devolvió resultado',
           sugerencia: 'Verifica que la migración 20260225_final_consolidation.sql se ejecutó en Supabase',
         },
         { status: 500 }
       )
     }
 
-    const numeroFactura: string = rpcResult.numero_completo
+    const numeroFactura: string = numeracion.numeroCompleto
 
     // ── VeriFACTU: calcular huella y encadenamiento ──────────────────────────
     const huellaHash = calcularHuellaVeriFACTU({
@@ -139,7 +137,12 @@ export async function POST(request: NextRequest) {
       clienteId: factura.cliente_id,
     })
 
-    // Obtener la huella de la última factura emitida de este taller para encadenar
+    // Obtener la huella de la última factura emitida de este taller para encadenar.
+    // Orden created_at + id (tie-breaker) por consistencia con rapida/route.ts,
+    // generar-verifactu/route.ts y cobro-rapido/route.ts. Sigue sin ser un orden
+    // garantizado de secuencia de emisión real (ver A05 del INFORME): un borrador
+    // creado antes puede emitirse después que otro creado más tarde. Cambiarlo
+    // requiere revisar las 4 rutas a la vez, no solo esta.
     const { data: facturaAnterior } = await supabase
       .from('facturas')
       .select('huella_hash')
@@ -154,7 +157,11 @@ export async function POST(request: NextRequest) {
 
     const encadenamientoAnterior = facturaAnterior?.huella_hash || null
 
-    // Actualizar factura con número, estado y huellas VeriFACTU
+    // Actualizar factura con número, estado y huellas VeriFACTU.
+    // Condición .eq('estado', 'borrador').is('numero_factura', null): si dos
+    // solicitudes llegan a la vez, cada una reserva un número distinto vía RPC,
+    // pero solo la primera en llegar aquí gana este UPDATE — la segunda no
+    // sobrescribe la factura ya emitida (evita doble número/estado inconsistente).
     const { data: facturaEmitida, error: emitirError } = await supabase
       .from('facturas')
       .update({
@@ -165,13 +172,35 @@ export async function POST(request: NextRequest) {
         updated_at: new Date().toISOString()
       })
       .eq('id', factura_id)
+      .eq('taller_id', auth.tallerId)
+      .eq('estado', 'borrador')
+      .is('numero_factura', null)
       .select()
-      .single()
+      .maybeSingle()
 
     if (emitirError || !facturaEmitida) {
-      // El número ya fue reservado por el RPC (committed). Si el UPDATE de
-      // facturas falla, el número queda asignado pero sin factura — registrar
-      // para auditoría manual. No intentamos revertir (generaría race condition).
+      // El número reservado por el RPC ya quedó committed en el contador de la
+      // serie — no se revierte aquí porque haría race condition. Si perdimos la
+      // carrera (otra solicitud emitió primero esta misma factura), lo tratamos
+      // como éxito idempotente en vez de error, para que un doble clic no rompa la UI.
+      const { data: facturaActual } = await supabase
+        .from('facturas')
+        .select('*')
+        .eq('id', factura_id)
+        .eq('taller_id', auth.tallerId)
+        .maybeSingle()
+
+      if (facturaActual?.numero_factura) {
+        console.warn(`⚠️  Número ${numeroFactura} quedó reservado sin usar: la factura ${factura_id} ya fue emitida como ${facturaActual.numero_factura} por otra solicitud concurrente.`)
+        return NextResponse.json({
+          success: true,
+          factura: facturaActual,
+          numero_factura: facturaActual.numero_factura,
+          estado: facturaActual.estado,
+          message: `Factura ${facturaActual.numero_factura} ya estaba emitida`,
+        })
+      }
+
       console.error(`❌ Número ${numeroFactura} reservado pero UPDATE de factura falló:`, emitirError?.message)
 
       return NextResponse.json(
@@ -189,6 +218,21 @@ export async function POST(request: NextRequest) {
     console.log(`   - Cliente: ${factura.cliente?.nombre || 'N/A'}`)
     console.log(`   - Total: ${factura.total}€`)
 
+    // Al emitir (asignar número), la orden pasa a "facturado" y queda bloqueada.
+    // Los borradores (sin número) NUNCA tocan el estado de la orden — solo la emisión final.
+    if (facturaEmitida.orden_id) {
+      const { error: ordenUpdateError } = await supabase
+        .from('ordenes_reparacion')
+        .update({ estado: 'facturado', updated_at: new Date().toISOString() })
+        .eq('id', facturaEmitida.orden_id)
+
+      if (ordenUpdateError) {
+        console.error(`⚠️  No se pudo auto-transicionar la orden ${facturaEmitida.orden_id} a "facturado":`, ordenUpdateError.message)
+      } else {
+        console.log(`   ℹ️  Orden ${facturaEmitida.orden_id} auto-transicionada a "facturado" tras emisión`)
+      }
+    }
+
     // 📢 TELEGRAM: Enviar notificación de factura emitida
     try {
       const botToken = process.env.TELEGRAM_BOT_TOKEN
@@ -201,7 +245,7 @@ export async function POST(request: NextRequest) {
 
 📋 Número: <b>${numeroFactura}</b>
 👤 Cliente: ${nombreCliente}
-💰 Total: <b>${factura.total}€</b>
+💰 Total: <b>${formatCurrency(factura.total)}</b>
 📅 Fecha: ${new Date().toLocaleDateString('es-ES')}
 🔖 Estado: ${estado_final === 'pagada' ? '✅ Pagada' : '⏳ Pendiente'}
         `.trim()

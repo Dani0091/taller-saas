@@ -14,6 +14,7 @@ import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { useTaller } from '@/contexts/TallerContext'
 import { VehiculoSelector, type VehiculoSeleccionado } from '@/components/dashboard/facturas/VehiculoSelector'
+import { formatCurrency } from '@/lib/utils'
 
 interface Cliente {
   id: string
@@ -644,10 +645,10 @@ export default function NuevaFacturaPage() {
                         <tr key={linea.id} className="border-b hover:bg-gray-50">
                           <td className="py-3 px-2">{linea.descripcion}</td>
                           <td className="text-center py-3 px-2">{linea.cantidad}</td>
-                          <td className="text-right py-3 px-2">{linea.precioUnitario.toFixed(2)}€</td>
+                          <td className="text-right py-3 px-2">{formatCurrency(linea.precioUnitario)}</td>
                           <td className="text-center py-3 px-2">{linea.ivaPorcentaje}%</td>
                           <td className="text-right py-3 px-2 font-semibold">
-                            {subtotal.toFixed(2)}€
+                            {formatCurrency(subtotal)}
                           </td>
                           <td className="text-center py-3 px-2">
                             <Button
@@ -735,8 +736,8 @@ export default function NuevaFacturaPage() {
                       const cant = nuevaLinea.cantidad || 0
                       const precio = nuevaLinea.precioUnitario || 0
                       const base = cant * precio
-                      return base.toFixed(2)
-                    })()}€
+                      return formatCurrency(base)
+                    })()}
                   </div>
                 </div>
               </div>
@@ -757,15 +758,15 @@ export default function NuevaFacturaPage() {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Base Imponible:</span>
-                <span className="font-semibold">{baseImponible.toFixed(2)}€</span>
+                <span className="font-semibold">{formatCurrency(baseImponible)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">IVA:</span>
-                <span className="font-semibold">{ivaTotal.toFixed(2)}€</span>
+                <span className="font-semibold">{formatCurrency(ivaTotal)}</span>
               </div>
               <div className="flex justify-between text-lg border-t-2 border-blue-200 pt-2 mt-2">
                 <span className="font-bold text-gray-900">Total:</span>
-                <span className="font-bold text-sky-600 text-xl">{total.toFixed(2)}€</span>
+                <span className="font-bold text-sky-600 text-xl">{formatCurrency(total)}</span>
               </div>
             </div>
           </Card>

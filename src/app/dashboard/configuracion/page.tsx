@@ -13,6 +13,7 @@ import { createClient } from '@/lib/supabase/client'
 import { GoogleCalendarConnection } from '@/components/dashboard/configuracion/google-calendar-connection'
 import { masterConverter } from '@/lib/utils/master-converter'
 import { useTaller } from '@/contexts/TallerContext'
+import { formatCurrency } from '@/lib/utils'
 
 // ==================== INTERFACES ====================
 
@@ -587,7 +588,7 @@ export default function ConfiguracionPage() {
                             }}
                           />
                         ) : (
-                          <p className="text-sm font-semibold text-sky-700">{tarifa.tarifa_hora}€/h</p>
+                          <p className="text-sm font-semibold text-sky-700">{formatCurrency(tarifa.tarifa_hora)}/h</p>
                         )}
                       </div>
                       <div className="bg-gray-50 p-2 rounded-lg">

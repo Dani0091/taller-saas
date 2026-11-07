@@ -8,15 +8,19 @@
  */
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { FotoUploader } from '../foto-uploader'
-import { getFotoUrl, setFotoUrl } from '@/lib/utils'
+import { getFotoUrl, setFotoUrl, getFotoByKey, setFotoByKey } from '@/lib/utils'
 import { toast } from 'sonner'
 
 interface VehiculoSeleccionado {
   id: string
   matricula: string
+  vin?: string | null
 }
 
 interface OrdenFotosTabProps {
@@ -27,6 +31,7 @@ interface OrdenFotosTabProps {
   // Datos de fotos
   fotosEntrada: string
   fotosSalida: string
+  fotosDiagnostico?: string
 
   // Vehículo seleccionado (para validación OCR)
   vehiculoSeleccionado?: VehiculoSeleccionado | null
@@ -35,7 +40,12 @@ interface OrdenFotosTabProps {
   // Callbacks
   onFotosEntradaChange: (fotos: string) => void
   onFotosSalidaChange: (fotos: string) => void
+  onFotosDiagnosticoChange?: (fotos: string) => void
   onActualizarKMVehiculo: (km: number) => void
+  onActualizarVin?: (vin: string) => void
+
+  /** Orden facturada — todos los campos quedan de solo lectura */
+  readOnly?: boolean
 }
 
 export function OrdenFotosTab({
@@ -43,12 +53,31 @@ export function OrdenFotosTab({
   ordenSeleccionada,
   fotosEntrada,
   fotosSalida,
+  fotosDiagnostico,
   vehiculoSeleccionado,
   vehiculoId,
   onFotosEntradaChange,
   onFotosSalidaChange,
+  onFotosDiagnosticoChange,
   onActualizarKMVehiculo,
+  onActualizarVin,
+  readOnly = false,
 }: OrdenFotosTabProps) {
+  const [vinInput, setVinInput] = useState(vehiculoSeleccionado?.vin || '')
+  const [guardandoVin, setGuardandoVin] = useState(false)
+
+  useEffect(() => {
+    setVinInput(vehiculoSeleccionado?.vin || '')
+  }, [vehiculoSeleccionado?.vin])
+
+  const vinCambiado = vinInput.trim().toUpperCase() !== (vehiculoSeleccionado?.vin || '').toUpperCase()
+
+  const handleGuardarVin = async () => {
+    if (!onActualizarVin) return
+    setGuardandoVin(true)
+    await onActualizarVin(vinInput.trim())
+    setGuardandoVin(false)
+  }
   /**
    * Maneja los datos extraídos por OCR de la foto de entrada
    */
@@ -86,7 +115,7 @@ export function OrdenFotosTab({
   }
 
   return (
-    <>
+    <fieldset disabled={readOnly} className="contents">
       {/* Fotos de entrada */}
       <Card className="p-4">
         <Label className="text-sm font-semibold mb-3 block">📸 Fotos de Entrada</Label>
@@ -130,6 +159,56 @@ export function OrdenFotosTab({
         </div>
       </Card>
 
+      {/* Bastidor (VIN) — foto + texto en un único sitio: foto capturada en el wizard
+          de creación (o súbela/reemplázala aquí), y el número de bastidor en texto,
+          editable, sincronizado con el vehículo */}
+      {onFotosDiagnosticoChange && (
+        <Card className="p-4">
+          <Label className="text-sm font-semibold mb-3 block">🔩 Bastidor (VIN)</Label>
+
+          {onActualizarVin && (
+            <div className="mb-4">
+              <Label className="text-xs text-gray-500 mb-1 block">Número de bastidor</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={vinInput}
+                  onChange={(e) => setVinInput(e.target.value.toUpperCase().slice(0, 17))}
+                  placeholder="WVWZZZ1KZBW123456"
+                  maxLength={17}
+                  className="font-mono uppercase flex-1"
+                />
+                {vinCambiado && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={handleGuardarVin}
+                    disabled={guardandoVin}
+                    className="bg-sky-600 hover:bg-sky-700 shrink-0"
+                  >
+                    {guardandoVin ? 'Guardando...' : 'Guardar'}
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-gray-400 mt-1">17 caracteres</p>
+            </div>
+          )}
+
+          <p className="text-xs text-gray-500 mb-2">
+            Foto de la placa del bastidor, capturada al crear la orden (o súbela aquí)
+          </p>
+          <div className="max-w-[200px]">
+            <FotoUploader
+              tipo="bastidor"
+              ordenId={ordenSeleccionada || ''}
+              fotoUrl={getFotoByKey(fotosDiagnostico || '', 'bastidor')}
+              onFotoSubida={(url) => {
+                onFotosDiagnosticoChange(setFotoByKey(fotosDiagnostico || '', 'bastidor', url))
+              }}
+            />
+          </div>
+        </Card>
+      )}
+
       {/* Fotos de salida */}
       <Card className="p-4">
         <Label className="text-sm font-semibold mb-3 block">✅ Fotos de Salida</Label>
@@ -155,6 +234,6 @@ export function OrdenFotosTab({
           />
         </div>
       </Card>
-    </>
+    </fieldset>
   )
 }

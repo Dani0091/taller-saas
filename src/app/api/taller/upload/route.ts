@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
 
 /**
  * API para subir archivos (logo, firma) a Telegram Storage
@@ -6,6 +7,9 @@ import { NextRequest, NextResponse } from 'next/server'
  */
 export async function POST(request: NextRequest) {
   try {
+    const auth = await getAuthenticatedUser()
+    if (isAuthError(auth)) return authErrorResponse(auth)
+
     // Validar variables de entorno
     const botToken = process.env.TELEGRAM_BOT_TOKEN
     const chatId = process.env.TELEGRAM_CHAT_ID
@@ -20,20 +24,13 @@ export async function POST(request: NextRequest) {
     // Obtener datos del request
     const formData = await request.formData()
     const file = formData.get('file') as File
-    const tallerId = formData.get('taller_id') as string
+    const tallerId = auth.tallerId
     const tipo = formData.get('tipo') as string // 'logo' o 'firma'
 
     // Validar datos requeridos
     if (!file) {
       return NextResponse.json(
         { error: 'Archivo requerido' },
-        { status: 400 }
-      )
-    }
-
-    if (!tallerId) {
-      return NextResponse.json(
-        { error: 'taller_id requerido' },
         { status: 400 }
       )
     }

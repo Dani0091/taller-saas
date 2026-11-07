@@ -150,7 +150,7 @@ Si quieres conservar los usuarios pero no tienen auth:
 // 2. testde@yopmail.com
 // 3. ttest@yopmail.com
 // 4. dani@yopmail.com
-// 5. rysautomocion@gmail.com
+// 5. <email-del-taller>
 
 // Luego ejecuta el UPDATE del Opción A para vincularlos
 ```

@@ -7,6 +7,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { syncOrdenCalendarEvent } from '@/app/api/calendar/google/events/route'
 
 // Función para crear cliente admin
 function getSupabaseAdmin() {
@@ -81,16 +82,40 @@ export async function GET(
     // Obtener config del taller
     const { data: tallerConfig } = await supabaseAdmin
       .from('taller_config')
-      .select('nombre_empresa, logo_url, direccion, telefono, email, color_primario')
+      .select('nombre_taller, nombre_empresa, logo_url, direccion, telefono, email, color_primario, porcentaje_iva')
       .eq('taller_id', orden.taller_id)
       .single()
 
     // Obtener líneas
     const { data: lineas } = await supabaseAdmin
       .from('lineas_orden')
-      .select('tipo, descripcion, cantidad, precio_unitario, importe_total')
+      .select('tipo, descripcion, cantidad, precio_unitario, importe_total, iva_porcentaje')
       .eq('orden_id', orden.id)
       .order('created_at')
+
+    // Calcular totales EN VIVO desde las líneas — igual que calcular-totales-orden.action.ts
+    // y desde-orden/route.ts. orden.subtotal_mano_obra/iva_amount/total_con_iva son columnas
+    // cacheadas que solo se refrescan en un autosave general; si el cliente añade líneas sin
+    // tocar otro campo del formulario, ese caché queda obsoleto y el presupuesto compartido
+    // mostraba un total desincronizado de las líneas realmente listadas.
+    const porcentajeIvaTaller = tallerConfig?.porcentaje_iva ?? 21
+    // El % de IVA de la ORDEN (toggle "Aplicar IVA") manda — salvo suplidos, siempre 0%.
+    const ivaPorcentajeOrden = orden.iva_porcentaje ?? porcentajeIvaTaller
+    const totalesCalculados = (lineas || []).reduce(
+      (acc, l) => {
+        const subtotalLinea = l.cantidad * l.precio_unitario
+        const ivaPorcentajeLinea = l.tipo === 'suplido' ? 0 : ivaPorcentajeOrden
+        const ivaLinea = subtotalLinea * (ivaPorcentajeLinea / 100)
+        return {
+          manoObra: l.tipo === 'mano_obra' ? acc.manoObra + subtotalLinea : acc.manoObra,
+          piezas: l.tipo === 'pieza' ? acc.piezas + subtotalLinea : acc.piezas,
+          subtotal: acc.subtotal + subtotalLinea,
+          iva: acc.iva + ivaLinea,
+          total: acc.total + subtotalLinea + ivaLinea,
+        }
+      },
+      { manoObra: 0, piezas: 0, subtotal: 0, iva: 0, total: 0 }
+    )
 
     // Preparar respuesta (solo datos necesarios, sin info sensible)
     const presupuesto = {
@@ -133,10 +158,10 @@ export async function GET(
       })),
 
       totales: {
-        manoObra: orden.subtotal_mano_obra || 0,
-        piezas: orden.subtotal_piezas || 0,
-        iva: orden.iva_amount || 0,
-        total: orden.total_con_iva || 0,
+        manoObra: totalesCalculados.manoObra,
+        piezas: totalesCalculados.piezas,
+        iva: totalesCalculados.iva,
+        total: totalesCalculados.total,
       },
     }
 
@@ -175,10 +200,11 @@ export async function POST(
                request.headers.get('x-real-ip') ||
                'unknown'
 
-    // Verificar que existe y no está ya aceptado
+    // Leer estado y fechas para validaciones.
+    // presupuesto_total_compartido se añade cuando se aplique A10_presupuesto_snapshot.sql
     const { data: orden, error: ordenError } = await supabaseAdmin
       .from('ordenes_reparacion')
-      .select('id, fecha_aceptacion_cliente, fecha_envio_presupuesto')
+      .select('id, estado, fecha_aceptacion_cliente, fecha_envio_presupuesto')
       .eq('token_publico', token)
       .single()
 
@@ -196,18 +222,41 @@ export async function POST(
       )
     }
 
-    if (orden.fecha_aceptacion_cliente) {
+    // Caducidad: presupuestos enviados hace más de 90 días ya no son aceptables
+    const DIAS_CADUCIDAD = 90
+    const diasDesdeEnvio = (Date.now() - new Date(orden.fecha_envio_presupuesto).getTime()) / 86_400_000
+    if (diasDesdeEnvio > DIAS_CADUCIDAD) {
       return NextResponse.json(
-        { error: 'Este presupuesto ya fue aceptado anteriormente' },
-        { status: 400 }
+        { error: `Este enlace caducó hace ${Math.floor(diasDesdeEnvio - DIAS_CADUCIDAD)} días. Solicita al taller un nuevo presupuesto.` },
+        { status: 410 }
       )
     }
 
-    // Actualizar orden con aceptación y cambiar estado a "aprobado"
+    // Estados terminales: no tiene sentido aprobar una orden ya cerrada
+    const ESTADOS_BLOQUEANTES = ['cancelado', 'facturado', 'archivado']
+    if (ESTADOS_BLOQUEANTES.includes(orden.estado)) {
+      return NextResponse.json(
+        { error: `La orden ya tiene estado "${orden.estado}" y no puede ser aprobada de nuevo.` },
+        { status: 409 }
+      )
+    }
+
+    // Idempotencia: doble clic / reintento devuelve éxito, no error
+    if (orden.fecha_aceptacion_cliente) {
+      return NextResponse.json({
+        success: true,
+        mensaje: 'Presupuesto ya estaba aceptado',
+        fechaAceptacion: orden.fecha_aceptacion_cliente,
+      })
+    }
+
+    // Actualizar orden con aceptación y cambiar estado a "aprobado".
+    // Se añade token_publico como segunda condición defensiva para que
+    // otro código que haya cambiado el token invalide esta aceptación.
     const { error: updateError } = await supabaseAdmin
       .from('ordenes_reparacion')
       .update({
-        estado: 'aprobado', // Cambiar estado automáticamente
+        estado: 'aprobado',
         fecha_aceptacion_cliente: new Date().toISOString(),
         presupuesto_aprobado_por_cliente: true,
         ip_aceptacion: ip,
@@ -215,10 +264,14 @@ export async function POST(
         updated_at: new Date().toISOString(),
       })
       .eq('id', orden.id)
+      .eq('token_publico', token)
 
     if (updateError) {
       throw updateError
     }
+
+    // Sincronizar evento de Google Calendar si la orden lo tiene (best-effort, no bloquea)
+    syncOrdenCalendarEvent(supabaseAdmin, orden.id, { notaExtra: 'Presupuesto aprobado por el cliente' }).catch(() => {})
 
     return NextResponse.json({
       success: true,

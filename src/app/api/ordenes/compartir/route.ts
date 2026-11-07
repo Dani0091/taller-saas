@@ -6,9 +6,13 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await getAuthenticatedUser()
+    if (isAuthError(auth)) return authErrorResponse(auth)
+
     const supabase = await createClient()
     const body = await request.json()
 
@@ -26,6 +30,7 @@ export async function POST(request: NextRequest) {
       .from('ordenes_reparacion')
       .select('id, token_publico, fecha_envio_presupuesto')
       .eq('id', orden_id)
+      .eq('taller_id', auth.tallerId)
       .single()
 
     if (ordenError || !orden) {
@@ -47,6 +52,7 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq('id', orden_id)
+        .eq('taller_id', auth.tallerId)
         .select('token_publico')
         .single()
 

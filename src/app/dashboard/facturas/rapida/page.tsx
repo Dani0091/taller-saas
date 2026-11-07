@@ -26,6 +26,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { NuevoVehiculoModal, nifParecematricula } from '@/components/dashboard/facturas/NuevoVehiculoModal'
+import { formatCurrency } from '@/lib/utils'
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -321,7 +322,7 @@ export default function FacturaRapidaPage() {
             {lineas.map((l, i) => (
               <div key={i} className="flex justify-between text-sm">
                 <span className="text-gray-700">{l.concepto} × {l.cantidad}</span>
-                <span className="font-medium">{(l.cantidad * l.precio_unitario).toFixed(2)} €</span>
+                <span className="font-medium">{formatCurrency(l.cantidad * l.precio_unitario)}</span>
               </div>
             ))}
           </div>
@@ -330,15 +331,15 @@ export default function FacturaRapidaPage() {
           <div className="border-t pt-3 space-y-1">
             <div className="flex justify-between text-sm text-gray-500">
               <span>Base imponible</span>
-              <span>{resultado.base_imponible.toFixed(2)} €</span>
+              <span>{formatCurrency(resultado.base_imponible)}</span>
             </div>
             <div className="flex justify-between text-sm text-gray-500">
               <span>IVA ({IVA_DEFAULT}%)</span>
-              <span>{resultado.iva.toFixed(2)} €</span>
+              <span>{formatCurrency(resultado.iva)}</span>
             </div>
             <div className="flex justify-between font-bold text-lg">
               <span>TOTAL</span>
-              <span className="text-emerald-600">{resultado.total.toFixed(2)} €</span>
+              <span className="text-emerald-600">{formatCurrency(resultado.total)}</span>
             </div>
           </div>
 
@@ -416,7 +417,7 @@ export default function FacturaRapidaPage() {
               >
                 <p className="font-semibold text-gray-900 text-sm">{p.nombre}</p>
                 <p className="text-violet-600 font-bold text-base mt-0.5">
-                  {p.precio_total_estimado.toFixed(0)} €
+                  {formatCurrency(p.precio_total_estimado)}
                 </p>
                 {p.descripcion_operacion && (
                   <p className="text-gray-400 text-xs mt-0.5 line-clamp-1">{p.descripcion_operacion}</p>
@@ -516,16 +517,16 @@ export default function FacturaRapidaPage() {
           <div className="border-t mt-3 pt-3 space-y-1">
             <div className="flex justify-between text-sm text-gray-500">
               <span>Base imponible</span>
-              <span>{baseImponible.toFixed(2)} €</span>
+              <span>{formatCurrency(baseImponible)}</span>
             </div>
             <div className="flex justify-between text-sm text-gray-500">
               <span>IVA ({IVA_DEFAULT}%)</span>
-              <span>{iva.toFixed(2)} €</span>
+              <span>{formatCurrency(iva)}</span>
             </div>
             <div className="flex justify-between font-bold text-lg">
               <span>TOTAL</span>
               <span className={total > LIMITE_SIN_CLIENTE ? 'text-amber-600' : 'text-gray-900'}>
-                {total.toFixed(2)} €
+                {formatCurrency(total)}
               </span>
             </div>
             {total > LIMITE_SIN_CLIENTE && (
@@ -694,7 +695,7 @@ export default function FacturaRapidaPage() {
               {Math.abs(importe1 + importe2 - total) > 0.01 && (
                 <p className="text-xs text-amber-600 flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" />
-                  Los importes no suman el total ({total.toFixed(2)} €)
+                  Los importes no suman el total ({formatCurrency(total)})
                 </p>
               )}
             </div>
@@ -795,7 +796,7 @@ export default function FacturaRapidaPage() {
           ? 'Emitiendo...'
           : lineas.length === 0
             ? 'Selecciona una operación'
-            : `Emitir FS — ${total.toFixed(2)} €`
+            : `Emitir FS — ${formatCurrency(total)}`
         }
       </Button>
 

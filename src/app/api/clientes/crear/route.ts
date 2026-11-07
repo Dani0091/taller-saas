@@ -1,12 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await getAuthenticatedUser()
+    if (isAuthError(auth)) return authErrorResponse(auth)
+
     const supabase = await createClient()
     const body = await request.json()
     const {
-      taller_id,
       nombre,
       apellidos, // Campo legacy
       primer_apellido,
@@ -28,12 +31,14 @@ export async function POST(request: NextRequest) {
       forma_pago,
     } = body
 
-    if (!taller_id || !nombre) {
+    if (!nombre) {
       return NextResponse.json(
-        { error: 'taller_id y nombre son requeridos' },
+        { error: 'nombre es requerido' },
         { status: 400 }
       )
     }
+
+    const taller_id = auth.tallerId
 
     // Construir apellidos: priorizar campos separados, luego campo legacy
     let apellidosFinal = apellidos

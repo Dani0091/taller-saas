@@ -10,6 +10,8 @@
 
 'use client'
 
+import { formatCurrency } from '@/lib/utils'
+
 interface LineaFactura {
   descripcion: string
   cantidad: number
@@ -271,10 +273,10 @@ export function PlantillaFactura({
               <td className="py-3 px-2 text-gray-900">{linea.descripcion}</td>
               <td className="text-center py-3 px-2 text-gray-900">{linea.cantidad}</td>
               <td className="text-right py-3 px-2 text-gray-900 font-mono">
-                €{linea.precioUnitario.toFixed(2)}
+                {formatCurrency(linea.precioUnitario)}
               </td>
               <td className="text-right py-3 px-2 text-gray-900 font-semibold font-mono">
-                €{linea.total.toFixed(2)}
+                {formatCurrency(linea.total)}
               </td>
             </tr>
           ))}
@@ -287,14 +289,14 @@ export function PlantillaFactura({
           {/* Subtotal */}
           <div className="flex justify-between py-2 border-b border-gray-300 text-sm">
             <span className="text-gray-600">Subtotal:</span>
-            <span className="font-mono text-gray-900">€{baseImponible.toFixed(2)}</span>
+            <span className="font-mono text-gray-900">{formatCurrency(baseImponible)}</span>
           </div>
 
           {/* Descuento */}
           {descuento > 0 && (
             <div className="flex justify-between py-2 border-b border-gray-300 text-sm">
               <span className="text-gray-600">Descuento:</span>
-              <span className="font-mono text-red-600">-€{descuento.toFixed(2)}</span>
+              <span className="font-mono text-red-600">-{formatCurrency(descuento)}</span>
             </div>
           )}
 
@@ -302,26 +304,26 @@ export function PlantillaFactura({
           {envio > 0 && (
             <div className="flex justify-between py-2 border-b border-gray-300 text-sm">
               <span className="text-gray-600">Envío/Manipulación:</span>
-              <span className="font-mono text-gray-900">€{envio.toFixed(2)}</span>
+              <span className="font-mono text-gray-900">{formatCurrency(envio)}</span>
             </div>
           )}
 
           {/* BASE IMPONIBLE */}
           <div className="flex justify-between py-2 border-b-2 border-gray-300 text-sm bg-gray-50 px-2">
             <span className="font-semibold text-gray-900">Base Imponible:</span>
-            <span className="font-mono font-bold text-gray-900">€{baseImponible.toFixed(2)}</span>
+            <span className="font-mono font-bold text-gray-900">{formatCurrency(baseImponible)}</span>
           </div>
 
           {/* IVA DESGLOSADO */}
           <div className="flex justify-between py-2 border-b-2 border-blue-600 text-sm bg-blue-50 px-2">
             <span className="font-semibold text-gray-900">IVA ({ivaPercentaje}%):</span>
-            <span className="font-mono font-bold text-blue-600">€{cuotaIVA.toFixed(2)}</span>
+            <span className="font-mono font-bold text-blue-600">{formatCurrency(cuotaIVA)}</span>
           </div>
 
           {/* TOTAL */}
           <div className="flex justify-between py-3 text-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white px-2 rounded-lg mt-2">
             <span className="font-black">TOTAL A PAGAR:</span>
-            <span className="font-mono font-black">€{total.toFixed(2)}</span>
+            <span className="font-mono font-black">{formatCurrency(total)}</span>
           </div>
         </div>
       </div>

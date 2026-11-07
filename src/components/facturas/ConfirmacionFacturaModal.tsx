@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { formatCurrency } from '@/lib/utils'
 
 interface ConfirmacionFacturaModalProps {
   isOpen: boolean
@@ -83,11 +84,11 @@ export default function ConfirmacionFacturaModal({
                   <div className="flex-1">
                     <p className="font-medium">{linea.descripcion}</p>
                     <p className="text-gray-500">
-                      {linea.cantidad} x €{linea.precio.toFixed(2)}
+                      {linea.cantidad} x {formatCurrency(linea.precio)}
                     </p>
                   </div>
                   <div className="text-right font-semibold">
-                    €{(linea.cantidad * linea.precio).toFixed(2)}
+                    {formatCurrency(linea.cantidad * linea.precio)}
                   </div>
                 </div>
               ))}
@@ -98,16 +99,16 @@ export default function ConfirmacionFacturaModal({
           <div className="bg-blue-50 p-3 rounded-lg space-y-2">
             <div className="flex justify-between text-sm">
               <span>Base:</span>
-              <span className="font-semibold">€{facturaData.base.toFixed(2)}</span>
+              <span className="font-semibold">{formatCurrency(facturaData.base)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span>IVA (21%):</span>
-              <span className="font-semibold">€{facturaData.iva.toFixed(2)}</span>
+              <span className="font-semibold">{formatCurrency(facturaData.iva)}</span>
             </div>
             <div className="flex justify-between border-t pt-2 text-lg">
               <span className="font-bold">TOTAL:</span>
               <span className="font-bold text-blue-600">
-                €{facturaData.total.toFixed(2)}
+                {formatCurrency(facturaData.total)}
               </span>
             </div>
           </div>

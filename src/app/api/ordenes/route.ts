@@ -8,9 +8,7 @@ export async function GET(request: NextRequest) {
     // 1. Obtener usuario logueado
     const { data: { user }, error: sessionError } = await supabase.auth.getUser()
 
-    if (sessionError) throw sessionError
-
-    if (!user) {
+    if (sessionError || !user) {
       return NextResponse.json(
         { success: false, error: 'No hay sesión activa' },
         { status: 401 }
@@ -169,6 +167,17 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
+    const { data: ordenActual, error: ordenActualError } = await supabase
+      .from('ordenes_reparacion').select('id, estado')
+      .eq('id', id).eq('taller_id', usuario.taller_id).maybeSingle()
+
+    if (ordenActualError || !ordenActual) {
+      return NextResponse.json({ success: false, error: 'Orden no encontrada' }, { status: 404 })
+    }
+    if (ordenActual.estado === 'facturado') {
+      return NextResponse.json({ success: false, error: 'No se puede modificar una orden facturada' }, { status: 409 })
+    }
+
     // Campos válidos que existen en la base de datos
     const camposValidos = [
       'estado', 'cliente_id', 'vehiculo_id', 'operario_id',
@@ -206,6 +215,7 @@ export async function PATCH(request: NextRequest) {
       .update(cleanUpdates)
       .eq('id', id)
       .eq('taller_id', usuario.taller_id) // Seguridad: solo actualizar órdenes del taller
+      .neq('estado', 'facturado') // También protege una emisión concurrente.
       .select()
       .single()
 

@@ -8,24 +8,33 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
+import { ESTADOS_FACTURABLES } from '@/lib/constants'
+import { syncOrdenCalendarEvent } from '@/app/api/calendar/google/events/route'
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await getAuthenticatedUser()
+    if (isAuthError(auth)) {
+      return authErrorResponse(auth)
+    }
+    const taller_id = auth.tallerId
+
     const supabase = await createClient()
     const body = await request.json()
-    const { orden_id, taller_id } = body
+    const { orden_id, serie: serieSolicitada } = body
 
     // ==================== VALIDACIONES INICIALES ====================
     console.log(`🚀 Iniciando creación de factura`)
     console.log(`   - Orden ID: ${orden_id}`)
     console.log(`   - Taller ID: ${taller_id}`)
 
-    if (!orden_id || !taller_id) {
+    if (!orden_id) {
       console.error('❌ Faltan parámetros requeridos')
       return NextResponse.json(
         {
           error: 'Faltan datos requeridos',
-          details: 'Se requieren orden_id y taller_id',
+          details: 'Se requiere orden_id',
           sugerencia: 'Verifica que la orden esté seleccionada correctamente'
         },
         { status: 400 }
@@ -40,8 +49,29 @@ export async function POST(request: NextRequest) {
       .eq('taller_id', taller_id)
       .maybeSingle()
 
-    const serieFactura = config?.serie_factura || 'FA'
-    const ivaPorcentaje = config?.porcentaje_iva || 21
+    let serieFactura = config?.serie_factura || 'FA'
+
+    // Si se pide una serie específica (ej. desde el selector de la orden), debe ser
+    // una serie ya configurada para ESTE taller — evita crear series "fantasma" vía
+    // auto-creación del RPC de numeración con un prefijo arbitrario del body.
+    if (serieSolicitada) {
+      const { data: serieValida } = await supabase
+        .from('series_factura')
+        .select('prefijo')
+        .eq('taller_id', taller_id)
+        .eq('prefijo', serieSolicitada)
+        .maybeSingle()
+
+      if (!serieValida) {
+        return NextResponse.json(
+          { error: `La serie "${serieSolicitada}" no está configurada para este taller` },
+          { status: 400 }
+        )
+      }
+      serieFactura = serieValida.prefijo
+    }
+
+    const ivaPorcentaje = config?.porcentaje_iva ?? 21
     const precioHoraTrabajo = config?.tarifa_hora || 0
 
     console.log(`✅ Configuración obtenida: Serie=${serieFactura}, IVA=${ivaPorcentaje}%, Precio hora=${precioHoraTrabajo}€`)
@@ -111,8 +141,7 @@ export async function POST(request: NextRequest) {
     console.log(`✅ No existe factura previa, procediendo...`)
 
     // Verificar que la orden esté completada o en estado válido para facturar
-    const estadosValidos = ['aprobado', 'en_progreso', 'finalizado', 'facturado']
-    if (!estadosValidos.includes(orden.estado)) {
+    if (!ESTADOS_FACTURABLES.includes(orden.estado)) {
       return NextResponse.json(
         { error: 'La orden debe estar aprobada o completada para generar factura' },
         { status: 400 }
@@ -125,15 +154,28 @@ export async function POST(request: NextRequest) {
       .select('*')
       .eq('orden_id', orden_id)
 
+    // El % de IVA de la ORDEN (toggle "Aplicar IVA") manda para todas sus líneas al
+    // facturar — salvo los suplidos, que por normativa van siempre al 0%.
+    const ivaPorcentajeOrden = orden.iva_porcentaje ?? ivaPorcentaje
+
+    // Normalizar una vez: la cabecera y sus detalles deben usar el mismo precio.
+    const lineasNormalizadas = (lineasOrden || []).map(linea => ({
+      ...linea,
+      cantidad: parseFloat(linea.cantidad) || 1,
+      precio_unitario: linea.tipo === 'mano_obra' && !Number(linea.precio_unitario)
+        ? precioHoraTrabajo
+        : parseFloat(linea.precio_unitario) || 0,
+    }))
+
     // Calcular totales CORRECTAMENTE desde las líneas
     let baseImponibleTotal = 0
     let ivaTotal = 0
 
     if (lineasOrden && lineasOrden.length > 0) {
-      lineasOrden.forEach((linea: any) => {
+      lineasNormalizadas.forEach((linea) => {
         const cantidad = parseFloat(linea.cantidad) || 1
         const precioUnitario = parseFloat(linea.precio_unitario) || 0
-        const ivaPorcentajeLinea = parseFloat(linea.iva_porcentaje) || ivaPorcentaje
+        const ivaPorcentajeLinea = linea.tipo === 'suplido' ? 0 : ivaPorcentajeOrden
 
         const baseLinea = cantidad * precioUnitario
         const ivaLinea = baseLinea * (ivaPorcentajeLinea / 100)
@@ -144,7 +186,7 @@ export async function POST(request: NextRequest) {
     } else {
       // Fallback si no hay líneas
       baseImponibleTotal = orden.total_sin_iva || (orden.subtotal_mano_obra || 0) + (orden.subtotal_piezas || 0) || 0
-      ivaTotal = orden.iva_amount || baseImponibleTotal * (ivaPorcentaje / 100)
+      ivaTotal = orden.iva_amount || baseImponibleTotal * (ivaPorcentajeOrden / 100)
     }
 
     const baseImponible = baseImponibleTotal
@@ -173,7 +215,7 @@ export async function POST(request: NextRequest) {
         fecha_emision: new Date().toISOString().split('T')[0],
         fecha_vencimiento: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         base_imponible: baseImponible,
-        iva_porcentaje: ivaPorcentaje,
+        iva_porcentaje: ivaPorcentajeOrden,
         iva: iva,
         total: total,
         metodo_pago: 'T', // Transferencia por defecto para órdenes
@@ -220,7 +262,7 @@ SOLUCIÓN: Verifica que el cliente "${orden.clientes?.nombre}" exista en Cliente
 
     // Crear líneas de factura desde las líneas de la orden
     if (lineasOrden && lineasOrden.length > 0) {
-      const lineasFactura = lineasOrden.map((linea: any, index: number) => {
+      const lineasFactura = lineasNormalizadas.map((linea, index: number) => {
         const cantidad = parseFloat(linea.cantidad) || 1
 
         // Para mano de obra sin precio, usar precio_hora_trabajo de configuración
@@ -230,7 +272,7 @@ SOLUCIÓN: Verifica que el cliente "${orden.clientes?.nombre}" exista en Cliente
           console.log(`   ℹ️  Aplicando precio hora trabajo: ${precioHoraTrabajo}€ a línea de mano de obra`)
         }
 
-        const ivaPorcentajeLinea = parseFloat(linea.iva_porcentaje) || ivaPorcentaje
+        const ivaPorcentajeLinea = linea.tipo === 'suplido' ? 0 : ivaPorcentajeOrden
 
         // Determinar concepto y tipo basado en el tipo de línea
         let concepto = 'Servicio'
@@ -279,6 +321,10 @@ SOLUCIÓN: Verifica que el cliente "${orden.clientes?.nombre}" exista en Cliente
         .insert(lineasFactura)
 
       if (lineasError) {
+        // Compensar solo este borrador; nunca borrar una factura ya emitida.
+        const { error: rollbackError } = await supabase.from('facturas').delete()
+          .eq('id', factura.id).eq('taller_id', taller_id).eq('estado', 'borrador')
+        if (rollbackError) console.error('No se pudo retirar el borrador parcial:', rollbackError)
         console.error('Error creando líneas de factura:', lineasError)
         console.error('Líneas que intentamos insertar:', JSON.stringify(lineasFactura, null, 2))
         return NextResponse.json(
@@ -312,6 +358,10 @@ SOLUCIÓN: Verifica que el cliente "${orden.clientes?.nombre}" exista en Cliente
 
       if (lineaError) {
         console.error('Error creando línea genérica de factura:', lineaError)
+        const { error: rollbackError } = await supabase.from('facturas').delete()
+          .eq('id', factura.id).eq('taller_id', taller_id).eq('estado', 'borrador')
+        if (rollbackError) console.error('No se pudo retirar el borrador parcial:', rollbackError)
+        return NextResponse.json({ error: 'Error al crear líneas de factura' }, { status: 500 })
       }
     }
 
@@ -322,6 +372,9 @@ SOLUCIÓN: Verifica que el cliente "${orden.clientes?.nombre}" exista en Cliente
         updated_at: new Date().toISOString()
       })
       .eq('id', orden_id)
+
+    // Sincronizar evento de Google Calendar si la orden lo tiene (best-effort, no bloquea)
+    syncOrdenCalendarEvent(supabase, orden_id, { notaExtra: `Factura creada (borrador ${factura.id})` }).catch(() => {})
 
     // ==================== ÉXITO - BORRADOR CREADO ====================
     console.log(`✅ ¡BORRADOR DE FACTURA CREADO EXITOSAMENTE!`)
