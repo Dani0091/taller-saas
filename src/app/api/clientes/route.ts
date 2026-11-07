@@ -1,19 +1,19 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
 
-export async function GET(request: NextRequest) {
+// El taller sale de la sesión; el parámetro ?taller_id se ignora (antes permitía
+// pedir los clientes de cualquier taller sin sesión).
+export async function GET(_request: NextRequest) {
   try {
+    const auth = await getAuthenticatedUser()
+    if (isAuthError(auth)) return authErrorResponse(auth)
+
     const supabase = await createClient()
-    const tallerId = request.nextUrl.searchParams.get('taller_id')
-
-    if (!tallerId) {
-      return NextResponse.json([], { status: 200 })
-    }
-
     const { data, error } = await supabase
       .from('clientes')
       .select('id, nombre, nif')
-      .eq('taller_id', tallerId)
+      .eq('taller_id', auth.tallerId)
 
     if (error) {
       console.error('Error:', error)

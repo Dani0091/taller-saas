@@ -72,10 +72,13 @@ export class ClienteMapper {
     let nif: NIF
     try {
       nif = NIF.create(record.nif || '00000000T')
-    } catch (error) {
-      // Si el NIF es inválido, crear uno ficticio para no romper la app
-      console.warn(`⚠️ NIF inválido (legacy) para cliente ${record.id}: ${record.nif}`, error)
-      nif = NIF.create('00000000T') // NIF placeholder para datos legacy
+    } catch {
+      // NIF histórico que no supera la validación (p. ej. una matrícula o un
+      // teléfono en el campo). Se conserva tal cual: antes se sustituía por
+      // 00000000T, que el listado mostraba y toPersistence habría guardado.
+      // El log no incluye el valor (dato personal) ni la traza.
+      console.warn(`⚠️ NIF no válido en cliente ${record.id}: se conserva el valor original`)
+      nif = record.nif?.trim() ? NIF.createUnsafe(record.nif) : NIF.create('00000000T')
     }
 
     let email: Email | undefined
