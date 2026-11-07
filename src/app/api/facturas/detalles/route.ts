@@ -1,8 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
 
 export async function GET(request: NextRequest) {
   try {
+    const auth = await getAuthenticatedUser()
+    if (isAuthError(auth)) return authErrorResponse(auth)
+
     const supabase = await createClient()
     const id = request.nextUrl.searchParams.get('id')
 
@@ -22,6 +26,7 @@ export async function GET(request: NextRequest) {
         lineas:detalles_factura(*)
       `)
       .eq('id', id)
+      .eq('taller_id', auth.tallerId)
       .single()
 
     if (error) {
