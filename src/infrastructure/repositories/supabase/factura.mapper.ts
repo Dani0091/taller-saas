@@ -111,7 +111,11 @@ export class FacturaMapper {
     // PRIORIDAD 2: Si tenemos numero_factura (valor completo), parsearlo de forma flexible
     if (!numeroFactura && record.numero_factura) {
       try {
-        numeroFactura = NumeroFactura.fromStringFlexible(record.numero_factura)
+        const añoEmision = record.fecha_emision ? new Date(record.fecha_emision).getFullYear() : NaN
+        numeroFactura = NumeroFactura.fromStringFlexible(
+          record.numero_factura,
+          Number.isInteger(añoEmision) ? añoEmision : undefined
+        )
       } catch (error) {
         // El método fromStringFlexible NO debería lanzar excepciones,
         // pero por seguridad envolvemos en try/catch

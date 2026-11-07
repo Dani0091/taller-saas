@@ -80,13 +80,18 @@ export class NumeroFactura {
    *
    * Formatos soportados:
    * - Estándar: "F-2026-000123"
-   * - Serie-Numero: "SCR-123", "ALP-456", "RS-789"
+   * - Serie-Numero: "SCR-123", "ALP-456", "RS-789" — es el formato que emite
+   *   la RPC v3 en producción, así que no se considera anómalo ni se avisa.
    * - Legacy: "FA014", "123"
    *
+   * El valor original se conserva siempre (rawValue): format() lo devuelve tal cual.
+   *
    * @param value - El valor del número de factura
+   * @param añoReferencia - Año a usar si el número no lo lleva (p. ej. el de
+   *   fecha_emision). Sin él se usa el año actual.
    * @returns NumeroFactura siempre (nunca falla)
    */
-  public static fromStringFlexible(value: string): NumeroFactura {
+  public static fromStringFlexible(value: string, añoReferencia?: number): NumeroFactura {
     if (!value || !value.trim()) {
       console.warn('⚠️ Número de factura vacío, usando valores por defecto')
       return NumeroFactura.create(Serie.factura(), new Date().getFullYear(), 1)
@@ -117,14 +122,9 @@ export class NumeroFactura {
     if (matchSerieNumero) {
       const serie = Serie.createFlexible(matchSerieNumero[1])
       const numero = parseInt(matchSerieNumero[2], 10)
-      const añoActual = new Date().getFullYear()
+      const año = añoReferencia ?? new Date().getFullYear()
 
-      console.warn(
-        `⚠️ Número de factura legacy detectado: "${trimmed}" (formato SERIE-NUMERO). ` +
-        `Usando año actual ${añoActual}`
-      )
-
-      return new NumeroFactura(serie, añoActual, numero, trimmed)
+      return new NumeroFactura(serie, año, numero, trimmed)
     }
 
     // Intento 3: Formato legacy puro (ej: "FA014", "123")
