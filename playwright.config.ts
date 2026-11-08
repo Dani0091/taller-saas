@@ -56,6 +56,13 @@ export default defineConfig({
       dependencies: ['setup'],
       use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/qa-a.json' },
     },
+    // Recorrido exhaustivo de pantallas y botones (lento): npx playwright test --project=recorrido
+    {
+      name: 'recorrido',
+      testMatch: /recorrido\.ui\.ts/,
+      dependencies: ['setup'],
+      use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/qa-a.json' },
+    },
   ],
   // Build de producción, como en Railway. Con `next dev` el WebSocket de HMR
   // falla (proxy.ts no excluye /_next/hmr) y la página se recarga en bucle.

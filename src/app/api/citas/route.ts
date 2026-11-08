@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
+import { fechaFinParaGuardar } from '@/lib/citas/fecha-fin'
 
 export async function GET(request: NextRequest) {
   try {
@@ -110,7 +111,7 @@ export async function POST(request: NextRequest) {
         descripcion: body.descripcion || null,
         tipo: body.tipo || 'cita',
         fecha_inicio: body.fecha_inicio,
-        fecha_fin: body.fecha_fin || null,
+        fecha_fin: fechaFinParaGuardar(body.fecha_inicio, body.fecha_fin, body.todo_el_dia),
         todo_el_dia: body.todo_el_dia || false,
         estado: 'pendiente',
         recordatorio_email: body.recordatorio_email || false,

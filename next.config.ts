@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { version } from "./package.json";
 
 const nextConfig: NextConfig = {
   // Raíz del proyecto para tracing de archivos (Next.js 16+)
@@ -13,8 +14,9 @@ const nextConfig: NextConfig = {
 
   // Configuración de entorno para Railway/producción
   env: {
-    // Las variables TELEGRAM_* se leen de process.env en runtime
-    // No necesitan estar aquí, pero documentamos que son requeridas
+    // Versión visible en la interfaz (sidebar), tomada de package.json en el build.
+    // Las variables TELEGRAM_* se leen de process.env en runtime.
+    NEXT_PUBLIC_APP_VERSION: version,
   },
 
   // Optimizaciones de producción

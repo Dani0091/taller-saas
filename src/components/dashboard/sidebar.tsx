@@ -121,7 +121,7 @@ export function Sidebar({ user, isOpen = false, onClose }: SidebarProps) {
                 <p className="text-xs text-gray-300 truncate flex-1">{user.email}</p>
               </div>
               <div className="flex items-center justify-between text-[10px]">
-                <span className="text-gray-500">TallerAgil v1.0</span>
+                <span className="text-gray-500">TallerAgil v{process.env.NEXT_PUBLIC_APP_VERSION}</span>
                 <span
                   className="px-2 py-0.5 rounded-full font-medium"
                   style={{

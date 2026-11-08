@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
+import { fechaFinParaGuardar } from '@/lib/citas/fecha-fin'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -92,6 +93,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       if (body[campo] !== undefined) {
         updateData[campo] = body[campo]
       }
+    }
+
+    // Si se fija el inicio sin fin en una cita con horario, dura 1 hora.
+    if ('fecha_inicio' in updateData && !updateData.fecha_fin) {
+      updateData.fecha_fin = fechaFinParaGuardar(updateData.fecha_inicio, updateData.fecha_fin, updateData.todo_el_dia)
     }
 
     const { data, error } = await supabase

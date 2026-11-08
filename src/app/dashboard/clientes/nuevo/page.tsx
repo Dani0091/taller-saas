@@ -77,7 +77,7 @@ export default function NuevoClientePage() {
     setLoading(true)
 
     try {
-      const response = await fetch('/api/clientes', {
+      const response = await fetch('/api/clientes/crear', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

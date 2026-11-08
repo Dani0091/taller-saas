@@ -2,6 +2,26 @@
 
 Todos los cambios importantes de este proyecto serán documentados aquí.
 
+## [0.75.2] - 2026-11-08 · pre-alpha
+
+Corrige caminos que ya estaban rotos en producción, encontrados con pruebas
+de interfaz que rellenan formularios y pulsan cada botón.
+
+### Corregido
+- **Nuevo cliente**: el formulario no guardaba (enviaba a una ruta inexistente).
+- **Citas**: los selectores de cliente y vehículo salían siempre vacíos.
+- **Calendario**: una sola cita sin hora de fin (o con fin igual al inicio)
+  impedía cargar todo el calendario. Ahora se muestra con 1 hora de duración,
+  y al guardar sin fin se asigna 1 hora (sin desfases de zona horaria).
+- **Configuración**: ya no da error 500 al abrirse.
+- **Cabecera**: cada sección y subpágina muestra su título (antes "Dashboard").
+- **Menú**: muestra la versión real de la aplicación.
+
+### Calidad
+- 169 tests unitarios y 79 E2E, estables en ejecuciones repetidas.
+- Recorrido automático de 12 pantallas pulsando cada botón (sin errores JS,
+  respuestas 5xx ni enlaces rotos).
+
 ## [0.75.1] - 2026-11-08 · pre-alpha
 
 Primera versión con numeración pre-alpha. Las entradas 1.x anteriores eran

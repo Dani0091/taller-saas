@@ -15,15 +15,8 @@ import { useRouter, usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { cerrarSesionAction } from '@/actions/auth'
 import { toast } from 'sonner'
+import { tituloDePagina } from '@/lib/navegacion/titulo-pagina'
 
-const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
-  '/dashboard': { title: 'Dashboard', subtitle: 'Vista general del taller' },
-  '/dashboard/ordenes': { title: 'Órdenes', subtitle: 'Gestión de reparaciones' },
-  '/dashboard/clientes': { title: 'Clientes', subtitle: 'Base de datos de clientes' },
-  '/dashboard/vehiculos': { title: 'Vehículos', subtitle: 'Flota de vehículos' },
-  '/dashboard/facturas': { title: 'Facturas', subtitle: 'Facturación y cobros' },
-  '/dashboard/configuracion': { title: 'Configuración', subtitle: 'Ajustes del taller' },
-}
 
 interface PlanInfo {
   plan_nombre: string
@@ -82,7 +75,7 @@ export function Header({ user, onMenuClick }: HeaderProps) {
   }
 
   // Obtener título de la página actual
-  const pageInfo = PAGE_TITLES[pathname] || { title: 'Dashboard', subtitle: 'Vista general' }
+  const pageInfo = tituloDePagina(pathname)
 
   return (
     <header className="bg-white border-b border-gray-200 px-4 md:px-6 py-3 md:py-4">

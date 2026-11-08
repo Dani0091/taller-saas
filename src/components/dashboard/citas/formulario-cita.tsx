@@ -34,6 +34,13 @@ interface Vehiculo {
   cliente_id?: string
 }
 
+/** Normaliza una respuesta de API que puede ser un array o { [clave]: array }. */
+function comoLista<T>(datos: unknown, clave: string): T[] {
+  if (Array.isArray(datos)) return datos as T[]
+  const anidado = (datos as Record<string, unknown> | null)?.[clave]
+  return Array.isArray(anidado) ? (anidado as T[]) : []
+}
+
 export function FormularioCita({ cita, fechaInicial, onClose, onSave }: FormularioCitaProps) {
   const [loading, setLoading] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -78,8 +85,10 @@ export function FormularioCita({ cita, fechaInicial, onClose, onSave }: Formular
       const clientesData = await clientesRes.json()
       const vehiculosData = await vehiculosRes.json()
 
-      if (clientesData.clientes) setClientes(clientesData.clientes)
-      if (vehiculosData.vehiculos) setVehiculos(vehiculosData.vehiculos)
+      // /api/clientes y /api/vehiculos devuelven un array; se acepta también
+      // la forma antigua { clientes } / { vehiculos }.
+      setClientes(comoLista<Cliente>(clientesData, 'clientes'))
+      setVehiculos(comoLista<Vehiculo>(vehiculosData, 'vehiculos'))
     } catch (error) {
       console.error('Error cargando datos:', error)
     }
