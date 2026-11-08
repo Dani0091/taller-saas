@@ -4,6 +4,30 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { leerJson } from '@/lib/api/leer-json'
+import { validarImportesFactura } from '@/lib/facturas/validar-importes'
+
+/** Cuerpo que envía dashboard/facturas/nueva. */
+interface CuerpoCrearFactura {
+  taller_id?: string
+  cliente_id?: string
+  vehiculo_id?: string | null
+  matricula?: string | null
+  serie?: string
+  fecha_emision?: string
+  fecha_vencimiento?: string
+  base_imponible?: number
+  iva?: number
+  total?: number
+  metodo_pago?: string | null
+  estado?: string
+  lineas?: Array<Record<string, unknown>>
+  persona_contacto?: string | null
+  telefono_contacto?: string | null
+  condiciones_pago?: string | null
+  notas_internas?: string | null
+  numero_autorizacion?: string | null
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,7 +42,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
     }
 
-    const body = await request.json()
+    const body = (await leerJson(request)) as CuerpoCrearFactura | null
+    if (!body) {
+      return NextResponse.json({ error: 'JSON inválido' }, { status: 400 })
+    }
     const {
       taller_id,
       cliente_id,
@@ -47,6 +74,11 @@ export async function POST(request: NextRequest) {
         { error: 'taller_id y cliente_id son requeridos', received: { taller_id, cliente_id } },
         { status: 400 }
       )
+    }
+
+    const errorImportes = validarImportesFactura({ base_imponible, iva, total }, ['base_imponible', 'iva', 'total'])
+    if (errorImportes) {
+      return NextResponse.json({ error: errorImportes }, { status: 400 })
     }
 
     // Obtener datos del cliente

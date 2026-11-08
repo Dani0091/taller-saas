@@ -2,6 +2,40 @@
 
 Todos los cambios importantes de este proyecto serán documentados aquí.
 
+## [0.75.1] - 2026-11-08 · pre-alpha
+
+Primera versión con numeración pre-alpha. Las entradas 1.x anteriores eran
+informales; a partir de aquí se sigue SemVer desde 0.75.1.
+
+### Facturación y numeración
+- Números de factura >= 1000 sin truncar (`QA-1000`, no `QA-100`) y respuesta
+  de la RPC validada antes de emitir; un solo punto de llamada a la RPC.
+- Formato de producción `PREFIJO-NNN` reconocido como válido (sin avisos en logs).
+- Una sola factura por orden aunque lleguen peticiones simultáneas
+  (cobro rápido y factura desde orden); nunca se consume un número de más.
+- Emisión idempotente ante doble clic.
+- Serie por defecto: la configurada del taller (sin cambios de serie).
+- Importes de factura validados (no negativos, numéricos y finitos).
+
+### Órdenes y presupuestos
+- Wizard de órdenes paso a paso; mejoras móviles.
+- `/api/ordenes`: lista blanca de campos, vínculos solo con el propio taller y
+  el estado "facturado" reservado a la emisión.
+- Presupuesto público con caducidad, estados bloqueantes y aceptación idempotente.
+
+### Seguridad y robustez
+- Sesión obligatoria y taller tomado de la sesión en las rutas privadas.
+- Proxy de imágenes restringido (host exacto, HTTPS, timeout, tamaño).
+- Cuerpos JSON inválidos → 400 en lugar de 500.
+- Healthcheck `/api/health` para el despliegue.
+
+### Calidad
+- Next 16.3.8 con comprobación de tipos en el build.
+- 143 tests unitarios y 68 E2E (Playwright), incluidos 17 casos adversariales
+  (aislamiento entre talleres, carreras, entradas inválidas).
+- 22 archivos sin uso eliminados (−3.833 líneas).
+- NIF históricos de clientes conservados sin sustituirlos por placeholders.
+
 ## [1.1.0] - 2025-01-13
 
 ### Correcciones Críticas

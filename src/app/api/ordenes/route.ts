@@ -1,5 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
+import { leerJson } from '@/lib/api/leer-json'
+import { filtrarCamposOrden, validarVinculosTaller } from '@/lib/ordenes/validar-orden'
 
 export async function GET(request: NextRequest) {
   try {
@@ -77,42 +80,23 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await getAuthenticatedUser()
+    if (isAuthError(auth)) return authErrorResponse(auth)
+
+    const validada = filtrarCamposOrden(await leerJson(request), 'crear')
+    if (!validada.ok) {
+      return NextResponse.json({ success: false, error: validada.error }, { status: 400 })
+    }
+
     const supabase = await createClient()
-    const body = await request.json()
-
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'No autorizado' },
-        { status: 401 }
-      )
-    }
-
-    const { data: usuario } = await supabase
-      .from('usuarios')
-      .select('taller_id')
-      .eq('email', user.email)
-      .single()
-
-    if (!usuario?.taller_id) {
-      return NextResponse.json(
-        { success: false, error: 'Usuario sin taller' },
-        { status: 403 }
-      )
-    }
-
-    // Fix: Convertir strings vacíos a null para UUIDs
-    const cleanBody = {
-      ...body,
-      cliente_id: body.cliente_id || null,
-      vehiculo_id: body.vehiculo_id || null,
-      taller_id: usuario.taller_id
+    const errorVinculo = await validarVinculosTaller(supabase, auth.tallerId, validada.datos)
+    if (errorVinculo) {
+      return NextResponse.json({ success: false, error: errorVinculo }, { status: 400 })
     }
 
     const { data: orden, error } = await supabase
       .from('ordenes_reparacion')
-      .insert([cleanBody])
+      .insert([{ ...validada.datos, taller_id: auth.tallerId }])
       .select()
       .single()
 
@@ -122,7 +106,7 @@ export async function POST(request: NextRequest) {
       { success: true, orden },
       { status: 201 }
     )
-  } catch (error: any) {
+  } catch {
     return NextResponse.json(
       { success: false, error: 'Error al crear orden' },
       { status: 500 }
@@ -132,44 +116,27 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    const body = await request.json()
-    const { id, ...updates } = body
+    const auth = await getAuthenticatedUser()
+    if (isAuthError(auth)) return authErrorResponse(auth)
 
-    if (!id) {
+    const body = await leerJson(request)
+    const id = (body as { id?: unknown } | null)?.id
+    if (typeof id !== 'string' || !id) {
       return NextResponse.json(
         { success: false, error: 'ID requerido' },
         { status: 400 }
       )
     }
 
-    // Verificar autenticación
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'No autorizado' },
-        { status: 401 }
-      )
+    const validada = filtrarCamposOrden(body, 'editar')
+    if (!validada.ok) {
+      return NextResponse.json({ success: false, error: validada.error }, { status: 400 })
     }
 
-    // Obtener taller_id del usuario
-    const { data: usuario } = await supabase
-      .from('usuarios')
-      .select('taller_id')
-      .eq('email', user.email)
-      .single()
-
-    if (!usuario?.taller_id) {
-      return NextResponse.json(
-        { success: false, error: 'Usuario sin taller' },
-        { status: 403 }
-      )
-    }
-
+    const supabase = await createClient()
     const { data: ordenActual, error: ordenActualError } = await supabase
       .from('ordenes_reparacion').select('id, estado')
-      .eq('id', id).eq('taller_id', usuario.taller_id).maybeSingle()
+      .eq('id', id).eq('taller_id', auth.tallerId).maybeSingle()
 
     if (ordenActualError || !ordenActual) {
       return NextResponse.json({ success: false, error: 'Orden no encontrada' }, { status: 404 })
@@ -178,43 +145,16 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'No se puede modificar una orden facturada' }, { status: 409 })
     }
 
-    // Campos válidos que existen en la base de datos
-    const camposValidos = [
-      'estado', 'cliente_id', 'vehiculo_id', 'operario_id',
-      'descripcion_problema', 'diagnostico', 'trabajos_realizados',
-      'fecha_entrada', 'fecha_salida_estimada', 'fecha_salida_real',
-      'tiempo_estimado_horas', 'tiempo_real_horas',
-      'subtotal_mano_obra', 'subtotal_piezas', 'iva_amount', 'total_con_iva',
-      'presupuesto_aprobado_por_cliente', 'notas', 'fotos_entrada', 'fotos_salida',
-      'kilometros_entrada', 'kilometros_salida', 'nivel_combustible',
-      'danos_carroceria', 'renuncia_presupuesto', 'recoger_piezas',
-      'accion_imprevisto', 'coste_diario_estancia', 'fotos_diagnostico'
-    ]
-
-    // Filtrar solo campos válidos
-    const cleanUpdates: Record<string, any> = {
-      updated_at: new Date().toISOString()
-    }
-
-    for (const campo of camposValidos) {
-      if (campo in updates) {
-        cleanUpdates[campo] = updates[campo]
-      }
-    }
-
-    // Fix: Convertir strings vacíos a null para UUIDs
-    if ('cliente_id' in cleanUpdates) {
-      cleanUpdates.cliente_id = cleanUpdates.cliente_id || null
-    }
-    if ('vehiculo_id' in cleanUpdates) {
-      cleanUpdates.vehiculo_id = cleanUpdates.vehiculo_id || null
+    const errorVinculo = await validarVinculosTaller(supabase, auth.tallerId, validada.datos)
+    if (errorVinculo) {
+      return NextResponse.json({ success: false, error: errorVinculo }, { status: 400 })
     }
 
     const { data: orden, error } = await supabase
       .from('ordenes_reparacion')
-      .update(cleanUpdates)
+      .update({ ...validada.datos, updated_at: new Date().toISOString() })
       .eq('id', id)
-      .eq('taller_id', usuario.taller_id) // Seguridad: solo actualizar órdenes del taller
+      .eq('taller_id', auth.tallerId) // Seguridad: solo actualizar órdenes del taller
       .neq('estado', 'facturado') // También protege una emisión concurrente.
       .select()
       .single()
@@ -225,7 +165,7 @@ export async function PATCH(request: NextRequest) {
       success: true,
       orden
     })
-  } catch (error: any) {
+  } catch {
     return NextResponse.json(
       { success: false, error: 'Error al actualizar orden' },
       { status: 500 }

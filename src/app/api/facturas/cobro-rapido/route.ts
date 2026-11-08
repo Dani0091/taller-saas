@@ -12,6 +12,8 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
 import { asignarNumeroFactura } from '@/lib/facturas/numeracion'
+import { esPrimeraFacturaDeOrden, retirarBorradorPropio } from '@/lib/facturas/factura-unica-por-orden'
+import { leerJson } from '@/lib/api/leer-json'
 import crypto from 'crypto'
 
 const LIMITE_SIMPLIFICADA = 3000
@@ -39,7 +41,11 @@ export async function POST(request: NextRequest) {
     if (isAuthError(auth)) return authErrorResponse(auth)
 
     const supabase = await createClient()
-    const { orden_id, serie: serieSolicitada } = await request.json()
+    const body = (await leerJson(request)) as { orden_id?: string; serie?: string } | null
+    if (!body) {
+      return NextResponse.json({ error: 'JSON inválido' }, { status: 400 })
+    }
+    const { orden_id, serie: serieSolicitada } = body
 
     if (!orden_id) {
       return NextResponse.json({ error: 'orden_id es requerido' }, { status: 400 })
@@ -188,6 +194,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Error al crear la factura', details: borradorError?.message },
         { status: 500 }
+      )
+    }
+
+    // Petición simultánea sobre la misma orden: solo sigue la primera factura.
+    if (!(await esPrimeraFacturaDeOrden(supabase, orden_id, borrador.id))) {
+      await retirarBorradorPropio(supabase, borrador.id)
+      return NextResponse.json(
+        { error: 'Ya se está facturando esta orden' },
+        { status: 409 }
       )
     }
 

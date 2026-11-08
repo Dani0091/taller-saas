@@ -8,6 +8,8 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { leerJson } from '@/lib/api/leer-json'
+import { esPrimeraFacturaDeOrden, retirarBorradorPropio } from '@/lib/facturas/factura-unica-por-orden'
 import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
 import { ESTADOS_FACTURABLES } from '@/lib/constants'
 import { syncOrdenCalendarEvent } from '@/app/api/calendar/google/events/route'
@@ -21,7 +23,10 @@ export async function POST(request: NextRequest) {
     const taller_id = auth.tallerId
 
     const supabase = await createClient()
-    const body = await request.json()
+    const body = (await leerJson(request)) as { orden_id?: string; serie?: string } | null
+    if (!body) {
+      return NextResponse.json({ error: 'JSON inválido' }, { status: 400 })
+    }
     const { orden_id, serie: serieSolicitada } = body
 
     // ==================== VALIDACIONES INICIALES ====================
@@ -259,6 +264,12 @@ SOLUCIÓN: Verifica que el cliente "${orden.clientes?.nombre}" exista en Cliente
     }
 
     console.log(`✅ Borrador creado con ID: ${factura.id}`)
+
+    // Petición simultánea sobre la misma orden: solo sigue la primera factura.
+    if (!(await esPrimeraFacturaDeOrden(supabase, orden_id, factura.id))) {
+      await retirarBorradorPropio(supabase, factura.id)
+      return NextResponse.json({ error: 'Ya se está facturando esta orden' }, { status: 409 })
+    }
 
     // Crear líneas de factura desde las líneas de la orden
     if (lineasOrden && lineasOrden.length > 0) {
