@@ -1,13 +1,17 @@
 /**
  * API ENDPOINT: Compartir presupuesto/orden
  *
- * Marca la orden como compartida y devuelve el enlace público
+ * Marca la orden como compartida y devuelve el enlace público.
+ * Cada envío guarda el total y la versión de lo enviado (A10): queda constancia
+ * de qué recibió el cliente y la aceptación se compara con ello.
  */
 
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { leerJson } from '@/lib/api/leer-json'
 import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
+import { cargarPresupuesto } from '@/lib/ordenes/cargar-presupuesto'
+import { redondearImporte } from '@/lib/ordenes/version-presupuesto'
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,7 +36,7 @@ export async function POST(request: NextRequest) {
     // Verificar que la orden existe y pertenece al usuario
     const { data: orden, error: ordenError } = await supabase
       .from('ordenes_reparacion')
-      .select('id, token_publico, fecha_envio_presupuesto')
+      .select('id, taller_id, iva_porcentaje, token_publico, fecha_envio_presupuesto')
       .eq('id', orden_id)
       .eq('taller_id', auth.tallerId)
       .single()
@@ -44,28 +48,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Si no tiene token, generar uno nuevo
-    let tokenPublico = orden.token_publico
+    const { totales, version } = await cargarPresupuesto(supabase, orden)
+    const fechaEnvio = orden.fecha_envio_presupuesto || new Date().toISOString()
 
-    // Actualizar fecha de envío si no está marcada
-    if (!orden.fecha_envio_presupuesto) {
-      const { data: updated, error: updateError } = await supabase
-        .from('ordenes_reparacion')
-        .update({
-          fecha_envio_presupuesto: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', orden_id)
-        .eq('taller_id', auth.tallerId)
-        .select('token_publico')
-        .single()
+    // La fecha es la del primer envío; el total y la versión, los del último
+    const { data: updated, error: updateError } = await supabase
+      .from('ordenes_reparacion')
+      .update({
+        fecha_envio_presupuesto: fechaEnvio,
+        presupuesto_total_compartido: redondearImporte(totales.total),
+        presupuesto_hash_lineas: version,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', orden_id)
+      .eq('taller_id', auth.tallerId)
+      .select('token_publico')
+      .single()
 
-      if (updateError) {
-        throw updateError
-      }
-
-      tokenPublico = updated.token_publico
+    if (updateError) {
+      throw updateError
     }
+
+    const tokenPublico = updated.token_publico
 
     // Construir URL pública
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ||
@@ -78,7 +82,7 @@ export async function POST(request: NextRequest) {
       success: true,
       url: urlPublica,
       token: tokenPublico,
-      fechaEnvio: orden.fecha_envio_presupuesto || new Date().toISOString(),
+      fechaEnvio,
     })
   } catch (error) {
     console.error('Error compartiendo presupuesto:', error)

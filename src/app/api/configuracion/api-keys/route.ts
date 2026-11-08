@@ -7,34 +7,25 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
 
 // GET - Obtener configuración de API keys del taller
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
+    // El taller sale de la sesión; el parámetro ?taller_id se ignora.
+    const auth = await getAuthenticatedUser()
+    if (isAuthError(auth)) return authErrorResponse(auth)
+
     const supabase = await createClient()
-
-    // Verificar sesión
-    const { data: { user }, error: sessionError } = await supabase.auth.getUser()
-    if (sessionError || !user) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
-
-    const { searchParams } = new URL(request.url)
-    const tallerId = searchParams.get('taller_id')
-
-    if (!tallerId) {
-      return NextResponse.json({ error: 'taller_id requerido' }, { status: 400 })
-    }
-
-    // Obtener configuración del taller
     const { data: config, error } = await supabase
       .from('taller_api_config')
       .select('google_client_id, gemini_api_key')
-      .eq('taller_id', tallerId)
-      .single()
+      .eq('taller_id', auth.tallerId)
+      .maybeSingle()
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 = no rows
-      console.error('Error obteniendo config:', error)
+    // La tabla aún no existe en producción: se responde "sin configurar".
+    if (error && !esTablaInexistente(error)) {
+      console.error('Error obteniendo config:', error.code)
       return NextResponse.json({ error: 'Error obteniendo configuración' }, { status: 500 })
     }
 
@@ -44,13 +35,11 @@ export async function GET(request: NextRequest) {
       google_client_secret: config?.google_client_id ? true : false,
       gemini_api_key: config?.gemini_api_key ? true : false,
     })
-  } catch (error: any) {
-    console.error('Error:', error)
+  } catch {
     return NextResponse.json({ error: 'Error interno' }, { status: 500 })
   }
 }
 
-// POST - Guardar/actualizar configuración de API keys
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
@@ -96,11 +85,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar si ya existe configuración
-    const { data: existing } = await supabase
+    const { data: existing, error: errorConsulta } = await supabase
       .from('taller_api_config')
       .select('id')
       .eq('taller_id', taller_id)
-      .single()
+      .maybeSingle()
+
+    if (errorConsulta && esTablaInexistente(errorConsulta)) {
+      return NextResponse.json(
+        { error: 'La configuración de claves aún no está disponible en este entorno' },
+        { status: 503 }
+      )
+    }
 
     if (existing) {
       // Actualizar
@@ -130,4 +126,9 @@ export async function POST(request: NextRequest) {
     console.error('Error:', error)
     return NextResponse.json({ error: 'Error interno' }, { status: 500 })
   }
+}
+
+/** La tabla no existe todavía (Postgres 42P01 o caché de esquema de PostgREST). */
+function esTablaInexistente(error: { code?: string }): boolean {
+  return error.code === '42P01' || error.code === 'PGRST205'
 }

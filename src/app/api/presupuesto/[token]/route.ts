@@ -8,6 +8,8 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { syncOrdenCalendarEvent } from '@/app/api/calendar/google/events/route'
+import { leerJson } from '@/lib/api/leer-json'
+import { cargarPresupuesto } from '@/lib/ordenes/cargar-presupuesto'
 
 // Función para crear cliente admin
 function getSupabaseAdmin() {
@@ -82,40 +84,14 @@ export async function GET(
     // Obtener config del taller
     const { data: tallerConfig } = await supabaseAdmin
       .from('taller_config')
-      .select('nombre_taller, nombre_empresa, logo_url, direccion, telefono, email, color_primario, porcentaje_iva')
+      .select('nombre_taller, nombre_empresa, logo_url, direccion, telefono, email, color_primario')
       .eq('taller_id', orden.taller_id)
       .single()
 
-    // Obtener líneas
-    const { data: lineas } = await supabaseAdmin
-      .from('lineas_orden')
-      .select('tipo, descripcion, cantidad, precio_unitario, importe_total, iva_porcentaje')
-      .eq('orden_id', orden.id)
-      .order('created_at')
-
-    // Calcular totales EN VIVO desde las líneas — igual que calcular-totales-orden.action.ts
-    // y desde-orden/route.ts. orden.subtotal_mano_obra/iva_amount/total_con_iva son columnas
-    // cacheadas que solo se refrescan en un autosave general; si el cliente añade líneas sin
-    // tocar otro campo del formulario, ese caché queda obsoleto y el presupuesto compartido
-    // mostraba un total desincronizado de las líneas realmente listadas.
-    const porcentajeIvaTaller = tallerConfig?.porcentaje_iva ?? 21
-    // El % de IVA de la ORDEN (toggle "Aplicar IVA") manda — salvo suplidos, siempre 0%.
-    const ivaPorcentajeOrden = orden.iva_porcentaje ?? porcentajeIvaTaller
-    const totalesCalculados = (lineas || []).reduce(
-      (acc, l) => {
-        const subtotalLinea = l.cantidad * l.precio_unitario
-        const ivaPorcentajeLinea = l.tipo === 'suplido' ? 0 : ivaPorcentajeOrden
-        const ivaLinea = subtotalLinea * (ivaPorcentajeLinea / 100)
-        return {
-          manoObra: l.tipo === 'mano_obra' ? acc.manoObra + subtotalLinea : acc.manoObra,
-          piezas: l.tipo === 'pieza' ? acc.piezas + subtotalLinea : acc.piezas,
-          subtotal: acc.subtotal + subtotalLinea,
-          iva: acc.iva + ivaLinea,
-          total: acc.total + subtotalLinea + ivaLinea,
-        }
-      },
-      { manoObra: 0, piezas: 0, subtotal: 0, iva: 0, total: 0 }
-    )
+    // Totales EN VIVO desde las líneas (no las columnas cacheadas de la orden,
+    // que solo se refrescan en un autosave general) y versión de lo que se ve:
+    // la aceptación la devuelve y se rechaza si ha cambiado (A10).
+    const { lineas, totales: totalesCalculados, version } = await cargarPresupuesto(supabaseAdmin, orden)
 
     // Preparar respuesta (solo datos necesarios, sin info sensible)
     const presupuesto = {
@@ -149,7 +125,7 @@ export async function GET(
 
       descripcion: orden.descripcion_problema || '',
 
-      lineas: (lineas || []).map(l => ({
+      lineas: lineas.map(l => ({
         tipo: l.tipo,
         descripcion: l.descripcion,
         cantidad: l.cantidad,
@@ -168,6 +144,7 @@ export async function GET(
     return NextResponse.json({
       success: true,
       presupuesto,
+      version,
     })
   } catch (error) {
     console.error('Error obteniendo presupuesto:', error)
@@ -185,7 +162,8 @@ export async function POST(
 ) {
   try {
     const { token } = await params
-    const body = await request.json()
+    const leido = await leerJson(request)
+    const body = (leido && typeof leido === 'object' && !Array.isArray(leido) ? leido : {}) as { firma?: unknown; version?: unknown }
     const supabaseAdmin = getSupabaseAdmin()
 
     if (!token) {
@@ -200,11 +178,10 @@ export async function POST(
                request.headers.get('x-real-ip') ||
                'unknown'
 
-    // Leer estado y fechas para validaciones.
-    // presupuesto_total_compartido se añade cuando se aplique A10_presupuesto_snapshot.sql
+    // Leer estado, fechas y la versión enviada (A10) para validaciones
     const { data: orden, error: ordenError } = await supabaseAdmin
       .from('ordenes_reparacion')
-      .select('id, estado, fecha_aceptacion_cliente, fecha_envio_presupuesto')
+      .select('id, taller_id, iva_porcentaje, estado, fecha_aceptacion_cliente, fecha_envio_presupuesto, presupuesto_hash_lineas')
       .eq('token_publico', token)
       .single()
 
@@ -250,6 +227,21 @@ export async function POST(
       })
     }
 
+    // A10: el cliente acepta lo que vio. La página envía la versión que cargó;
+    // un cliente sin versión (página antigua en caché) se compara con la
+    // enviada por el taller. Órdenes compartidas antes de A10 no tienen versión.
+    const { version: versionActual } = await cargarPresupuesto(supabaseAdmin, orden)
+    const versionVista = typeof body.version === 'string' ? body.version : orden.presupuesto_hash_lineas
+    if (versionVista && versionVista !== versionActual) {
+      return NextResponse.json(
+        {
+          error: 'El presupuesto ha cambiado desde que lo abriste. Revisa la versión actual antes de aceptarlo.',
+          cambiado: true,
+        },
+        { status: 409 }
+      )
+    }
+
     // Actualizar orden con aceptación y cambiar estado a "aprobado".
     // Se añade token_publico como segunda condición defensiva para que
     // otro código que haya cambiado el token invalide esta aceptación.
@@ -260,7 +252,7 @@ export async function POST(
         fecha_aceptacion_cliente: new Date().toISOString(),
         presupuesto_aprobado_por_cliente: true,
         ip_aceptacion: ip,
-        firma_cliente: body.firma || null,
+        firma_cliente: typeof body.firma === 'string' && body.firma ? body.firma : null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', orden.id)

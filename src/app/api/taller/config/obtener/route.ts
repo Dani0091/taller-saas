@@ -1,17 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url)
-    const taller_id = searchParams.get('taller_id')
-
-    if (!taller_id) {
-      return NextResponse.json(
-        { error: 'taller_id es requerido' },
-        { status: 400 }
-      )
-    }
+    // Sesión obligatoria; el taller sale de la sesión (el parámetro ?taller_id se ignora).
+    const auth = await getAuthenticatedUser()
+    if (isAuthError(auth)) return authErrorResponse(auth)
+    const taller_id = auth.tallerId
 
     const supabase = await createClient()
 

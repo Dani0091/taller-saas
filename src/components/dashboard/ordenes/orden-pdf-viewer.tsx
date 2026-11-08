@@ -10,6 +10,8 @@ import { X, Printer, Share2, Loader2, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { formatCurrency } from '@/lib/utils'
+import { enlaceWhatsApp } from '@/lib/compartir/whatsapp'
+import { mensajeOrden } from '@/lib/ordenes/mensajes-whatsapp'
 
 interface OrdenPDFViewerProps {
   ordenId: string
@@ -116,20 +118,8 @@ export function OrdenPDFViewer({ ordenId, onClose }: OrdenPDFViewerProps) {
   const handleWhatsApp = () => {
     if (!datos) return
 
-    const texto = encodeURIComponent(
-      `📋 ORDEN DE TRABAJO ${datos.orden.numero}\n\n` +
-      `🏢 ${datos.taller.nombre}\n` +
-      `📞 ${datos.taller.telefono}\n\n` +
-      `👤 Cliente: ${datos.cliente.nombre} ${datos.cliente.apellidos}\n` +
-      `🚗 Vehículo: ${datos.vehiculo.marca} ${datos.vehiculo.modelo}\n` +
-      `📝 Matrícula: ${datos.vehiculo.matricula}\n` +
-      `⏱️ KM: ${datos.vehiculo.kilometros?.toLocaleString() || 'N/A'}\n\n` +
-      `📌 Problema: ${datos.orden.descripcionProblema || 'Sin especificar'}\n\n` +
-      `💰 Total estimado: ${formatCurrency(datos.totales.total)}\n\n` +
-      `Estado: ${datos.orden.estado.toUpperCase()}`
-    )
-
-    window.open(`https://wa.me/?text=${texto}`, '_blank')
+    // Al teléfono del cliente (con prefijo 34); sin teléfono, WhatsApp deja elegir el contacto
+    window.open(enlaceWhatsApp(datos.cliente.telefono, mensajeOrden(datos)), '_blank', 'noopener,noreferrer')
   }
 
   const formatFecha = (fecha: string | null) => {

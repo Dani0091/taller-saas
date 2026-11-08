@@ -6,9 +6,12 @@
  * DELETE /api/citas/[id] - Eliminar cita
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
+import { fechaFinParaGuardar } from '@/lib/citas/fecha-fin'
+import { leerJson } from '@/lib/api/leer-json'
+import { sincronizarCitaEnGoogle, borrarCitaDeGoogle } from '@/lib/google/sincronizar-cita'
 
 interface RouteParams {
   params: Promise<{ id: string }>
@@ -35,7 +38,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       `)
       .eq('id', id)
       .eq('taller_id', tallerId)
-      .single()
+      .maybeSingle()
 
     if (error) throw error
 
@@ -64,7 +67,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     const { tallerId } = authResult
     const supabase = await createClient()
-    const body = await request.json()
+    const body = (await leerJson(request)) as Record<string, unknown> | null
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return NextResponse.json({ error: 'JSON inválido' }, { status: 400 })
+    }
 
     // Verificar que la cita pertenece al taller
     const { data: citaExistente } = await supabase
@@ -72,7 +78,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       .select('id')
       .eq('id', id)
       .eq('taller_id', tallerId)
-      .single()
+      .maybeSingle()
 
     if (!citaExistente) {
       return NextResponse.json({ error: 'Cita no encontrada' }, { status: 404 })
@@ -94,6 +100,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
     }
 
+    // Si se fija el inicio sin fin en una cita con horario, dura 1 hora.
+    if ('fecha_inicio' in updateData && !updateData.fecha_fin) {
+      updateData.fecha_fin = fechaFinParaGuardar(updateData.fecha_inicio, updateData.fecha_fin, updateData.todo_el_dia)
+    }
+
     const { data, error } = await supabase
       .from('citas')
       .update(updateData)
@@ -106,6 +117,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       .single()
 
     if (error) throw error
+
+    after(() => sincronizarCitaEnGoogle(supabase, { userId: authResult.userId, tallerId, cita: data }))
 
     return NextResponse.json({ cita: data })
   } catch (error: any) {
@@ -137,6 +150,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       .eq('taller_id', tallerId)
 
     if (error) throw error
+
+    after(() => borrarCitaDeGoogle(supabase, { userId: authResult.userId, citaId: id }))
 
     return NextResponse.json({ success: true })
   } catch (error: any) {

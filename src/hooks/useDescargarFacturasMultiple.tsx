@@ -5,7 +5,6 @@
  */
 
 import { useState } from 'react'
-import JSZip from 'jszip'
 import { toast } from 'sonner'
 import { useDescargarPDF } from './useDescargarPDF'
 
@@ -65,6 +64,8 @@ export function useDescargarFacturasMultiple() {
           await new Promise(resolve => setTimeout(resolve, 150))
         }
       } else {
+        // jszip se carga solo al descargar varias facturas
+        const { default: JSZip } = await import('jszip')
         const zip = new JSZip()
         for (const { f, blob } of exitosas) {
           zip.file(`Factura_${sanitizarNombreArchivo(f.numeroFactura || f.id)}.pdf`, blob)

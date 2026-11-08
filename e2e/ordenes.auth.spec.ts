@@ -1,5 +1,6 @@
 import { test, expect, request as pwRequest, type APIRequestContext } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
+import { SIN_SESION } from './sin-sesion'
 
 // Órdenes, presupuesto público y cobro rápido con sesión del admin QA A,
 // contra el Supabase LOCAL. Las líneas de orden se crean como dato de partida
@@ -74,7 +75,7 @@ test('presupuesto público: compartir, ver sin sesión, aceptar e idempotencia (
   expect(token).toMatch(/^[0-9a-f-]{36}$/)
 
   // Cliente final: sin cookies de sesión
-  const publico = await pwRequest.newContext({ baseURL })
+  const publico = await pwRequest.newContext({ baseURL, storageState: SIN_SESION })
   const rv = await publico.get(`/api/presupuesto/${token}`)
   expect(rv.status()).toBe(200)
   expect(JSON.stringify(await rv.json())).toContain('Mano de obra QA')

@@ -5,6 +5,7 @@
 
 import { CitaEntity, type CitaProps } from '@/domain/entities'
 import { TipoCita, EstadoCita } from '@/domain/types'
+import { fechaFinEfectiva } from '@/lib/citas/fecha-fin'
 
 /**
  * Tipo que representa un registro de cita en la BD (snake_case)
@@ -43,7 +44,12 @@ export class CitaMapper {
       descripcion: record.descripcion ?? undefined,
       tipo: record.tipo as TipoCita,
       fechaInicio: new Date(record.fecha_inicio),
-      fechaFin: record.fecha_fin ? new Date(record.fecha_fin) : undefined,
+      // Registros sin hora de fin no deben impedir cargar el calendario.
+      fechaFin: fechaFinEfectiva(
+        new Date(record.fecha_inicio),
+        record.fecha_fin ? new Date(record.fecha_fin) : undefined,
+        record.todo_el_dia ?? false
+      ),
       todoElDia: record.todo_el_dia ?? false,
       clienteId: record.cliente_id ?? undefined,
       vehiculoId: record.vehiculo_id ?? undefined,

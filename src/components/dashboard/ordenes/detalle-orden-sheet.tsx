@@ -23,6 +23,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { toast } from 'sonner'
+import { enlaceWhatsApp } from '@/lib/compartir/whatsapp'
+import { mensajePresupuesto } from '@/lib/ordenes/mensajes-whatsapp'
 import { fotosToString, getFotoUrl, setFotoUrl, getFotoByKey } from '@/lib/utils'
 import { ESTADOS_ORDEN, FRACCIONES_HORA, CANTIDADES, FOTOS_DIAGNOSTICO, FOTO_LABELS, type TipoFoto } from '@/lib/constants'
 import { OrdenHeader } from './parts/OrdenHeader'
@@ -1665,13 +1667,9 @@ export function DetalleOrdenSheet({
   const enviarWhatsApp = () => {
     if (!enlacePresupuesto) return
     const cliente = clientes.find(c => c.id === formData.cliente_id)
-    const texto = encodeURIComponent(
-      `Hola ${cliente?.nombre || ''}, te enviamos el presupuesto de tu vehículo.\n\n` +
-      `📋 Ver presupuesto: ${enlacePresupuesto}\n\n` +
-      `Puedes aceptarlo directamente desde el enlace.`
-    )
-    const telefono = cliente?.telefono?.replace(/\D/g, '') || ''
-    window.open(`https://wa.me/${telefono}?text=${texto}`, '_blank')
+    // enlaceWhatsApp añade el prefijo 34: sin él wa.me no encontraba al cliente
+    const mensaje = mensajePresupuesto({ nombreCliente: cliente?.nombre, enlace: enlacePresupuesto })
+    window.open(enlaceWhatsApp(cliente?.telefono, mensaje), '_blank', 'noopener,noreferrer')
   }
 
   // Una orden facturada (número asignado, VeriFACTU encadenado) queda bloqueada:

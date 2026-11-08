@@ -1,6 +1,6 @@
 {
   "name": "taller-saas",
-  "version": "0.75.1",
+  "version": "0.75.3",
   "private": true,
   "scripts": {
     "dev": "next dev",

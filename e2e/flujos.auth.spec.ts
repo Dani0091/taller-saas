@@ -1,4 +1,5 @@
 import { test, expect, type APIRequestContext } from '@playwright/test'
+import { createClient } from '@supabase/supabase-js'
 
 // Flujos con sesión del admin del taller QA A contra el Supabase LOCAL
 // (esquema del laboratorio + seed ficticio de supabase/local/10_seed_qa.sql).
@@ -78,10 +79,16 @@ test('numeración: emisiones consecutivas en formato de producción PREFIJO-NNN'
 })
 
 test('NUM-01: la serie pasa de 999 a 1000 sin truncar ni repetir', async ({ request }) => {
-  const n999 = await emitir(request, await crearBorrador(request, 'QAF'))
-  const n1000 = await emitir(request, await crearBorrador(request, 'QAF'))
-  expect(n999).toBe('QAF-999')
-  expect(n1000).toBe('QAF-1000')
+  // Serie nueva en cada ejecución (un contador real nunca retrocede).
+  const prefijo = 'Q' + Array.from({ length: 3 }, () => String.fromCharCode(65 + Math.floor(Math.random() * 26))).join('')
+  const admin = createClient(process.env.E2E_SUPABASE_URL!, process.env.E2E_SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } })
+  const { error } = await admin.from('series_factura').insert({ taller_id: A, nombre: `Serie ${prefijo}`, prefijo, ultimo_numero: 998 })
+  expect(error).toBeNull()
+
+  const n999 = await emitir(request, await crearBorrador(request, prefijo))
+  const n1000 = await emitir(request, await crearBorrador(request, prefijo))
+  expect(n999).toBe(`${prefijo}-999`)
+  expect(n1000).toBe(`${prefijo}-1000`)
 })
 
 test('A05: emitir dos veces el mismo borrador no asigna dos números', async ({ request }) => {

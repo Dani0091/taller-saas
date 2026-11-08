@@ -12,7 +12,8 @@ export async function GET(_request: NextRequest) {
     const supabase = await createClient()
     const { data, error } = await supabase
       .from('clientes')
-      .select('id, nombre, nif')
+      // telefono: el formulario de citas lo usa para enviar la cita por WhatsApp
+      .select('id, nombre, nif, telefono')
       .eq('taller_id', auth.tallerId)
 
     if (error) {

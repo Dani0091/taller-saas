@@ -146,6 +146,10 @@ export function CalendarioCitas({ onNuevaCita, onEditarCita }: CalendarioCitasPr
     toast.success(`${citas.length} citas exportadas`)
   }
 
+  // Día para una cita nueva: el seleccionado; si no, el que se ve (o hoy, si está en el mes visible)
+  const fechaParaNuevaCita = diaSeleccionado
+    ?? (vista === 'mes' && isSameMonth(new Date(), mesActual) ? new Date() : mesActual)
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
       {/* Calendario */}
@@ -157,6 +161,8 @@ export function CalendarioCitas({ onNuevaCita, onEditarCita }: CalendarioCitasPr
               {(['mes', 'semana', 'dia'] as VistaCalendario[]).map((v) => (
                 <button
                   key={v}
+                  type="button"
+                  aria-pressed={vista === v}
                   onClick={() => setVista(v)}
                   className={`px-3 py-1 text-xs font-medium rounded-md transition-colors capitalize
                     ${vista === v
@@ -180,6 +186,8 @@ export function CalendarioCitas({ onNuevaCita, onEditarCita }: CalendarioCitasPr
                 size="icon"
                 className="h-8 w-8"
                 onClick={navegarAnterior}
+                aria-label="Anterior"
+                title="Anterior"
               >
                 <ChevronLeft className="w-4 h-4" />
               </Button>
@@ -196,6 +204,8 @@ export function CalendarioCitas({ onNuevaCita, onEditarCita }: CalendarioCitasPr
                 size="icon"
                 className="h-8 w-8"
                 onClick={navegarSiguiente}
+                aria-label="Siguiente"
+                title="Siguiente"
               >
                 <ChevronRight className="w-4 h-4" />
               </Button>
@@ -206,8 +216,15 @@ export function CalendarioCitas({ onNuevaCita, onEditarCita }: CalendarioCitasPr
                   onClick={exportarCitasMes}
                   className="ml-1 gap-1 h-8 px-2"
                   title="Exportar citas"
+                  aria-label="Exportar citas"
                 >
                   <Download className="w-3 h-3" />
+                </Button>
+              )}
+              {/* Único botón de alta: siempre visible, también si falla la carga */}
+              {onNuevaCita && (
+                <Button size="sm" className="ml-1 h-8" onClick={() => onNuevaCita(fechaParaNuevaCita)}>
+                  <Plus className="w-4 h-4 mr-1" />Nueva cita
                 </Button>
               )}
             </div>
@@ -233,11 +250,6 @@ export function CalendarioCitas({ onNuevaCita, onEditarCita }: CalendarioCitasPr
             <div className="space-y-2">
               <div className="flex items-center justify-between py-2 border-b">
                 <span className="font-medium">{format(mesActual, "EEEE d", { locale: es })}</span>
-                {onNuevaCita && (
-                  <Button size="sm" onClick={() => onNuevaCita(mesActual)}>
-                    <Plus className="w-4 h-4 mr-1" />Nueva
-                  </Button>
-                )}
               </div>
               {getCitasDelDia(mesActual).length === 0 ? (
                 <div className="text-center py-8 text-gray-500">
@@ -323,15 +335,6 @@ export function CalendarioCitas({ onNuevaCita, onEditarCita }: CalendarioCitasPr
                 ? format(diaSeleccionado, "d 'de' MMMM", { locale: es })
                 : 'Selecciona un día'}
             </CardTitle>
-            {diaSeleccionado && onNuevaCita && (
-              <Button
-                size="sm"
-                onClick={() => onNuevaCita(diaSeleccionado)}
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Nueva
-              </Button>
-            )}
           </div>
         </CardHeader>
         <CardContent>

@@ -55,6 +55,8 @@ export default function PresupuestoPublico({ params }: { params: Promise<{ token
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [presupuesto, setPresupuesto] = useState<Presupuesto | null>(null)
+  // Versión de lo que el cliente está viendo: se envía al aceptar (A10)
+  const [version, setVersion] = useState<string | null>(null)
   const [aceptando, setAceptando] = useState(false)
   const [aceptado, setAceptado] = useState(false)
 
@@ -72,6 +74,7 @@ export default function PresupuestoPublico({ params }: { params: Promise<{ token
       }
 
       setPresupuesto(data.presupuesto)
+      setVersion(data.version ?? null)
       setAceptado(data.presupuesto.aceptado)
     } catch (err: any) {
       setError(err.message)
@@ -88,10 +91,17 @@ export default function PresupuestoPublico({ params }: { params: Promise<{ token
       const res = await fetch(`/api/presupuesto/${token}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify(version ? { version } : {}),
       })
 
       const data = await res.json()
+
+      if (res.status === 409 && data.cambiado) {
+        // El taller lo modificó mientras estaba abierto: mostrar la versión nueva
+        await cargarPresupuesto()
+        alert(data.error)
+        return
+      }
 
       if (!res.ok) {
         throw new Error(data.error || 'Error al aceptar')

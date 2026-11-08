@@ -2,6 +2,74 @@
 
 Todos los cambios importantes de este proyecto serán documentados aquí.
 
+## [0.75.3] - 2026-11-08 · pre-alpha
+
+Citas fiables de principio a fin, envíos por WhatsApp al número correcto,
+presupuestos que el cliente acepta tal como los vio y numeración de facturas
+protegida en base de datos.
+
+> Requiere en Supabase lo aplicado el 2026-11-08 (SEC-02, A06 y A10). Sin
+> ello la app sigue funcionando: numera con v3 y el presupuesto no se guarda.
+
+### Citas
+- **Hora correcta**: una cita a las 09:00 se guarda y se ve a las 09:00
+  (antes quedaba 1-2 horas desplazada por la zona horaria).
+- **Editar una cita** abre el formulario con sus datos (antes salía vacío y
+  al guardar se creaba una cita duplicada).
+- **WhatsApp al cliente** con fecha, hora, vehículo, dirección y enlaces para
+  añadirla a su calendario (Google, Outlook o archivo .ics).
+- **Google Calendar del taller**: al crear, editar o borrar una cita se
+  sincroniza con el calendario del usuario que la guarda (si lo tiene conectado).
+- **Exportar a calendario**: horas en UTC, citas de día completo correctas y
+  los botones del menú ya no envían el formulario.
+- Un solo botón **«Nueva cita»**, siempre visible, con el día seleccionado.
+- La API de citas responde 404/400 (no 500) ante citas inexistentes o datos
+  inválidos.
+
+### Órdenes y presupuestos
+- **WhatsApp de presupuesto y de orden** al teléfono del cliente con prefijo 34
+  y sin textos vacíos ("Hola ,", "undefined").
+- **El cliente acepta lo que vio**: si el taller cambia las líneas o el IVA
+  con el enlace abierto, la aceptación se rechaza y la página muestra la
+  versión nueva. Cada envío guarda total y versión de lo enviado.
+- Presupuestos compartidos antes de esta versión se siguen pudiendo aceptar.
+
+### Facturación
+- **Numeración con v4**: solo se puede pedir número del propio taller y desde
+  la 1000 no se trunca. Mismo formato `PREFIJO-NNN` y mismo contador: la
+  siguiente factura es la que tocaba. Si v4 no está disponible o rechaza al
+  usuario, se usa v3 y queda registrado en el log.
+- **PDF de factura**: la librería de PDF (≈1,4 MB) se descarga al pulsar
+  «Descargar PDF», no al abrir la página.
+
+### Seguridad
+- `taller/config/obtener` y `series/*` exigen sesión y usan el taller de la
+  sesión (antes aceptaban un taller arbitrario).
+
+### Calidad
+- 255 tests unitarios y E2E ampliados (citas, WhatsApp, PDF, numeración,
+  versión del presupuesto), estables en ejecuciones repetidas.
+
+## [0.75.2] - 2026-11-08 · pre-alpha
+
+Corrige caminos que ya estaban rotos en producción, encontrados con pruebas
+de interfaz que rellenan formularios y pulsan cada botón.
+
+### Corregido
+- **Nuevo cliente**: el formulario no guardaba (enviaba a una ruta inexistente).
+- **Citas**: los selectores de cliente y vehículo salían siempre vacíos.
+- **Calendario**: una sola cita sin hora de fin (o con fin igual al inicio)
+  impedía cargar todo el calendario. Ahora se muestra con 1 hora de duración,
+  y al guardar sin fin se asigna 1 hora (sin desfases de zona horaria).
+- **Configuración**: ya no da error 500 al abrirse.
+- **Cabecera**: cada sección y subpágina muestra su título (antes "Dashboard").
+- **Menú**: muestra la versión real de la aplicación.
+
+### Calidad
+- 169 tests unitarios y 79 E2E, estables en ejecuciones repetidas.
+- Recorrido automático de 12 pantallas pulsando cada botón (sin errores JS,
+  respuestas 5xx ni enlaces rotos).
+
 ## [0.75.1] - 2026-11-08 · pre-alpha
 
 Primera versión con numeración pre-alpha. Las entradas 1.x anteriores eran
