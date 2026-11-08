@@ -5,10 +5,12 @@
  * POST /api/citas - Crear cita
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
 import { fechaFinParaGuardar } from '@/lib/citas/fecha-fin'
+import { leerJson } from '@/lib/api/leer-json'
+import { sincronizarCitaEnGoogle } from '@/lib/google/sincronizar-cita'
 
 export async function GET(request: NextRequest) {
   try {
@@ -81,7 +83,10 @@ export async function POST(request: NextRequest) {
 
     const { tallerId, email } = authResult
     const supabase = await createClient()
-    const body = await request.json()
+    const body = (await leerJson(request)) as Record<string, unknown> | null
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return NextResponse.json({ error: 'JSON inválido' }, { status: 400 })
+    }
 
     // Validar campos requeridos
     if (!body.titulo || !body.fecha_inicio) {
@@ -129,6 +134,9 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (error) throw error
+
+    // Google Calendar del usuario, tras responder: nunca retrasa ni rompe el guardado
+    after(() => sincronizarCitaEnGoogle(supabase, { userId: authResult.userId, tallerId, cita: data }))
 
     return NextResponse.json({ cita: data })
   } catch (error: any) {

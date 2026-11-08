@@ -23,7 +23,7 @@ interface GoogleTokens {
   scope?: string
 }
 
-interface GoogleCalendarEvent {
+export interface GoogleCalendarEvent {
   summary: string
   description?: string
   start: {

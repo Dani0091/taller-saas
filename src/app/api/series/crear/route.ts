@@ -4,24 +4,28 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
+import { leerJson } from '@/lib/api/leer-json'
 
 export async function POST(request: NextRequest) {
     try {
         const supabase = await createClient()
 
-        // Verificar sesión
-        const { data: { user }, error: sessionError } = await supabase.auth.getUser()
-        if (sessionError || !user) {
-            return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-        }
+        // Sesión obligatoria; la serie se crea en el taller de la sesión.
+        const auth = await getAuthenticatedUser()
+        if (isAuthError(auth)) return authErrorResponse(auth)
+        const taller_id = auth.tallerId
 
-        const body = await request.json()
-        const { taller_id, nombre, prefijo, ultimo_numero } = body
+        const body = (await leerJson(request)) as { nombre?: string; prefijo?: string; ultimo_numero?: number } | null
+        if (!body) {
+            return NextResponse.json({ error: 'JSON inválido' }, { status: 400 })
+        }
+        const { nombre, prefijo, ultimo_numero } = body
 
         // Validaciones
-        if (!taller_id || !nombre || !prefijo) {
+        if (!nombre || !prefijo) {
             return NextResponse.json(
-                { error: 'taller_id, nombre y prefijo son requeridos' },
+                { error: 'nombre y prefijo son requeridos' },
                 { status: 400 }
             )
         }

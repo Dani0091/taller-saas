@@ -1,5 +1,6 @@
 import { test, expect, request as pwRequest, type APIRequestContext } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
+import { SIN_SESION } from './sin-sesion'
 
 // Tests adversariales: intentan romper el aislamiento entre talleres, colar
 // datos que el servidor no debería aceptar y provocar carreras. Cada ataque
@@ -208,7 +209,7 @@ test.describe('Entradas inválidas: 4xx controlado, nunca 500', () => {
   })
 
   test('token de presupuesto manipulado', async ({ baseURL }) => {
-    const p = await pwRequest.newContext({ baseURL })
+    const p = await pwRequest.newContext({ baseURL, storageState: SIN_SESION })
     for (const t of ['null', 'undefined', '..%2F..%2Fapi%2Fclientes', 'x'.repeat(5000), "' OR '1'='1"]) {
       const r = await p.get(`/api/presupuesto/${t}`)
       expect(r.status(), t.slice(0, 30)).toBeGreaterThanOrEqual(400)
@@ -233,5 +234,61 @@ test.describe('Entradas inválidas: 4xx controlado, nunca 500', () => {
         expect(Number.isFinite(Number(f!.total)), JSON.stringify(data)).toBe(true)
       }
     }
+  })
+})
+
+test.describe('Configuración y series: siempre el taller de la sesión', () => {
+  test('sin sesión no se puede leer la configuración de un taller', async ({ baseURL }) => {
+    const anonimo = await pwRequest.newContext({ baseURL, storageState: SIN_SESION })
+    const r = await anonimo.get(`/api/taller/config/obtener?taller_id=${A}`)
+    expect(r.status()).toBe(401)
+    expect(await r.text()).not.toContain(A)
+    expect((await anonimo.get(`/api/series/obtener?taller_id=${A}`)).status()).toBe(401)
+    expect((await anonimo.post('/api/series/crear', { data: { taller_id: A, nombre: 'X', prefijo: 'ANON' } })).status()).toBe(401)
+    await anonimo.dispose()
+  })
+
+  test('A sigue leyendo su configuración y sus series (uso legítimo)', async ({ request }) => {
+    const cfg = await request.get('/api/taller/config/obtener')
+    expect(cfg.status()).toBe(200)
+    expect((await cfg.json()).taller_id).toBe(A)
+    const series = await request.get(`/api/series/obtener?taller_id=${A}`)
+    expect(series.status()).toBe(200)
+  })
+
+  test('B crea la serie en su propio taller aunque pida el de A', async ({ baseURL }) => {
+    const b = await sesionB(baseURL)
+    const prefijo = 'ZB' + String(Date.now()).slice(-3)
+    const r = await b.post('/api/series/crear', { data: { taller_id: A, nombre: 'Propia', prefijo, ultimo_numero: 0 } })
+    expect(r.status(), await r.text()).toBeLessThan(300)
+    const { data } = await db().from('series_factura').select('taller_id').eq('prefijo', prefijo)
+    expect(data?.map((s) => s.taller_id)).toEqual([B])
+    await db().from('series_factura').delete().eq('prefijo', prefijo)
+    await b.dispose()
+  })
+
+  test('crear serie con JSON roto o sin campos da 400, no 500', async ({ request }) => {
+    const roto = await request.post('/api/series/crear', { data: '{no es json', headers: { 'content-type': 'application/json' } })
+    expect(roto.status()).toBe(400)
+    expect((await request.post('/api/series/crear', { data: { nombre: 'Sin prefijo' } })).status()).toBe(400)
+  })
+
+  test('B no lee la configuración ni las series de A pidiendo su taller_id', async ({ baseURL }) => {
+    await db().from('taller_config').update({ nombre_empresa: 'Config secreta de A' }).eq('taller_id', A)
+    const b = await sesionB(baseURL)
+    const cfg = await (await b.get(`/api/taller/config/obtener?taller_id=${A}`)).text()
+    expect(cfg).not.toContain('Config secreta de A')
+    const series = await (await b.get(`/api/series/obtener?taller_id=${A}`)).text()
+    expect(series).not.toContain('"QAF"')
+    await b.dispose()
+  })
+
+  test('B no puede crear una serie en el taller de A', async ({ baseURL }) => {
+    const b = await sesionB(baseURL)
+    const prefijo = 'ZZ' + String(Date.now()).slice(-3)
+    await b.post('/api/series/crear', { data: { taller_id: A, nombre: 'Intrusa', prefijo, ultimo_numero: 0 } })
+    const { data } = await db().from('series_factura').select('taller_id').eq('prefijo', prefijo)
+    expect((data ?? []).filter((s) => s.taller_id === A)).toHaveLength(0)
+    await b.dispose()
   })
 })

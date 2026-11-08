@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
-import { X, Save, Trash2, Loader2, MessageCircle } from 'lucide-react'
+import { X, Save, Trash2, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -11,6 +11,7 @@ import type { Cita, TipoCita, EstadoCita } from '@/types/citas'
 import { TIPOS_CITA, COLORES_CITA, ESTADOS_CITA } from '@/types/citas'
 import { WhatsAppCita } from './whatsapp-cita'
 import { ExportarCalendario } from './exportar-calendario'
+import { horaLocalAInstante, instanteAHoraLocal } from '@/lib/citas/fecha-hora'
 
 interface FormularioCitaProps {
   cita?: Cita | null
@@ -46,6 +47,7 @@ export function FormularioCita({ cita, fechaInicial, onClose, onSave }: Formular
   const [deleting, setDeleting] = useState(false)
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [vehiculos, setVehiculos] = useState<Vehiculo[]>([])
+  const [taller, setTaller] = useState<{ nombre?: string; direccion?: string }>({})
 
   const [formData, setFormData] = useState({
     titulo: cita?.titulo || '',
@@ -54,13 +56,11 @@ export function FormularioCita({ cita, fechaInicial, onClose, onSave }: Formular
     cliente_id: cita?.cliente_id || '',
     vehiculo_id: cita?.vehiculo_id || '',
     fecha_inicio: cita?.fecha_inicio
-      ? format(new Date(cita.fecha_inicio), "yyyy-MM-dd'T'HH:mm")
+      ? instanteAHoraLocal(cita.fecha_inicio)
       : fechaInicial
         ? format(fechaInicial, "yyyy-MM-dd'T'09:00")
         : format(new Date(), "yyyy-MM-dd'T'09:00"),
-    fecha_fin: cita?.fecha_fin
-      ? format(new Date(cita.fecha_fin), "yyyy-MM-dd'T'HH:mm")
-      : '',
+    fecha_fin: instanteAHoraLocal(cita?.fecha_fin),
     todo_el_dia: cita?.todo_el_dia || false,
     estado: (cita?.estado || 'pendiente') as EstadoCita,
     recordatorio_email: cita?.recordatorio_email || false,
@@ -77,9 +77,11 @@ export function FormularioCita({ cita, fechaInicial, onClose, onSave }: Formular
 
   const cargarDatos = async () => {
     try {
-      const [clientesRes, vehiculosRes] = await Promise.all([
+      const [clientesRes, vehiculosRes, tallerRes] = await Promise.all([
         fetch('/api/clientes'),
-        fetch('/api/vehiculos')
+        fetch('/api/vehiculos'),
+        // Solo para el mensaje de WhatsApp; si falla, el mensaje sale sin nombre ni dirección.
+        fetch('/api/taller/config/obtener').catch(() => null)
       ])
 
       const clientesData = await clientesRes.json()
@@ -89,6 +91,10 @@ export function FormularioCita({ cita, fechaInicial, onClose, onSave }: Formular
       // la forma antigua { clientes } / { vehiculos }.
       setClientes(comoLista<Cliente>(clientesData, 'clientes'))
       setVehiculos(comoLista<Vehiculo>(vehiculosData, 'vehiculos'))
+      if (tallerRes?.ok) {
+        const cfg = await tallerRes.json()
+        setTaller({ nombre: cfg?.nombre_empresa || undefined, direccion: cfg?.direccion || undefined })
+      }
     } catch (error) {
       console.error('Error cargando datos:', error)
     }
@@ -109,7 +115,9 @@ export function FormularioCita({ cita, fechaInicial, onClose, onSave }: Formular
         ...formData,
         cliente_id: formData.cliente_id || null,
         vehiculo_id: formData.vehiculo_id || null,
-        fecha_fin: formData.fecha_fin || null,
+        // Hora local del navegador → instante exacto (evita el desfase con Postgres en UTC)
+        fecha_inicio: horaLocalAInstante(formData.fecha_inicio),
+        fecha_fin: horaLocalAInstante(formData.fecha_fin),
         notas: formData.notas || null
       }
 
@@ -162,6 +170,19 @@ export function FormularioCita({ cita, fechaInicial, onClose, onSave }: Formular
   const vehiculosFiltrados = formData.cliente_id
     ? vehiculos.filter(v => v.cliente_id === formData.cliente_id)
     : vehiculos
+
+  const clienteSeleccionado = clientes.find(c => c.id === formData.cliente_id)
+  const vehiculoSeleccionado = vehiculos.find(v => v.id === formData.vehiculo_id)
+  const inicioCompartible = horaLocalAInstante(formData.fecha_inicio)
+  const citaCompartible = cita && formData.titulo && inicioCompartible
+    ? {
+        titulo: formData.titulo,
+        fecha_inicio: inicioCompartible,
+        fecha_fin: horaLocalAInstante(formData.fecha_fin),
+        todo_el_dia: formData.todo_el_dia,
+        descripcion: formData.descripcion || null
+      }
+    : null
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -267,7 +288,7 @@ export function FormularioCita({ cita, fechaInicial, onClose, onSave }: Formular
               <option value="">-- Sin cliente --</option>
               {clientes.map(c => (
                 <option key={c.id} value={c.id}>
-                  {c.nombre} {c.apellidos || ''} {c.telefono ? `(${c.telefono})` : ''}
+                  {[c.nombre, c.apellidos, c.telefono && `(${c.telefono})`].filter(Boolean).join(' ')}
                 </option>
               ))}
             </select>
@@ -342,43 +363,32 @@ export function FormularioCita({ cita, fechaInicial, onClose, onSave }: Formular
                 variant="destructive"
                 onClick={handleEliminar}
                 disabled={deleting}
+                aria-label="Eliminar cita"
+                title="Eliminar cita"
               >
                 {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
               </Button>
             )}
 
-            {/* Botón exportar a calendario - solo si hay cita existente */}
-            {cita && formData.titulo && formData.fecha_inicio && (
-              <ExportarCalendario
-                cita={{
-                  titulo: formData.titulo,
-                  fecha_inicio: formData.fecha_inicio,
-                  fecha_fin: formData.fecha_fin || null,
-                  todo_el_dia: formData.todo_el_dia,
-                  descripcion: formData.descripcion || null
+            {/* Calendario y WhatsApp: solo con la cita ya guardada (lo que se comparte es lo guardado) */}
+            {citaCompartible && (
+              <ExportarCalendario cita={citaCompartible} ubicacion={taller.direccion} />
+            )}
+
+            {citaCompartible && clienteSeleccionado?.telefono && (
+              <WhatsAppCita
+                telefono={clienteSeleccionado.telefono}
+                cita={citaCompartible}
+                datos={{
+                  nombreTaller: taller.nombre,
+                  direccionTaller: taller.direccion,
+                  nombreCliente: clienteSeleccionado.nombre,
+                  vehiculo: vehiculoSeleccionado
+                    ? [vehiculoSeleccionado.marca, vehiculoSeleccionado.modelo, vehiculoSeleccionado.matricula].filter(Boolean).join(' ')
+                    : undefined
                 }}
               />
             )}
-
-            {/* Botón WhatsApp - solo si hay cita existente y cliente con teléfono */}
-            {cita && formData.cliente_id && (() => {
-              const clienteSeleccionado = clientes.find(c => c.id === formData.cliente_id)
-              if (clienteSeleccionado?.telefono) {
-                return (
-                  <WhatsAppCita
-                    telefono={clienteSeleccionado.telefono}
-                    cita={{
-                      titulo: formData.titulo,
-                      fecha_inicio: formData.fecha_inicio,
-                      fecha_fin: formData.fecha_fin || undefined,
-                      todo_el_dia: formData.todo_el_dia,
-                      descripcion: formData.descripcion || undefined
-                    }}
-                  />
-                )
-              }
-              return null
-            })()}
 
             <div className="flex-1" />
             <Button type="button" variant="outline" onClick={onClose}>

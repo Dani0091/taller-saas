@@ -29,12 +29,13 @@ test('formulario de cita: el selector muestra los clientes del taller', async ({
   await page.waitForLoadState('networkidle')
   // La vista Día muestra siempre el botón "Nueva" (en vista Mes hay que elegir un día).
   await page.getByRole('button', { name: /^día$/i }).click()
-  await page.getByRole('button', { name: /^nueva$/i }).first().click()
+  await page.getByRole('button', { name: /^nueva cita$/i }).click()
   const selector = page.locator('#cliente_id')
   await expect(selector).toBeVisible({ timeout: 10_000 })
-  await expect(selector.locator('option', { hasText: 'Cliente QA Válido' })).toHaveCount(1)
+  // La etiqueta incluye el teléfono, para distinguir clientes con el mismo nombre
+  await expect(selector.locator('option', { hasText: 'Cliente QA Válido' })).toHaveText('Cliente QA Válido (600000001)')
   // Al elegir cliente, el selector de vehículos muestra los suyos
-  await selector.selectOption({ label: 'Cliente QA Válido' })
+  await selector.selectOption('00000000-0000-4000-a000-0000000c1a01')
   await expect(page.locator('#vehiculo_id option', { hasText: '0000QAA' })).toHaveCount(1)
 })
 
@@ -43,9 +44,9 @@ test('cita completa: se guarda con cliente y vehículo del taller', async ({ pag
   await page.goto('/dashboard/citas')
   await page.waitForLoadState('networkidle')
   await page.getByRole('button', { name: /^día$/i }).click()
-  await page.getByRole('button', { name: /^nueva$/i }).first().click()
+  await page.getByRole('button', { name: /^nueva cita$/i }).click()
   await page.locator('#titulo').fill(titulo)
-  await page.locator('#cliente_id').selectOption({ label: 'Cliente QA Válido' })
+  await page.locator('#cliente_id').selectOption('00000000-0000-4000-a000-0000000c1a01')
   await page.locator('#vehiculo_id').selectOption({ index: 1 })
   await page.getByRole('button', { name: /^guardar$/i }).click()
 
@@ -117,7 +118,7 @@ test('al guardar una cita sin hora de fin se guarda con 1 hora de duración', as
   const titulo = `Una hora ${Date.now()}`
   await page.goto('/dashboard/citas')
   await page.getByRole('button', { name: /^día$/i }).click()
-  await page.getByRole('button', { name: /^nueva$/i }).first().click()
+  await page.getByRole('button', { name: /^nueva cita$/i }).click()
   await page.locator('#titulo').fill(titulo)
   await page.getByRole('button', { name: /^guardar$/i }).click()
 

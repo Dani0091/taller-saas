@@ -5,8 +5,6 @@
  */
 
 import React, { useState } from 'react'
-import { pdf } from '@react-pdf/renderer'
-import { PDFFactura } from '@/lib/facturas/pdf-generator'
 import { toast } from 'sonner'
 
 export function useDescargarPDF() {
@@ -20,6 +18,12 @@ export function useDescargarPDF() {
     if (data.error) {
       throw new Error(data.error)
     }
+
+    // @react-pdf pesa ~1,4 MB: se carga al generar el primer PDF, no al abrir la página
+    const [{ pdf }, { PDFFactura }] = await Promise.all([
+      import('@react-pdf/renderer'),
+      import('@/lib/facturas/pdf-generator'),
+    ])
 
     // Crear el documento PDF
     const pdfDoc = <PDFFactura {...data.datos} />

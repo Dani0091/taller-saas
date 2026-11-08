@@ -1,6 +1,7 @@
 import { test, expect, request as pwRequest, type Page } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 import { writeFileSync, mkdirSync } from 'node:fs'
+import { SIN_SESION } from './sin-sesion'
 
 // Recorrido exhaustivo de la interfaz con sesión del admin QA A (Supabase LOCAL).
 // Falla con errores claros: excepciones JS, respuestas 5xx, enlaces internos rotos.
@@ -129,7 +130,7 @@ test('todas las páginas, enlaces y botones', async ({ page, baseURL }) => {
   }
 
   // Presupuesto público, sin sesión
-  const publico = await pwRequest.newContext({ baseURL })
+  const publico = await pwRequest.newContext({ baseURL, storageState: SIN_SESION })
   expect((await publico.get(`/presupuesto/${tokenPresupuesto}`)).status()).toBe(200)
   await publico.dispose()
 })

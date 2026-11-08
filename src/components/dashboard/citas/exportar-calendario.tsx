@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Calendar, Download, ExternalLink, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -25,6 +25,13 @@ interface ExportarCalendarioProps {
 export function ExportarCalendario({ cita, ubicacion, className }: ExportarCalendarioProps) {
   const [mostrarMenu, setMostrarMenu] = useState(false)
 
+  useEffect(() => {
+    if (!mostrarMenu) return
+    const alPulsar = (e: KeyboardEvent) => { if (e.key === 'Escape') setMostrarMenu(false) }
+    document.addEventListener('keydown', alPulsar)
+    return () => document.removeEventListener('keydown', alPulsar)
+  }, [mostrarMenu])
+
   const citaExport = {
     titulo: cita.titulo,
     descripcion: cita.descripcion || undefined,
@@ -36,13 +43,13 @@ export function ExportarCalendario({ cita, ubicacion, className }: ExportarCalen
 
   const handleGoogleCalendar = () => {
     const url = generarEnlaceGoogleCalendar(citaExport)
-    window.open(url, '_blank')
+    window.open(url, '_blank', 'noopener,noreferrer')
     setMostrarMenu(false)
   }
 
   const handleOutlook = () => {
     const url = generarEnlaceOutlook(citaExport)
-    window.open(url, '_blank')
+    window.open(url, '_blank', 'noopener,noreferrer')
     setMostrarMenu(false)
   }
 
@@ -61,6 +68,8 @@ export function ExportarCalendario({ cita, ubicacion, className }: ExportarCalen
         size="sm"
         onClick={() => setMostrarMenu(!mostrarMenu)}
         className="gap-2"
+        aria-haspopup="menu"
+        aria-expanded={mostrarMenu}
       >
         <Calendar className="w-4 h-4" />
         Calendario
@@ -76,8 +85,10 @@ export function ExportarCalendario({ cita, ubicacion, className }: ExportarCalen
           />
 
           {/* Menu */}
-          <div className="absolute top-full left-0 mt-1 w-52 bg-white rounded-lg shadow-lg border z-50 py-1">
+          <div role="menu" aria-label="Añadir a calendario" className="absolute top-full left-0 mt-1 w-52 bg-white rounded-lg shadow-lg border z-50 py-1">
             <button
+              type="button"
+              role="menuitem"
               onClick={handleGoogleCalendar}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:bg-gray-50 transition-colors"
             >
@@ -90,6 +101,8 @@ export function ExportarCalendario({ cita, ubicacion, className }: ExportarCalen
             </button>
 
             <button
+              type="button"
+              role="menuitem"
               onClick={handleOutlook}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:bg-gray-50 transition-colors"
             >
@@ -104,6 +117,8 @@ export function ExportarCalendario({ cita, ubicacion, className }: ExportarCalen
             <div className="border-t my-1" />
 
             <button
+              type="button"
+              role="menuitem"
               onClick={handleDescargarICS}
               className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left hover:bg-gray-50 transition-colors"
             >
@@ -114,68 +129,6 @@ export function ExportarCalendario({ cita, ubicacion, className }: ExportarCalen
           </div>
         </>
       )}
-    </div>
-  )
-}
-
-/**
- * Botones de exportación en línea (sin dropdown)
- */
-export function BotonesCalendario({ cita, ubicacion }: ExportarCalendarioProps) {
-  const citaExport = {
-    titulo: cita.titulo,
-    descripcion: cita.descripcion || undefined,
-    fecha_inicio: cita.fecha_inicio,
-    fecha_fin: cita.fecha_fin || undefined,
-    todo_el_dia: cita.todo_el_dia,
-    ubicacion
-  }
-
-  return (
-    <div className="flex gap-2 flex-wrap">
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => {
-          const url = generarEnlaceGoogleCalendar(citaExport)
-          window.open(url, '_blank')
-        }}
-        className="gap-1 text-xs"
-      >
-        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M19.2 4.8h-1.2V2.4h-2.4v2.4H8.4V2.4H6v2.4H4.8c-1.33 0-2.4 1.07-2.4 2.4v12c0 1.33 1.07 2.4 2.4 2.4h14.4c1.33 0 2.4-1.07 2.4-2.4v-12c0-1.33-1.07-2.4-2.4-2.4z" />
-        </svg>
-        Google
-      </Button>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => {
-          const url = generarEnlaceOutlook(citaExport)
-          window.open(url, '_blank')
-        }}
-        className="gap-1 text-xs"
-      >
-        <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
-          <rect width="18" height="14" x="3" y="5" rx="2" />
-        </svg>
-        Outlook
-      </Button>
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => {
-          const ics = generarICS(citaExport)
-          descargarICS(ics, `cita.ics`)
-        }}
-        className="gap-1 text-xs"
-      >
-        <Download className="w-3 h-3" />
-        .ics
-      </Button>
     </div>
   )
 }
