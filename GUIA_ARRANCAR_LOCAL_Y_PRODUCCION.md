@@ -161,7 +161,7 @@ Tienes 5 usuarios sin `auth_id`:
   { "email": "testde@yopmail.com", "tiene_auth_id": false },
   { "email": "ttest@yopmail.com", "tiene_auth_id": false },
   { "email": "dani@yopmail.com", "tiene_auth_id": false },
-  { "email": "rysautomocion@gmail.com", "tiene_auth_id": false }
+  { "email": "<email-del-taller>", "tiene_auth_id": false }
 ]
 ```
 

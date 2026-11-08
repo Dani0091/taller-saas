@@ -41,6 +41,12 @@ export async function getAuthenticatedUser(): Promise<AuthResult | AuthError> {
       return { error: 'Usuario no encontrado', status: 403 }
     }
 
+    // Sin taller no hay ámbito: las consultas filtrarían por taller_id null.
+    // El alta de taller la hace el registro o un admin (api/taller/usuarios).
+    if (!usuario.taller_id) {
+      return { error: 'Usuario sin taller asignado', status: 403 }
+    }
+
     return {
       userId: user.id,
       email: user.email!,

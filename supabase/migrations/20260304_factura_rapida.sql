@@ -98,7 +98,7 @@ $$;
 
 COMMENT ON TABLE facturas_simplificadas IS
   'Facturas simplificadas FS emitidas sin orden previa (Factura Rápida).
-   Límite sin cliente identificado: 400 EUR (umbral R&S). Encadenamiento VeriFACTU propio.';
+   Límite sin cliente identificado: 400 EUR (umbral del taller). Encadenamiento VeriFACTU propio.';
 
 -- ============================================================
 -- PARTE 3: Serie FS en series_factura

@@ -37,7 +37,7 @@ export async function calcularTotalesOrdenAction(
     // 2. VERIFICAR ACCESO A LA ORDEN (multi-tenancy)
     const { data: orden, error: ordenError } = await supabase
       .from('ordenes_reparacion')
-      .select('id, taller_id')
+      .select('id, taller_id, iva_porcentaje')
       .eq('id', ordenId)
       .eq('taller_id', usuario.taller_id)
       .single()
@@ -49,7 +49,7 @@ export async function calcularTotalesOrdenAction(
     // 3. OBTENER LÍNEAS DE LA ORDEN
     const { data: lineas, error: lineasError } = await supabase
       .from('lineas_orden')
-      .select('id, tipo, cantidad, precio_unitario')
+      .select('id, tipo, cantidad, precio_unitario, iva_porcentaje')
       .eq('orden_id', ordenId)
 
     if (lineasError) {
@@ -64,13 +64,22 @@ export async function calcularTotalesOrdenAction(
       .single()
 
     // Valor por defecto de IVA si no está configurado
-    const porcentajeIVA = config?.porcentaje_iva || 21
+    const porcentajeIVA = config?.porcentaje_iva ?? 21
+
+    // El % de IVA de la ORDEN (toggle "Aplicar IVA" en el tab Info) es el que manda para
+    // todas sus líneas — permite marcar una orden entera como "sin IVA". La única excepción
+    // son los suplidos, que por normativa van siempre al 0% sin importar el toggle. El
+    // iva_porcentaje individual de cada línea ya no se usa como fuente de verdad (todas las
+    // líneas se insertan con el default de columna 21, así que nunca representaba una
+    // decisión real del usuario).
+    const ivaPorcentajeOrden = orden.iva_porcentaje ?? porcentajeIVA
 
     // 5. CALCULAR TOTALES EN EL SERVIDOR (única fuente de verdad)
     const totales = (lineas || []).reduce(
       (acc, linea) => {
         const subtotalLinea = linea.cantidad * linea.precio_unitario
-        const ivaLinea = subtotalLinea * (porcentajeIVA / 100)
+        const ivaPorcentajeLinea = linea.tipo === 'suplido' ? 0 : ivaPorcentajeOrden
+        const ivaLinea = subtotalLinea * (ivaPorcentajeLinea / 100)
 
         return {
           manoObra: linea.tipo === 'mano_obra' ? acc.manoObra + subtotalLinea : acc.manoObra,

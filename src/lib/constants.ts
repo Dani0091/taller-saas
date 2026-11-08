@@ -11,15 +11,17 @@
  * Estados posibles de una orden de reparación
  * Cada estado tiene un valor, etiqueta, color y emoji
  */
+// colorId: paleta de Google Calendar (1-11). Referencia: 3=Grape/morado, 5=Banana/amarillo,
+// 6=Tangerine/naranja, 7=Peacock/azul, 10=Basil/verde, 11=Tomato/rojo.
 export const ESTADOS_ORDEN = [
-  { value: 'recibido', label: 'Recibido', color: 'bg-blue-500', icon: '📋', description: 'Vehículo recién ingresado al taller' },
-  { value: 'en_diagnostico', label: 'En Diagnóstico', color: 'bg-purple-500', icon: '🔍', description: 'Evaluando el problema del vehículo' },
-  { value: 'presupuestado', label: 'Presupuestado', color: 'bg-yellow-500', icon: '💰', description: 'Presupuesto elaborado, pendiente de aprobación' },
-  { value: 'aprobado', label: 'Aprobado', color: 'bg-cyan-500', icon: '✓', description: 'Cliente ha aprobado el presupuesto' },
-  { value: 'en_progreso', label: 'En Reparación', color: 'bg-amber-500', icon: '🔧', description: 'Trabajo en progreso' },
-  { value: 'finalizado', label: 'Finalizado', color: 'bg-green-500', icon: '✅', description: 'Reparación finalizada' },
-  { value: 'facturado', label: 'Facturado', color: 'bg-emerald-600', icon: '🚗', description: 'Orden facturada y vehículo entregado' },
-  { value: 'cancelado', label: 'Cancelado', color: 'bg-red-500', icon: '❌', description: 'Orden cancelada' },
+  { value: 'recibido', label: 'Recibido', color: 'bg-blue-500', icon: '📋', description: 'Vehículo recién ingresado al taller', googleColorId: '7' },
+  { value: 'en_diagnostico', label: 'En Diagnóstico', color: 'bg-purple-500', icon: '🔍', description: 'Evaluando el problema del vehículo', googleColorId: '6' },
+  { value: 'presupuestado', label: 'Presupuestado', color: 'bg-yellow-500', icon: '💰', description: 'Presupuesto elaborado, pendiente de aprobación', googleColorId: '5' },
+  { value: 'aprobado', label: 'Aprobado', color: 'bg-cyan-500', icon: '✓', description: 'Cliente ha aprobado el presupuesto', googleColorId: '5' },
+  { value: 'en_progreso', label: 'En Reparación', color: 'bg-amber-500', icon: '🔧', description: 'Trabajo en progreso', googleColorId: '3' },
+  { value: 'finalizado', label: 'Finalizado', color: 'bg-green-500', icon: '✅', description: 'Reparación finalizada', googleColorId: '10' },
+  { value: 'facturado', label: 'Facturado', color: 'bg-emerald-600', icon: '🚗', description: 'Orden facturada y vehículo entregado', googleColorId: '10' },
+  { value: 'cancelado', label: 'Cancelado', color: 'bg-red-500', icon: '❌', description: 'Orden cancelada', googleColorId: '11' },
 ] as const
 
 /** Tipo para los valores de estado de orden */
@@ -203,6 +205,7 @@ export const FOTO_LABELS = {
   fallo_motor: '⚠️ Testigo Avería',
   diagnostico_1: '🔍 Diagnóstico 1',
   diagnostico_2: '🔍 Diagnóstico 2',
+  bastidor: '🔩 Bastidor (VIN)',
 } as const
 
 /** Tipos de foto disponibles */

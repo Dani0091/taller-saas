@@ -74,7 +74,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
     }
 
     // Limpiar caché del Service Worker si existe
-    if (typeof window !== 'undefined' && 'caches' in window) {
+    if (typeof window !== 'undefined' && typeof caches !== 'undefined') {
       caches.keys().then(names => {
         names.forEach(name => caches.delete(name))
       }).catch(() => {}).finally(() => window.location.reload())

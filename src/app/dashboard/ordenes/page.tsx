@@ -206,9 +206,14 @@ export default function OrdenesPage() {
       {/* SHEET DE CREACIÓN */}
       {modoCrear && (
         <DetalleOrdenSheet
+          modoCrear
           isOpen={modoCrear}
           onClose={() => setModoCrear(false)}
           onSuccess={cargarOrdenes}
+          onOrdenCreada={(id) => {
+            setModoCrear(false)
+            setOrdenSeleccionada(id)
+          }}
         />
       )}
     </div>

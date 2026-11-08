@@ -11,6 +11,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
+import { asignarNumeroFactura } from '@/lib/facturas/numeracion'
+import { esPrimeraFacturaDeOrden, retirarBorradorPropio } from '@/lib/facturas/factura-unica-por-orden'
+import { leerJson } from '@/lib/api/leer-json'
 import crypto from 'crypto'
 
 const LIMITE_SIMPLIFICADA = 3000
@@ -38,7 +41,11 @@ export async function POST(request: NextRequest) {
     if (isAuthError(auth)) return authErrorResponse(auth)
 
     const supabase = await createClient()
-    const { orden_id } = await request.json()
+    const body = (await leerJson(request)) as { orden_id?: string; serie?: string } | null
+    if (!body) {
+      return NextResponse.json({ error: 'JSON inválido' }, { status: 400 })
+    }
+    const { orden_id, serie: serieSolicitada } = body
 
     if (!orden_id) {
       return NextResponse.json({ error: 'orden_id es requerido' }, { status: 400 })
@@ -92,7 +99,26 @@ export async function POST(request: NextRequest) {
       .eq('taller_id', auth.tallerId)
       .maybeSingle()
 
-    const serie = config?.serie_factura || 'FA'
+    let serie = config?.serie_factura || 'FA'
+
+    // Igual que en desde-orden: solo permitir una serie ya configurada para este taller.
+    if (serieSolicitada) {
+      const { data: serieValida } = await supabase
+        .from('series_factura')
+        .select('prefijo')
+        .eq('taller_id', auth.tallerId)
+        .eq('prefijo', serieSolicitada)
+        .maybeSingle()
+
+      if (!serieValida) {
+        return NextResponse.json(
+          { error: `La serie "${serieSolicitada}" no está configurada para este taller` },
+          { status: 400 }
+        )
+      }
+      serie = serieValida.prefijo
+    }
+
     const ivaPct = Number(config?.porcentaje_iva) || 21
     const precioHora = Number(config?.tarifa_hora) || 0
 
@@ -101,6 +127,9 @@ export async function POST(request: NextRequest) {
       .from('lineas_orden')
       .select('*')
       .eq('orden_id', orden_id)
+
+    // El % de IVA de la ORDEN (toggle "Aplicar IVA") manda — salvo suplidos, siempre 0%.
+    const ivaPctOrden = orden.iva_porcentaje ?? ivaPct
 
     let baseImponible = 0
     let ivaTotal = 0
@@ -112,14 +141,14 @@ export async function POST(request: NextRequest) {
         if (l.tipo === 'mano_obra' && precioUnitario === 0 && precioHora > 0) {
           precioUnitario = precioHora
         }
-        const ivaPorLinea = Number(l.iva_porcentaje) || ivaPct
+        const ivaPorLinea = l.tipo === 'suplido' ? 0 : ivaPctOrden
         const base = cantidad * precioUnitario
         baseImponible += base
         ivaTotal += base * (ivaPorLinea / 100)
       }
     } else {
       baseImponible = Number(orden.subtotal_mano_obra || 0) + Number(orden.subtotal_piezas || 0)
-      ivaTotal = baseImponible * (ivaPct / 100)
+      ivaTotal = baseImponible * (ivaPctOrden / 100)
     }
 
     const totalFactura = baseImponible + ivaTotal
@@ -151,7 +180,7 @@ export async function POST(request: NextRequest) {
         fecha_emision: hoy,
         fecha_vencimiento: vencimiento,
         base_imponible: baseImponible,
-        iva_porcentaje: ivaPct,
+        iva_porcentaje: ivaPctOrden,
         iva: ivaTotal,
         total: totalFactura,
         metodo_pago: 'E', // Efectivo por defecto en cobro rápido
@@ -168,6 +197,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Petición simultánea sobre la misma orden: solo sigue la primera factura.
+    if (!(await esPrimeraFacturaDeOrden(supabase, orden_id, borrador.id))) {
+      await retirarBorradorPropio(supabase, borrador.id)
+      return NextResponse.json(
+        { error: 'Ya se está facturando esta orden' },
+        { status: 409 }
+      )
+    }
+
     // Crear líneas de factura
     if (lineas && lineas.length > 0) {
       const lineasFactura = lineas.map((l: any, idx: number) => {
@@ -176,7 +214,7 @@ export async function POST(request: NextRequest) {
         if (l.tipo === 'mano_obra' && precioUnitario === 0 && precioHora > 0) {
           precioUnitario = precioHora
         }
-        const ivaPorLinea = Number(l.iva_porcentaje) || ivaPct
+        const ivaPorLinea = l.tipo === 'suplido' ? 0 : ivaPctOrden
         const base = cantidad * precioUnitario
         return {
           factura_id: borrador.id,
@@ -197,20 +235,16 @@ export async function POST(request: NextRequest) {
     }
 
     // ── 7. Asignar número atómico via RPC ────────────────────────────────────
-    const { data: rpcResult, error: rpcError } = await supabase
-      .rpc('asignar_numero_factura_v3', {
-        p_taller_id: auth.tallerId,
-        p_prefijo: serie,
-      })
+    const numeracion = await asignarNumeroFactura(supabase, auth.tallerId, serie)
 
-    if (rpcError || !rpcResult) {
+    if (!numeracion.ok) {
       return NextResponse.json(
-        { error: 'Error al asignar número de factura', details: rpcError?.message },
+        { error: 'Error al asignar número de factura', details: numeracion.errorMessage },
         { status: 500 }
       )
     }
 
-    const numeroFactura: string = rpcResult.numero_completo
+    const numeroFactura: string = numeracion.numeroCompleto
 
     // ── 8. Calcular VeriFACTU ────────────────────────────────────────────────
     const huellaHash = calcularHuella({

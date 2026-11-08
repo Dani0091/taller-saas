@@ -18,6 +18,7 @@ import { NumberInput } from '@/components/ui/number-input'
 import { FRACCIONES_HORA, CANTIDADES } from '@/lib/constants'
 import { OrdenTotalSummary } from './OrdenTotalSummary'
 import { TotalesOrdenDTO } from '@/application/dtos/orden.dto'
+import { formatCurrency } from '@/lib/utils'
 
 type TipoLinea = 'mano_obra' | 'pieza' | 'servicio' | 'suplido' | 'reembolso'
 
@@ -64,7 +65,18 @@ interface OrdenItemsTabProps {
   // Callbacks para pieza rápida
   onPiezaRapidaChange: (pieza: PiezaRapida) => void
   onAgregarPiezaRapida: () => void
+
+  /** Orden facturada — todos los campos quedan de solo lectura */
+  readOnly?: boolean
 }
+
+const GRUPOS_TIPO: { tipo: TipoLinea; etiqueta: string; icono: string; badgeClass: string }[] = [
+  { tipo: 'mano_obra', etiqueta: 'Mano de obra', icono: '⏱️', badgeClass: 'bg-blue-100 text-blue-700' },
+  { tipo: 'pieza', etiqueta: 'Recambios', icono: '📦', badgeClass: 'bg-purple-100 text-purple-700' },
+  { tipo: 'servicio', etiqueta: 'Servicios', icono: '🔧', badgeClass: 'bg-green-100 text-green-700' },
+  { tipo: 'suplido', etiqueta: 'Suplidos', icono: '💶', badgeClass: 'bg-amber-100 text-amber-700' },
+  { tipo: 'reembolso', etiqueta: 'Reembolsos', icono: '↩️', badgeClass: 'bg-gray-100 text-gray-700' },
+]
 
 /** Extrae cantidad y descripción de un texto dictado por voz.
  *  Ejemplos:
@@ -111,6 +123,7 @@ export function OrdenItemsTab({
   onEliminarLinea,
   onPiezaRapidaChange,
   onAgregarPiezaRapida,
+  readOnly = false,
 }: OrdenItemsTabProps) {
   const [escuchando, setEscuchando] = useState(false)
   const [vozError, setVozError] = useState<string | null>(null)
@@ -171,7 +184,7 @@ export function OrdenItemsTab({
   }, [])
 
   return (
-    <>
+    <fieldset disabled={readOnly} className="contents">
       {/* Añadir línea */}
       <Card className="p-4 border-2 border-dashed border-sky-200 bg-sky-50/50">
         <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
@@ -296,7 +309,7 @@ export function OrdenItemsTab({
             <div className="p-2 bg-green-100 rounded-lg text-center">
               <span className="text-sm text-gray-600">Subtotal: </span>
               <span className="font-bold text-green-700">
-                €{(nuevaLinea.cantidad * nuevaLinea.precio_unitario).toFixed(2)}
+                {formatCurrency(nuevaLinea.cantidad * nuevaLinea.precio_unitario)}
               </span>
             </div>
           )}
@@ -308,112 +321,115 @@ export function OrdenItemsTab({
         </div>
       </Card>
 
-      {/* Lista de elementos unificada */}
+      {/* Lista de elementos agrupada por tipo */}
       {lineas.length > 0 && (
         <Card className="p-4">
           <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
             📋 Elementos de la orden ({lineas.length})
           </h3>
 
-          {/* Tabla unificada */}
-          <div className="border rounded-lg overflow-hidden bg-white">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-3 py-2 text-left font-semibold text-gray-700">Concepto</th>
-                  <th className="px-2 py-2 text-center font-semibold text-gray-700 w-16">Tipo</th>
-                  <th className="px-2 py-2 text-center font-semibold text-gray-700 w-12">Cant</th>
-                  <th className="px-2 py-2 text-right font-semibold text-gray-700 w-20">Precio</th>
-                  <th className="px-2 py-2 text-center font-semibold text-gray-700 w-20">Estado</th>
-                  <th className="px-2 py-2 text-right font-semibold text-gray-700 w-20">Total</th>
-                  <th className="px-2 py-2 w-8"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {lineas.map(linea => (
-                  <tr key={linea.id} className="hover:bg-gray-50">
-                    <td className="px-3 py-2">
-                      <div className="font-medium text-gray-900">{linea.descripcion}</div>
-                      {linea.precio_unitario === 0 && (
-                        <div className="text-xs text-amber-600">⏳ Precio pendiente</div>
-                      )}
-                    </td>
-                    <td className="px-2 py-2 text-center">
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        linea.tipo === 'mano_obra' ? 'bg-blue-100 text-blue-700' :
-                        linea.tipo === 'pieza' ? 'bg-purple-100 text-purple-700' :
-                        linea.tipo === 'servicio' ? 'bg-green-100 text-green-700' :
-                        'bg-gray-100 text-gray-700'
-                      }`}>
-                        {linea.tipo === 'mano_obra' ? '⏱️ M.O.' :
-                         linea.tipo === 'pieza' ? '📦 Pieza' :
-                         linea.tipo === 'servicio' ? '🔧 Serv.' :
-                         linea.tipo}
-                      </span>
-                    </td>
-                    <td className="px-2 py-2">
-                      <NumberInput
-                        value={linea.cantidad}
-                        onChange={(value) => onActualizarLinea(linea.id, 'cantidad', value ?? 0)}
-                        className="w-12 px-1 py-0.5 text-xs border border-gray-300 rounded text-center"
-                        min={0.01}
-                        step={linea.tipo === 'mano_obra' ? 0.25 : 1}
-                      />
-                    </td>
-                    <td className="px-2 py-2">
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs text-gray-500">€</span>
-                        <NumberInput
-                          value={linea.precio_unitario}
-                          onChange={(value) => onActualizarLinea(linea.id, 'precio_unitario', value ?? 0)}
-                          className="w-16 px-1 py-0.5 text-xs border border-gray-300 rounded text-center"
-                          placeholder="0.00"
-                          min={0}
-                          step={0.01}
-                        />
-                      </div>
-                    </td>
-                    <td className="px-2 py-2 text-center">
-                      {linea.tipo === 'pieza' ? (
-                        <select
-                          value={linea.estado || 'presupuestado'}
-                          onChange={(e) => onActualizarLinea(linea.id, 'estado', e.target.value)}
-                          className="text-xs px-1 py-0.5 border border-gray-300 rounded"
-                        >
-                          <option value="presupuestado">📋 Presup.</option>
-                          <option value="confirmado">✅ Confirm.</option>
-                          <option value="recibido">📦 Recib.</option>
-                        </select>
-                      ) : (
-                        <span className="text-xs text-gray-400">-</span>
-                      )}
-                    </td>
-                    <td className="px-2 py-2 text-right font-mono text-sm font-semibold">
-                      €{(linea.cantidad * linea.precio_unitario).toFixed(2)}
-                    </td>
-                    <td className="px-2 py-2">
-                      <button
-                        onClick={() => onEliminarLinea(linea.id)}
-                        className="p-1 text-red-500 hover:bg-red-50 rounded"
-                        title="Eliminar línea"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {GRUPOS_TIPO.map(grupo => {
+            const lineasGrupo = lineas.filter(l => l.tipo === grupo.tipo)
+            if (lineasGrupo.length === 0) return null
+
+            const subtotalGrupo = lineasGrupo.reduce((acc, l) => acc + l.cantidad * l.precio_unitario, 0)
+
+            return (
+              <div key={grupo.tipo} className="mb-4 last:mb-0">
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className={`text-xs font-semibold px-2 py-1 rounded-full inline-flex items-center gap-1 ${grupo.badgeClass}`}>
+                    {grupo.icono} {grupo.etiqueta} ({lineasGrupo.length})
+                  </h4>
+                  <span className="text-xs font-mono text-gray-500">{formatCurrency(subtotalGrupo)}</span>
+                </div>
+
+                <div className="border rounded-lg overflow-x-auto bg-white">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 border-b">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-semibold text-gray-700">Concepto</th>
+                        <th className="px-2 py-2 text-center font-semibold text-gray-700 w-16">Cant</th>
+                        <th className="px-2 py-2 text-right font-semibold text-gray-700 w-24">Precio</th>
+                        <th className="px-2 py-2 text-center font-semibold text-gray-700 w-24">Estado</th>
+                        <th className="px-2 py-2 text-right font-semibold text-gray-700 w-20">Total</th>
+                        <th className="px-2 py-2 w-10"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {lineasGrupo.map(linea => (
+                        <tr key={linea.id} className="hover:bg-gray-50">
+                          <td className="px-3 py-3">
+                            <div className="font-medium text-gray-900">{linea.descripcion}</div>
+                            {linea.precio_unitario === 0 && (
+                              <div className="text-xs text-red-600 font-medium">⚠️ Precio requerido</div>
+                            )}
+                          </td>
+                          <td className="px-2 py-3">
+                            <NumberInput
+                              value={linea.cantidad}
+                              onChange={(value) => onActualizarLinea(linea.id, 'cantidad', value ?? 0)}
+                              className="w-16 px-2 py-2 text-sm border border-gray-300 rounded text-center"
+                              min={0.01}
+                              step={linea.tipo === 'mano_obra' ? 0.25 : 1}
+                            />
+                          </td>
+                          <td className="px-2 py-3">
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-gray-500">€</span>
+                              <NumberInput
+                                value={linea.precio_unitario}
+                                onChange={(value) => onActualizarLinea(linea.id, 'precio_unitario', value ?? 0)}
+                                className="w-20 px-2 py-2 text-sm border border-gray-300 rounded text-center"
+                                placeholder="0.00"
+                                min={0}
+                                step={0.01}
+                              />
+                            </div>
+                          </td>
+                          <td className="px-2 py-3 text-center">
+                            {linea.tipo === 'pieza' ? (
+                              <select
+                                value={linea.estado || 'presupuestado'}
+                                onChange={(e) => onActualizarLinea(linea.id, 'estado', e.target.value)}
+                                className="text-sm px-2 py-2 border border-gray-300 rounded"
+                              >
+                                <option value="presupuestado">📋 Presup.</option>
+                                <option value="confirmado">✅ Confirm.</option>
+                                <option value="recibido">📦 Recib.</option>
+                              </select>
+                            ) : (
+                              <span className="text-xs text-gray-400">-</span>
+                            )}
+                          </td>
+                          <td className="px-2 py-3 text-right font-mono text-sm font-semibold">
+                            {formatCurrency(linea.cantidad * linea.precio_unitario)}
+                          </td>
+                          <td className="px-2 py-3">
+                            <button
+                              onClick={() => onEliminarLinea(linea.id)}
+                              className="p-2 text-red-500 hover:bg-red-50 rounded"
+                              title="Eliminar línea"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )
+          })}
 
           {/* Formulario rápido para añadir elementos */}
-          <div className="mt-4 p-3 bg-sky-50 rounded-lg border border-sky-200">
-            <p className="text-xs font-semibold text-sky-800 mb-2">➕ Añadir elemento rápido</p>
-            <div className="grid grid-cols-12 gap-2">
+          <div className="mt-4 p-3 bg-sky-50 rounded-lg border border-sky-200 space-y-2">
+            <p className="text-xs font-semibold text-sky-800">➕ Añadir elemento rápido</p>
+            <div className="flex flex-col sm:flex-row gap-2">
               <select
                 value={piezaRapida.tipo || 'pieza'}
                 onChange={(e) => onPiezaRapidaChange({ ...piezaRapida, tipo: e.target.value })}
-                className="col-span-2 text-xs px-2 py-1 border border-gray-300 rounded"
+                className="sm:w-32 px-3 py-2.5 text-sm border border-gray-300 rounded-lg bg-white"
               >
                 <option value="pieza">📦 Pieza</option>
                 <option value="mano_obra">⏱️ M.O.</option>
@@ -424,13 +440,15 @@ export function OrdenItemsTab({
                 placeholder="Descripción..."
                 value={piezaRapida.descripcion}
                 onChange={(e) => onPiezaRapidaChange({ ...piezaRapida, descripcion: e.target.value })}
-                className="col-span-5 text-xs px-2 py-1 border border-gray-300 rounded"
+                className="flex-1 px-3 py-2.5 text-sm border border-gray-300 rounded-lg bg-white"
               />
+            </div>
+            <div className="grid grid-cols-3 gap-2">
               <NumberInput
                 value={piezaRapida.cantidad}
                 onChange={(value) => onPiezaRapidaChange({ ...piezaRapida, cantidad: value ?? 1 })}
                 placeholder="Cant"
-                className="col-span-1 text-xs"
+                className="text-sm py-2.5"
                 min={1}
                 step={piezaRapida.tipo === 'mano_obra' ? 0.25 : 1}
               />
@@ -438,24 +456,23 @@ export function OrdenItemsTab({
                 value={piezaRapida.precio || 0}
                 onChange={(value) => onPiezaRapidaChange({ ...piezaRapida, precio: value ?? 0 })}
                 placeholder="Precio"
-                className="col-span-2 text-xs"
+                className="text-sm py-2.5"
                 min={0}
                 step={0.01}
               />
               <Button
-                size="sm"
                 onClick={onAgregarPiezaRapida}
-                className="col-span-2 h-7 text-xs"
+                className="gap-1 bg-sky-600 hover:bg-sky-700"
               >
-                <Plus className="w-3 h-3" />
+                <Plus className="w-4 h-4" /> Añadir
               </Button>
             </div>
           </div>
         </Card>
       )}
 
-      {/* Resumen de totales con componente extraído */}
+      {/* Resumen de totales con componente extraído — nunca se bloquea, es solo lectura */}
       <OrdenTotalSummary totales={totales} />
-    </>
+    </fieldset>
   )
 }

@@ -15,6 +15,7 @@ import { TrendingUp, Wrench, CheckCircle, AlertCircle, Banknote, Receipt, FileTe
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { obtenerMetricasDashboardAction } from '@/actions/dashboard'
+import { formatCurrency } from '@/lib/utils'
 import type { MetricasDashboardDTO } from '@/application/dtos/dashboard.dto'
 
 export default function DashboardPage() {
@@ -161,7 +162,7 @@ export default function DashboardPage() {
           </div>
           <p className="text-white/80 text-xs font-medium mb-1">Total Facturado</p>
           <p className="text-xl md:text-2xl font-bold">
-            €{metricas.facturadoMes.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+            {formatCurrency(metricas.facturadoMes)}
           </p>
         </Card>
 
@@ -174,7 +175,7 @@ export default function DashboardPage() {
           </div>
           <p className="text-white/80 text-xs font-medium mb-1">Base Imponible</p>
           <p className="text-xl md:text-2xl font-bold">
-            €{metricas.baseImponibleMes.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+            {formatCurrency(metricas.baseImponibleMes)}
           </p>
         </Card>
 
@@ -187,7 +188,7 @@ export default function DashboardPage() {
           </div>
           <p className="text-white/80 text-xs font-medium mb-1">IVA Recaudado</p>
           <p className="text-xl md:text-2xl font-bold">
-            €{metricas.ivaRecaudadoMes.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+            {formatCurrency(metricas.ivaRecaudadoMes)}
           </p>
         </Card>
 
@@ -202,7 +203,7 @@ export default function DashboardPage() {
           </div>
           <p className="text-white/80 text-xs font-medium mb-1">IVA a Pagar</p>
           <p className="text-xl md:text-2xl font-bold">
-            €{metricas.ivaTrimestre.toLocaleString('es-ES', { minimumFractionDigits: 2 })}
+            {formatCurrency(metricas.ivaTrimestre)}
           </p>
         </Card>
       </div>

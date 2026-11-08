@@ -49,3 +49,27 @@ tsconfig.tsbuildinfo
 
 # Docker (no subir imágenes locales)
 .docker/
+
+# Local pre-migration snapshots (row counts + policy state, may reference real data)
+backups/
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
+/playwright/.auth/
+
+# graphify (grafo local, se regenera con /graphify)
+graphify-out/
+
+# Material privado: solo en local (auditorías, esquema de producción, propuestas
+# SQL con datos, instrucciones de agentes). Se guardan fuera del repo.
+privado/
+docs/auditoria/
+docs/plan/
+docs/deploy/
+supabase/local/00_schema_lab.sql
+supabase/propuestas/20*-*.sql
+AGENTS.md
+CLAUDE.md
+.claude/

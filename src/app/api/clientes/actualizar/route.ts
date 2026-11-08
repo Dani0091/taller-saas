@@ -1,28 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
+import { getUsuarioTaller } from '@/lib/auth/usuario-taller'
 import { NextRequest, NextResponse } from 'next/server'
-
-/**
- * Helper: Obtener taller_id del usuario autenticado
- */
-async function getUsuarioTaller(supabase: any) {
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    return { error: 'No autorizado', status: 401 }
-  }
-
-  const { data: usuario } = await supabase
-    .from('usuarios')
-    .select('taller_id')
-    .eq('email', user.email)
-    .single()
-
-  if (!usuario?.taller_id) {
-    return { error: 'Usuario sin taller asignado', status: 403 }
-  }
-
-  return { tallerId: usuario.taller_id }
-}
 
 export async function PATCH(request: NextRequest) {
   try {

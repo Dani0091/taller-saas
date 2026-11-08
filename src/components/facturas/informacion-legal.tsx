@@ -9,6 +9,7 @@
 
 import { Card } from '@/components/ui/card'
 import { AlertCircle, CheckCircle, Info } from 'lucide-react'
+import { formatCurrency } from '@/lib/utils'
 
 interface InformacionLegalProps {
   // Datos del emisor (Taller)
@@ -152,15 +153,15 @@ export function InformacionLegal({
         <div className="space-y-3 text-sm">
           <div className="flex justify-between py-2 border-b">
             <span className="text-gray-600">Base Imponible</span>
-            <span className="font-semibold text-gray-900">€{baseImponible.toFixed(2)}</span>
+            <span className="font-semibold text-gray-900">{formatCurrency(baseImponible)}</span>
           </div>
           <div className="flex justify-between py-2 border-b">
             <span className="text-gray-600">IVA ({porcentajeIVA}%)</span>
-            <span className="font-semibold text-gray-900">€{cuotaIVA.toFixed(2)}</span>
+            <span className="font-semibold text-gray-900">{formatCurrency(cuotaIVA)}</span>
           </div>
           <div className="flex justify-between py-3 bg-gray-100 p-2 rounded font-bold">
             <span>Total</span>
-            <span className="text-lg text-blue-600">€{total.toFixed(2)}</span>
+            <span className="text-lg text-blue-600">{formatCurrency(total)}</span>
           </div>
         </div>
       </Card>

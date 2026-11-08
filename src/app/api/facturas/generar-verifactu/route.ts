@@ -14,6 +14,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
 import {
   generarRegistroVerifactuCompleto,
   DatosVerifactu,
@@ -34,6 +35,9 @@ const FORMAS_PAGO_MAP: Record<string, '01' | '02' | '03' | '04' | '05'> = {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await getAuthenticatedUser()
+    if (isAuthError(auth)) return authErrorResponse(auth)
+
     const supabase = await createClient()
     const body = await request.json()
     const {
@@ -51,8 +55,10 @@ export async function POST(request: NextRequest) {
       importeTotal,
       descripcion,
       formaPago = 'transferencia',
-      tallerId,
     } = body
+
+    // tallerId siempre del token de sesión, nunca del body
+    const tallerId = auth.tallerId
 
     // Validaciones
     if (!facturaId || !numeroFactura || !nifEmisor) {
@@ -140,6 +146,7 @@ export async function POST(request: NextRequest) {
         updated_at: new Date().toISOString(),
       })
       .eq('id', facturaId)
+      .eq('taller_id', auth.tallerId)
 
     if (updateError) {
       console.error('Error al guardar Verifactu:', updateError)

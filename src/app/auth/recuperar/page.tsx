@@ -98,11 +98,13 @@ export default function RecuperarPage() {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="recovery-email" className="block text-sm font-medium text-gray-700 mb-1">
               Email
             </label>
             <Input
               type="email"
+              id="recovery-email"
+              autoComplete="email"
               value={email}
               onChange={(e) => {
                 setEmail(e.target.value)

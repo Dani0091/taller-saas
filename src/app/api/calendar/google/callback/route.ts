@@ -88,27 +88,26 @@ export async function GET(req: NextRequest) {
       console.warn('No se pudo obtener email de Google:', e)
     }
 
-    // Calcular fecha de expiración
-    const expiresAt = tokens.expires_in
-      ? new Date(Date.now() + tokens.expires_in * 1000).toISOString()
+    // Calcular fecha de expiración (epoch ms — google_calendar_tokens.expiry_date es bigint)
+    const expiryDate = tokens.expires_in
+      ? Date.now() + tokens.expires_in * 1000
       : null
 
     // Guardar o actualizar tokens en la BD
+    // NOTA: user_id referencia auth.users(id) directamente (columna UNIQUE + FK),
+    // NO el id interno de la tabla `usuarios` — así lo espera la política RLS
+    // ("auth.uid() = user_id"). La tabla no tiene columnas taller_id/token_type/scope/calendar_id.
     const { error: dbError } = await supabase
       .from('google_calendar_tokens')
       .upsert({
-        usuario_id: usuario.id,
-        taller_id: usuario.taller_id,
+        user_id: user.id,
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token || null,
-        token_type: tokens.token_type || 'Bearer',
-        expires_at: expiresAt,
-        scope: tokens.scope || null,
+        expiry_date: expiryDate,
         google_email: googleEmail,
-        calendar_id: 'primary',
         updated_at: new Date().toISOString(),
       }, {
-        onConflict: 'usuario_id'
+        onConflict: 'user_id'
       })
 
     if (dbError) {
