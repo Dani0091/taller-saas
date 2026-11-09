@@ -9,9 +9,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { NumberInput } from '@/components/ui/number-input'
-import { ArrowLeft, Loader2, Plus, X, Check, UserPlus, FileText } from 'lucide-react'
+import { Loader2, Plus, X, Check, UserPlus, FileText } from 'lucide-react'
 import { toast } from 'sonner'
-import { createClient } from '@/lib/supabase/client'
+import { EnlaceVolver } from '@/components/dashboard/enlace-volver'
 import { useTaller } from '@/contexts/TallerContext'
 import { VehiculoSelector, type VehiculoSeleccionado } from '@/components/dashboard/facturas/VehiculoSelector'
 import { formatCurrency } from '@/lib/utils'
@@ -114,11 +114,9 @@ export default function NuevaFacturaPage() {
       try {
         setCargandoClientes(true)
 
-        const supabase = createClient()
-
         // 🚀 Promise.all ejecuta todas las llamadas en paralelo
         const [clientesRes, configRes, seriesRes] = await Promise.all([
-          supabase.from('clientes').select('id, nombre, nif, telefono, email').eq('taller_id', tallerId),
+          fetch('/api/clientes').then(r => r.json()).then(data => ({ data: Array.isArray(data) ? data : null })),
           fetch(`/api/taller/config/obtener?taller_id=${tallerId}`),
           fetch(`/api/series/obtener?taller_id=${tallerId}`)
         ])
@@ -391,24 +389,16 @@ export default function NuevaFacturaPage() {
   const total = baseImponible + ivaTotal
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
+    <div>
       <div className="max-w-5xl mx-auto">
         {/* HEADER */}
-        <div className="flex items-center gap-3 mb-8">
-          <Link href="/dashboard/facturas">
-            <Button aria-label="Volver" variant="ghost" size="icon">
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Nueva Factura</h1>
-            <p className="text-gray-600">Factura rápida o venta directa</p>
-          </div>
+        <div className="mb-4">
+          <EnlaceVolver href="/dashboard/facturas">Facturas</EnlaceVolver>
         </div>
 
         <div className="space-y-6">
           {/* DATOS BÁSICOS */}
-          <Card className="p-6 border-l-4 border-l-sky-600">
+          <Card className="p-6">
             <h2 className="font-bold text-lg mb-4 text-gray-900">Datos de la Factura</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {/* Serie */}
@@ -626,13 +616,13 @@ export default function NuevaFacturaPage() {
           </Card>
 
           {/* LÍNEAS */}
-          <Card className="p-6 border-l-4 border-l-green-600">
+          <Card className="p-6">
             <h2 className="font-bold text-lg mb-4 text-gray-900">Conceptos</h2>
 
             {lineas.length > 0 && (
               <div className="overflow-x-auto mb-6">
                 <table className="w-full text-sm">
-                  <thead className="border-b-2 border-green-600 bg-green-50">
+                  <thead className="border-b bg-muted">
                     <tr>
                       <th className="text-left py-3 px-2 font-bold">Descripción</th>
                       <th className="text-center py-3 px-2 font-bold">Cant.</th>
@@ -659,7 +649,7 @@ export default function NuevaFacturaPage() {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleEliminarLinea(linea.id)}
-                              className="text-red-600 hover:bg-red-50"
+                              className="text-destructive hover:bg-destructive/5"
                             >
                               <X className="w-4 h-4" />
                             </Button>
@@ -673,7 +663,7 @@ export default function NuevaFacturaPage() {
             )}
 
             {/* AGREGAR LÍNEA */}
-            <div className="space-y-3 p-4 bg-green-50 rounded-lg border-2 border-green-200">
+            <div className="space-y-3 rounded-lg border border-dashed border-primary/30 bg-primary/5 p-4">
               <div>
                 <Label htmlFor="linea-descripcion" className="block text-sm font-semibold mb-2">Descripción</Label>
                 <Input
@@ -740,7 +730,7 @@ export default function NuevaFacturaPage() {
                 </div>
                 <div className="md:col-span-3">
                   <span className="block text-sm font-semibold mb-2">Total con IVA</span>
-                  <div className="py-2 px-3 bg-white border border-green-200 rounded-lg font-bold text-right text-green-700 whitespace-nowrap">
+                  <div className="py-2 px-3 bg-card border rounded-lg font-bold text-right text-foreground tabular-nums whitespace-nowrap">
                     {(() => {
                       const base = (nuevaLinea.cantidad || 0) * (nuevaLinea.precioUnitario || 0)
                       return formatCurrency(base * (1 + porcentajeIva(nuevaLinea.ivaPorcentaje, ivaPorDefecto) / 100))
@@ -751,7 +741,7 @@ export default function NuevaFacturaPage() {
 
               <Button
                 onClick={handleAgregarLinea}
-                className="w-full gap-2 bg-green-600 hover:bg-green-700"
+                className="w-full gap-2"
               >
                 <Plus className="w-4 h-4" />
                 Agregar Concepto
@@ -760,7 +750,7 @@ export default function NuevaFacturaPage() {
           </Card>
 
           {/* RESUMEN */}
-          <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 border-l-4 border-l-sky-600">
+          <Card className="p-6 bg-primary/5 border-primary/30">
             <h2 className="font-bold text-lg mb-4 text-gray-900">Resumen</h2>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
@@ -771,7 +761,7 @@ export default function NuevaFacturaPage() {
                 <span className="text-gray-600">IVA:</span>
                 <span className="font-semibold">{formatCurrency(ivaTotal)}</span>
               </div>
-              <div className="flex justify-between text-lg border-t-2 border-blue-200 pt-2 mt-2">
+              <div className="flex justify-between text-lg border-t-2 border-primary/30 pt-2 mt-2">
                 <span className="font-bold text-gray-900">Total:</span>
                 <span className="font-bold text-primary text-xl">{formatCurrency(total)}</span>
               </div>
@@ -847,7 +837,7 @@ export default function NuevaFacturaPage() {
                     placeholder="12345678Z"
                     value={nuevoCliente.nif}
                     onChange={(e) => setNuevoCliente({ ...nuevoCliente, nif: e.target.value.toUpperCase() })}
-                    className={!nuevoCliente.nif ? '' : 'border-green-500'}
+                    className={!nuevoCliente.nif ? '' : 'border-success'}
                   />
                   <p className="text-xs text-gray-500 mt-1">Obligatorio para factura legal</p>
                 </div>

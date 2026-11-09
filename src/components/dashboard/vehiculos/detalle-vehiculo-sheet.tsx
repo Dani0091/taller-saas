@@ -198,14 +198,14 @@ export function DetalleVehiculoSheet({
   }
 
   const ESTADO_COLORES: Record<string, string> = {
-    recibido: 'bg-blue-100 text-blue-800',
-    diagnostico: 'bg-purple-100 text-purple-800',
-    presupuestado: 'bg-yellow-100 text-yellow-800',
-    aprobado: 'bg-cyan-100 text-cyan-800',
-    en_reparacion: 'bg-amber-100 text-amber-800',
-    completado: 'bg-green-100 text-green-800',
-    entregado: 'bg-emerald-100 text-emerald-800',
-    cancelado: 'bg-red-100 text-red-800',
+    recibido: 'bg-primary/10 text-primary',
+    diagnostico: 'bg-primary/10 text-primary',
+    presupuestado: 'bg-warning/10 text-warning',
+    aprobado: 'bg-primary/10 text-primary',
+    en_reparacion: 'bg-warning/10 text-warning',
+    completado: 'bg-success/10 text-success',
+    entregado: 'bg-success/10 text-success',
+    cancelado: 'bg-destructive/10 text-destructive',
   }
 
   return (
@@ -231,8 +231,8 @@ export function DetalleVehiculoSheet({
         {/* Error State */}
         {error ? (
           <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-            <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
-            <p className="text-red-600 font-medium mb-2">Error al cargar vehículo</p>
+            <AlertCircle className="w-12 h-12 text-destructive mb-4" />
+            <p className="text-destructive font-medium mb-2">Error al cargar vehículo</p>
             <p className="text-gray-500 text-sm mb-4">{error}</p>
             <Button onClick={() => { setError(null); cargarDatos(); }}>
               Reintentar

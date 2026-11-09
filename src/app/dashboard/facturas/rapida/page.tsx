@@ -20,11 +20,9 @@ import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import {
-  ArrowLeft, Zap, Plus, X, Check, Loader2, Car, User,
-  AlertTriangle, Printer, ChevronDown, ChevronUp, Search
-} from 'lucide-react'
+import { Zap, Plus, X, Check, Loader2, Car, User, AlertTriangle, Printer, ChevronDown, ChevronUp, Search } from 'lucide-react'
 import { toast } from 'sonner'
+import { EnlaceVolver } from '@/components/dashboard/enlace-volver'
 import { NuevoVehiculoModal, nifParecematricula } from '@/components/dashboard/facturas/NuevoVehiculoModal'
 import { formatCurrency } from '@/lib/utils'
 
@@ -74,7 +72,7 @@ const IVA_DEFAULT = 21
 function WarningNif({ nif }: { nif: string }) {
   if (!nif || !nifParecematricula(nif)) return null
   return (
-    <p className="text-amber-600 text-xs mt-1 flex items-center gap-1">
+    <p className="text-warning text-xs mt-1 flex items-center gap-1">
       <AlertTriangle className="w-3 h-3" />
       Esto parece una matrícula. Por favor, regístrala como Vehículo.
     </p>
@@ -294,11 +292,11 @@ export default function FacturaRapidaPage() {
         >
           {/* Cabecera recibo */}
           <div className="text-center border-b pb-4">
-            <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Check className="w-7 h-7 text-emerald-600" />
+            <div className="w-14 h-14 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Check className="w-7 h-7 text-success" />
             </div>
             <h2 className="text-xl font-bold text-gray-900">Factura Emitida</h2>
-            <p className="text-3xl font-black text-emerald-600 mt-1">
+            <p className="text-3xl font-black text-success mt-1">
               {resultado.numero_factura}
             </p>
             <p className="text-gray-500 text-sm mt-1">{resultado.fecha}</p>
@@ -339,7 +337,7 @@ export default function FacturaRapidaPage() {
             </div>
             <div className="flex justify-between font-bold text-lg">
               <span>TOTAL</span>
-              <span className="text-emerald-600">{formatCurrency(resultado.total)}</span>
+              <span className="text-success">{formatCurrency(resultado.total)}</span>
             </div>
           </div>
 
@@ -367,7 +365,7 @@ export default function FacturaRapidaPage() {
               setClienteSeleccionado(null)
               setBusquedaCliente('')
             }}
-            className="bg-violet-600 hover:bg-violet-700 gap-2"
+            className="bg-primary hover:bg-primary/90 gap-2"
           >
             <Zap className="w-4 h-4" />
             Nueva
@@ -384,22 +382,15 @@ export default function FacturaRapidaPage() {
   return (
     <div className="max-w-lg mx-auto space-y-5 pb-8">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Link href="/dashboard/facturas">
-          <Button aria-label="Volver" variant="outline" size="icon">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Factura Rápida</h1>
-          <p className="text-sm text-gray-500">Serie FS · Sin orden previa</p>
-        </div>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <EnlaceVolver href="/dashboard/facturas">Facturas</EnlaceVolver>
+        <p className="text-sm text-muted-foreground">Serie FS · sin orden previa</p>
       </div>
 
       {/* ── BLOQUE 1: Plantillas ──────────────────────────────────────────── */}
       <Card className="p-4">
         <h2 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
-          <Zap className="w-4 h-4 text-violet-500" />
+          <Zap className="w-4 h-4 text-primary" />
           Operaciones rápidas
         </h2>
 
@@ -413,10 +404,10 @@ export default function FacturaRapidaPage() {
               <button
                 key={p.id}
                 onClick={() => aplicarPlantilla(p)}
-                className="text-left p-3 rounded-xl border-2 border-gray-100 hover:border-violet-300 hover:bg-violet-50 active:scale-95 transition-all"
+                className="text-left p-3 rounded-xl border-2 border-gray-100 hover:border-primary/30 hover:bg-primary/5 active:scale-95 transition-all"
               >
                 <p className="font-semibold text-gray-900 text-sm">{p.nombre}</p>
-                <p className="text-violet-600 font-bold text-base mt-0.5">
+                <p className="text-primary font-bold text-base mt-0.5">
                   {formatCurrency(p.precio_total_estimado)}
                 </p>
                 {p.descripcion_operacion && (
@@ -505,7 +496,7 @@ export default function FacturaRapidaPage() {
                 <span className="text-xs text-gray-500 w-4">€</span>
                 <button
                   onClick={() => eliminarLinea(idx)}
-                  className="text-gray-400 hover:text-red-500 transition-colors"
+                  className="text-gray-400 hover:text-destructive transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -525,12 +516,12 @@ export default function FacturaRapidaPage() {
             </div>
             <div className="flex justify-between font-bold text-lg">
               <span>TOTAL</span>
-              <span className={total > LIMITE_SIN_CLIENTE ? 'text-amber-600' : 'text-gray-900'}>
+              <span className={total > LIMITE_SIN_CLIENTE ? 'text-warning' : 'text-gray-900'}>
                 {formatCurrency(total)}
               </span>
             </div>
             {total > LIMITE_SIN_CLIENTE && (
-              <p className="text-amber-600 text-xs flex items-center gap-1">
+              <p className="text-warning text-xs flex items-center gap-1">
                 <AlertTriangle className="w-3 h-3" />
                 Supera {LIMITE_SIN_CLIENTE}€ — se requiere cliente identificado
               </p>
@@ -572,7 +563,7 @@ export default function FacturaRapidaPage() {
                 <button
                   key={v.id}
                   onClick={() => seleccionarVehiculo(v)}
-                  className="w-full text-left px-4 py-2.5 hover:bg-sky-50 border-b border-gray-100 last:border-0 flex items-center gap-3"
+                  className="w-full text-left px-4 py-2.5 hover:bg-primary/5 border-b border-gray-100 last:border-0 flex items-center gap-3"
                 >
                   <Car className="w-4 h-4 text-primary flex-shrink-0" />
                   <div>
@@ -585,7 +576,7 @@ export default function FacturaRapidaPage() {
               ))}
               <button
                 onClick={() => { setSugerenciasVehiculo([]); setMostrarModal(true) }}
-                className="w-full text-left px-4 py-2.5 text-primary text-sm font-medium hover:bg-sky-50 flex items-center gap-2"
+                className="w-full text-left px-4 py-2.5 text-primary text-sm font-medium hover:bg-primary/5 flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 Dar de alta como nuevo vehículo
@@ -595,7 +586,7 @@ export default function FacturaRapidaPage() {
 
           {/* Vehículo seleccionado */}
           {vehiculoSeleccionado && (
-            <div className="mt-1 flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 rounded-lg px-3 py-1.5">
+            <div className="mt-1 flex items-center gap-2 text-sm text-success bg-success/5 rounded-lg px-3 py-1.5">
               <Check className="w-3 h-3" />
               {vehiculoSeleccionado.marca} {vehiculoSeleccionado.modelo} — en tu taller
             </div>
@@ -623,7 +614,7 @@ export default function FacturaRapidaPage() {
                 onClick={() => setMetodoPago(code)}
                 className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition-all active:scale-95 ${
                   metodoPago === code
-                    ? 'border-violet-500 bg-violet-50 text-violet-700'
+                    ? 'border-primary bg-primary/5 text-primary'
                     : 'border-gray-200 text-gray-600 hover:border-gray-300'
                 }`}
               >
@@ -638,7 +629,7 @@ export default function FacturaRapidaPage() {
               }}
               className={`py-2.5 rounded-xl text-sm font-semibold border-2 transition-all active:scale-95 ${
                 metodoPago === 'M'
-                  ? 'border-violet-500 bg-violet-50 text-violet-700'
+                  ? 'border-primary bg-primary/5 text-primary'
                   : 'border-gray-200 text-gray-600 hover:border-gray-300'
               }`}
             >
@@ -648,8 +639,8 @@ export default function FacturaRapidaPage() {
 
           {/* Panel de pago partido — solo visible cuando se selecciona Mixto */}
           {metodoPago === 'M' && (
-            <div className="mt-3 p-3 bg-violet-50 rounded-xl border border-violet-200 space-y-2">
-              <p className="text-xs text-violet-700 font-semibold mb-1">Detalle del pago mixto</p>
+            <div className="mt-3 p-3 bg-primary/5 rounded-xl border border-primary/30 space-y-2">
+              <p className="text-xs text-primary font-semibold mb-1">Detalle del pago mixto</p>
 
               {/* Primer pago */}
               <div className="flex items-center gap-2">
@@ -693,7 +684,7 @@ export default function FacturaRapidaPage() {
 
               {/* Validación visual */}
               {Math.abs(importe1 + importe2 - total) > 0.01 && (
-                <p className="text-xs text-amber-600 flex items-center gap-1">
+                <p className="text-xs text-warning flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" />
                   Los importes no suman el total ({formatCurrency(total)})
                 </p>
@@ -705,7 +696,7 @@ export default function FacturaRapidaPage() {
         {/* Selector de cliente (solo si total > 400€) */}
         {requiereCliente && (
           <div className="border-t pt-4">
-            <Label className="flex items-center gap-1.5 text-amber-700">
+            <Label className="flex items-center gap-1.5 text-warning">
               <User className="w-3.5 h-3.5" />
               Cliente (obligatorio — total &gt; {LIMITE_SIN_CLIENTE}€)
             </Label>
@@ -741,7 +732,7 @@ export default function FacturaRapidaPage() {
                           onClick={() => completo ? setClienteSeleccionado(c) : toast.warning('Este cliente no tiene NIF o dirección registrados')}
                           className={`w-full text-left px-3 py-2 rounded-lg border text-sm transition-all ${
                             clienteSeleccionado?.id === c.id
-                              ? 'border-violet-400 bg-violet-50'
+                              ? 'border-primary bg-primary/5'
                               : completo
                                 ? 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                                 : 'border-gray-100 opacity-60 cursor-not-allowed'
@@ -750,22 +741,22 @@ export default function FacturaRapidaPage() {
                           <div className="flex items-center justify-between">
                             <span className="font-medium text-gray-900">{c.nombre}</span>
                             {completo
-                              ? <Badge className="bg-emerald-100 text-emerald-700 text-[10px]">OK</Badge>
-                              : <Badge className="bg-amber-100 text-amber-700 text-[10px]">Incompleto</Badge>
+                              ? <Badge className="bg-success/10 text-success text-[10px]">OK</Badge>
+                              : <Badge className="bg-warning/10 text-warning text-[10px]">Incompleto</Badge>
                             }
                           </div>
                           {c.nif && <WarningNif nif={c.nif} />}
-                          {!tieneNif && <p className="text-xs text-amber-600 mt-0.5">Sin NIF registrado</p>}
-                          {!tieneDireccion && <p className="text-xs text-amber-600 mt-0.5">Sin dirección registrada</p>}
+                          {!tieneNif && <p className="text-xs text-warning mt-0.5">Sin NIF registrado</p>}
+                          {!tieneDireccion && <p className="text-xs text-warning mt-0.5">Sin dirección registrada</p>}
                         </button>
                       )
                     })}
                 </div>
 
                 {clienteSeleccionado && (
-                  <div className="mt-2 flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 text-sm">
-                    <span className="font-medium text-emerald-800">{clienteSeleccionado.nombre}</span>
-                    <button onClick={() => setClienteSeleccionado(null)} className="text-emerald-500 hover:text-emerald-700">
+                  <div className="mt-2 flex items-center justify-between bg-success/5 border border-success/30 rounded-lg px-3 py-2 text-sm">
+                    <span className="font-medium text-success">{clienteSeleccionado.nombre}</span>
+                    <button onClick={() => setClienteSeleccionado(null)} className="text-success hover:text-success">
                       <X className="w-4 h-4" />
                     </button>
                   </div>
@@ -785,7 +776,7 @@ export default function FacturaRapidaPage() {
           !matriculaInput.trim() ||
           (requiereCliente && !clienteSeleccionado)
         }
-        className="w-full py-5 text-lg font-bold bg-violet-600 hover:bg-violet-700 active:bg-violet-800 min-h-[56px] shadow-md gap-3"
+        className="w-full py-5 text-lg font-bold bg-primary hover:bg-primary/90 active:bg-primary/90 min-h-[56px] shadow-md gap-3"
       >
         {emitiendo ? (
           <Loader2 className="w-5 h-5 animate-spin" />

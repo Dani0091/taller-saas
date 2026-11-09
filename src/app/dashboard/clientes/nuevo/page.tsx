@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -8,14 +8,16 @@ import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { createClient } from '@/lib/supabase/client'
+import { EnlaceVolver } from '@/components/dashboard/enlace-volver'
+import { useTaller } from '@/contexts/TallerContext'
 
 export default function NuevoClientePage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
-  const [tallerId, setTallerId] = useState<string | null>(null)
+  // El taller sale de la sesión (TallerContext, servido por la API)
+  const { tallerId } = useTaller()
 
   const [formData, setFormData] = useState({
     nombre: '', // Campo único para Nombre / Razón Social
@@ -25,38 +27,6 @@ export default function NuevoClientePage() {
     direccion: '',
     notas: '',
   })
-
-  // Obtener taller_id del usuario autenticado
-  useEffect(() => {
-    const obtenerTallerId = async () => {
-      try {
-        const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-
-        if (!user?.email) {
-          toast.error('No hay sesión activa')
-          return
-        }
-
-        const { data: usuario, error } = await supabase
-          .from('usuarios')
-          .select('taller_id')
-          .eq('email', user.email)
-          .single()
-
-        if (error || !usuario) {
-          toast.error('No se pudo obtener datos del usuario')
-          return
-        }
-
-        setTallerId(usuario.taller_id)
-      } catch (error) {
-        console.error('Error obteniendo taller_id:', error)
-        toast.error('Error de autenticación')
-      }
-    }
-    obtenerTallerId()
-  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -111,22 +81,12 @@ export default function NuevoClientePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-2xl space-y-4">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href="/dashboard/clientes">
-          <Button aria-label="Volver" variant="outline" size="icon">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Nuevo Cliente</h1>
-          <p className="text-gray-500 mt-1">Crea un nuevo cliente en tu taller</p>
-        </div>
-      </div>
+      <EnlaceVolver href="/dashboard/clientes">Clientes</EnlaceVolver>
 
       {/* Formulario */}
-      <Card className="p-6 max-w-2xl">
+      <Card className="p-6">
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Nombre / Razón Social - Campo único sin validaciones de caracteres */}
           <div>

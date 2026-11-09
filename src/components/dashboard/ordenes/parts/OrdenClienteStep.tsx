@@ -129,8 +129,8 @@ export function OrdenClienteStep({
                     setBusquedaCliente('')
                     setComboAbierto(false)
                   }}
-                  className={`w-full text-left px-4 py-3 text-sm hover:bg-sky-50 transition-colors ${
-                    clienteId === c.id ? 'bg-sky-50 font-medium' : ''
+                  className={`w-full text-left px-4 py-3 text-sm hover:bg-primary/5 transition-colors ${
+                    clienteId === c.id ? 'bg-primary/5 font-medium' : ''
                   }`}
                 >
                   <span className="text-gray-900">
@@ -146,8 +146,8 @@ export function OrdenClienteStep({
         )}
 
         {clienteActual && (
-          <div className="mt-3 p-3 bg-sky-50 border border-sky-200 rounded-xl">
-            <p className="font-semibold text-sky-900">
+          <div className="mt-3 p-3 bg-primary/5 border border-primary/30 rounded-xl">
+            <p className="font-semibold text-primary">
               {clienteActual.nombre} {clienteActual.primer_apellido || clienteActual.apellidos || ''}
             </p>
             {(clienteActual.nif || clienteActual.telefono) && (
@@ -162,7 +162,7 @@ export function OrdenClienteStep({
       <button
         type="button"
         onClick={onToggleFormCliente}
-        className="mt-4 text-sm text-primary hover:text-sky-700 font-medium flex items-center gap-1.5"
+        className="mt-4 text-sm text-primary hover:text-primary font-medium flex items-center gap-1.5"
       >
         <UserPlus className="w-4 h-4" /> Crear nuevo cliente
       </button>
@@ -171,7 +171,7 @@ export function OrdenClienteStep({
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <UserPlus className="w-5 h-5 text-blue-600" />
+              <UserPlus className="w-5 h-5 text-primary" />
               Nuevo Cliente
             </DialogTitle>
           </DialogHeader>
@@ -200,7 +200,7 @@ export function OrdenClienteStep({
               <button
                 type="button"
                 onClick={() => setMostrarMasDetalles(true)}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                className="text-sm text-primary hover:text-primary font-medium"
               >
                 + Añadir más detalles (apellidos, NIF, email)
               </button>

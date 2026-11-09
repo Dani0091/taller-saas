@@ -69,9 +69,11 @@ export class Precio {
    * Formatea el precio como moneda EUR
    */
   public format(): string {
+    // «1.383,95 €», igual que formatCurrency (es-ES omite los miles con 4 cifras)
     return new Intl.NumberFormat('es-ES', {
       style: 'currency',
-      currency: 'EUR'
+      currency: 'EUR',
+      useGrouping: 'always'
     }).format(this.value)
   }
 
@@ -81,7 +83,8 @@ export class Precio {
   public formatSinSimbolo(): string {
     return new Intl.NumberFormat('es-ES', {
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      maximumFractionDigits: 2,
+      useGrouping: 'always'
     }).format(this.value)
   }
 

@@ -286,7 +286,7 @@ export default function PresupuestoPublico({ params }: { params: Promise<{ token
                 <p className="text-sm text-gray-600">
                   <span className="font-mono font-bold">{presupuesto.vehiculo.matricula}</span>
                   {presupuesto.vehiculo.año && ` • ${presupuesto.vehiculo.año}`}
-                  {presupuesto.vehiculo.kilometros && ` • ${presupuesto.vehiculo.kilometros.toLocaleString()} km`}
+                  {presupuesto.vehiculo.kilometros && ` • ${presupuesto.vehiculo.kilometros.toLocaleString('es-ES')} km`}
                 </p>
               </div>
             </div>

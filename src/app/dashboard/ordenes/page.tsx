@@ -1,27 +1,20 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
-import { Plus, Search, Loader2, AlertCircle } from 'lucide-react'
+import { Plus, Search, AlertCircle, Wrench } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { DetalleOrdenSheet } from '@/components/dashboard/ordenes/detalle-orden-sheet'
 import { toast } from 'sonner'
+import { ESTADOS_ORDEN } from '@/lib/constants'
+import { AccionesPagina } from '@/components/dashboard/acciones-pagina'
 import { listarOrdenesAction } from '@/actions/ordenes'
 import type { OrdenListItemDTO } from '@/application/dtos/orden.dto'
 
-const ESTADO_CONFIG = {
-  recibido:      { label: 'Recibido',      color: 'bg-blue-100 text-blue-800',    icon: '📋', badge: '#3b82f6' },
-  en_diagnostico:{ label: 'Diagnóstico',   color: 'bg-purple-100 text-purple-800', icon: '🔍', badge: '#8b5cf6' },
-  presupuestado: { label: 'Presupuestado', color: 'bg-yellow-100 text-yellow-800', icon: '💰', badge: '#eab308' },
-  aprobado:      { label: 'Aprobado',      color: 'bg-cyan-100 text-cyan-800',     icon: '✓',  badge: '#06b6d4' },
-  en_progreso:   { label: 'En Reparación', color: 'bg-amber-100 text-amber-800',   icon: '🔧', badge: '#f59e0b' },
-  finalizado:    { label: 'Finalizado',    color: 'bg-green-100 text-green-800',   icon: '✅', badge: '#22c55e' },
-  facturado:     { label: 'Facturado',     color: 'bg-emerald-100 text-emerald-800',icon: '🚗', badge: '#059669' },
-  cancelado:     { label: 'Cancelado',     color: 'bg-red-100 text-red-800',       icon: '❌', badge: '#ef4444' },
-} as Record<string, any>
+// Mismo punto de color que el selector de estado de la ficha (ESTADOS_ORDEN)
+const ESTADO_CONFIG: Record<string, { label: string; punto: string }> = Object.fromEntries(
+  ESTADOS_ORDEN.map(e => [e.value, { label: e.label, punto: e.color }])
+)
 
 const FILTROS = ['todos', 'recibido', 'en_diagnostico', 'presupuestado', 'aprobado', 'en_progreso', 'finalizado', 'facturado', 'cancelado']
 
@@ -86,120 +79,117 @@ export default function OrdenesPage() {
   })
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-24 sm:pb-8">
-      {/* HEADER */}
-      <div className="sticky top-0 z-20 bg-white border-b border-gray-200 px-4 py-4 shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold text-gray-900">Órdenes</h1>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              className="gap-2 bg-primary hover:bg-primary/90"
-              onClick={() => setModoCrear(true)}
-            >
-              <Plus className="w-4 h-4" />
-              <span className="hidden sm:inline">Nueva</span>
-            </Button>
-          </div>
-        </div>
+    <div className="space-y-4">
+      <AccionesPagina>
+        <Button size="sm" className="gap-1.5" onClick={() => setModoCrear(true)}>
+          <Plus className="size-4" aria-hidden />
+          Nueva<span className="hidden sm:inline"> orden</span>
+        </Button>
+      </AccionesPagina>
 
-        {/* BÚSQUEDA */}
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+      {/* BÚSQUEDA Y FILTROS */}
+      <div className="space-y-3">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <Input
-            placeholder="Buscar orden, cliente, matrícula..."
+            type="search"
+            aria-label="Buscar órdenes"
+            placeholder="Buscar orden, cliente o matrícula"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="pl-9"
+            className="bg-card pl-9"
           />
         </div>
-
-        {/* FILTROS POR ESTADO — siempre visibles */}
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-          {FILTROS.map(filtro => (
-            <button
-              key={filtro}
-              onClick={() => setFiltroActivo(filtro)}
-              className={`shrink-0 min-h-9 sm:min-h-0 px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                filtroActivo === filtro
-                  ? 'bg-primary text-white'
-                  : 'bg-white text-gray-700 border border-gray-300'
-              }`}
-            >
-              {filtro === 'todos' ? 'Todas' : (ESTADO_CONFIG[filtro]?.label || filtro)}
-            </button>
-          ))}
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 scrollbar-hide md:mx-0 md:flex-wrap md:px-0" role="group" aria-label="Filtrar por estado">
+          {FILTROS.map(filtro => {
+            const activo = filtroActivo === filtro
+            const n = filtro === 'todos' ? ordenes.length : ordenes.filter(o => o.estado === filtro).length
+            return (
+              <button
+                key={filtro}
+                type="button"
+                aria-pressed={activo}
+                onClick={() => setFiltroActivo(filtro)}
+                className={`inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors ${
+                  activo ? 'border-primary bg-primary text-primary-foreground' : 'bg-card text-foreground hover:bg-accent'
+                }`}
+              >
+                {filtro !== 'todos' && <span aria-hidden className={`size-2 rounded-full ${ESTADO_CONFIG[filtro]?.punto}`} />}
+                {filtro === 'todos' ? 'Todas' : (ESTADO_CONFIG[filtro]?.label || filtro)}
+                <span className={`tabular-nums text-xs ${activo ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>{n}</span>
+              </button>
+            )
+          })}
         </div>
       </div>
 
       {/* CONTENIDO */}
-      <div className="px-4 py-4 space-y-3">
-        {error ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
-            <p className="text-red-600 font-medium mb-2">Error al cargar datos</p>
-            <p className="text-gray-500 text-sm mb-4">{error}</p>
-            <Button onClick={() => { setError(null); cargarOrdenes(); }}>
-              Reintentar
-            </Button>
-          </div>
-        ) : loading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        ) : ordenesFiltradas.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <AlertCircle className="w-12 h-12 text-gray-400 mb-3" />
-            <p className="text-gray-600 font-medium">Sin órdenes</p>
-            <Button
-              className="mt-4 gap-2"
-              onClick={() => setModoCrear(true)}
-            >
-              <Plus className="w-4 h-4" />
-              Crear primera orden
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {ordenesFiltradas.map(orden => {
-              const config = ESTADO_CONFIG[orden.estado] || ESTADO_CONFIG.recibido
-              return (
-                <Card
-                  key={orden.id}
+      {error ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border bg-card py-12 text-center">
+          <AlertCircle className="mb-4 size-12 text-destructive" aria-hidden />
+          <p className="mb-2 font-medium text-foreground">Error al cargar las órdenes</p>
+          <p className="mb-4 text-sm text-muted-foreground">{error}</p>
+          <Button onClick={() => { setError(null); cargarOrdenes(); }}>Reintentar</Button>
+        </div>
+      ) : loading ? (
+        <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3" role="status" aria-label="Cargando órdenes">
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className="h-32 animate-pulse rounded-xl border bg-card" />
+          ))}
+        </div>
+      ) : ordenesFiltradas.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border bg-card px-4 py-12 text-center">
+          <Wrench className="mb-3 size-10 text-muted-foreground" aria-hidden />
+          <p className="font-medium text-foreground">
+            {busqueda || filtroActivo !== 'todos' ? 'Ninguna orden coincide' : 'Aún no hay órdenes'}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {busqueda || filtroActivo !== 'todos' ? 'Prueba con otra búsqueda o quita el filtro.' : 'Crea la primera con su vehículo y cliente en cuatro pasos.'}
+          </p>
+          <Button className="mt-4 gap-2" onClick={() => setModoCrear(true)}>
+            <Plus className="size-4" aria-hidden />
+            Nueva orden
+          </Button>
+        </div>
+      ) : (
+        <ul className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
+          {ordenesFiltradas.map(orden => {
+            const config = ESTADO_CONFIG[orden.estado] || ESTADO_CONFIG.recibido
+            return (
+              <li key={orden.id}>
+                <button
+                  type="button"
                   onClick={() => setOrdenSeleccionada(orden.id)}
-                  className="p-4 hover:shadow-md transition-shadow cursor-pointer active:bg-gray-100"
+                  className="flex h-full w-full flex-col gap-2 rounded-xl border bg-card p-4 text-left shadow-xs transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                 >
-                  <div className="flex items-start justify-between gap-3 mb-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-bold text-gray-900">{orden.numeroOrden || '—'}</div>
-                      <div className="text-sm text-gray-600">
-                        Cliente: {orden.clienteNombre || 'Sin nombre'}
-                      </div>
-                    </div>
-                    <Badge className={`${config.color} shrink-0`}>{config.label}</Badge>
-                  </div>
-
-                  <div className="text-sm text-gray-700 mb-3">
-                    Vehículo: {orden.vehiculoMatricula || 'Sin matrícula'}
-                    {orden.vehiculoMarcaModelo && ` • ${orden.vehiculoMarcaModelo}`}
-                  </div>
-
-                  {/* STATS ROW */}
-                  <div className="flex flex-wrap gap-4 text-xs text-gray-600">
-                    {orden.total > 0 && (
-                      <div className="font-semibold text-gray-900 tabular-nums">{orden.totalFormateado}</div>
+                  <span className="flex w-full items-start justify-between gap-3">
+                    <span className="font-semibold text-foreground">{orden.numeroOrden || '—'}</span>
+                    <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium text-foreground">
+                      <span aria-hidden className={`size-2 rounded-full ${config.punto}`} />
+                      {config.label}
+                    </span>
+                  </span>
+                  <span className="flex min-w-0 items-center gap-2 text-sm">
+                    {orden.vehiculoMatricula ? (
+                      <span className="rounded-md bg-muted px-1.5 py-0.5 font-mono text-xs font-semibold tracking-wide text-foreground">
+                        {orden.vehiculoMatricula}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground">Sin vehículo</span>
                     )}
-                    <div className="text-gray-500">{orden.cantidadLineas} {orden.cantidadLineas === 1 ? 'línea' : 'líneas'}</div>
-                    {orden.isFacturada && (
-                      <div className="text-blue-700">Facturada</div>
-                    )}
-                  </div>
-                </Card>
-              )
-            })}
-          </div>
-        )}
-      </div>
+                    <span className="truncate text-muted-foreground">{orden.vehiculoMarcaModelo}</span>
+                  </span>
+                  <span className="truncate text-sm text-foreground">{orden.clienteNombre || 'Sin cliente'}</span>
+                  <span className="mt-auto flex w-full items-center justify-between border-t pt-2 text-xs text-muted-foreground">
+                    <span>{orden.cantidadLineas} {orden.cantidadLineas === 1 ? 'línea' : 'líneas'}{orden.isFacturada ? ' · Facturada' : ''}</span>
+                    <span className="text-sm font-semibold tabular-nums text-foreground">{orden.total > 0 ? orden.totalFormateado : '—'}</span>
+                  </span>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      )}
 
       {/* SHEET DE DETALLE/EDICIÓN */}
       {ordenSeleccionada && (

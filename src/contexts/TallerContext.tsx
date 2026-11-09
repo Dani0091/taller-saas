@@ -5,7 +5,7 @@
  * @description Centraliza la obtención de taller_id y datos del usuario
  *
  * VENTAJAS:
- * - Una sola llamada a Supabase por sesión
+ * - Una sola llamada por sesión (api/usuario/actual)
  * - Elimina duplicación de lógica en cada página
  * - Mejora significativa de rendimiento (de 7s a ~1s)
  *
@@ -15,7 +15,6 @@
  */
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
 interface Usuario {
@@ -47,26 +46,18 @@ export function TallerProvider({ children }: { children: ReactNode }) {
       setLoading(true)
       setError(null)
 
-      const supabase = createClient()
+      // Perfil del usuario de la sesión (incluye taller_id), servido por la API
+      const res = await fetch('/api/usuario/actual')
+      const usuarioData = await res.json().catch(() => null)
 
-      // 1. Obtener usuario autenticado
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-      if (authError || !user?.email) {
+      if (res.status === 401) {
         setError('No hay sesión activa')
         setLoading(false)
         return
       }
 
-      // 2. Obtener datos del usuario (incluyendo taller_id)
-      const { data: usuarioData, error: usuarioError } = await supabase
-        .from('usuarios')
-        .select('id, email, taller_id, nombre, rol')
-        .eq('email', user.email)
-        .single()
-
-      if (usuarioError || !usuarioData) {
-        console.error('Error obteniendo datos del usuario:', usuarioError)
+      if (!res.ok || !usuarioData) {
+        console.error('Error obteniendo datos del usuario:', usuarioData?.error)
         setError('No se pudo obtener datos del usuario')
         setLoading(false)
         return

@@ -10,12 +10,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Menu, LogOut, Gauge } from 'lucide-react'
+import { Menu, LogOut } from 'lucide-react'
 import { useRouter, usePathname } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { cerrarSesionAction } from '@/actions/auth'
 import { toast } from 'sonner'
 import { tituloDePagina } from '@/lib/navegacion/titulo-pagina'
+import { BuscadorGlobal } from './buscador-global'
+import { ID_ACCIONES_PAGINA } from './acciones-pagina'
 
 
 interface PlanInfo {
@@ -78,70 +80,58 @@ export function Header({ user, onMenuClick }: HeaderProps) {
   const pageInfo = tituloDePagina(pathname)
 
   return (
-    <header className="bg-white border-b border-gray-200 px-4 md:px-6 py-3 md:py-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {/* Botón hamburguesa para móvil */}
-          <button
-            type="button"
-            onClick={onMenuClick}
-            aria-label="Abrir menú"
-            className="lg:hidden p-2.5 -ml-2 text-gray-600 hover:text-primary hover:bg-sky-50 rounded-xl transition-all duration-200"
-          >
-            <Menu className="w-6 h-6" />
-          </button>
+    <header className="sticky top-0 z-30 border-b bg-card/95 px-3 py-2.5 backdrop-blur supports-[backdrop-filter]:bg-card/80 md:px-6 md:py-3">
+      <div className="flex items-center gap-2 md:gap-4">
+        {/* Botón hamburguesa para móvil */}
+        <button
+          type="button"
+          onClick={onMenuClick}
+          aria-label="Abrir menú"
+          className="lg:hidden inline-flex size-10 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+        >
+          <Menu className="size-6" />
+        </button>
 
-          {/* Título con icono en móvil */}
-          <div className="flex items-center gap-3">
-            <div className="lg:hidden w-9 h-9 bg-gradient-to-br from-sky-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-md shadow-sky-500/20">
-              <Gauge className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-lg md:text-xl font-bold text-gray-900">{pageInfo.title}</h2>
-              <p className="text-xs text-gray-500 hidden md:block">{pageInfo.subtitle}</p>
-            </div>
+        {/* Título de la sección: el único de la página */}
+        <div className="min-w-0 flex-1">
+          <h1 className="truncate text-lg font-bold text-foreground md:text-xl">{pageInfo.title}</h1>
+          <p className="hidden truncate text-xs text-muted-foreground md:block">{pageInfo.subtitle}</p>
+        </div>
+
+        {/* Acciones de la página (AccionesPagina) */}
+        <div id={ID_ACCIONES_PAGINA} className="flex shrink-0 items-center gap-2" />
+
+        <BuscadorGlobal />
+
+        {/* Usuario y salir */}
+        <div className="hidden items-center gap-3 border-l pl-4 xl:flex">
+          <div className="text-right">
+            <p className="max-w-[150px] truncate text-sm font-medium text-foreground">
+              {user?.email?.split('@')[0] || 'Usuario'}
+            </p>
+            <p className="text-[11px] font-medium text-muted-foreground">
+              {planInfo?.plan_display || 'Cargando...'}
+              {planInfo?.plan_nombre === 'trial' && planInfo.dias_restantes > 0 && (
+                <span className="ml-1">({planInfo.dias_restantes} d)</span>
+              )}
+            </p>
+          </div>
+          <div aria-hidden className="flex size-9 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
+            {user?.email?.charAt(0).toUpperCase() || 'U'}
           </div>
         </div>
 
-        <div className="flex items-center gap-2 md:gap-3">
-          {/* Separador */}
-          <div className="hidden md:block w-px h-8 bg-gray-200" />
-
-          {/* Usuario y logout */}
-          <div className="hidden md:flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-sm font-medium text-gray-900 truncate max-w-[150px]">
-                {user?.email?.split('@')[0] || 'Usuario'}
-              </p>
-              <p
-                className="text-[10px] font-medium"
-                style={{ color: planInfo?.color || '#9ca3af' }}
-              >
-                {planInfo?.plan_display || 'Cargando...'}
-                {planInfo?.plan_nombre === 'trial' && planInfo.dias_restantes > 0 && (
-                  <span className="text-gray-400 ml-1">({planInfo.dias_restantes}d)</span>
-                )}
-              </p>
-            </div>
-            <div className="w-9 h-9 bg-gradient-to-br from-sky-400 to-cyan-500 rounded-xl flex items-center justify-center shadow-md shadow-sky-500/20">
-              <span className="text-white font-bold text-sm">
-                {user?.email?.charAt(0).toUpperCase() || 'U'}
-              </span>
-            </div>
-          </div>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleLogout}
-            disabled={loggingOut}
-            className="gap-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all duration-200"
-            aria-label="Cerrar sesión"
-          >
-            <LogOut className="w-4 h-4" />
-            <span className="hidden sm:inline">{loggingOut ? 'Saliendo...' : 'Salir'}</span>
-          </Button>
-        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleLogout}
+          disabled={loggingOut}
+          className="shrink-0 gap-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+          aria-label="Cerrar sesión"
+        >
+          <LogOut className="size-4" />
+          <span className="hidden sm:inline">{loggingOut ? 'Saliendo...' : 'Salir'}</span>
+        </Button>
       </div>
     </header>
   )

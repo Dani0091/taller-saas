@@ -2,17 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeft, Download, Printer, Loader2 } from 'lucide-react'
+import { Download, Printer, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { EnlaceVolver } from '@/components/dashboard/enlace-volver'
 import { InformacionLegal } from '@/components/facturas/informacion-legal'
 import { CambiarEstado } from '@/components/facturas/cambiar-estado'
 import { formatCurrency } from '@/lib/utils'
 import { useDescargarPDF } from '@/hooks/useDescargarPDF'
-import { createClient } from '@/lib/supabase/client'
+import { useTaller } from '@/contexts/TallerContext'
 
 interface Factura {
   id: string
@@ -74,9 +74,9 @@ interface DatosEmpresa {
 
 const estadoColors: Record<string, string> = {
   'borrador': 'bg-gray-100 text-gray-800',
-  'emitida': 'bg-blue-100 text-blue-800',
-  'pagada': 'bg-green-100 text-green-800',
-  'anulada': 'bg-red-100 text-red-800',
+  'emitida': 'bg-primary/10 text-primary',
+  'pagada': 'bg-success/10 text-success',
+  'anulada': 'bg-destructive/10 text-destructive',
 }
 
 export default function VerFacturaPage() {
@@ -86,34 +86,8 @@ export default function VerFacturaPage() {
   const [factura, setFactura] = useState<Factura | null>(null)
   const [loading, setLoading] = useState(true)
   const [datosEmpresa, setDatosEmpresa] = useState<DatosEmpresa | null>(null)
-  const [tallerId, setTallerId] = useState<string | null>(null)
-
-  // Obtener taller_id del usuario autenticado
-  useEffect(() => {
-    const obtenerTallerId = async () => {
-      try {
-        const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-
-        if (!user?.email) {
-          return
-        }
-
-        const { data: usuario, error } = await supabase
-          .from('usuarios')
-          .select('taller_id')
-          .eq('email', user.email)
-          .single()
-
-        if (!error && usuario) {
-          setTallerId(usuario.taller_id)
-        }
-      } catch (error) {
-        console.error('Error obteniendo taller_id:', error)
-      }
-    }
-    obtenerTallerId()
-  }, [])
+  // El taller sale de la sesión (TallerContext, servido por la API)
+  const { tallerId } = useTaller()
 
   useEffect(() => {
     const id = searchParams.get('id')
@@ -201,22 +175,18 @@ export default function VerFacturaPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
+    <div>
       <div className="max-w-6xl mx-auto">
         {/* HEADER */}
-        <div className="flex items-center justify-between gap-4 mb-8">
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard/facturas">
-              <Button aria-label="Volver" variant="ghost" size="icon">
-                <ArrowLeft className="w-5 h-5" />
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">{factura.numero_factura}</h1>
-              <p className="text-gray-600">
-                {new Date(factura.fecha_emision).toLocaleDateString('es-ES')}
-              </p>
-            </div>
+        <div className="mb-4">
+          <EnlaceVolver href="/dashboard/facturas">Facturas</EnlaceVolver>
+        </div>
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-foreground md:text-3xl">{factura.numero_factura || 'Borrador'}</h2>
+            <p className="text-muted-foreground">
+              {new Date(factura.fecha_emision).toLocaleDateString('es-ES')}
+            </p>
           </div>
           <Badge className={estadoColors[factura.estado]}>
             {factura.estado.toUpperCase()}
@@ -242,7 +212,7 @@ export default function VerFacturaPage() {
           <Button
             onClick={handleDescargarPDF}
             disabled={cargandoPDF}
-            className="gap-2 bg-green-600 hover:bg-green-700"
+            className="gap-2 bg-success hover:bg-success/90"
           >
             {cargandoPDF ? (
               <>
@@ -276,7 +246,7 @@ export default function VerFacturaPage() {
         <Card className="p-6 md:p-8 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
             {/* Cliente */}
-            <div className="border-l-4 border-primary pl-4">
+            <div className=" border-primary pl-4">
               <h3 className="font-semibold text-gray-700 mb-2 text-sm uppercase">Facturado a:</h3>
               <p className="font-semibold text-gray-900 text-lg">{factura.cliente?.nombre}</p>
               <p className="text-gray-600 font-mono">{factura.cliente?.nif}</p>
@@ -292,7 +262,7 @@ export default function VerFacturaPage() {
 
             {/* Vehículo */}
             {factura.vehiculo && (
-              <div className="border-l-4 border-orange-500 pl-4">
+              <div className=" border-warning pl-4">
                 <h3 className="font-semibold text-gray-700 mb-2 text-sm uppercase">
                   🚗 Vehículo
                 </h3>
@@ -370,7 +340,7 @@ export default function VerFacturaPage() {
                 <span className="text-gray-600">IVA (21%):</span>
                 <span className="font-semibold">{formatCurrency(factura.iva)}</span>
               </div>
-              <div className="flex justify-between py-3 text-lg bg-gradient-to-r from-sky-600 to-sky-700 text-white p-2 rounded font-bold mt-2">
+              <div className="flex justify-between py-3 text-lg bg-primary text-primary-foreground px-3 rounded-lg font-bold mt-2 tabular-nums">
                 <span>Total:</span>
                 <span>{formatCurrency(factura.total)}</span>
               </div>
@@ -391,7 +361,7 @@ export default function VerFacturaPage() {
 
           {/* NOTAS */}
           {factura.notas_internas && (
-            <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+            <div className="mt-4 p-3 bg-warning/5 rounded-lg border border-warning/30">
               <p className="text-xs text-gray-600 uppercase font-semibold mb-1">Notas Internas:</p>
               <p className="text-sm text-gray-700">{factura.notas_internas}</p>
             </div>

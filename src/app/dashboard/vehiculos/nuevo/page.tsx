@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NumberInput } from '@/components/ui/number-input'
-import { ArrowLeft, Loader2, Check, Car } from 'lucide-react'
+import { Loader2, Check, Car } from 'lucide-react'
 import { toast } from 'sonner'
+import { EnlaceVolver } from '@/components/dashboard/enlace-volver'
 import { InputScanner } from '@/components/ui/input-scanner'
 import { useTaller } from '@/contexts/TallerContext'
 
@@ -122,16 +123,10 @@ export default function NuevoVehiculoPage() {
     paso === 4
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-lg mx-auto px-4 py-6">
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="outline" size="icon" onClick={() => router.back()} aria-label="Volver">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Nuevo Vehículo</h1>
-            <p className="text-gray-500 text-sm">Añade un vehículo al sistema</p>
-          </div>
+    <div>
+      <div className="mx-auto max-w-lg">
+        <div className="mb-4">
+          <EnlaceVolver href="/dashboard/vehiculos">Vehículos</EnlaceVolver>
         </div>
 
         {/* Progreso: círculos + línea, mismo patrón que el wizard de órdenes */}
@@ -141,7 +136,7 @@ export default function NuevoVehiculoPage() {
               <div key={s} className="flex items-center flex-1 last:flex-none">
                 <div
                   className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
-                    s < paso ? 'bg-green-600 text-white' : s === paso ? 'bg-primary text-white' : 'bg-gray-200 text-gray-400'
+                    s < paso ? 'bg-success text-white' : s === paso ? 'bg-primary text-white' : 'bg-gray-200 text-gray-400'
                   }`}
                 >
                   {s < paso ? <Check className="w-4 h-4" /> : s}
@@ -306,7 +301,7 @@ export default function NuevoVehiculoPage() {
               <div className="pt-3">
                 <h3 className="text-xs font-semibold text-gray-500 mb-1">Detalles</h3>
                 <p className="text-sm text-gray-700">
-                  {[formData.color, formData.tipo_combustible, formData.kilometros ? `${formData.kilometros.toLocaleString()} km` : null, formData.potencia_cv ? `${formData.potencia_cv} CV` : null]
+                  {[formData.color, formData.tipo_combustible, formData.kilometros ? `${formData.kilometros.toLocaleString('es-ES')} km` : null, formData.potencia_cv ? `${formData.potencia_cv} CV` : null]
                     .filter(Boolean).join(' · ') || 'Sin detalles adicionales'}
                 </p>
               </div>
@@ -332,7 +327,7 @@ export default function NuevoVehiculoPage() {
           ) : (
             <Button
               size="xl"
-              className="flex-1 bg-green-600 hover:bg-green-700 gap-2"
+              className="flex-1 bg-success hover:bg-success/90 gap-2"
               disabled={loading}
               onClick={handleSubmit}
             >

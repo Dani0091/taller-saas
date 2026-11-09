@@ -5,8 +5,10 @@
  */
 
 import { format, startOfWeek, startOfMonth, startOfYear, subMonths } from 'date-fns'
+import { trimestreDeClave, rangoTrimestre } from './trimestres'
 
-export type PeriodoFactura = 'todas' | 'hoy' | 'semana' | 'mes' | '3meses' | 'año' | 'personalizado'
+/** Además de los fijos, un trimestre fiscal con su clave: '2026-T4' */
+export type PeriodoFactura = 'todas' | 'hoy' | 'semana' | 'mes' | '3meses' | 'año' | 'personalizado' | `${number}-T${1 | 2 | 3 | 4}`
 
 export const PERIODOS_FACTURA: { value: PeriodoFactura; label: string }[] = [
   { value: 'todas', label: 'Sin filtro' },
@@ -40,6 +42,11 @@ export function rangoPeriodo(
       if (desde && hasta && desde > hasta) [desde, hasta] = [hasta, desde]
       return { fechaDesde: desde, fechaHasta: hasta }
     }
-    default: return {}
+    default: {
+      const trimestre = trimestreDeClave(periodo)
+      if (!trimestre) return {}
+      const { desde, hasta } = rangoTrimestre(trimestre)
+      return { fechaDesde: desde, fechaHasta: hasta }
+    }
   }
 }

@@ -43,6 +43,26 @@ export interface MetricasDashboardDTO {
   // Clientes
   clientesActivos: number
 
+  // Panel ampliado (lib/dashboard/metricas)
+  porEstado: Record<string, number>
+  facturasMes: number
+  facturadoMesAnterior: number
+  mensual: Array<{ mes: string; etiqueta: string; base: number; iva: number; total: number }>
+  trimestre: {
+    clave: string
+    etiqueta: string
+    base: number
+    iva: number
+    total: number
+    facturas: number
+    plazoDesde: string
+    plazoHasta: string
+    plazoAbierto: boolean
+    diasHastaFinPlazo: number
+  }
+  pendienteCobro: number
+  facturasSinCobrar: number
+
   // Información del usuario
   nombreUsuario?: string
   nombreTaller?: string

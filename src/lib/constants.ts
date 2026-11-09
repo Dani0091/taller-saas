@@ -13,15 +13,18 @@
  */
 // colorId: paleta de Google Calendar (1-11). Referencia: 3=Grape/morado, 5=Banana/amarillo,
 // 6=Tangerine/naranja, 7=Peacock/azul, 10=Basil/verde, 11=Tomato/rojo.
+// Punto de color por grupo, el mismo que el inicio (paleta validada para daltonismo):
+// por empezar naranja, en reparación azul, terminadas aqua, facturadas violeta.
+// El color nunca va solo: siempre acompaña a la etiqueta.
 export const ESTADOS_ORDEN = [
-  { value: 'recibido', label: 'Recibido', color: 'bg-blue-500', icon: '📋', description: 'Vehículo recién ingresado al taller', googleColorId: '7' },
-  { value: 'en_diagnostico', label: 'En Diagnóstico', color: 'bg-purple-500', icon: '🔍', description: 'Evaluando el problema del vehículo', googleColorId: '6' },
-  { value: 'presupuestado', label: 'Presupuestado', color: 'bg-yellow-500', icon: '💰', description: 'Presupuesto elaborado, pendiente de aprobación', googleColorId: '5' },
-  { value: 'aprobado', label: 'Aprobado', color: 'bg-cyan-500', icon: '✓', description: 'Cliente ha aprobado el presupuesto', googleColorId: '5' },
-  { value: 'en_progreso', label: 'En Reparación', color: 'bg-amber-500', icon: '🔧', description: 'Trabajo en progreso', googleColorId: '3' },
-  { value: 'finalizado', label: 'Finalizado', color: 'bg-green-500', icon: '✅', description: 'Reparación finalizada', googleColorId: '10' },
-  { value: 'facturado', label: 'Facturado', color: 'bg-emerald-600', icon: '🚗', description: 'Orden facturada y vehículo entregado', googleColorId: '10' },
-  { value: 'cancelado', label: 'Cancelado', color: 'bg-red-500', icon: '❌', description: 'Orden cancelada', googleColorId: '11' },
+  { value: 'recibido', label: 'Recibido', color: 'bg-[#eb6834]', icon: '📋', description: 'Vehículo recién ingresado al taller', googleColorId: '7' },
+  { value: 'en_diagnostico', label: 'En diagnóstico', color: 'bg-[#eb6834]', icon: '🔍', description: 'Evaluando el problema del vehículo', googleColorId: '6' },
+  { value: 'presupuestado', label: 'Presupuestado', color: 'bg-[#eb6834]', icon: '💰', description: 'Presupuesto elaborado, pendiente de aprobación', googleColorId: '5' },
+  { value: 'aprobado', label: 'Aprobado', color: 'bg-[#eb6834]', icon: '✓', description: 'Cliente ha aprobado el presupuesto', googleColorId: '5' },
+  { value: 'en_progreso', label: 'En reparación', color: 'bg-[#2a78d6]', icon: '🔧', description: 'Trabajo en progreso', googleColorId: '3' },
+  { value: 'finalizado', label: 'Finalizado', color: 'bg-[#1baf7a]', icon: '✅', description: 'Reparación finalizada', googleColorId: '10' },
+  { value: 'facturado', label: 'Facturado', color: 'bg-[#6250d6]', icon: '🚗', description: 'Orden facturada y vehículo entregado', googleColorId: '10' },
+  { value: 'cancelado', label: 'Cancelado', color: 'bg-gray-400', icon: '❌', description: 'Orden cancelada', googleColorId: '11' },
 ] as const
 
 /** Tipo para los valores de estado de orden */

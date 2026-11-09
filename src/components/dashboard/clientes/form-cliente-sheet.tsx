@@ -187,7 +187,7 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
 
         <div className="p-4 space-y-4">
           {/* DATOS BÁSICOS */}
-          <Card className="p-4 border-l-4 border-l-blue-600">
+          <Card className="p-4">
             <h3 className="font-bold mb-3">👤 Datos Básicos</h3>
             <div className="space-y-3">
               {/* NOMBRE Y APELLIDOS - Grid horizontal */}
@@ -222,20 +222,20 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
                         setFormData(prev => ({ ...prev, nif: valor }))
                         validarCampoNIF(valor)
                       }}
-                      className={errores.nif ? 'border-red-500 pr-10' : formData.nif && !errores.nif ? 'border-green-500 pr-10' : ''}
+                      className={errores.nif ? 'border-destructive pr-10' : formData.nif && !errores.nif ? 'border-success pr-10' : ''}
                     />
                     {formData.nif && (
                       <div className="absolute right-3 top-1/2 -translate-y-1/2">
                         {errores.nif ? (
-                          <AlertCircle className="w-4 h-4 text-red-500" />
+                          <AlertCircle className="w-4 h-4 text-destructive" />
                         ) : (
-                          <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          <CheckCircle2 className="w-4 h-4 text-success" />
                         )}
                       </div>
                     )}
                   </div>
                   {errores.nif && (
-                    <p className="text-xs text-red-500 mt-1">{errores.nif}</p>
+                    <p className="text-xs text-destructive mt-1">{errores.nif}</p>
                   )}
                 </div>
                 <div>
@@ -252,7 +252,7 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
                 <select
                   value={formData.tipoCliente}
                   onChange={(e) => setFormData(prev => ({ ...prev, tipoCliente: e.target.value as any }))}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring"
                 >
                   <option value="personal">Particular</option>
                   <option value="empresa">Empresa</option>
@@ -262,7 +262,7 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
           </Card>
 
           {/* CONTACTO */}
-          <Card className="p-4 border-l-4 border-l-green-600">
+          <Card className="p-4">
             <h3 className="font-bold mb-3">📧 Email</h3>
             <div className="space-y-3">
               <div>
@@ -277,18 +277,18 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
                       setFormData(prev => ({ ...prev, email: valor }))
                       validarCampoEmail(valor)
                     }}
-                    className={errores.email ? 'border-red-500' : ''}
+                    className={errores.email ? 'border-destructive' : ''}
                   />
                 </div>
                 {errores.email && (
-                  <p className="text-xs text-red-500 mt-1">{errores.email}</p>
+                  <p className="text-xs text-destructive mt-1">{errores.email}</p>
                 )}
               </div>
             </div>
           </Card>
 
           {/* DIRECCIÓN */}
-          <Card className="p-4 border-l-4 border-l-orange-600">
+          <Card className="p-4">
             <h3 className="font-bold mb-3">📍 Dirección Fiscal</h3>
             <div className="space-y-3">
               <div>
@@ -322,7 +322,7 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
                 <select
                   value={formData.provincia || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, provincia: e.target.value }))}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring"
                 >
                   <option value="">Selecciona provincia...</option>
                   {PROVINCIAS_ES.map(p => (
@@ -334,7 +334,7 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
           </Card>
 
           {/* PAGO Y IBAN */}
-          <Card className="p-4 border-l-4 border-l-purple-600">
+          <Card className="p-4">
             <h3 className="font-bold mb-3">💳 Pago e IBAN</h3>
             <div className="space-y-3">
               <div>
@@ -342,7 +342,7 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
                 <select
                   value={formData.formaPago || 'transferencia'}
                   onChange={(e) => setFormData(prev => ({ ...prev, formaPago: e.target.value as any }))}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring"
                 >
                   {FORMAS_PAGO.map(f => (
                     <option key={f.value} value={f.value}>{f.label}</option>
@@ -361,7 +361,7 @@ export function FormClienteSheet({ onClose, onActualizar }: FormClienteSheetProp
           </Card>
 
           {/* NOTAS */}
-          <Card className="p-4 border-l-4 border-l-red-600">
+          <Card className="p-4">
             <h3 className="font-bold mb-3">📝 Notas</h3>
             <Textarea
               placeholder="Ej.: Prefiere que le llamen por la tarde"

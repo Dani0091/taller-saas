@@ -31,9 +31,9 @@ describe('mensajeOrden', () => {
     expect(m).toContain('🚗 Vehículo: Seat Ibiza')
     expect(m).toContain('Km: 123.456')
     // Formato español: sin separador de miles con 4 cifras (como formatCurrency en toda la app)
-    expect(m).toContain('💰 Total estimado: 1234,50€')
-    expect(mensajeOrden({ ...completa, totales: { total: 12345.5 } })).toContain('12.345,50€')
-    expect(m).toContain('Estado: En Reparación')
+    expect(m).toContain('💰 Total estimado: 1.234,50\u00a0€')
+    expect(mensajeOrden({ ...completa, totales: { total: 12345.5 } })).toContain('12.345,50\u00a0€')
+    expect(m).toContain('Estado: En reparación')
     expect(m).not.toContain('EN_PROGRESO')
   })
 
@@ -51,7 +51,7 @@ describe('mensajeOrden', () => {
   it('cero kilómetros y total 0 sí se muestran (no son "vacío")', () => {
     const m = mensajeOrden({ ...completa, vehiculo: { ...completa.vehiculo, kilometros: 0 }, totales: { total: 0 } })
     expect(m).toContain('Km: 0')
-    expect(m).toContain('Total estimado: 0,00€')
+    expect(m).toContain('Total estimado: 0,00\u00a0€')
   })
 
   it('estado desconocido se muestra tal cual', () => {

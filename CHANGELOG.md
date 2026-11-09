@@ -2,6 +2,62 @@
 
 Todos los cambios importantes de este proyecto serán documentados aquí.
 
+## [0.75.5] - 2026-11-09 · pre-alpha
+
+Inicio con color y gráficos, trimestres de Hacienda con exportación, buscador
+global, pantallas ordenadas en móvil y escritorio, y la ficha de orden más
+segura y robusta.
+
+### Inicio
+- **Cifras corregidas**: «En reparación» y «Completadas» salían siempre 0 y
+  «Pendientes» no contaba las órdenes en diagnóstico. Lo facturado ya no suma
+  borradores ni facturas anuladas.
+- Facturado del mes con la variación frente al anterior y gráfico de los
+  últimos seis meses; órdenes por estado con color; pendiente de cobro.
+- **Hacienda**: IVA y base del trimestre que toca, plazo del 303/130 y días
+  que faltan, con enlace a exportarlo.
+
+### Facturas
+- **Trimestres para Hacienda**: los últimos cinco con su plazo de
+  presentación (1T–3T hasta el día 20 del mes siguiente, 4T hasta el 30 de
+  enero; fin de semana → lunes). **Exportar** descarga un ZIP con el PDF de
+  cada factura y el libro de facturas emitidas en CSV para Excel.
+- Importes como «1.383,95 €» en toda la app, también en los PDF.
+- En móvil, tarjetas en lugar de tabla y filtros en una hoja inferior.
+
+### Órdenes
+- La ficha de orden ya no escribe en la base de datos desde el navegador:
+  todo pasa por la API (taller de la sesión, cliente y vehículo del mismo
+  taller, órdenes facturadas intocables, totales calculados en el servidor).
+- Arreglados: el IVA 0 % dejaba el total al 21 % hasta otro guardado; un
+  cambio justo después de un autoguardado se perdía; crear un cliente en el
+  asistente quitaba el vehículo; el número de orden podía chocar; una orden
+  sin cliente rompía el listado; «Editar vehículo» se abría vacío y borraba
+  la matrícula al guardar.
+- Listado en rejilla con el estado por color, búsqueda y recuento por estado.
+
+### Seguridad
+- Ninguna pantalla lee ni escribe tablas de la base de datos desde el
+  navegador; la API de vehículos ya no acepta un cliente de otro taller.
+
+### Vehículos y clientes
+- Las matrículas no españolas o con otro formato ya no se muestran ni se
+  guardan como «0000-XXX».
+- Kilómetros como «120.000 km». Listados en rejilla.
+
+### Interfaz
+- **Buscador global** (Ctrl+K o la lupa en móvil): órdenes, vehículos,
+  clientes y facturas desde cualquier pantalla.
+- Un solo título por pantalla, en la cabecera, con las acciones principales
+  a su derecha. Menú en móvil como hoja que se cierra arrastrando.
+- Mismo sistema visual en ficha de orden, citas, configuración, formularios
+  y menú: sin degradados, sin emojis como iconos, colores con contraste AA.
+
+### Calidad
+- Tests nuevos: ficha de orden de punta a punta y su API, inicio,
+  exportación por trimestre (abriendo el ZIP), buscador y aislamiento entre
+  talleres. Diseño documentado en DESIGN.md.
+
 ## [0.75.4] - 2026-11-09 · pre-alpha
 
 Listado de facturas completo, IVA 0 % como opción real, citas conectadas con

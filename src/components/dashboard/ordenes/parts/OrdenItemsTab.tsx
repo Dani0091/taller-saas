@@ -71,10 +71,10 @@ interface OrdenItemsTabProps {
 }
 
 const GRUPOS_TIPO: { tipo: TipoLinea; etiqueta: string; icono: string; badgeClass: string }[] = [
-  { tipo: 'mano_obra', etiqueta: 'Mano de obra', icono: '⏱️', badgeClass: 'bg-blue-100 text-blue-700' },
-  { tipo: 'pieza', etiqueta: 'Recambios', icono: '📦', badgeClass: 'bg-purple-100 text-purple-700' },
-  { tipo: 'servicio', etiqueta: 'Servicios', icono: '🔧', badgeClass: 'bg-green-100 text-green-700' },
-  { tipo: 'suplido', etiqueta: 'Suplidos', icono: '💶', badgeClass: 'bg-amber-100 text-amber-700' },
+  { tipo: 'mano_obra', etiqueta: 'Mano de obra', icono: '', badgeClass: 'bg-primary/10 text-primary' },
+  { tipo: 'pieza', etiqueta: 'Recambios', icono: '📦', badgeClass: 'bg-primary/10 text-primary' },
+  { tipo: 'servicio', etiqueta: 'Servicios', icono: '🔧', badgeClass: 'bg-success/10 text-success' },
+  { tipo: 'suplido', etiqueta: 'Suplidos', icono: '💶', badgeClass: 'bg-warning/10 text-warning' },
   { tipo: 'reembolso', etiqueta: 'Reembolsos', icono: '↩️', badgeClass: 'bg-gray-100 text-gray-700' },
 ]
 
@@ -186,7 +186,7 @@ export function OrdenItemsTab({
   return (
     <fieldset disabled={readOnly} className="contents">
       {/* Añadir línea */}
-      <Card className="p-4 border-2 border-dashed border-sky-200 bg-sky-50/50">
+      <Card className="p-4 border border-dashed border-primary/30 bg-primary/5">
         <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
           <Plus className="w-4 h-4" />
           Añadir línea de trabajo
@@ -208,20 +208,20 @@ export function OrdenItemsTab({
               }}
               className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-ring bg-white"
             >
-              <option value="mano_obra">🔧 Mano de obra</option>
-              <option value="pieza">⚙️ Recambio / Pieza</option>
-              <option value="servicio">🛠️ Servicio externo</option>
-              <option value="suplido">💸 Suplido (pagado por cliente: ITV, multa, etc.)</option>
-              <option value="reembolso">💰 Reembolso (compra por cliente)</option>
+              <option value="mano_obra">Mano de obra</option>
+              <option value="pieza">Recambio / Pieza</option>
+              <option value="servicio">Servicio externo</option>
+              <option value="suplido">Suplido (pagado por cliente: ITV, multa, etc.)</option>
+              <option value="reembolso">Reembolso (compra por cliente)</option>
             </select>
             {nuevaLinea.tipo === 'suplido' && (
-              <p className="text-xs text-amber-600 mt-1">
-                ⚠️ Suplidos: Se suman al total SIN IVA (ej: pago de ITV, multa)
+              <p className="text-xs text-warning mt-1">
+                Suplidos: Se suman al total SIN IVA (ej: pago de ITV, multa)
               </p>
             )}
             {nuevaLinea.tipo === 'reembolso' && (
-              <p className="text-xs text-blue-600 mt-1">
-                ℹ️ Reembolsos: Se suman a base imponible CON IVA (ej: pieza comprada)
+              <p className="text-xs text-primary mt-1">
+                Reembolsos: Se suman a base imponible CON IVA (ej: pieza comprada)
               </p>
             )}
           </div>
@@ -241,28 +241,28 @@ export function OrdenItemsTab({
                 title={escuchando ? 'Detener dictado' : 'Dictar descripción por voz'}
                 className={`shrink-0 h-10 w-10 flex items-center justify-center rounded-lg border transition-all ${
                   escuchando
-                    ? 'bg-red-500 border-red-500 text-white animate-pulse'
-                    : 'bg-white border-gray-300 text-gray-500 hover:border-sky-400 hover:text-primary'
+                    ? 'bg-destructive border-destructive text-white animate-pulse'
+                    : 'bg-white border-gray-300 text-gray-500 hover:border-primary hover:text-primary'
                 }`}
               >
                 {escuchando ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
               </button>
             </div>
             {escuchando && (
-              <p className="text-xs text-red-600 mt-1 flex items-center gap-1">
-                <span className="inline-block w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+              <p className="text-xs text-destructive mt-1 flex items-center gap-1">
+                <span className="inline-block w-2 h-2 bg-destructive rounded-full animate-pulse" />
                 Escuchando… di la cantidad y la descripción
               </p>
             )}
             {vozError && (
-              <p className="text-xs text-amber-600 mt-1">{vozError}</p>
+              <p className="text-xs text-warning mt-1">{vozError}</p>
             )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label className="text-xs text-gray-600 mb-1 block">
-                {nuevaLinea.tipo === 'mano_obra' ? '⏱️ Horas de trabajo' : '📦 Cantidad (uds)'}
+                {nuevaLinea.tipo === 'mano_obra' ? 'Horas de trabajo' : 'Cantidad (uds)'}
               </Label>
               {nuevaLinea.tipo === 'mano_obra' ? (
                 <select
@@ -288,7 +288,7 @@ export function OrdenItemsTab({
             </div>
             <div>
               <Label className="text-xs text-gray-600 mb-1 block">
-                {nuevaLinea.tipo === 'mano_obra' ? '💶 Precio/hora (€)' : '💶 Precio/unidad (€)'}
+                {nuevaLinea.tipo === 'mano_obra' ? 'Precio/hora (€)' : 'Precio/unidad (€)'}
               </Label>
               <NumberInput
                 value={nuevaLinea.precio_unitario}
@@ -306,9 +306,9 @@ export function OrdenItemsTab({
           </div>
 
           {nuevaLinea.cantidad > 0 && nuevaLinea.precio_unitario > 0 && (
-            <div className="p-2 bg-green-100 rounded-lg text-center">
+            <div className="p-2 bg-success/10 rounded-lg text-center">
               <span className="text-sm text-gray-600">Subtotal: </span>
-              <span className="font-bold text-green-700">
+              <span className="font-bold text-success">
                 {formatCurrency(nuevaLinea.cantidad * nuevaLinea.precio_unitario)}
               </span>
             </div>
@@ -325,7 +325,7 @@ export function OrdenItemsTab({
       {lineas.length > 0 && (
         <Card className="p-4">
           <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-            📋 Elementos de la orden ({lineas.length})
+            Elementos de la orden ({lineas.length})
           </h3>
 
           {GRUPOS_TIPO.map(grupo => {
@@ -338,7 +338,7 @@ export function OrdenItemsTab({
               <div key={grupo.tipo} className="mb-4 last:mb-0">
                 <div className="flex items-center justify-between mb-2">
                   <h4 className={`text-xs font-semibold px-2 py-1 rounded-full inline-flex items-center gap-1 ${grupo.badgeClass}`}>
-                    {grupo.icono} {grupo.etiqueta} ({lineasGrupo.length})
+                    {grupo.etiqueta} ({lineasGrupo.length})
                   </h4>
                   <span className="text-xs font-mono text-gray-500">{formatCurrency(subtotalGrupo)}</span>
                 </div>
@@ -361,7 +361,7 @@ export function OrdenItemsTab({
                           <td className="px-3 py-3">
                             <div className="font-medium text-gray-900">{linea.descripcion}</div>
                             {linea.precio_unitario === 0 && (
-                              <div className="text-xs text-red-600 font-medium">⚠️ Precio requerido</div>
+                              <div className="text-xs text-destructive font-medium">Precio requerido</div>
                             )}
                           </td>
                           <td className="px-2 py-3">
@@ -393,9 +393,9 @@ export function OrdenItemsTab({
                                 onChange={(e) => onActualizarLinea(linea.id, 'estado', e.target.value)}
                                 className="text-sm px-2 py-2 border border-gray-300 rounded"
                               >
-                                <option value="presupuestado">📋 Presup.</option>
-                                <option value="confirmado">✅ Confirm.</option>
-                                <option value="recibido">📦 Recib.</option>
+                                <option value="presupuestado">Presup.</option>
+                                <option value="confirmado">Confirm.</option>
+                                <option value="recibido">Recib.</option>
                               </select>
                             ) : (
                               <span className="text-xs text-gray-400">-</span>
@@ -407,7 +407,7 @@ export function OrdenItemsTab({
                           <td className="px-2 py-3">
                             <button
                               onClick={() => onEliminarLinea(linea.id)}
-                              className="p-2 text-red-500 hover:bg-red-50 rounded"
+                              className="p-2 text-destructive hover:bg-destructive/5 rounded"
                               title="Eliminar línea"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -423,17 +423,17 @@ export function OrdenItemsTab({
           })}
 
           {/* Formulario rápido para añadir elementos */}
-          <div className="mt-4 p-3 bg-sky-50 rounded-lg border border-sky-200 space-y-2">
-            <p className="text-xs font-semibold text-sky-800">➕ Añadir elemento rápido</p>
+          <div className="mt-4 p-3 bg-primary/5 rounded-lg border border-primary/30 space-y-2">
+            <p className="text-xs font-semibold text-primary">Añadir elemento rápido</p>
             <div className="flex flex-col sm:flex-row gap-2">
               <select
                 value={piezaRapida.tipo || 'pieza'}
                 onChange={(e) => onPiezaRapidaChange({ ...piezaRapida, tipo: e.target.value })}
                 className="sm:w-32 px-3 py-2.5 text-sm border border-gray-300 rounded-lg bg-white"
               >
-                <option value="pieza">📦 Pieza</option>
-                <option value="mano_obra">⏱️ M.O.</option>
-                <option value="servicio">🔧 Serv.</option>
+                <option value="pieza">Pieza</option>
+                <option value="mano_obra">M.O.</option>
+                <option value="servicio">Serv.</option>
               </select>
               <input
                 type="text"

@@ -8,7 +8,7 @@
  */
 'use client'
 
-import { Clock } from 'lucide-react'
+import { Clock, Camera } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -74,9 +74,9 @@ export function OrdenTrabajoTab({
       </Card>
 
       {/* Fotos de diagnóstico */}
-      <Card className="p-4 bg-amber-50/50 border-amber-200">
+      <Card className="p-4 bg-warning/5 border-warning/30">
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-lg">📷</span>
+          <Camera aria-hidden className="size-5 text-muted-foreground" />
           <Label className="text-sm font-semibold">Fotos de diagnóstico</Label>
         </div>
         <p className="text-xs text-gray-500 mb-4">

@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { getUsuarioTaller } from '@/lib/auth/usuario-taller'
+import { validarVinculosTaller } from '@/lib/ordenes/validar-orden'
 import { NextResponse } from 'next/server'
 
 export async function GET(request: Request) {
@@ -15,13 +16,22 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const clienteId = searchParams.get('cliente_id')
     const matriculaBusqueda = searchParams.get('matricula')
+    const id = searchParams.get('id')
+    // Ficha de orden: coincidencia exacta de matrícula, datos del cliente y límite de resultados
+    const exacta = searchParams.get('exacta') === '1'
+    const conCliente = searchParams.get('con_cliente') === '1'
+    const limite = Math.min(Math.max(parseInt(searchParams.get('limite') || '', 10) || 0, 0), 50)
 
     let query = supabase
       .from('vehiculos')
-      .select('*')
+      .select(conCliente ? '*, clientes(id, nombre, apellidos, nif, telefono)' : '*')
       .eq('taller_id', auth.tallerId) // Solo vehículos del taller del usuario
 
-    if (matriculaBusqueda) {
+    if (id) {
+      query = query.eq('id', id)
+    } else if (matriculaBusqueda && exacta) {
+      query = query.ilike('matricula', matriculaBusqueda.toUpperCase().replace(/[%_]/g, ''))
+    } else if (matriculaBusqueda) {
       // Búsqueda por matrícula: se busca en TODO el taller, no sólo en los
       // vehículos ya vinculados al cliente indicado — un vehículo puede
       // pertenecer a otro cliente (flota, cambio de titular) o no tener
@@ -33,7 +43,10 @@ export async function GET(request: Request) {
       query = query.eq('cliente_id', clienteId)
     }
 
-    const { data, error } = await query.order('matricula', { ascending: true })
+    query = query.order('matricula', { ascending: true })
+    if (limite > 0) query = query.limit(limite)
+    const { data: filas, error } = await query
+    const data = filas as unknown as Array<{ cliente_id: string | null }> | null
 
     if (error) {
       return NextResponse.json(
@@ -77,6 +90,11 @@ export async function POST(request: Request) {
 
     // Limpiar matrícula
     const matriculaLimpia = body.matricula.toUpperCase().replace(/[\s-]/g, '')
+
+    const errorCliente = await validarVinculosTaller(supabase, auth.tallerId, { cliente_id: body.cliente_id || null })
+    if (errorCliente) {
+      return NextResponse.json({ error: errorCliente }, { status: 400 })
+    }
 
     // Verificar si ya existe en este taller
     const { data: existe } = await supabase
@@ -167,7 +185,7 @@ export async function PATCH(request: Request) {
 
     // Solo incluir campos que se envían
     const camposPermitidos = [
-      'kilometros', 'marca', 'modelo', 'color', 'tipo_combustible',
+      'matricula', 'kilometros', 'marca', 'modelo', 'color', 'tipo_combustible',
       'cliente_id', 'año', 'vin', 'bastidor_vin', 'carroceria',
       'potencia_cv', 'cilindrada'
     ]
@@ -175,6 +193,20 @@ export async function PATCH(request: Request) {
     for (const campo of camposPermitidos) {
       if (body[campo] !== undefined) {
         updateData[campo] = body[campo]
+      }
+    }
+
+    if (typeof updateData.matricula === 'string') {
+      updateData.matricula = updateData.matricula.toUpperCase().replace(/\s/g, '')
+      if (!updateData.matricula) {
+        return NextResponse.json({ error: 'Matrícula es obligatoria' }, { status: 400 })
+      }
+    }
+
+    if ('cliente_id' in updateData) {
+      const errorCliente = await validarVinculosTaller(supabase, auth.tallerId, { cliente_id: updateData.cliente_id || null })
+      if (errorCliente) {
+        return NextResponse.json({ error: errorCliente }, { status: 400 })
       }
     }
 

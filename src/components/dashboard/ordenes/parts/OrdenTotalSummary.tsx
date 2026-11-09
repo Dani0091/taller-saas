@@ -65,7 +65,7 @@ export function OrdenTotalSummary({ totales, className = '' }: OrdenTotalSummary
 
         {/* IVA */}
         {totales.subtotal > 0 && totales.iva === 0 ? (
-          <div className="flex justify-between text-amber-400">
+          <div className="flex justify-between text-warning">
             <span>IVA:</span>
             <span className="font-mono text-xs">Sin IVA aplicado</span>
           </div>
@@ -78,7 +78,7 @@ export function OrdenTotalSummary({ totales, className = '' }: OrdenTotalSummary
 
         {/* Retención (si aplica) */}
         {totales.retencion !== undefined && totales.retencion > 0 && (
-          <div className="flex justify-between text-orange-400">
+          <div className="flex justify-between text-warning">
             <span>Retención:</span>
             <span className="font-mono">-{formatearMoneda(totales.retencion)}</span>
           </div>
@@ -87,7 +87,7 @@ export function OrdenTotalSummary({ totales, className = '' }: OrdenTotalSummary
         {/* Total final */}
         <div className="border-t border-gray-600 pt-2 flex justify-between text-lg font-bold">
           <span>Total:</span>
-          <span className="text-green-400 font-mono">{formatearMoneda(totales.total)}</span>
+          <span className="text-success font-mono">{formatearMoneda(totales.total)}</span>
         </div>
       </div>
     </Card>

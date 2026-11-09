@@ -137,7 +137,7 @@ export function GoogleCalendarButton({
       <Button
         variant="outline"
         size="sm"
-        className="gap-2 text-xs text-green-600 border-green-200 bg-green-50"
+        className="gap-2 text-xs text-success border-success/30 bg-success/5"
         onClick={() => eventLink && window.open(eventLink, '_blank')}
       >
         <Check className="w-3 h-3" />

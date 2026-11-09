@@ -11,6 +11,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { obtenerUsuarioConFallback } from '@/lib/auth/obtener-usuario-fallback'
 import type { MetricasDashboardDTO } from '@/application/dtos/dashboard.dto'
+import { calcularMetricas } from '@/lib/dashboard/metricas'
 
 type ActionResult<T> = { success: true; data: T } | { success: false; error: string }
 
@@ -27,12 +28,6 @@ export async function obtenerMetricasDashboardAction(): Promise<ActionResult<Met
       console.error('❌ Usuario no encontrado en obtenerMetricasDashboardAction')
       return { success: false, error: 'Usuario no encontrado' }
     }
-
-    console.log('✅ Usuario para métricas:', {
-      email: usuario.email,
-      taller_id: usuario.taller_id,
-      tiene_talleres: !!usuario.talleres
-    })
 
     const tallerId = usuario.taller_id
     const supabase = await createClient()
@@ -56,7 +51,7 @@ export async function obtenerMetricasDashboardAction(): Promise<ActionResult<Met
     // Facturas (tiene deleted_at)
     const { data: facturas, error: facturasError } = await supabase
       .from('facturas')
-      .select('id, total, base_imponible, iva, fecha_emision')
+      .select('id, estado, total, base_imponible, iva, fecha_emision')
       .eq('taller_id', tallerId)
       .is('deleted_at', null)
 
@@ -89,67 +84,12 @@ export async function obtenerMetricasDashboardAction(): Promise<ActionResult<Met
     // 3. CÁLCULOS EN EL BACKEND (no en la UI)
     // PROTECCIÓN: Arrays vacíos retornan 0, nunca undefined o NaN
 
-    const hoy = new Date().toISOString().split('T')[0]
-    const ahora = new Date()
-    const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1)
-    const trimestre = Math.floor(ahora.getMonth() / 3)
-    const inicioTrimestre = new Date(ahora.getFullYear(), trimestre * 3, 1)
+    // Estados reales de órdenes y solo facturas emitidas (ver lib/dashboard/metricas)
+    const calculadas = calcularMetricas(ordenes || [], facturas || [])
 
-    // Métricas operativas (protegidas contra null/undefined)
-    const ordenesArray = ordenes || []
-    const ordenesHoy = ordenesArray.filter(o =>
-      o.fecha_entrada?.startsWith(hoy)
-    ).length || 0
-
-    const pendientes = ordenesArray.filter(o =>
-      o.estado && ['recibido', 'diagnostico', 'presupuestado', 'aprobado'].includes(o.estado)
-    ).length || 0
-
-    const enProgreso = ordenesArray.filter(o =>
-      o.estado === 'en_reparacion'
-    ).length || 0
-
-    const completadas = ordenesArray.filter(o =>
-      o.estado && ['completado', 'entregado'].includes(o.estado)
-    ).length || 0
-
-    // Filtrar facturas del mes y trimestre (con protección contra fechas null)
-    const facturasArray = facturas || []
-    const facturasMes = facturasArray.filter(f => {
-      if (!f.fecha_emision) return false
-      try {
-        return new Date(f.fecha_emision) >= inicioMes
-      } catch {
-        return false
-      }
-    })
-
-    const facturasTrimestre = facturasArray.filter(f => {
-      if (!f.fecha_emision) return false
-      try {
-        return new Date(f.fecha_emision) >= inicioTrimestre
-      } catch {
-        return false
-      }
-    })
-
-    // Calcular totales financieros (BACKEND hace los cálculos)
-    // Protegido: reduce siempre retorna un número, nunca undefined
-    const facturadoMes = facturasMes.reduce((sum, f) => sum + (Number(f.total) || 0), 0)
-    const baseImponibleMes = facturasMes.reduce((sum, f) => sum + (Number(f.base_imponible) || 0), 0)
-    const ivaRecaudadoMes = facturasMes.reduce((sum, f) => sum + (Number(f.iva) || 0), 0)
-    const ivaTrimestre = facturasTrimestre.reduce((sum, f) => sum + (Number(f.iva) || 0), 0)
-
-    // 4. RETORNAR MÉTRICAS PRE-CALCULADAS
     const metricas: MetricasDashboardDTO = {
-      ordenesHoy,
-      pendientes,
-      enProgreso,
-      completadas,
-      facturadoMes,
-      baseImponibleMes,
-      ivaRecaudadoMes,
-      ivaTrimestre,
+      ...calculadas,
+      ivaTrimestre: calculadas.trimestre.iva,
       clientesActivos: clientesCount,
       nombreUsuario: usuario.nombre ?? undefined,
       nombreTaller: usuario.talleres?.nombre ?? undefined

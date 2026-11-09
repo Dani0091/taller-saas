@@ -76,7 +76,7 @@ export function InformacionLegal({
   return (
     <div className="space-y-6">
       {/* DATOS DEL EMISOR */}
-      <Card className="p-6 bg-gradient-to-br from-gray-50 to-gray-100">
+      <Card className="p-6 bg-muted">
         <h3 className="font-bold text-lg mb-4 text-gray-900">Datos del Emisor</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>
@@ -119,7 +119,7 @@ export function InformacionLegal({
       </Card>
 
       {/* DATOS DEL RECEPTOR */}
-      <Card className="p-6 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+      <Card className="p-6 bg-primary/5 border-primary/30">
         <h3 className="font-bold text-lg mb-4 text-gray-900">Datos del Receptor</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>
@@ -161,16 +161,16 @@ export function InformacionLegal({
           </div>
           <div className="flex justify-between py-3 bg-gray-100 p-2 rounded font-bold">
             <span>Total</span>
-            <span className="text-lg text-blue-600">{formatCurrency(total)}</span>
+            <span className="text-lg text-primary">{formatCurrency(total)}</span>
           </div>
         </div>
       </Card>
 
       {/* CONDICIONES LEGALES */}
       {condicionesPago && (
-        <Card className="p-6 bg-yellow-50 border-yellow-200">
+        <Card className="p-6 bg-warning/5 border-warning/30">
           <div className="flex gap-3">
-            <Info className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+            <Info className="w-5 h-5 text-warning flex-shrink-0 mt-0.5" />
             <div>
               <h4 className="font-bold text-gray-900 mb-2">Condiciones de Pago</h4>
               <p className="text-sm text-gray-700 whitespace-pre-wrap">
@@ -187,7 +187,7 @@ export function InformacionLegal({
         <div className="space-y-3 text-sm">
           {/* Factura válida */}
           <div className="flex gap-3 items-start">
-            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <CheckCircle className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold text-gray-900">Factura válida</p>
               <p className="text-gray-600">
@@ -198,7 +198,7 @@ export function InformacionLegal({
 
           {/* IVA */}
           <div className="flex gap-3 items-start">
-            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <CheckCircle className="w-5 h-5 text-success flex-shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold text-gray-900">IVA incluido</p>
               <p className="text-gray-600">
@@ -209,7 +209,7 @@ export function InformacionLegal({
 
           {/* Conservación */}
           <div className="flex gap-3 items-start">
-            <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold text-gray-900">Conservación</p>
               <p className="text-gray-600">
@@ -220,7 +220,7 @@ export function InformacionLegal({
 
           {/* Garantía */}
           <div className="flex gap-3 items-start pt-3 border-t">
-            <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <Info className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
             <div>
               <p className="font-semibold text-gray-900">Garantía de reparaciones</p>
               <p className="text-gray-600 text-xs">

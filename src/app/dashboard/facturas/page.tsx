@@ -8,17 +8,21 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { FileText, Plus, Download, Eye, Trash2, Loader2, AlertCircle, X, ChevronLeft, ChevronRight, Search, SlidersHorizontal } from 'lucide-react'
 import { toast } from 'sonner'
+import { Drawer } from 'vaul'
 import { listarFacturasAction, anularFacturaAction } from '@/actions/facturas'
 import type { FacturaListadoDTO } from '@/application/dtos'
 import { EstadoFactura } from '@/domain/types'
 import { useDescargarFacturasMultiple } from '@/hooks/useDescargarFacturasMultiple'
 import { PERIODOS_FACTURA, rangoPeriodo, type PeriodoFactura } from '@/lib/facturas/periodo'
+import { trimestreDeClave } from '@/lib/facturas/trimestres'
+import { TrimestresHacienda } from '@/components/facturas/trimestres-hacienda'
+import { AccionesPagina } from '@/components/dashboard/acciones-pagina'
 
 const estadoColors: Record<string, string> = {
-  'borrador': 'bg-gray-100 text-gray-800',
-  'emitida': 'bg-blue-100 text-blue-800',
-  'pagada': 'bg-green-100 text-green-800',
-  'anulada': 'bg-red-100 text-red-800',
+  'borrador': 'bg-muted text-foreground',
+  'emitida': 'bg-primary/10 text-primary',
+  'pagada': 'bg-success/10 text-success',
+  'anulada': 'bg-destructive/10 text-destructive',
 }
 
 const estadoLabels: Record<string, string> = {
@@ -62,6 +66,15 @@ export default function FacturasPage() {
   const { descargarSeleccionadas, descargando } = useDescargarFacturasMultiple()
   // Solo cuenta la respuesta de la última petición (filtros que cambian rápido)
   const ultimaPeticion = useRef(0)
+
+  // Enlaces desde el inicio: ?trimestre=2026-T4 y ?estado=emitida
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const trimestre = params.get('trimestre')
+    if (trimestre && trimestreDeClave(trimestre)) setFiltroFecha(trimestre as PeriodoFactura)
+    const estado = params.get('estado')
+    if (estado && ['borrador', 'emitida', 'pagada', 'anulada'].includes(estado)) setFiltroEstado(estado as EstadoFactura)
+  }, [])
 
   // Series del taller para el filtro
   useEffect(() => {
@@ -185,32 +198,101 @@ export default function FacturasPage() {
     await descargarSeleccionadas([...seleccionadas].map(([id, numeroFactura]) => ({ id, numeroFactura })))
   }
 
+  // Los mismos controles en línea (escritorio) y en la hoja de filtros (móvil); sufijo para ids únicos
+  const controlesFiltro = (sufijo: string, enRejilla = false) => (
+    <>
+      <div>
+        <label htmlFor={`filtro-estado${sufijo}`} className="block text-sm font-semibold mb-2">Estado</label>
+        <select id={`filtro-estado${sufijo}`} value={filtroEstado} onChange={(e) => setFiltroEstado(e.target.value as EstadoFactura | '')} className="w-full min-h-11 rounded-md border bg-card px-3 text-base md:text-sm focus:outline-none focus:ring-[3px] focus:ring-ring/50">
+          <option value="">Todos los estados</option>
+          <option value="borrador">Borrador</option>
+          <option value="emitida">Emitida</option>
+          <option value="pagada">Pagada</option>
+          <option value="anulada">Anulada</option>
+        </select>
+      </div>
+      <div>
+        <label htmlFor={`filtro-serie${sufijo}`} className="block text-sm font-semibold mb-2">Serie</label>
+        <select id={`filtro-serie${sufijo}`} value={filtroSerie} onChange={(e) => setFiltroSerie(e.target.value)} className="w-full min-h-11 rounded-md border bg-card px-3 text-base md:text-sm focus:outline-none focus:ring-[3px] focus:ring-ring/50">
+          <option value="">Todas las series</option>
+          {series.map(s => (
+            <option key={s.id} value={s.prefijo}>
+              {s.prefijo}{s.nombre && s.nombre !== `Serie ${s.prefijo}` ? ` · ${s.nombre}` : ''}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label htmlFor={`ordenar-facturas${sufijo}`} className="block text-sm font-semibold mb-2">Ordenar por</label>
+        <select id={`ordenar-facturas${sufijo}`} value={sortBy} onChange={(e) => setSortBy(e.target.value as 'recientes' | 'antiguos' | 'fecha_emision')} className="w-full min-h-11 rounded-md border bg-card px-3 text-base md:text-sm focus:outline-none focus:ring-[3px] focus:ring-ring/50">
+          <option value="recientes">Más recientes</option>
+          <option value="antiguos">Más antiguos</option>
+          <option value="fecha_emision">Por fecha emisión</option>
+        </select>
+      </div>
+      {!enRejilla && periodoFiltro(sufijo)}
+    </>
+  )
+
+  const periodoFiltro = (sufijo: string) => (
+    <div>
+      <span id={`periodo-facturas${sufijo}`} className="block text-sm font-semibold mb-2">Periodo</span>
+      <div className="flex flex-wrap gap-2" role="group" aria-labelledby={`periodo-facturas${sufijo}`}>
+        {PERIODOS_FACTURA.map(f => (
+          <button
+            key={f.value}
+            type="button"
+            aria-pressed={filtroFecha === f.value}
+            onClick={() => setFiltroFecha(f.value)}
+            className={`min-h-9 rounded-full border px-3 text-sm font-medium transition-colors ${
+              filtroFecha === f.value ? 'border-primary bg-primary text-primary-foreground' : 'bg-card text-foreground hover:bg-accent'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+      {filtroFecha === 'personalizado' && (
+        <div className="flex flex-col sm:flex-row gap-2 mt-3">
+          <div className="flex-1">
+            <label htmlFor={`periodo-desde${sufijo}`} className="block text-xs text-muted-foreground mb-1">Desde</label>
+            <Input id={`periodo-desde${sufijo}`} type="date" value={rangoPersonalizado.from} onChange={(e) => setRangoPersonalizado(prev => ({ ...prev, from: e.target.value }))} />
+          </div>
+          <div className="flex-1">
+            <label htmlFor={`periodo-hasta${sufijo}`} className="block text-xs text-muted-foreground mb-1">Hasta</label>
+            <Input id={`periodo-hasta${sufijo}`} type="date" value={rangoPersonalizado.to} onChange={(e) => setRangoPersonalizado(prev => ({ ...prev, to: e.target.value }))} />
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
   const primera = total === 0 ? 0 : (pagina - 1) * POR_PAGINA + 1
   const ultima = Math.min(pagina * POR_PAGINA, total)
 
   return (
-    <div className="space-y-6 pb-20">
-      {/* HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Facturas</h1>
-          <p className="text-gray-600 mt-1">Gestiona todas tus facturas</p>
-        </div>
-        <Link href="/dashboard/facturas/nueva">
-          <Button className="gap-2 bg-primary hover:bg-primary/90 w-full sm:w-auto">
-            <Plus className="w-5 h-5" />
-            Nueva Factura
-          </Button>
-        </Link>
-      </div>
+    <div className="space-y-4 pb-20">
+      <AccionesPagina>
+        <Button size="sm" asChild className="gap-1.5">
+          <Link href="/dashboard/facturas/nueva">
+            <Plus className="size-4" aria-hidden />
+            Nueva<span className="hidden sm:inline"> factura</span>
+          </Link>
+        </Button>
+      </AccionesPagina>
 
-      {/* FILTROS */}
+      <TrimestresHacienda
+        seleccionado={trimestreDeClave(filtroFecha) ? filtroFecha : null}
+        onSeleccionar={(clave) => setFiltroFecha((clave as PeriodoFactura | null) ?? 'todas')}
+      />
+
+      {/* FILTROS: en línea desde sm; en móvil, en una hoja inferior (vaul) */}
       <Card className="p-4 md:p-6 space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-[1fr_auto] gap-3 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
           <div className="sm:col-span-2 lg:col-span-1">
-            <label htmlFor="buscar-facturas" className="block text-sm font-semibold mb-2">Buscar</label>
+            <label htmlFor="buscar-facturas" className="sr-only text-sm font-semibold sm:not-sr-only sm:mb-2 sm:block">Buscar</label>
             <div className="relative">
-              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden />
+              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
               <Input
                 id="buscar-facturas"
                 type="search"
@@ -221,114 +303,50 @@ export default function FacturasPage() {
               />
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setFiltrosAbiertos(v => !v)}
-            aria-expanded={filtrosAbiertos}
-            aria-controls="filtros-facturas"
-            className="sm:hidden flex items-center justify-center gap-2 min-h-10 rounded-lg border border-gray-300 text-sm font-medium text-gray-700"
-          >
-            <SlidersHorizontal className="w-4 h-4" aria-hidden />
-            Filtros{filtrosPlegadosActivos > 0 && ` (${filtrosPlegadosActivos})`}
-          </button>
-          <div id="filtros-facturas" className={`${filtrosAbiertos ? 'grid' : 'hidden'} sm:contents grid-cols-1 gap-4`}>
-          <div>
-            <label htmlFor="filtro-estado" className="block text-sm font-semibold mb-2">Estado</label>
-            <select
-              id="filtro-estado"
-              value={filtroEstado}
-              onChange={(e) => setFiltroEstado(e.target.value as EstadoFactura | '')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
-            >
-              <option value="">Todos los estados</option>
-              <option value="borrador">Borrador</option>
-              <option value="emitida">Emitida</option>
-              <option value="pagada">Pagada</option>
-              <option value="anulada">Anulada</option>
-            </select>
-          </div>
-          <div>
-            <label htmlFor="filtro-serie" className="block text-sm font-semibold mb-2">Serie</label>
-            <select
-              id="filtro-serie"
-              value={filtroSerie}
-              onChange={(e) => setFiltroSerie(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
-            >
-              <option value="">Todas las series</option>
-              {series.map(s => (
-                <option key={s.id} value={s.prefijo}>
-                  {s.prefijo}{s.nombre && s.nombre !== `Serie ${s.prefijo}` ? ` · ${s.nombre}` : ''}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="ordenar-facturas" className="block text-sm font-semibold mb-2">Ordenar por</label>
-            <select
-              id="ordenar-facturas"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as 'recientes' | 'antiguos' | 'fecha_emision')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent"
-            >
-              <option value="recientes">Más recientes</option>
-              <option value="antiguos">Más antiguos</option>
-              <option value="fecha_emision">Por fecha emisión</option>
-            </select>
-          </div>
+          <Drawer.Root open={filtrosAbiertos} onOpenChange={setFiltrosAbiertos}>
+            <Drawer.Trigger asChild>
+              <button
+                type="button"
+                className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border bg-card px-3 text-sm font-medium text-foreground sm:hidden"
+              >
+                <SlidersHorizontal className="size-4" aria-hidden />
+                Filtros{filtrosPlegadosActivos > 0 && ` (${filtrosPlegadosActivos})`}
+              </button>
+            </Drawer.Trigger>
+            <Drawer.Portal>
+              <Drawer.Overlay className="fixed inset-0 z-40 bg-black/40" />
+              <Drawer.Content aria-describedby={undefined} className="fixed inset-x-0 bottom-0 z-50 flex max-h-[85vh] flex-col rounded-t-2xl bg-card outline-none">
+                <div aria-hidden className="mx-auto mt-3 h-1.5 w-12 shrink-0 rounded-full bg-muted-foreground/30" />
+                <Drawer.Title className="px-4 pb-2 pt-3 text-lg font-semibold text-foreground">Filtros</Drawer.Title>
+                <div className="space-y-4 overflow-y-auto px-4 pb-4">
+                  {controlesFiltro('-movil')}
+                </div>
+                <div className="flex gap-2 border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                  {hayFiltros && (
+                    <Button variant="outline" size="xl" className="flex-1" onClick={limpiarFiltros}>Quitar filtros</Button>
+                  )}
+                  <Button size="xl" className="flex-1" onClick={() => setFiltrosAbiertos(false)}>
+                    Ver {total} factura{total !== 1 ? 's' : ''}
+                  </Button>
+                </div>
+              </Drawer.Content>
+            </Drawer.Portal>
+          </Drawer.Root>
+          <div className="hidden sm:contents">
+            {controlesFiltro('', true)}
           </div>
         </div>
 
-        {/* FILTRO DE FECHA */}
-        <div className={`${filtrosAbiertos ? 'block' : 'hidden'} sm:block`}>
-          <span id="periodo-facturas" className="block text-sm font-semibold mb-2">Periodo</span>
-          <div className="flex flex-wrap gap-2" role="group" aria-labelledby="periodo-facturas">
-            {PERIODOS_FACTURA.map(f => (
-              <button
-                key={f.value}
-                type="button"
-                aria-pressed={filtroFecha === f.value}
-                onClick={() => setFiltroFecha(f.value)}
-                className={`px-3 py-2 text-sm font-medium rounded-lg border-2 transition-all ${
-                  filtroFecha === f.value
-                    ? 'bg-primary border-primary text-white'
-                    : 'bg-white border-gray-200 text-gray-600 hover:border-sky-300'
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-          {filtroFecha === 'personalizado' && (
-            <div className="flex flex-col sm:flex-row gap-2 mt-3">
-              <div className="flex-1">
-                <label htmlFor="periodo-desde" className="block text-xs text-gray-500 mb-1">Desde</label>
-                <Input
-                  id="periodo-desde"
-                  type="date"
-                  value={rangoPersonalizado.from}
-                  onChange={(e) => setRangoPersonalizado(prev => ({ ...prev, from: e.target.value }))}
-                />
-              </div>
-              <div className="flex-1">
-                <label htmlFor="periodo-hasta" className="block text-xs text-gray-500 mb-1">Hasta</label>
-                <Input
-                  id="periodo-hasta"
-                  type="date"
-                  value={rangoPersonalizado.to}
-                  onChange={(e) => setRangoPersonalizado(prev => ({ ...prev, to: e.target.value }))}
-                />
-              </div>
-            </div>
-          )}
+        <div className="hidden sm:block">
+          {periodoFiltro('')}
         </div>
       </Card>
 
       {/* LISTADO */}
       {error ? (
         <Card className="p-12 text-center">
-          <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <p className="text-red-600 font-medium mb-2">Error al cargar datos</p>
+          <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
+          <p className="text-destructive font-medium mb-2">Error al cargar datos</p>
           <p className="text-gray-500 text-sm mb-4">{error}</p>
           <Button onClick={() => { setError(null); fetchFacturas(); }}>
             Reintentar
@@ -358,12 +376,44 @@ export default function FacturasPage() {
               {totalPaginas > 1 && <> · mostrando {primera}–{ultima}</>}
             </p>
             {hayFiltros && (
-              <button type="button" onClick={limpiarFiltros} className="text-sm text-sky-700 hover:underline">
+              <button type="button" onClick={limpiarFiltros} className="text-sm text-primary hover:underline">
                 Quitar filtros
               </button>
             )}
           </div>
-          <Card className={`overflow-hidden transition-opacity ${loading ? 'opacity-60' : ''}`} aria-busy={loading}>
+          {/* Móvil: tarjetas (la tabla no cabe sin desplazarse) */}
+          <ul className={`space-y-2 md:hidden transition-opacity ${loading ? 'opacity-60' : ''}`} aria-busy={loading}>
+            {facturas.map((factura) => (
+              <li key={factura.id} className={`flex items-start gap-3 rounded-xl border bg-card p-3 shadow-xs ${seleccionadas.has(factura.id) ? 'border-primary/40 bg-primary/5' : ''}`}>
+                <input
+                  type="checkbox"
+                  checked={seleccionadas.has(factura.id)}
+                  onChange={() => toggleSeleccion(factura)}
+                  className="mt-1 size-5 shrink-0 rounded border-gray-300 text-primary focus:ring-ring"
+                  aria-label={`Seleccionar factura ${factura.numeroFactura ?? ''}`}
+                />
+                <Link href={`/dashboard/facturas/ver?id=${factura.id}`} className="min-w-0 flex-1" aria-label={`Ver factura ${factura.numeroFactura ?? ''}`}>
+                  <span className="flex items-center justify-between gap-2">
+                    <span className="font-semibold text-foreground">{factura.numeroFactura || 'Borrador'}</span>
+                    <span className="font-semibold tabular-nums text-foreground">{factura.totalFormateado}</span>
+                  </span>
+                  <span className="mt-0.5 flex items-center justify-between gap-2 text-sm">
+                    <span className="truncate text-muted-foreground">
+                      {factura.cliente?.nombre || 'Sin cliente'} · {new Date(factura.fechaEmision).toLocaleDateString('es-ES')}
+                    </span>
+                    <Badge className={estadoColors[factura.estado] || 'bg-muted text-foreground'}>
+                      {estadoLabels[factura.estado] ?? factura.estado}
+                    </Badge>
+                  </span>
+                  {factura.matricula && (
+                    <span className="mt-1 inline-block rounded-md bg-muted px-1.5 py-0.5 font-mono text-xs font-semibold tracking-wide text-foreground">{factura.matricula}</span>
+                  )}
+                </Link>
+              </li>
+            ))}
+          </ul>
+
+          <Card className={`hidden md:block overflow-hidden transition-opacity ${loading ? 'opacity-60' : ''}`} aria-busy={loading}>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 border-b">
@@ -388,7 +438,7 @@ export default function FacturasPage() {
                 </thead>
                 <tbody>
                   {facturas.map((factura) => (
-                    <tr key={factura.id} className={`border-b hover:bg-gray-50 transition ${seleccionadas.has(factura.id) ? 'bg-sky-50' : ''}`}>
+                    <tr key={factura.id} className={`border-b hover:bg-gray-50 transition ${seleccionadas.has(factura.id) ? 'bg-primary/5' : ''}`}>
                       <td className="px-4 py-4">
                         <input
                           type="checkbox"
@@ -434,7 +484,7 @@ export default function FacturasPage() {
                           <Link
                             href={`/dashboard/facturas/ver?id=${factura.id}`}
                             aria-label={`Ver factura ${factura.numeroFactura ?? ''}`}
-                            className="inline-flex items-center justify-center rounded-md p-2 text-primary hover:bg-sky-50"
+                            className="inline-flex items-center justify-center rounded-md p-2 text-primary hover:bg-primary/5"
                           >
                             <Eye className="w-4 h-4" />
                           </Link>
@@ -444,7 +494,7 @@ export default function FacturasPage() {
                               size="sm"
                               onClick={() => handleDelete(factura.id, factura.numeroFactura)}
                               disabled={deletingId === factura.id}
-                              className="text-red-600 p-2"
+                              className="text-destructive p-2"
                               aria-label={`Anular factura ${factura.numeroFactura ?? ''}`}
                             >
                               {deletingId === factura.id ? (
@@ -513,7 +563,7 @@ export default function FacturasPage() {
                 size="xl"
                 onClick={handleDescargarSeleccionadas}
                 disabled={descargando}
-                className="bg-green-600 hover:bg-green-700 gap-2"
+                className="bg-success hover:bg-success/90 gap-2"
               >
                 {descargando ? (
                   <Loader2 className="w-4 h-4 animate-spin" />

@@ -48,12 +48,12 @@ export function FotoUploader(props: FotoUploaderProps) {
       let fileToUpload = file
       try {
         if (isLowRAMDevice()) {
-          toast.loading('📸 Optimizando imagen...')
+          toast.loading('Optimizando imagen...')
         }
         fileToUpload = await compressImage(file)
         toast.dismiss()
       } catch (compressError) {
-        console.warn('⚠️ Error comprimiendo, usando original:', compressError)
+        console.warn('Error comprimiendo, usando original:', compressError)
       }
 
       setPreviewUrl(URL.createObjectURL(fileToUpload))
@@ -73,7 +73,7 @@ export function FotoUploader(props: FotoUploaderProps) {
       if (!data.success) throw new Error(data.error)
 
       onFotoSubida(data.imageUrl)
-      toast.success('✅ Foto subida')
+      toast.success('Foto subida')
 
       // OCR para fotos relevantes (entrada, cuadro, fallo_motor)
       const tiposConOCR = ['entrada', 'cuadro', 'fallo_motor']
@@ -93,7 +93,7 @@ export function FotoUploader(props: FotoUploaderProps) {
   const procesarOCRFoto = async (imageUrl: string) => {
     try {
       setProcesandoOCR(true)
-      toast.loading('🔍 Procesando OCR (primera vez tarda más)...')
+      toast.loading('Procesando OCR (primera vez tarda más)...')
       
       const resultado = await extraerDatosDeImagen(imageUrl)
 
@@ -107,10 +107,10 @@ export function FotoUploader(props: FotoUploaderProps) {
         onOCRData?.({ matricula: resultado.matricula || undefined, km: resultado.km || undefined })
         const msg = [resultado.matricula, resultado.km ? `${resultado.km}km` : ''].filter(Boolean).join(' ')
         toast.dismiss()
-        toast.success(`✅ OCR: ${msg}`)
+        toast.success(`OCR: ${msg}`)
       } else {
         toast.dismiss()
-        toast.info('ℹ️ No se encontró matrícula o km')
+        toast.info('No se encontró matrícula o km')
       }
     } catch (error: any) {
       toast.dismiss()
@@ -142,32 +142,32 @@ export function FotoUploader(props: FotoUploaderProps) {
                 href={mostrarPreview}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 active:scale-95 transition-transform"
+                className="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 active:scale-95 transition-transform"
               >
                 <Eye className="w-5 h-5" />
               </a>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="p-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 active:scale-95 transition-transform"
+                className="p-2 bg-warning text-white rounded-lg hover:bg-warning/90 active:scale-95 transition-transform"
                 disabled={disabled || subiendo}
               >
                 <Camera className="w-5 h-5" />
               </button>
               <button aria-label="Eliminar foto"
                 onClick={handleEliminar}
-                className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 active:scale-95 transition-transform"
+                className="p-2 bg-destructive text-white rounded-lg hover:bg-destructive/90 active:scale-95 transition-transform"
                 disabled={disabled}
               >
                 <Trash2 className="w-5 h-5" />
               </button>
             </div>
             {subiendo && <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center"><Loader2 className="w-6 h-6 text-white animate-spin" /></div>}
-            {procesandoOCR && <div className="absolute top-2 left-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> OCR...</div>}
+            {procesandoOCR && <div className="absolute top-2 left-2 bg-warning text-white text-xs px-2 py-1 rounded flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> OCR...</div>}
           </div>
-          <p className="text-xs text-green-600">✅ Guardada</p>
+          <p className="text-xs text-success">Guardada</p>
         </div>
       ) : (
-        <button onClick={() => fileInputRef.current?.click()} disabled={disabled || subiendo} className="w-full aspect-video rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-500 hover:bg-blue-50 transition-all flex flex-col items-center justify-center cursor-pointer bg-gray-50 text-gray-600 hover:text-blue-600 disabled:opacity-50">
+        <button onClick={() => fileInputRef.current?.click()} disabled={disabled || subiendo} className="w-full aspect-video rounded-lg border-2 border-dashed border-gray-300 hover:border-primary hover:bg-primary/5 transition-all flex flex-col items-center justify-center cursor-pointer bg-gray-50 text-gray-600 hover:text-primary disabled:opacity-50">
           {subiendo ? (<><Loader2 className="w-6 h-6 animate-spin mb-2" /><span className="text-xs font-medium">Subiendo...</span></>) : (<><Camera className="w-6 h-6 mb-2" /><span className="text-xs font-medium">Click para subir</span></>)}
         </button>
       )}
