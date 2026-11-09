@@ -34,6 +34,13 @@ export interface FacturaDBRecord {
     marca?: string
     modelo?: string
   } | null
+  matricula?: string | null
+  // Relación embebida (join a clientes), presente cuando el SELECT la solicita
+  cliente?: {
+    nombre?: string | null
+    apellidos?: string | null
+    nif?: string | null
+  } | null
   fecha_emision: string
   fecha_vencimiento?: string
   base_imponible: number
@@ -175,6 +182,13 @@ export class FacturaMapper {
             matricula: record.vehiculo.matricula,
             marca: record.vehiculo.marca,
             modelo: record.vehiculo.modelo
+          }
+        : undefined,
+      matricula: record.matricula || undefined,
+      cliente: record.cliente
+        ? {
+            nombre: [record.cliente.nombre, record.cliente.apellidos].filter(Boolean).join(' '),
+            nif: record.cliente.nif || undefined
           }
         : undefined,
       fechaEmision: new Date(record.fecha_emision),

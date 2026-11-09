@@ -201,19 +201,19 @@ export default function RegistroPage() {
         {/* Progress Steps */}
         <div className="flex items-center justify-center gap-2 mb-8">
           <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
-            step === 'taller' ? 'bg-sky-600 text-white' : 'bg-sky-100 text-sky-600'
+            step === 'taller' ? 'bg-primary text-white' : 'bg-sky-100 text-primary'
           }`}>
             1
           </div>
-          <div className={`w-12 h-1 rounded ${step !== 'taller' ? 'bg-sky-600' : 'bg-gray-200'}`} />
+          <div className={`w-12 h-1 rounded ${step !== 'taller' ? 'bg-primary' : 'bg-gray-200'}`} />
           <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
-            step === 'usuario' ? 'bg-sky-600 text-white' : step === 'confirmacion' ? 'bg-sky-100 text-sky-600' : 'bg-gray-200 text-gray-400'
+            step === 'usuario' ? 'bg-primary text-white' : step === 'confirmacion' ? 'bg-sky-100 text-primary' : 'bg-gray-200 text-gray-400'
           }`}>
             2
           </div>
-          <div className={`w-12 h-1 rounded ${step === 'confirmacion' ? 'bg-sky-600' : 'bg-gray-200'}`} />
+          <div className={`w-12 h-1 rounded ${step === 'confirmacion' ? 'bg-primary' : 'bg-gray-200'}`} />
           <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
-            step === 'confirmacion' ? 'bg-sky-600 text-white' : 'bg-gray-200 text-gray-400'
+            step === 'confirmacion' ? 'bg-primary text-white' : 'bg-gray-200 text-gray-400'
           }`}>
             3
           </div>
@@ -231,7 +231,7 @@ export default function RegistroPage() {
         {step === 'taller' && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-4">
-              <Building2 className="w-5 h-5 text-sky-600" />
+              <Building2 className="w-5 h-5 text-primary" />
               <h2 className="text-lg font-semibold">Datos del Taller</h2>
             </div>
 
@@ -242,7 +242,7 @@ export default function RegistroPage() {
                 name="nombre_taller"
                 value={formData.nombre_taller}
                 onChange={handleChange}
-                placeholder="Ej: Taller Mecánico García"
+                placeholder="Ej.: Talleres García"
                 className="mt-1"
               />
             </div>
@@ -254,7 +254,7 @@ export default function RegistroPage() {
                 name="cif"
                 value={formData.cif}
                 onChange={handleChange}
-                placeholder="Ej: B12345678"
+                placeholder="Ej.: B12345674"
                 className="mt-1"
               />
             </div>
@@ -266,7 +266,7 @@ export default function RegistroPage() {
                 name="direccion"
                 value={formData.direccion}
                 onChange={handleChange}
-                placeholder="Calle, número, ciudad"
+                placeholder="Ej.: C/ Mayor, 12, Valencia"
                 className="mt-1"
               />
             </div>
@@ -291,13 +291,13 @@ export default function RegistroPage() {
                   type="email"
                   value={formData.email_taller}
                   onChange={handleChange}
-                  placeholder="taller@email.com"
+                  placeholder="taller@ejemplo.es"
                   className="mt-1"
                 />
               </div>
             </div>
 
-            <Button onClick={handleNext} className="w-full mt-6 bg-sky-600 hover:bg-sky-700">
+            <Button onClick={handleNext} className="w-full mt-6 bg-primary hover:bg-primary/90">
               Siguiente
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
@@ -308,7 +308,7 @@ export default function RegistroPage() {
         {step === 'usuario' && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-4">
-              <User className="w-5 h-5 text-sky-600" />
+              <User className="w-5 h-5 text-primary" />
               <h2 className="text-lg font-semibold">Tu cuenta de administrador</h2>
             </div>
 
@@ -319,7 +319,7 @@ export default function RegistroPage() {
                 name="nombre_usuario"
                 value={formData.nombre_usuario}
                 onChange={handleChange}
-                placeholder="Ej: Juan García"
+                placeholder="Ej.: Juan García"
                 className="mt-1"
               />
             </div>
@@ -369,7 +369,7 @@ export default function RegistroPage() {
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Atrás
               </Button>
-              <Button onClick={handleNext} className="flex-1 bg-sky-600 hover:bg-sky-700">
+              <Button onClick={handleNext} className="flex-1 bg-primary hover:bg-primary/90">
                 Siguiente
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
@@ -381,7 +381,7 @@ export default function RegistroPage() {
         {step === 'confirmacion' && (
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-4">
-              <CheckCircle2 className="w-5 h-5 text-sky-600" />
+              <CheckCircle2 className="w-5 h-5 text-primary" />
               <h2 className="text-lg font-semibold">Confirma tus datos</h2>
             </div>
 
@@ -436,7 +436,7 @@ export default function RegistroPage() {
         <div className="mt-8 text-center">
           <p className="text-sm text-gray-600">
             ¿Ya tienes cuenta?{' '}
-            <Link href="/auth/login" className="text-sky-600 hover:underline font-medium">
+            <Link href="/auth/login" className="text-primary hover:underline font-medium">
               Iniciar sesión
             </Link>
           </p>

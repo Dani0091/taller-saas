@@ -125,7 +125,7 @@ export default function NuevoVehiculoPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-lg mx-auto px-4 py-6">
         <div className="flex items-center gap-4 mb-6">
-          <Button variant="outline" size="icon" onClick={() => router.back()}>
+          <Button variant="outline" size="icon" onClick={() => router.back()} aria-label="Volver">
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
@@ -141,14 +141,14 @@ export default function NuevoVehiculoPage() {
               <div key={s} className="flex items-center flex-1 last:flex-none">
                 <div
                   className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
-                    s < paso ? 'bg-green-600 text-white' : s === paso ? 'bg-sky-600 text-white' : 'bg-gray-200 text-gray-400'
+                    s < paso ? 'bg-green-600 text-white' : s === paso ? 'bg-primary text-white' : 'bg-gray-200 text-gray-400'
                   }`}
                 >
                   {s < paso ? <Check className="w-4 h-4" /> : s}
                 </div>
                 {s < 5 && (
                   <div className="flex-1 h-1 mx-1 rounded-full bg-gray-200 overflow-hidden">
-                    <div className={`h-full bg-sky-600 transition-all duration-300 ${s < paso ? 'w-full' : 'w-0'}`} />
+                    <div className={`h-full bg-primary transition-all duration-300 ${s < paso ? 'w-full' : 'w-0'}`} />
                   </div>
                 )}
               </div>
@@ -161,12 +161,13 @@ export default function NuevoVehiculoPage() {
         <div className="bg-white border rounded-2xl p-4 shadow-sm space-y-4">
           {paso === 1 && (
             <div>
-              <Label className="text-sm font-semibold mb-2 block">Matrícula *</Label>
+              <Label htmlFor="nv-matricula" className="text-sm font-semibold mb-2 block">Matrícula *</Label>
               <div className="flex gap-2">
                 <Input
+                  id="nv-matricula"
                   value={formData.matricula}
                   onChange={(e) => set({ matricula: sanitizeMatricula(e.target.value) })}
-                  placeholder="Ej: 1234ABC"
+                  placeholder="Ej.: 1234 BCD"
                   className="font-mono uppercase text-center text-lg tracking-widest flex-1"
                   autoFocus
                 />
@@ -178,12 +179,13 @@ export default function NuevoVehiculoPage() {
 
           {paso === 2 && (
             <div>
-              <Label className="text-sm font-semibold mb-2 block">Bastidor (VIN) *</Label>
+              <Label htmlFor="nv-vin" className="text-sm font-semibold mb-2 block">Bastidor (VIN) *</Label>
               <div className="flex gap-2">
                 <Input
+                  id="nv-vin"
                   value={formData.vin || ''}
                   onChange={(e) => set({ vin: e.target.value.toUpperCase() })}
-                  placeholder="Ej: WVWZZZ1KZBW123456"
+                  placeholder="Ej.: VSSZZZKJZLR012345"
                   className="font-mono uppercase flex-1"
                   autoFocus
                 />
@@ -196,12 +198,13 @@ export default function NuevoVehiculoPage() {
           {paso === 3 && (
             <div className="space-y-4">
               <div>
-                <Label className="text-sm font-semibold mb-2 block">Marca *</Label>
+                <Label htmlFor="nv-marca" className="text-sm font-semibold mb-2 block">Marca *</Label>
                 <Input
+                  id="nv-marca"
                   list="marcas-comunes"
                   value={formData.marca || ''}
                   onChange={(e) => set({ marca: e.target.value })}
-                  placeholder="Ej: Seat"
+                  placeholder="Ej.: Seat"
                   autoFocus
                 />
                 <datalist id="marcas-comunes">
@@ -209,11 +212,12 @@ export default function NuevoVehiculoPage() {
                 </datalist>
               </div>
               <div>
-                <Label className="text-sm font-semibold mb-2 block">Modelo *</Label>
+                <Label htmlFor="nv-modelo" className="text-sm font-semibold mb-2 block">Modelo *</Label>
                 <Input
+                  id="nv-modelo"
                   value={formData.modelo || ''}
                   onChange={(e) => set({ modelo: e.target.value })}
-                  placeholder="Ej: Ibiza"
+                  placeholder="Ej.: Ibiza"
                 />
               </div>
               <div>
@@ -229,7 +233,7 @@ export default function NuevoVehiculoPage() {
                       toast.error(VehiculoValidationRules.año.message)
                     }
                   }}
-                  placeholder="2022"
+                  placeholder="2019"
                   min={1900}
                   max={new Date().getFullYear() + 1}
                   allowEmpty
@@ -245,7 +249,7 @@ export default function NuevoVehiculoPage() {
                 <select
                   value={formData.tipo_combustible || ''}
                   onChange={(e) => set({ tipo_combustible: e.target.value })}
-                  className="w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white"
+                  className="w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-ring bg-white"
                 >
                   <option value="">Seleccionar...</option>
                   {TIPOS_COMBUSTIBLE_OPTIONS.map(o => (
@@ -255,7 +259,7 @@ export default function NuevoVehiculoPage() {
               </div>
               <div>
                 <Label className="text-sm font-semibold mb-2 block">Color</Label>
-                <Input value={formData.color || ''} onChange={(e) => set({ color: e.target.value })} placeholder="Gris, Blanco, Negro" />
+                <Input value={formData.color || ''} onChange={(e) => set({ color: e.target.value })} placeholder="Ej.: Gris" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -319,7 +323,7 @@ export default function NuevoVehiculoPage() {
           {paso < 5 ? (
             <Button
               size="xl"
-              className="flex-1 bg-sky-600 hover:bg-sky-700"
+              className="flex-1 bg-primary hover:bg-primary/90"
               disabled={!puedeAvanzar}
               onClick={() => setPaso(prev => (prev + 1) as any)}
             >

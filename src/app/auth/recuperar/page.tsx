@@ -119,7 +119,7 @@ export default function RecuperarPage() {
           <Button
             type="submit"
             disabled={loading}
-            className="w-full bg-sky-600 hover:bg-sky-700"
+            className="w-full bg-primary hover:bg-primary/90"
           >
             {loading ? (
               <>
@@ -133,7 +133,7 @@ export default function RecuperarPage() {
         </form>
 
         <div className="mt-6 text-center">
-          <Link href="/auth/login" className="text-sm text-gray-600 hover:text-sky-600">
+          <Link href="/auth/login" className="text-sm text-gray-600 hover:text-primary">
             <ArrowLeft className="w-4 h-4 inline mr-1" />
             Volver al inicio de sesión
           </Link>

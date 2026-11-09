@@ -2,6 +2,51 @@
 
 Todos los cambios importantes de este proyecto serán documentados aquí.
 
+## [0.75.4] - 2026-11-09 · pre-alpha
+
+Listado de facturas completo, IVA 0 % como opción real, citas conectadas con
+vehículos y órdenes, y una interfaz más sobria, legible y accesible.
+
+### Facturas
+- **Listado completo y paginado**: antes cargaba solo las 100 más recientes y
+  las demás no se veían ni se encontraban. 25 por página, con total real.
+- **Búsqueda** por número, matrícula (también la escrita a mano), nombre o NIF
+  del cliente; **filtro por serie**; periodo por días. Columna de cliente.
+- **IVA 0 % (exento)** en «Nueva Factura»: antes se convertía en 21 %. El 21 %
+  sigue exactamente igual. El PDF muestra el porcentaje real.
+- Etiquetas del formulario asociadas a sus campos; «Total con IVA» (mostraba
+  la base).
+
+### Citas
+- El fin no puede ser anterior al inicio (aviso y rechazo en la API); al mover
+  el inicio, el fin se mueve con la misma duración.
+- **Añadir vehículo** desde la propia cita; elegir el vehículo rellena el
+  cliente.
+- **Crear orden** desde la cita con su cliente y vehículo (una sola, aunque se
+  pulse dos veces); «Ver orden» la abre.
+- La API ya no acepta cliente, vehículo u orden de otro taller.
+
+### Clientes
+- Un cliente sin NIF ya no muestra ni guarda «00000000T».
+- El NIF se muestra con su etiqueta (antes una chincheta).
+
+### Interfaz
+- Un solo azul principal con contraste AA (antes 2,8:1 en botones).
+- Inicio: indicadores en dos bloques sobrios en lugar de 8 tarjetas de
+  colores; «Nueva orden» abre el asistente directamente. «Dashboard» → «Inicio».
+- Órdenes: el estado se lee como texto (antes solo un emoji).
+- Fuera la campana de notificaciones, que no hacía nada.
+- Botones de solo icono con nombre accesible; controles táctiles más grandes
+  en móvil; filtros de facturas plegables en móvil.
+- Textos de ejemplo según el contexto: sin «0.00» en año o kilómetros,
+  matrícula 1234 BCD, NIF y CIF válidos, importes con coma.
+
+### Calidad
+- Recorrido automático de 12 pantallas también en móvil: sin errores, sin
+  desbordes horizontales.
+- Tests nuevos de listado de facturas, IVA 0 %, citas y órdenes, y una
+  comprobación de todos los textos de ejemplo.
+
 ## [0.75.3] - 2026-11-08 · pre-alpha
 
 Citas fiables de principio a fin, envíos por WhatsApp al número correcto,

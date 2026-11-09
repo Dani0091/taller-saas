@@ -27,7 +27,8 @@ export interface FacturaFiltros {
   fechaDesde?: Date
   fechaHasta?: Date
   vencidas?: boolean // Solo facturas vencidas
-  busqueda?: string // Búsqueda por número o cliente
+  busqueda?: string // Número, matrícula, o nombre/NIF del cliente
+  serie?: string // Prefijo de serie (numero_factura empieza por "PREFIJO-")
   sortBy?: 'recientes' | 'antiguos' | 'fecha_emision'
 }
 

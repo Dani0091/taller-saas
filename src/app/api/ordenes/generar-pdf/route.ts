@@ -7,6 +7,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { porcentajeIva } from '@/lib/facturas/iva'
 
 export async function GET(request: NextRequest) {
   try {
@@ -80,7 +81,7 @@ export async function GET(request: NextRequest) {
     // presupuesto público. orden.subtotal_mano_obra/iva_amount/total_con_iva son columnas
     // cacheadas que solo se refrescan en un autosave general; si se añaden líneas sin tocar
     // otro campo del formulario, el PDF mostraba un total desincronizado de la tabla de líneas.
-    const porcentajeIvaTaller = tallerIvaConfig?.porcentaje_iva || 21
+    const porcentajeIvaTaller = porcentajeIva(tallerIvaConfig?.porcentaje_iva)
     // El % de IVA de la ORDEN (toggle "Aplicar IVA") manda — salvo suplidos, siempre 0%.
     const ivaPorcentajeOrden = orden.iva_porcentaje ?? porcentajeIvaTaller
     const totalesCalculados = (lineas || []).reduce(

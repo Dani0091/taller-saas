@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 import { leerJson } from '@/lib/api/leer-json'
 import { validarImportesFactura } from '@/lib/facturas/validar-importes'
+import { porcentajeIva, porcentajeIvaCabecera } from '@/lib/facturas/iva'
 
 /** Cuerpo que envía dashboard/facturas/nueva. */
 interface CuerpoCrearFactura {
@@ -109,7 +110,7 @@ export async function POST(request: NextRequest) {
       .eq('taller_id', taller_id)
       .single()
 
-    const ivaPorcentajeConfig: number = tallerConfig?.porcentaje_iva ?? 21
+    const ivaPorcentajeConfig: number = porcentajeIva(tallerConfig?.porcentaje_iva)
 
     // NUEVO FLUJO: Las facturas se crean siempre como BORRADOR sin número
     // El número se asigna al EMITIR la factura (endpoint /emitir)
@@ -130,7 +131,11 @@ export async function POST(request: NextRequest) {
       total:          Math.round((total          || 0) * 100) / 100,
       metodo_pago: metodo_pago || null,
       estado: 'borrador', // SIEMPRE crear como borrador - se cambia al emitir
-      iva_porcentaje: ivaPorcentajeConfig,
+      // El de las líneas si todas coinciden (p. ej. todo al 0 %); si no, el del taller
+      iva_porcentaje: porcentajeIvaCabecera(
+        Array.isArray(lineas) ? lineas.map((l: any) => porcentajeIva(l?.iva_porcentaje, ivaPorcentajeConfig)) : [],
+        ivaPorcentajeConfig
+      ),
     }
 
     // Añadir campos opcionales de contacto si están presentes
@@ -179,7 +184,7 @@ export async function POST(request: NextRequest) {
       const lineasData = lineas.map((linea: any, index: number) => {
         const cantidad = parseFloat(linea.cantidad) || 1
         const precioUnitario = parseFloat(linea.precioUnitario || linea.precio_unitario) || 0
-        const ivaPorcentajeLinea = parseFloat(linea.iva_porcentaje) || ivaPorcentajeConfig
+        const ivaPorcentajeLinea = porcentajeIva(linea.iva_porcentaje, ivaPorcentajeConfig)
         const tipoLinea = linea.tipo_linea || 'servicio'
 
         // Calcular importes con redondeo a 2dp para evitar errores de float JS

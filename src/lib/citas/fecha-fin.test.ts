@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fechaFinEfectiva, fechaFinParaGuardar } from './fecha-fin'
+import { fechaFinEfectiva, fechaFinParaGuardar, finAnteriorAInicio } from './fecha-fin'
 
 const INICIO = '2026-11-15T10:00:00.000Z'
 
@@ -39,5 +39,20 @@ describe('fechaFinParaGuardar (escritura)', () => {
   })
   it.each([undefined, null, 42, 'no es fecha', '2026-13-45T99:99'])('inicio inválido (%s) → null', (inicio) => {
     expect(fechaFinParaGuardar(inicio, '', false)).toBeNull()
+  })
+})
+
+describe('finAnteriorAInicio', () => {
+  it('fin el día anterior → true (caso de la captura: 09/11 10:00 → 08/11 12:30)', () => {
+    expect(finAnteriorAInicio('2026-11-09T09:00:00.000Z', '2026-11-08T11:30:00.000Z')).toBe(true)
+  })
+
+  it('fin posterior o igual → false', () => {
+    expect(finAnteriorAInicio(INICIO, '2026-11-15T11:00:00.000Z')).toBe(false)
+    expect(finAnteriorAInicio(INICIO, INICIO)).toBe(false)
+  })
+
+  it.each([[INICIO, null], [INICIO, ''], [null, INICIO], [INICIO, 'no-es-fecha']])('sin fin o inválido (%s, %s) → false', (i, f) => {
+    expect(finAnteriorAInicio(i, f)).toBe(false)
   })
 })

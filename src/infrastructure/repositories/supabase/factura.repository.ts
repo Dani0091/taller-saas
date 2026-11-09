@@ -25,6 +25,16 @@ import type {
   ResultadoPaginado
 } from '@/application/ports'
 
+/**
+ * Texto de búsqueda apto para un filtro .or() de PostgREST: sin los caracteres
+ * que separan o agrupan condiciones (, . ( ) :) ni comodines (% _ *) ni \.
+ * Se sustituyen por espacio y se compactan; vacío → undefined.
+ */
+export function textoBusqueda(texto?: string): string | undefined {
+  const limpio = (texto ?? '').replace(/[,.():%_*\\"']/g, ' ').replace(/\s+/g, ' ').trim()
+  return limpio || undefined
+}
+
 export class SupabaseFacturaRepository implements IFacturaRepository {
   /**
    * Crea una nueva factura (borrador) en la base de datos
@@ -362,7 +372,7 @@ export class SupabaseFacturaRepository implements IFacturaRepository {
       // Construir query base
       let query = supabase
         .from('facturas')
-        .select('*, lineas:detalles_factura(*), vehiculo:vehiculo_id(id, matricula, marca, modelo)', { count: 'exact' })
+        .select('*, lineas:detalles_factura(*), vehiculo:vehiculo_id(id, matricula, marca, modelo), cliente:cliente_id(nombre, apellidos, nif)', { count: 'exact' })
         .eq('taller_id', tallerId) // 🔒 FILTRO DE SEGURIDAD
 
       // Aplicar filtros
@@ -399,8 +409,25 @@ export class SupabaseFacturaRepository implements IFacturaRepository {
         query = query.lt('fecha_vencimiento', new Date().toISOString())
       }
 
-      if (filtros.busqueda) {
-        query = query.or(`numero_factura.ilike.%${filtros.busqueda}%,cliente_nif.ilike.%${filtros.busqueda}%`)
+      if (filtros.serie) {
+        query = query.ilike('numero_factura', `${filtros.serie}-%`)
+      }
+
+      const busqueda = textoBusqueda(filtros.busqueda)
+      if (busqueda) {
+        // Número o matrícula escrita en la factura, o cliente / vehículo del
+        // taller que coincidan (nombre, apellidos, NIF o matrícula)
+        const patron = `%${busqueda}%`
+        const [{ data: clientes }, { data: vehiculos }] = await Promise.all([
+          supabase.from('clientes').select('id').eq('taller_id', tallerId)
+            .or(`nombre.ilike.${patron},apellidos.ilike.${patron},nif.ilike.${patron}`).limit(200),
+          supabase.from('vehiculos').select('id').eq('taller_id', tallerId)
+            .ilike('matricula', patron).limit(200),
+        ])
+        const condiciones = [`numero_factura.ilike.${patron}`, `matricula.ilike.${patron}`]
+        if (clientes?.length) condiciones.push(`cliente_id.in.(${clientes.map(c => c.id).join(',')})`)
+        if (vehiculos?.length) condiciones.push(`vehiculo_id.in.(${vehiculos.map(v => v.id).join(',')})`)
+        query = query.or(condiciones.join(','))
       }
 
       // Ordenar según preferencia del usuario

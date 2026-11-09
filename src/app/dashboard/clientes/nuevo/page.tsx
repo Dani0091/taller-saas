@@ -115,7 +115,7 @@ export default function NuevoClientePage() {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link href="/dashboard/clientes">
-          <Button variant="outline" size="icon">
+          <Button aria-label="Volver" variant="outline" size="icon">
             <ArrowLeft className="w-4 h-4" />
           </Button>
         </Link>
@@ -134,7 +134,7 @@ export default function NuevoClientePage() {
             <Input
               id="nombre"
               name="nombre"
-              placeholder="Juan García López, S.L. o Taller Mecánico, S.A."
+              placeholder="Ej.: Juan García López o Transportes Pérez, S.L."
               value={formData.nombre}
               onChange={handleChange}
               required
@@ -150,7 +150,7 @@ export default function NuevoClientePage() {
             <Input
               id="nif"
               name="nif"
-              placeholder="12345678A"
+              placeholder="12345678Z"
               value={formData.nif}
               onChange={handleChange}
             />
@@ -163,7 +163,7 @@ export default function NuevoClientePage() {
               id="email"
               name="email"
               type="email"
-              placeholder="juan@example.com"
+              placeholder="cliente@ejemplo.es"
               value={formData.email}
               onChange={handleChange}
             />
@@ -187,7 +187,7 @@ export default function NuevoClientePage() {
             <Input
               id="direccion"
               name="direccion"
-              placeholder="Calle Principal 123"
+              placeholder="Ej.: C/ Mayor, 12, 2.º B"
               value={formData.direccion}
               onChange={handleChange}
             />
@@ -199,7 +199,7 @@ export default function NuevoClientePage() {
             <Textarea
               id="notas"
               name="notas"
-              placeholder="Notas adicionales sobre el cliente..."
+              placeholder="Ej.: Prefiere que le llamen por la tarde"
               value={formData.notas}
               onChange={handleChange}
               rows={4}

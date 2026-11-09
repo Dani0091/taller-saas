@@ -11,7 +11,7 @@
 
 import { useEffect, useState } from 'react'
 import { Card } from '@/components/ui/card'
-import { TrendingUp, Wrench, CheckCircle, AlertCircle, Banknote, Receipt, FileText, Calculator, Gauge, Plus, Users, ArrowRight, Loader2, Zap } from 'lucide-react'
+import { TrendingUp, Wrench, CheckCircle, AlertCircle, Banknote, Receipt, FileText, Calculator, Plus, Users, ArrowRight, Loader2, Zap } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { obtenerMetricasDashboardAction } from '@/actions/dashboard'
@@ -52,14 +52,9 @@ export default function DashboardPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-sky-500 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-sky-500/30">
-            <Gauge className="w-8 h-8 text-white animate-pulse" />
-          </div>
-          <Loader2 className="w-8 h-8 animate-spin text-sky-600 mx-auto mb-2" />
-          <p className="text-gray-500 font-medium">Cargando dashboard...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-[60vh]" role="status">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" aria-hidden />
+        <span className="sr-only">Cargando panel</span>
       </div>
     )
   }
@@ -74,7 +69,7 @@ export default function DashboardPage() {
           <p className="text-gray-500 text-sm mb-4">{error}</p>
           <button
             onClick={cargarMetricas}
-            className="px-4 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors"
+            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
           >
             Reintentar
           </button>
@@ -83,218 +78,89 @@ export default function DashboardPage() {
     )
   }
 
+  const trimestre = Math.floor(new Date().getMonth() / 3) + 1
+
   return (
-    <div className="space-y-6 md:space-y-8">
-      {/* Header */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-6 md:p-8 text-white">
-        <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-sky-500/20 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-sky-500 via-cyan-400 to-teal-500" />
-
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
-            <span className="text-cyan-400 text-sm font-medium uppercase tracking-wider">En vivo</span>
-          </div>
-          <h1 className="text-2xl md:text-3xl font-bold">
-            {metricas.nombreUsuario ? `Bienvenido, ${metricas.nombreUsuario}` : 'Panel de Control'}
-          </h1>
-          <p className="text-gray-400 mt-1">
-            {metricas.nombreTaller || 'Tu taller mecánico'}
-          </p>
-        </div>
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 text-balance">
+          {metricas.nombreUsuario ? `Hola, ${metricas.nombreUsuario}` : 'Panel de control'}
+        </h1>
+        <p className="text-gray-600 mt-1">{metricas.nombreTaller || 'Tu taller'}</p>
       </div>
 
-      {/* Métricas operativas */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        <Card className="p-4 md:p-5 bg-gradient-to-br from-sky-500 to-cyan-500 text-white border-0 shadow-lg shadow-sky-500/20 hover:shadow-xl hover:shadow-sky-500/30 transition-all duration-300 hover:scale-[1.02]">
-          <div className="flex justify-between items-start mb-3">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-              <TrendingUp className="w-5 h-5" />
-            </div>
-            <span className="text-[10px] font-bold bg-white/20 px-2 py-1 rounded-full uppercase">Hoy</span>
-          </div>
-          <p className="text-white/80 text-xs font-medium mb-1">Órdenes Hoy</p>
-          <p className="text-2xl md:text-3xl font-bold">{metricas.ordenesHoy}</p>
+      <section aria-labelledby="titulo-taller">
+        <h2 id="titulo-taller" className="text-sm font-semibold text-gray-700 mb-3">Taller</h2>
+        <Card className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-gray-200 p-0 overflow-hidden">
+          <Indicador icono={TrendingUp} etiqueta="Órdenes de hoy" valor={metricas.ordenesHoy} />
+          <Indicador icono={AlertCircle} etiqueta="Pendientes" valor={metricas.pendientes} destacar={metricas.pendientes > 0} />
+          <Indicador icono={Wrench} etiqueta="En reparación" valor={metricas.enProgreso} />
+          <Indicador icono={CheckCircle} etiqueta="Completadas" valor={metricas.completadas} />
         </Card>
+      </section>
 
-        <Card className="p-4 md:p-5 bg-gradient-to-br from-amber-500 to-orange-500 text-white border-0 shadow-lg shadow-amber-500/20 hover:shadow-xl hover:shadow-amber-500/30 transition-all duration-300 hover:scale-[1.02]">
-          <div className="flex justify-between items-start mb-3">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-              <AlertCircle className="w-5 h-5" />
-            </div>
-            <span className="text-[10px] font-bold bg-white/20 px-2 py-1 rounded-full uppercase">Espera</span>
-          </div>
-          <p className="text-white/80 text-xs font-medium mb-1">Pendientes</p>
-          <p className="text-2xl md:text-3xl font-bold">{metricas.pendientes}</p>
+      <section aria-labelledby="titulo-facturacion">
+        <h2 id="titulo-facturacion" className="text-sm font-semibold text-gray-700 mb-3">Facturación del mes</h2>
+        <Card className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-gray-200 p-0 overflow-hidden">
+          <Indicador icono={Banknote} etiqueta="Total facturado" valor={formatCurrency(metricas.facturadoMes)} />
+          <Indicador icono={Receipt} etiqueta="Base imponible" valor={formatCurrency(metricas.baseImponibleMes)} />
+          <Indicador icono={FileText} etiqueta="IVA repercutido" valor={formatCurrency(metricas.ivaRecaudadoMes)} />
+          <Indicador icono={Calculator} etiqueta={`IVA a pagar · T${trimestre}`} valor={formatCurrency(metricas.ivaTrimestre)} />
         </Card>
+      </section>
 
-        <Card className="p-4 md:p-5 bg-gradient-to-br from-violet-500 to-purple-600 text-white border-0 shadow-lg shadow-violet-500/20 hover:shadow-xl hover:shadow-violet-500/30 transition-all duration-300 hover:scale-[1.02]">
-          <div className="flex justify-between items-start mb-3">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-              <Wrench className="w-5 h-5" />
-            </div>
-            <span className="text-[10px] font-bold bg-white/20 px-2 py-1 rounded-full uppercase">Activo</span>
-          </div>
-          <p className="text-white/80 text-xs font-medium mb-1">En Reparación</p>
-          <p className="text-2xl md:text-3xl font-bold">{metricas.enProgreso}</p>
-        </Card>
-
-        <Card className="p-4 md:p-5 bg-gradient-to-br from-emerald-500 to-green-600 text-white border-0 shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-300 hover:scale-[1.02]">
-          <div className="flex justify-between items-start mb-3">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-              <CheckCircle className="w-5 h-5" />
-            </div>
-            <span className="text-[10px] font-bold bg-white/20 px-2 py-1 rounded-full uppercase">Listas</span>
-          </div>
-          <p className="text-white/80 text-xs font-medium mb-1">Completadas</p>
-          <p className="text-2xl md:text-3xl font-bold">{metricas.completadas}</p>
-        </Card>
-      </div>
-
-      {/* Métricas financieras - ✅ TODOS LOS VALORES PRE-CALCULADOS */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        <Card className="p-4 md:p-5 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0 shadow-lg shadow-emerald-500/20 hover:shadow-xl hover:shadow-emerald-500/30 transition-all duration-300 hover:scale-[1.02]">
-          <div className="flex justify-between items-start mb-3">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-              <Banknote className="w-5 h-5" />
-            </div>
-            <span className="text-[10px] font-bold bg-white/20 px-2 py-1 rounded-full uppercase">Mes</span>
-          </div>
-          <p className="text-white/80 text-xs font-medium mb-1">Total Facturado</p>
-          <p className="text-xl md:text-2xl font-bold">
-            {formatCurrency(metricas.facturadoMes)}
-          </p>
-        </Card>
-
-        <Card className="p-4 md:p-5 bg-gradient-to-br from-teal-500 to-teal-600 text-white border-0 shadow-lg shadow-teal-500/20 hover:shadow-xl hover:shadow-teal-500/30 transition-all duration-300 hover:scale-[1.02]">
-          <div className="flex justify-between items-start mb-3">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-              <Receipt className="w-5 h-5" />
-            </div>
-            <span className="text-[10px] font-bold bg-white/20 px-2 py-1 rounded-full uppercase">Neto</span>
-          </div>
-          <p className="text-white/80 text-xs font-medium mb-1">Base Imponible</p>
-          <p className="text-xl md:text-2xl font-bold">
-            {formatCurrency(metricas.baseImponibleMes)}
-          </p>
-        </Card>
-
-        <Card className="p-4 md:p-5 bg-gradient-to-br from-amber-500 to-orange-500 text-white border-0 shadow-lg shadow-amber-500/20 hover:shadow-xl hover:shadow-amber-500/30 transition-all duration-300 hover:scale-[1.02]">
-          <div className="flex justify-between items-start mb-3">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-              <FileText className="w-5 h-5" />
-            </div>
-            <span className="text-[10px] font-bold bg-white/20 px-2 py-1 rounded-full uppercase">Mes</span>
-          </div>
-          <p className="text-white/80 text-xs font-medium mb-1">IVA Recaudado</p>
-          <p className="text-xl md:text-2xl font-bold">
-            {formatCurrency(metricas.ivaRecaudadoMes)}
-          </p>
-        </Card>
-
-        <Card className="p-4 md:p-5 bg-gradient-to-br from-red-500 to-rose-600 text-white border-0 shadow-lg shadow-red-500/20 hover:shadow-xl hover:shadow-red-500/30 transition-all duration-300 hover:scale-[1.02]">
-          <div className="flex justify-between items-start mb-3">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-sm">
-              <Calculator className="w-5 h-5" />
-            </div>
-            <span className="text-[10px] font-bold bg-white/20 px-2 py-1 rounded-full uppercase">
-              T{Math.floor(new Date().getMonth() / 3) + 1}
+      <section aria-labelledby="titulo-accesos">
+        <h2 id="titulo-accesos" className="text-sm font-semibold text-gray-700 mb-3">Accesos rápidos</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5 gap-3">
+          <Link
+            href="/dashboard/ordenes?nueva=1"
+            className="group flex items-center gap-3 rounded-xl bg-primary px-4 py-4 text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          >
+            <Plus className="w-5 h-5 shrink-0" aria-hidden />
+            <span className="flex-1">
+              <span className="block font-semibold">Nueva orden</span>
+              <span className="block text-xs text-white/85">Abrir el asistente</span>
             </span>
-          </div>
-          <p className="text-white/80 text-xs font-medium mb-1">IVA a Pagar</p>
-          <p className="text-xl md:text-2xl font-bold">
-            {formatCurrency(metricas.ivaTrimestre)}
-          </p>
-        </Card>
-      </div>
-
-      {/* Acciones rápidas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        <Link href="/dashboard/ordenes" className="group">
-          <Card className="p-4 md:p-5 border-2 border-sky-200 bg-sky-50 hover:bg-sky-100 hover:border-sky-300 transition-all duration-300 cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-sky-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-md shadow-sky-500/30">
-                  <Plus className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <p className="font-bold text-gray-900">Nueva Orden</p>
-                  <p className="text-xs text-gray-500">Crear reparación</p>
-                </div>
-              </div>
-              <ArrowRight className="w-5 h-5 text-sky-500 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </Card>
-        </Link>
-
-        <Link href="/dashboard/ordenes" className="group">
-          <Card className="p-4 md:p-5 border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-300 cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
-                  <Wrench className="w-5 h-5 text-gray-600" />
-                </div>
-                <div>
-                  <p className="font-bold text-gray-900">Ver Órdenes</p>
-                  <p className="text-xs text-gray-500">Gestionar trabajos</p>
-                </div>
-              </div>
-              <ArrowRight className="w-5 h-5 text-gray-400 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </Card>
-        </Link>
-
-        <Link href="/dashboard/clientes" className="group">
-          <Card className="p-4 md:p-5 border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-300 cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
-                  <Users className="w-5 h-5 text-gray-600" />
-                </div>
-                <div>
-                  <p className="font-bold text-gray-900">Ver Clientes</p>
-                  <p className="text-xs text-gray-500">Base de datos</p>
-                </div>
-              </div>
-              <ArrowRight className="w-5 h-5 text-gray-400 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </Card>
-        </Link>
-
-        <Link href="/dashboard/facturas" className="group">
-          <Card className="p-4 md:p-5 border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all duration-300 cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
-                  <FileText className="w-5 h-5 text-gray-600" />
-                </div>
-                <div>
-                  <p className="font-bold text-gray-900">Ver Facturas</p>
-                  <p className="text-xs text-gray-500">Facturación</p>
-                </div>
-              </div>
-              <ArrowRight className="w-5 h-5 text-gray-400 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </Card>
-        </Link>
-
-        <Link href="/dashboard/facturas/rapida" className="group">
-          <Card className="p-4 md:p-5 border-2 border-violet-200 bg-violet-50 hover:bg-violet-100 hover:border-violet-300 transition-all duration-300 cursor-pointer">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md shadow-violet-500/30">
-                  <Zap className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <p className="font-bold text-gray-900">Factura Rápida</p>
-                  <p className="text-xs text-violet-600">Serie FS · Sin orden</p>
-                </div>
-              </div>
-              <ArrowRight className="w-5 h-5 text-violet-400 group-hover:translate-x-1 transition-transform" />
-            </div>
-          </Card>
-        </Link>
-      </div>
+            <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" aria-hidden />
+          </Link>
+          <Acceso href="/dashboard/facturas/rapida" icono={Zap} titulo="Factura rápida" detalle="Serie FS, sin orden" />
+          <Acceso href="/dashboard/ordenes" icono={Wrench} titulo="Órdenes" detalle="Trabajos en curso" />
+          <Acceso href="/dashboard/clientes" icono={Users} titulo="Clientes" detalle="Fichas y contacto" />
+          <Acceso href="/dashboard/facturas" icono={FileText} titulo="Facturas" detalle="Emitidas y cobros" />
+        </div>
+      </section>
     </div>
+  )
+}
+
+type Icono = React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>
+
+function Indicador({ icono: Icono, etiqueta, valor, destacar = false }: { icono: Icono; etiqueta: string; valor: React.ReactNode; destacar?: boolean }) {
+  return (
+    <div className="bg-white p-4 md:p-5">
+      <div className="flex items-center gap-2 text-sm text-gray-600">
+        <Icono className={`w-4 h-4 ${destacar ? 'text-amber-600' : 'text-gray-400'}`} aria-hidden />
+        <span>{etiqueta}</span>
+      </div>
+      <p className={`mt-2 text-2xl md:text-3xl font-semibold tabular-nums tracking-tight ${destacar ? 'text-amber-700' : 'text-gray-900'}`}>
+        {valor}
+      </p>
+    </div>
+  )
+}
+
+function Acceso({ href, icono: Icono, titulo, detalle }: { href: string; icono: Icono; titulo: string; detalle: string }) {
+  return (
+    <Link
+      href={href}
+      className="group flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-4 transition-colors hover:border-gray-300 hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+    >
+      <Icono className="w-5 h-5 shrink-0 text-gray-500" aria-hidden />
+      <span className="flex-1 min-w-0">
+        <span className="block font-semibold text-gray-900">{titulo}</span>
+        <span className="block text-xs text-gray-600 truncate">{detalle}</span>
+      </span>
+      <ArrowRight className="w-4 h-4 text-gray-400 transition-transform group-hover:translate-x-0.5" aria-hidden />
+    </Link>
   )
 }

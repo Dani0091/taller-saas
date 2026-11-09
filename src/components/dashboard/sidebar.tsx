@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import { Home, Wrench, Users, FileText, Settings, X, Gauge, Car, CalendarDays, Zap } from 'lucide-react'
 
 const links = [
-  { href: '/dashboard', label: 'Dashboard', icon: Home },
+  { href: '/dashboard', label: 'Inicio', icon: Home },
   { href: '/dashboard/ordenes', label: 'Órdenes', icon: Wrench },
   { href: '/dashboard/citas', label: 'Citas', icon: CalendarDays },
   { href: '/dashboard/clientes', label: 'Clientes', icon: Users },
@@ -68,7 +68,9 @@ export function Sidebar({ user, isOpen = false, onClose }: SidebarProps) {
         </div>
         {isMobile && (
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Cerrar menú"
             className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />

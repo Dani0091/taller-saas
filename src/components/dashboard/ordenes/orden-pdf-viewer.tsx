@@ -135,7 +135,7 @@ export function OrdenPDFViewer({ ordenId, onClose }: OrdenPDFViewerProps) {
     return (
       <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center">
         <div className="bg-white rounded-2xl p-8 text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-sky-600" />
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-primary" />
           <p className="text-gray-600">Generando orden de trabajo...</p>
         </div>
       </div>
@@ -165,12 +165,12 @@ export function OrdenPDFViewer({ ordenId, onClose }: OrdenPDFViewerProps) {
             <Button
               size="sm"
               onClick={handlePrint}
-              className="gap-2 bg-sky-600 hover:bg-sky-700"
+              className="gap-2 bg-primary hover:bg-primary/90"
             >
               <Printer className="w-4 h-4" />
               Imprimir
             </Button>
-            <button
+            <button aria-label="Cerrar"
               onClick={onClose}
               className="p-2 hover:bg-gray-200 rounded-lg ml-2"
             >
@@ -415,7 +415,7 @@ export function OrdenPDFViewer({ ordenId, onClose }: OrdenPDFViewerProps) {
                   </span>
                   <span className="font-medium">{formatCurrency(datos.totales.iva)}</span>
                 </div>
-                <div className="flex justify-between px-4 py-3 border-t bg-sky-600 text-white">
+                <div className="flex justify-between px-4 py-3 border-t bg-primary text-white">
                   <span className="font-bold">TOTAL:</span>
                   <span className="font-bold text-lg">{formatCurrency(datos.totales.total)}</span>
                 </div>

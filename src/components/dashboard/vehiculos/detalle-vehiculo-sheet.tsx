@@ -217,13 +217,13 @@ export function DetalleVehiculoSheet({
         {/* Header */}
         <div className="sticky top-0 z-10 bg-white border-b px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Car className="w-5 h-5 text-sky-600" />
+            <Car className="w-5 h-5 text-primary" />
             <div>
               <h2 className="font-bold text-lg">{formData.matricula}</h2>
               <p className="text-xs text-gray-500">{formData.marca} {formData.modelo}</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button aria-label="Cerrar" variant="ghost" size="icon" onClick={onClose}>
             <X className="w-5 h-5" />
           </Button>
         </div>
@@ -240,7 +240,7 @@ export function DetalleVehiculoSheet({
           </div>
         ) : cargando ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-sky-600" />
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : (
           <>
@@ -250,7 +250,7 @@ export function DetalleVehiculoSheet({
                 onClick={() => setTab('info')}
                 className={`flex-1 py-3 text-sm font-medium ${
                   tab === 'info'
-                    ? 'text-sky-600 border-b-2 border-sky-600'
+                    ? 'text-primary border-b-2 border-primary'
                     : 'text-gray-500'
                 }`}
               >
@@ -260,7 +260,7 @@ export function DetalleVehiculoSheet({
                 onClick={() => setTab('historial')}
                 className={`flex-1 py-3 text-sm font-medium ${
                   tab === 'historial'
-                    ? 'text-sky-600 border-b-2 border-sky-600'
+                    ? 'text-primary border-b-2 border-primary'
                     : 'text-gray-500'
                 }`}
               >
@@ -296,15 +296,19 @@ export function DetalleVehiculoSheet({
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <Label>Marca</Label>
+                        <Label htmlFor="veh-marca">Marca</Label>
                         <Input
+                          id="veh-marca"
+                          placeholder="Ej.: Seat"
                           value={formData.marca || ''}
                           onChange={(e) => handleChange('marca', e.target.value)}
                         />
                       </div>
                       <div>
-                        <Label>Modelo</Label>
+                        <Label htmlFor="veh-modelo">Modelo</Label>
                         <Input
+                          id="veh-modelo"
+                          placeholder="Ej.: Ibiza"
                           value={formData.modelo || ''}
                           onChange={(e) => handleChange('modelo', e.target.value)}
                         />
@@ -313,8 +317,11 @@ export function DetalleVehiculoSheet({
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <Label>Año</Label>
+                        <Label htmlFor="veh-anio">Año</Label>
                         <NumberInput
+                          id="veh-anio"
+                          placeholder="2019"
+                          step={1}
                           value={formData.año}
                           onChange={(value) => handleChange('año', value)}
                           min={1900}
@@ -322,8 +329,10 @@ export function DetalleVehiculoSheet({
                         />
                       </div>
                       <div>
-                        <Label>Color</Label>
+                        <Label htmlFor="veh-color">Color</Label>
                         <Input
+                          id="veh-color"
+                          placeholder="Ej.: Gris"
                           value={formData.color || ''}
                           onChange={(e) => handleChange('color', e.target.value)}
                         />
@@ -331,8 +340,11 @@ export function DetalleVehiculoSheet({
                     </div>
 
                     <div>
-                      <Label>Kilómetros</Label>
+                      <Label htmlFor="veh-km">Kilómetros</Label>
                       <NumberInput
+                        id="veh-km"
+                        placeholder="125000"
+                        step={1}
                         value={formData.kilometros}
                         onChange={(value) => handleChange('kilometros', value)}
                         min={0}
@@ -340,8 +352,10 @@ export function DetalleVehiculoSheet({
                     </div>
 
                     <div>
-                      <Label>VIN / Bastidor</Label>
+                      <Label htmlFor="veh-vin">VIN / Bastidor</Label>
                       <Input
+                        id="veh-vin"
+                        placeholder="Ej.: VSSZZZKJZLR012345"
                         value={formData.vin || ''}
                         onChange={(e) => handleChange('vin', e.target.value)}
                       />
@@ -351,8 +365,10 @@ export function DetalleVehiculoSheet({
 
                 {/* Notas */}
                 <div>
-                  <Label>Notas</Label>
+                  <Label htmlFor="veh-notas">Notas</Label>
                   <Textarea
+                    id="veh-notas"
+                    placeholder="Ej.: Neumáticos de invierno guardados en el taller"
                     value={formData.notas || ''}
                     onChange={(e) => handleChange('notas', e.target.value)}
                     rows={3}

@@ -16,6 +16,7 @@
 import { NIF, Email, Telefono, IBAN } from '@/domain/value-objects'
 import { ValidationError, BusinessRuleError } from '@/domain/errors'
 import { EstadoCliente, TipoCliente, FormaPago, BaseEntity, SoftDeletable } from '@/domain/types'
+import { NIF_SIN_INFORMAR } from '@/domain/value-objects/NIF.vo'
 
 export interface ClienteProps extends BaseEntity, SoftDeletable {
   nombre: string
@@ -490,8 +491,8 @@ export class ClienteEntity {
       nombre: this.nombre,
       apellidos: this.apellidos,
       nombreCompleto: this.getNombreCompleto(),
-      nif: this.nif.valor,
-      nifMasked: this.nif.mask(),
+      nif: this.nif.valor === NIF_SIN_INFORMAR ? '' : this.nif.valor,
+      nifMasked: this.nif.valor === NIF_SIN_INFORMAR ? '' : this.nif.mask(),
       email: this.email?.valor,
       emailMasked: this.email?.mask(),
       telefono: this.telefono?.valor,

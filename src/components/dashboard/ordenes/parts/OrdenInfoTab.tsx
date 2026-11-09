@@ -225,7 +225,7 @@ export function OrdenInfoTab({
                 {vehiculoSeleccionado.año ? ` (${vehiculoSeleccionado.año})` : ''}
               </p>
               {vehiculoSeleccionado.kilometros ? (
-                <p className="text-xs text-sky-600">{vehiculoSeleccionado.kilometros.toLocaleString()} km</p>
+                <p className="text-xs text-primary">{vehiculoSeleccionado.kilometros.toLocaleString()} km</p>
               ) : null}
             </div>
             <button
@@ -266,7 +266,7 @@ export function OrdenInfoTab({
             </div>
             <div>
               <Label className="text-xs text-gray-600 mb-1 block">Bastidor (VIN)</Label>
-              <Input value={vehiculoEditado.vin || ''} onChange={(e) => onVehiculoEditadoChange({ vin: e.target.value })} placeholder="WVWZZZ1KZBW123456" className="bg-white font-mono" />
+              <Input value={vehiculoEditado.vin || ''} onChange={(e) => onVehiculoEditadoChange({ vin: e.target.value })} placeholder="VSSZZZKJZLR012345" className="bg-white font-mono" />
             </div>
             <div className="flex gap-2">
               <Button type="button" variant="outline" onClick={onToggleEditandoVehiculo} disabled={guardandoVehiculo} className="flex-1 py-3">Cancelar</Button>
@@ -287,15 +287,15 @@ export function OrdenInfoTab({
                 value={matriculaInput}
                 onChange={(e) => onMatriculaInputChange(e.target.value.toUpperCase().replace(/\s/g, ''))}
                 onKeyDown={(e) => e.key === 'Enter' && onBuscarMatricula()}
-                placeholder="Escribe la matrícula (ej: 1234ABC)"
-                className="flex-1 px-3 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white font-mono text-center text-lg tracking-widest uppercase"
+                placeholder="Escribe la matrícula (ej.: 1234 BCD)"
+                className="flex-1 px-3 py-3 border rounded-xl focus:ring-2 focus:ring-ring bg-white font-mono text-center text-lg tracking-widest uppercase"
                 autoFocus={modoCrear}
               />
               <button
                 type="button"
                 onClick={onBuscarMatricula}
                 disabled={buscandoMatricula || !matriculaInput.trim()}
-                className="px-4 py-3 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white rounded-xl flex items-center gap-2 font-medium min-w-[56px] justify-center"
+                className="px-4 py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white rounded-xl flex items-center gap-2 font-medium min-w-[56px] justify-center"
               >
                 {buscandoMatricula ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
               </button>
@@ -314,7 +314,7 @@ export function OrdenInfoTab({
                 <select
                   value=""
                   onChange={(e) => e.target.value && onFormDataChange({ vehiculo_id: e.target.value })}
-                  className="w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white"
+                  className="w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-ring bg-white"
                 >
                   <option value="">Seleccionar vehículo del cliente...</option>
                   {vehiculos.map(v => (
@@ -340,7 +340,7 @@ export function OrdenInfoTab({
                 <Input
                   value={nuevoVehiculo.matricula}
                   onChange={(e) => onNuevoVehiculoChange({ matricula: e.target.value.toUpperCase() })}
-                  placeholder="1234ABC"
+                  placeholder="1234 BCD"
                   className="font-mono uppercase flex-1 py-3"
                 />
                 <InputScanner tipo="matricula" onResult={(val) => onNuevoVehiculoChange({ matricula: val })} />
@@ -358,7 +358,7 @@ export function OrdenInfoTab({
             </div>
             <div>
               <Label className="text-xs text-gray-600 mb-1 block">Bastidor (VIN)</Label>
-              <Input value={nuevoVehiculo.vin || ''} onChange={(e) => onNuevoVehiculoChange({ vin: e.target.value })} placeholder="WVWZZZ1KZBW123456" className="bg-white font-mono py-3" />
+              <Input value={nuevoVehiculo.vin || ''} onChange={(e) => onNuevoVehiculoChange({ vin: e.target.value })} placeholder="VSSZZZKJZLR012345" className="bg-white font-mono py-3" />
             </div>
             <Button
               type="button"
@@ -393,7 +393,7 @@ export function OrdenInfoTab({
         {!mostrarFormCliente ? (
           <div ref={comboRef} className="relative">
             {/* Input de búsqueda */}
-            <div className="flex items-center gap-2 px-3 py-2.5 border rounded-xl bg-white focus-within:ring-2 focus-within:ring-sky-500">
+            <div className="flex items-center gap-2 px-3 py-2.5 border rounded-xl bg-white focus-within:ring-2 focus-within:ring-ring">
               <Search className="w-4 h-4 text-gray-400 shrink-0" />
               <input
                 type="text"
@@ -466,7 +466,7 @@ export function OrdenInfoTab({
               <Input
                 value={nuevoCliente.nombre}
                 onChange={(e) => onNuevoClienteChange({ nombre: e.target.value })}
-                placeholder="Nombre"
+                placeholder="Ej.: Juan"
                 className="bg-white"
               />
             </div>
@@ -478,7 +478,7 @@ export function OrdenInfoTab({
                 <Input
                   value={nuevoCliente.primer_apellido}
                   onChange={(e) => onNuevoClienteChange({ primer_apellido: e.target.value })}
-                  placeholder="Primer apellido"
+                  placeholder="Ej.: García"
                   className="bg-white"
                 />
               </div>
@@ -487,7 +487,7 @@ export function OrdenInfoTab({
                 <Input
                   value={nuevoCliente.segundo_apellido}
                   onChange={(e) => onNuevoClienteChange({ segundo_apellido: e.target.value })}
-                  placeholder="Segundo apellido"
+                  placeholder="Ej.: López"
                   className="bg-white"
                 />
               </div>
@@ -500,7 +500,7 @@ export function OrdenInfoTab({
                 <Input
                   value={nuevoCliente.nif}
                   onChange={(e) => onNuevoClienteChange({ nif: e.target.value.toUpperCase() })}
-                  placeholder="12345678A"
+                  placeholder="12345678Z"
                   className="bg-white font-mono"
                 />
               </div>
@@ -509,7 +509,7 @@ export function OrdenInfoTab({
                 <Input
                   value={nuevoCliente.telefono}
                   onChange={(e) => onNuevoClienteChange({ telefono: e.target.value })}
-                  placeholder="666 123 456"
+                  placeholder="600 123 456"
                   className="bg-white"
                 />
               </div>
@@ -522,7 +522,7 @@ export function OrdenInfoTab({
                 type="email"
                 value={nuevoCliente.email}
                 onChange={(e) => onNuevoClienteChange({ email: e.target.value })}
-                placeholder="cliente@email.com"
+                placeholder="cliente@ejemplo.es"
                 className="bg-white"
               />
             </div>
@@ -533,7 +533,7 @@ export function OrdenInfoTab({
               size="xl"
               onClick={onCrearCliente}
               disabled={creandoCliente || !nuevoCliente.nombre.trim()}
-              className="w-full gap-2 bg-blue-600 hover:bg-blue-700"
+              className="w-full gap-2 bg-primary hover:bg-primary/90"
             >
               {creandoCliente ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -554,7 +554,7 @@ export function OrdenInfoTab({
         <Textarea
           value={formData.descripcion_problema || ''}
           onChange={(e) => onFormDataChange({ descripcion_problema: e.target.value })}
-          placeholder="Describe el problema que presenta el vehículo..."
+          placeholder="Ej.: Ruido metálico al frenar desde hace una semana"
           rows={3}
           className="resize-none"
         />
@@ -592,7 +592,7 @@ export function OrdenInfoTab({
             <NumberInput
               value={formData.kilometros_entrada}
               onChange={(value) => onFormDataChange({ kilometros_entrada: value || undefined })}
-              placeholder="Ej: 145000"
+              placeholder="Ej.: 125000"
               className="font-mono"
               min={0}
               allowEmpty={true}
@@ -603,7 +603,7 @@ export function OrdenInfoTab({
             <NumberInput
               value={formData.kilometros_salida}
               onChange={(value) => onFormDataChange({ kilometros_salida: value || undefined })}
-              placeholder="Ej: 145020"
+              placeholder="Ej.: 125350"
               className="font-mono"
               min={0}
               allowEmpty={true}
@@ -619,7 +619,7 @@ export function OrdenInfoTab({
             onChange={(value) => onFormDataChange({ coste_diario_estancia: value || undefined })}
             min={0}
             step={0.01}
-            placeholder="Ej: 15.00"
+            placeholder="Ej.: 15,00"
             allowEmpty
           />
         </div>
@@ -634,7 +634,7 @@ export function OrdenInfoTab({
             value={formData.fecha_prevista_entrega ? formData.fecha_prevista_entrega.slice(0, 10) : ''}
             onChange={(e) => onFormDataChange({ fecha_prevista_entrega: e.target.value || null })}
             placeholder="Selecciona fecha"
-            className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white text-sm"
+            className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-ring bg-white text-sm"
           />
         </div>
       </Card>
@@ -646,7 +646,7 @@ export function OrdenInfoTab({
             type="checkbox"
             checked={(formData.iva_porcentaje ?? ivaConfigTaller) !== 0}
             onChange={(e) => onFormDataChange({ iva_porcentaje: e.target.checked ? ivaConfigTaller : 0 })}
-            className="w-5 h-5 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
+            className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-ring"
           />
           <div>
             <span className="font-medium text-gray-900">Aplicar IVA ({ivaConfigTaller}%)</span>
@@ -741,7 +741,7 @@ export function OrdenInfoTab({
         <Textarea
           value={formData.danos_carroceria || ''}
           onChange={(e) => onFormDataChange({ danos_carroceria: e.target.value })}
-          placeholder="Describe los daños preexistentes en la carrocería del vehículo (golpe, rasguño, etc.)..."
+          placeholder="Ej.: Rayón en la puerta trasera derecha; golpe leve en el paragolpes"
           rows={3}
           className="resize-none"
         />
@@ -753,7 +753,7 @@ export function OrdenInfoTab({
         <Textarea
           value={formData.notas || ''}
           onChange={(e) => onFormDataChange({ notas: e.target.value })}
-          placeholder="Notas para el equipo del taller..."
+          placeholder="Ej.: Pieza pedida, llega el jueves"
           rows={2}
           className="resize-none"
         />

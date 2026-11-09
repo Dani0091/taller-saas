@@ -109,7 +109,7 @@ export function NuevoVehiculoModal({ open, onClose, onCreado, matriculaInicial =
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <div className="w-8 h-8 bg-sky-100 rounded-lg flex items-center justify-center">
-              <Car className="w-4 h-4 text-sky-600" />
+              <Car className="w-4 h-4 text-primary" />
             </div>
             Nuevo Vehículo
           </DialogTitle>
@@ -127,7 +127,7 @@ export function NuevoVehiculoModal({ open, onClose, onCreado, matriculaInicial =
               name="matricula"
               value={form.matricula}
               onChange={handleChange}
-              placeholder="1234ABC"
+              placeholder="1234 BCD"
               className="font-mono text-lg tracking-widest uppercase"
               required
               autoFocus
@@ -202,7 +202,7 @@ export function NuevoVehiculoModal({ open, onClose, onCreado, matriculaInicial =
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               {loading ? 'Creando...' : 'Crear Vehículo'}
             </Button>
-            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+            <Button aria-label="Cancelar" type="button" variant="outline" onClick={onClose} disabled={loading}>
               <X className="w-4 h-4" />
             </Button>
           </div>

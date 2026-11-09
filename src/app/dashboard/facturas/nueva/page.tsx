@@ -15,6 +15,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useTaller } from '@/contexts/TallerContext'
 import { VehiculoSelector, type VehiculoSeleccionado } from '@/components/dashboard/facturas/VehiculoSelector'
 import { formatCurrency } from '@/lib/utils'
+import { porcentajeIva } from '@/lib/facturas/iva'
 
 interface Cliente {
   id: string
@@ -134,8 +135,9 @@ export default function NuevaFacturaPage() {
         ])
 
         if (configData) {
-          setIvaPorDefecto(configData.porcentaje_iva || 21)
-          setNuevaLinea(prev => ({ ...prev, ivaPorcentaje: String(configData.porcentaje_iva || 21) }))
+          const ivaTaller = porcentajeIva(configData.porcentaje_iva)
+          setIvaPorDefecto(ivaTaller)
+          setNuevaLinea(prev => ({ ...prev, ivaPorcentaje: String(ivaTaller) }))
         }
 
         if (seriesData.series && seriesData.series.length > 0) {
@@ -252,7 +254,8 @@ export default function NuevaFacturaPage() {
       descripcion: nuevaLinea.descripcion,
       cantidad: nuevaLinea.cantidad,
       precioUnitario: nuevaLinea.precioUnitario,
-      ivaPorcentaje: parseFloat(nuevaLinea.ivaPorcentaje) || ivaPorDefecto,
+      // 0 % (exento) es una opción válida: no usar `|| defecto`
+      ivaPorcentaje: porcentajeIva(nuevaLinea.ivaPorcentaje, ivaPorDefecto),
     }
 
     setLineas([...lineas, linea])
@@ -393,7 +396,7 @@ export default function NuevaFacturaPage() {
         {/* HEADER */}
         <div className="flex items-center gap-3 mb-8">
           <Link href="/dashboard/facturas">
-            <Button variant="ghost" size="icon">
+            <Button aria-label="Volver" variant="ghost" size="icon">
               <ArrowLeft className="w-5 h-5" />
             </Button>
           </Link>
@@ -414,7 +417,7 @@ export default function NuevaFacturaPage() {
                 <select
                   value={formData.serie}
                   onChange={(e) => setFormData({ ...formData, serie: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ring"
                 >
                   {seriesDisponibles.map((s) => (
                     <option key={s.id} value={s.codigo}>
@@ -435,9 +438,10 @@ export default function NuevaFacturaPage() {
                 ) : (
                   <div className="flex gap-2">
                     <select
+                      aria-label="Cliente"
                       value={formData.cliente_id}
                       onChange={(e) => handleClienteChange(e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ring"
                     >
                       <option value="">Selecciona cliente</option>
                       {clientes.map((c) => (
@@ -487,7 +491,7 @@ export default function NuevaFacturaPage() {
               <div>
                 <Label className="block text-sm font-semibold mb-2">Teléfono Contacto</Label>
                 <Input
-                  placeholder="+34 600 000 000"
+                  placeholder="600 123 456"
                   value={formData.telefono_contacto}
                   onChange={(e) => setFormData({ ...formData, telefono_contacto: e.target.value })}
                 />
@@ -500,7 +504,7 @@ export default function NuevaFacturaPage() {
                   <span className="text-xs text-gray-400 ml-1">(Renting)</span>
                 </Label>
                 <Input
-                  placeholder="Ej: GT-123456"
+                  placeholder="Ej.: GT-123456"
                   value={formData.numero_autorizacion}
                   onChange={(e) => setFormData({ ...formData, numero_autorizacion: e.target.value })}
                 />
@@ -541,7 +545,7 @@ export default function NuevaFacturaPage() {
                       type="radio"
                       checked={pagadoAlEmitir}
                       onChange={() => setPagadoAlEmitir(true)}
-                      className="w-4 h-4 text-sky-600"
+                      className="w-4 h-4 text-primary"
                     />
                     <span className="text-sm">Sí (pagado hoy)</span>
                   </label>
@@ -550,7 +554,7 @@ export default function NuevaFacturaPage() {
                       type="radio"
                       checked={!pagadoAlEmitir}
                       onChange={() => setPagadoAlEmitir(false)}
-                      className="w-4 h-4 text-sky-600"
+                      className="w-4 h-4 text-primary"
                     />
                     <span className="text-sm">No (pendiente de pago)</span>
                   </label>
@@ -565,7 +569,7 @@ export default function NuevaFacturaPage() {
                     <select
                       value={plazoPago}
                       onChange={(e) => setPlazoPago(Number(e.target.value))}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ring"
                     >
                       <option value={15}>15 días</option>
                       <option value={30}>30 días</option>
@@ -603,7 +607,7 @@ export default function NuevaFacturaPage() {
                   <span className="text-xs text-gray-400 ml-1">(Opcional)</span>
                 </Label>
                 <Input
-                  placeholder="Ej: Pago a 30 días"
+                  placeholder="Ej.: Transferencia a 30 días"
                   value={formData.condiciones_pago}
                   onChange={(e) => setFormData({ ...formData, condiciones_pago: e.target.value })}
                 />
@@ -613,7 +617,7 @@ export default function NuevaFacturaPage() {
             <div className="mt-4">
               <Label className="block text-sm font-semibold mb-2">Notas Internas</Label>
               <Textarea
-                placeholder="Notas privadas (no aparecen en factura). Ej: Pagado 50% tarjeta + 50% efectivo"
+                placeholder="Solo para el taller, no sale en la factura. Ej.: Pagado 50 % con tarjeta y 50 % en efectivo"
                 value={formData.notas}
                 onChange={(e) => setFormData({ ...formData, notas: e.target.value })}
                 rows={2}
@@ -671,9 +675,10 @@ export default function NuevaFacturaPage() {
             {/* AGREGAR LÍNEA */}
             <div className="space-y-3 p-4 bg-green-50 rounded-lg border-2 border-green-200">
               <div>
-                <Label className="block text-sm font-semibold mb-2">Descripción</Label>
+                <Label htmlFor="linea-descripcion" className="block text-sm font-semibold mb-2">Descripción</Label>
                 <Input
-                  placeholder="Ej: Limpiaparabrisas, Cambio aceite..."
+                  id="linea-descripcion"
+                  placeholder="Ej.: Cambio de aceite y filtro"
                   value={nuevaLinea.descripcion}
                   onChange={(e) => setNuevaLinea({ ...nuevaLinea, descripcion: e.target.value })}
                   onKeyDown={(e) => {
@@ -688,8 +693,10 @@ export default function NuevaFacturaPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
                 <div className="md:col-span-3">
-                  <Label className="block text-sm font-semibold mb-2">Cantidad</Label>
+                  <Label htmlFor="linea-cantidad" className="block text-sm font-semibold mb-2">Cantidad</Label>
                   <NumberInput
+                    id="linea-cantidad"
+                    placeholder="1"
                     value={nuevaLinea.cantidad}
                     onChange={(value) => {
                       if (value != null) {
@@ -702,23 +709,25 @@ export default function NuevaFacturaPage() {
                   />
                 </div>
                 <div className="md:col-span-3">
-                  <Label className="block text-sm font-semibold mb-2">Precio (€)</Label>
+                  <Label htmlFor="linea-precio" className="block text-sm font-semibold mb-2">Precio unitario (€, sin IVA)</Label>
                   <NumberInput
+                    id="linea-precio"
                     value={nuevaLinea.precioUnitario}
                     onChange={(value) => {
                       if (value != null) {
                         setNuevaLinea({ ...nuevaLinea, precioUnitario: value })
                       }
                     }}
-                    placeholder="0.00"
+                    placeholder="45,00"
                     min={0}
                     step={0.01}
                     className="text-right w-full"
                   />
                 </div>
                 <div className="md:col-span-3">
-                  <Label className="block text-sm font-semibold mb-2">IVA</Label>
+                  <Label htmlFor="linea-iva" className="block text-sm font-semibold mb-2">IVA</Label>
                   <select
+                    id="linea-iva"
                     value={nuevaLinea.ivaPorcentaje}
                     onChange={(e) => setNuevaLinea({ ...nuevaLinea, ivaPorcentaje: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-center"
@@ -726,17 +735,15 @@ export default function NuevaFacturaPage() {
                     <option value="21">21%</option>
                     <option value="10">10%</option>
                     <option value="4">4%</option>
-                    <option value="0">0%</option>
+                    <option value="0">0% (exento)</option>
                   </select>
                 </div>
                 <div className="md:col-span-3">
-                  <Label className="block text-sm font-semibold mb-2">Total</Label>
+                  <span className="block text-sm font-semibold mb-2">Total con IVA</span>
                   <div className="py-2 px-3 bg-white border border-green-200 rounded-lg font-bold text-right text-green-700 whitespace-nowrap">
                     {(() => {
-                      const cant = nuevaLinea.cantidad || 0
-                      const precio = nuevaLinea.precioUnitario || 0
-                      const base = cant * precio
-                      return formatCurrency(base)
+                      const base = (nuevaLinea.cantidad || 0) * (nuevaLinea.precioUnitario || 0)
+                      return formatCurrency(base * (1 + porcentajeIva(nuevaLinea.ivaPorcentaje, ivaPorDefecto) / 100))
                     })()}
                   </div>
                 </div>
@@ -766,7 +773,7 @@ export default function NuevaFacturaPage() {
               </div>
               <div className="flex justify-between text-lg border-t-2 border-blue-200 pt-2 mt-2">
                 <span className="font-bold text-gray-900">Total:</span>
-                <span className="font-bold text-sky-600 text-xl">{formatCurrency(total)}</span>
+                <span className="font-bold text-primary text-xl">{formatCurrency(total)}</span>
               </div>
             </div>
           </Card>
@@ -779,7 +786,7 @@ export default function NuevaFacturaPage() {
             <Button
               onClick={handleGuardar}
               disabled={loading || lineas.length === 0 || !formData.cliente_id}
-              className="gap-2 bg-sky-600 hover:bg-sky-700"
+              className="gap-2 bg-primary hover:bg-primary/90"
             >
               {loading ? (
                 <>
@@ -803,7 +810,7 @@ export default function NuevaFacturaPage() {
           <Card className="w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold flex items-center gap-2">
-                <UserPlus className="w-5 h-5 text-sky-600" />
+                <UserPlus className="w-5 h-5 text-primary" />
                 Nuevo Cliente
               </h3>
               <Button variant="ghost" size="icon" onClick={() => setMostrarCrearCliente(false)}>
@@ -837,7 +844,7 @@ export default function NuevaFacturaPage() {
                 <div>
                   <Label className="text-sm font-semibold">NIF/CIF *</Label>
                   <Input
-                    placeholder="12345678A"
+                    placeholder="12345678Z"
                     value={nuevoCliente.nif}
                     onChange={(e) => setNuevoCliente({ ...nuevoCliente, nif: e.target.value.toUpperCase() })}
                     className={!nuevoCliente.nif ? '' : 'border-green-500'}
@@ -847,7 +854,7 @@ export default function NuevaFacturaPage() {
                 <div>
                   <Label className="text-sm font-semibold">Teléfono</Label>
                   <Input
-                    placeholder="+34 600 000 000"
+                    placeholder="600 123 456"
                     value={nuevoCliente.telefono}
                     onChange={(e) => setNuevoCliente({ ...nuevoCliente, telefono: e.target.value })}
                   />
@@ -859,7 +866,7 @@ export default function NuevaFacturaPage() {
                 <Label className="text-sm font-semibold">Email</Label>
                 <Input
                   type="email"
-                  placeholder="cliente@email.com"
+                  placeholder="cliente@ejemplo.es"
                   value={nuevoCliente.email}
                   onChange={(e) => setNuevoCliente({ ...nuevoCliente, email: e.target.value })}
                 />
@@ -869,7 +876,7 @@ export default function NuevaFacturaPage() {
               <div>
                 <Label className="text-sm font-semibold">Dirección</Label>
                 <Input
-                  placeholder="C/ Ejemplo, 123"
+                  placeholder="Ej.: C/ Mayor, 12"
                   value={nuevoCliente.direccion}
                   onChange={(e) => setNuevoCliente({ ...nuevoCliente, direccion: e.target.value })}
                 />
@@ -897,7 +904,7 @@ export default function NuevaFacturaPage() {
                 <div>
                   <Label className="text-sm font-semibold">Provincia</Label>
                   <Input
-                    placeholder="Madrid"
+                    placeholder="Valencia"
                     value={nuevoCliente.provincia}
                     onChange={(e) => setNuevoCliente({ ...nuevoCliente, provincia: e.target.value })}
                   />
@@ -913,7 +920,7 @@ export default function NuevaFacturaPage() {
                   Cancelar
                 </Button>
                 <Button
-                  className="flex-1 gap-2 bg-sky-600 hover:bg-sky-700"
+                  className="flex-1 gap-2 bg-primary hover:bg-primary/90"
                   onClick={handleCrearCliente}
                   disabled={creandoCliente || !nuevoCliente.nombre || !nuevoCliente.nif}
                 >

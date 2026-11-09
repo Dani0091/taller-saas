@@ -128,7 +128,7 @@ export function QRVerifactu({
         <div className="flex flex-col gap-2">
           <Button
             onClick={handleVerificar}
-            className="w-full gap-2 bg-blue-600 hover:bg-blue-700"
+            className="w-full gap-2 bg-primary hover:bg-primary/90"
           >
             <ExternalLink className="w-4 h-4" />
             Verificar en AEAT
@@ -155,7 +155,7 @@ export function QRVerifactu({
         </div>
 
         {/* NOTA LEGAL */}
-        <div className="bg-white p-3 rounded text-xs text-gray-600 border-l-4 border-blue-400">
+        <div className="bg-white p-3 rounded-lg text-xs text-gray-600 border border-gray-200">
           <p className="font-semibold mb-1">Información Verifactu:</p>
           <p>
             Este código verifica la autenticidad de la factura ante Hacienda. 

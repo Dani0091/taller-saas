@@ -15,6 +15,7 @@ import { asignarNumeroFactura } from '@/lib/facturas/numeracion'
 import { esPrimeraFacturaDeOrden, retirarBorradorPropio } from '@/lib/facturas/factura-unica-por-orden'
 import { leerJson } from '@/lib/api/leer-json'
 import crypto from 'crypto'
+import { porcentajeIva } from '@/lib/facturas/iva'
 
 const LIMITE_SIMPLIFICADA = 3000
 
@@ -119,7 +120,7 @@ export async function POST(request: NextRequest) {
       serie = serieValida.prefijo
     }
 
-    const ivaPct = Number(config?.porcentaje_iva) || 21
+    const ivaPct = porcentajeIva(config?.porcentaje_iva)
     const precioHora = Number(config?.tarifa_hora) || 0
 
     // ── 4. Calcular totales desde líneas ─────────────────────────────────────

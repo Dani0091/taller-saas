@@ -67,7 +67,7 @@ export function OrdenTrabajoTab({
         <Textarea
           value={diagnostico || ''}
           onChange={(e) => onDiagnosticoChange(e.target.value)}
-          placeholder="Resultado del diagnóstico del vehículo..."
+          placeholder="Ej.: Pastillas delanteras al 10 %; discos dentro de tolerancia"
           rows={3}
           className="resize-none"
         />
@@ -105,7 +105,7 @@ export function OrdenTrabajoTab({
         <Textarea
           value={trabajosRealizados || ''}
           onChange={(e) => onTrabajosRealizadosChange(e.target.value)}
-          placeholder="Describe los trabajos que se han realizado..."
+          placeholder="Ej.: Cambio de pastillas y líquido de frenos; prueba en carretera"
           rows={3}
           className="resize-none"
         />
@@ -114,7 +114,7 @@ export function OrdenTrabajoTab({
       {/* Tiempos con selector de fracciones */}
       <Card className="p-4">
         <div className="flex items-center gap-2 mb-3">
-          <Clock className="w-5 h-5 text-sky-600" />
+          <Clock className="w-5 h-5 text-primary" />
           <Label className="text-sm font-semibold">Tiempo de trabajo</Label>
         </div>
 
@@ -125,7 +125,7 @@ export function OrdenTrabajoTab({
             <select
               value={tiempoEstimadoHoras || 0}
               onChange={(e) => onTiempoEstimadoChange(parseFloat(e.target.value))}
-              className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white text-center"
+              className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-ring bg-white text-center"
             >
               <option value="0">Sin estimar</option>
               {FRACCIONES_HORA.map(f => (
@@ -140,7 +140,7 @@ export function OrdenTrabajoTab({
             <select
               value={tiempoRealHoras || 0}
               onChange={(e) => onTiempoRealChange(parseFloat(e.target.value))}
-              className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white text-center"
+              className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-ring bg-white text-center"
             >
               <option value="0">Sin registrar</option>
               {FRACCIONES_HORA.map(f => (
@@ -161,7 +161,8 @@ export function OrdenTrabajoTab({
                   onTiempoEstimadoChange(value)
                 }
               }}
-              placeholder="Estimadas"
+              placeholder="Ej.: 1,5"
+              aria-label="Horas estimadas"
               className="text-center"
               min={0}
               max={100}
@@ -173,7 +174,8 @@ export function OrdenTrabajoTab({
                   onTiempoRealChange(value)
                 }
               }}
-              placeholder="Reales"
+              placeholder="Ej.: 2"
+              aria-label="Horas reales"
               className="text-center"
               min={0}
               max={100}

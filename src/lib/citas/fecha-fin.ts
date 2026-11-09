@@ -9,6 +9,20 @@
 
 export const DURACION_POR_DEFECTO_MS = 60 * 60 * 1000
 
+/**
+ * ¿El fin es anterior al inicio? (p. ej. empieza el 09/11 y "termina" el 08/11)
+ * Igual al inicio no es error: se lee como cita de 1 hora. Valores vacíos o
+ * no interpretables no se consideran error aquí.
+ */
+export function finAnteriorAInicio(fechaInicio: unknown, fechaFin: unknown): boolean {
+  if (typeof fechaInicio !== 'string' || typeof fechaFin !== 'string' || !fechaInicio || !fechaFin) return false
+  const inicio = new Date(fechaInicio).getTime()
+  const fin = new Date(fechaFin).getTime()
+  return Number.isFinite(inicio) && Number.isFinite(fin) && fin < inicio
+}
+
+export const ERROR_FIN_ANTERIOR = 'La hora de fin no puede ser anterior al inicio'
+
 /** Fin efectivo para el dominio (lectura). No toca la base de datos. */
 export function fechaFinEfectiva(
   fechaInicio: Date,

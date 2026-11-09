@@ -129,7 +129,7 @@ export function EditarClienteSheet({ clienteId, onClose, onActualizar }: EditarC
       <div className="w-full bg-white rounded-t-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white border-b px-4 py-4 flex items-center justify-between">
           <h2 className="text-xl font-bold">✏️ Editar Cliente</h2>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
+          <button aria-label="Cerrar" onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -142,7 +142,7 @@ export function EditarClienteSheet({ clienteId, onClose, onActualizar }: EditarC
               <div>
                 <Label className="text-xs font-semibold">Nombre *</Label>
                 <Input
-                  placeholder="Nombre completo"
+                  placeholder="Ej.: Juan García López"
                   value={formData.nombre}
                   onChange={(e) => setFormData(prev => ({ ...prev, nombre: e.target.value }))}
                 />
@@ -150,7 +150,7 @@ export function EditarClienteSheet({ clienteId, onClose, onActualizar }: EditarC
               <div>
                 <Label className="text-xs font-semibold">NIF/CIF *</Label>
                 <Input
-                  placeholder="Ej: 12345678A"
+                  placeholder="Ej.: 12345678Z"
                   value={formData.nif}
                   onChange={(e) => setFormData(prev => ({ ...prev, nif: e.target.value.toUpperCase() }))}
                 />
@@ -176,7 +176,7 @@ export function EditarClienteSheet({ clienteId, onClose, onActualizar }: EditarC
               <div>
                 <Label className="text-xs font-semibold">Teléfono</Label>
                 <Input
-                  placeholder="+34 666 123 456"
+                  placeholder="600 123 456"
                   value={formData.telefono}
                   onChange={(e) => setFormData(prev => ({ ...prev, telefono: e.target.value }))}
                 />
@@ -185,7 +185,7 @@ export function EditarClienteSheet({ clienteId, onClose, onActualizar }: EditarC
                 <Label className="text-xs font-semibold">Email</Label>
                 <Input
                   type="email"
-                  placeholder="email@example.com"
+                  placeholder="cliente@ejemplo.es"
                   value={formData.email}
                   onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                 />
@@ -200,7 +200,7 @@ export function EditarClienteSheet({ clienteId, onClose, onActualizar }: EditarC
               <div>
                 <Label className="text-xs font-semibold">Dirección</Label>
                 <Input
-                  placeholder="Calle, número, piso"
+                  placeholder="Ej.: C/ Mayor, 12, 2.º B"
                   value={formData.direccion}
                   onChange={(e) => setFormData(prev => ({ ...prev, direccion: e.target.value }))}
                 />
@@ -258,7 +258,7 @@ export function EditarClienteSheet({ clienteId, onClose, onActualizar }: EditarC
               <div>
                 <Label className="text-xs font-semibold">IBAN</Label>
                 <Input
-                  placeholder="ES91 1234 5678 9012 3456 7890"
+                  placeholder="ES91 2100 0418 4502 0005 1332"
                   value={formData.iban}
                   onChange={(e) => setFormData(prev => ({ ...prev, iban: e.target.value.toUpperCase() }))}
                 />
@@ -270,7 +270,7 @@ export function EditarClienteSheet({ clienteId, onClose, onActualizar }: EditarC
           <Card className="p-4 border-l-4 border-l-red-600">
             <h3 className="font-bold mb-3">📝 Notas</h3>
             <Textarea
-              placeholder="Notas adicionales..."
+              placeholder="Ej.: Prefiere que le llamen por la tarde"
               value={formData.notas}
               onChange={(e) => setFormData(prev => ({ ...prev, notas: e.target.value }))}
               rows={2}
@@ -281,7 +281,7 @@ export function EditarClienteSheet({ clienteId, onClose, onActualizar }: EditarC
           <Button
             onClick={handleGuardar}
             disabled={guardando}
-            className="w-full py-6 text-lg font-bold gap-2 bg-blue-600 hover:bg-blue-700"
+            className="w-full py-6 text-lg font-bold gap-2 bg-primary hover:bg-primary/90"
           >
             {guardando ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {guardando ? 'Guardando...' : '💾 Guardar Cambios'}

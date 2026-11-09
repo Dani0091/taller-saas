@@ -96,7 +96,7 @@ export function CambiarEstado({
   }
 
   return (
-    <Card className="p-6 bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+    <Card className="p-6">
       <div className="space-y-4">
         {/* ESTADO ACTUAL */}
         <div>
@@ -111,7 +111,7 @@ export function CambiarEstado({
 
         {/* TRANSICIONES DISPONIBLES */}
         {estadosDisponibles.length > 0 ? (
-          <div className="pt-4 border-t border-purple-200">
+          <div className="pt-4 border-t border-gray-200">
             <p className="text-sm font-semibold text-gray-700 mb-3">
               Cambiar a:
             </p>
@@ -121,7 +121,7 @@ export function CambiarEstado({
                   key={nuevoEstado}
                   onClick={() => handleCambiarEstado(nuevoEstado)}
                   disabled={cargando}
-                  className="w-full flex items-center justify-between p-3 rounded-lg border-2 border-purple-200 hover:bg-white hover:border-purple-400 transition disabled:opacity-50"
+                  className="w-full flex items-center justify-between p-3 rounded-lg border border-gray-200 hover:bg-accent hover:border-primary transition disabled:opacity-50"
                 >
                   <div className="text-left">
                     <p className="font-semibold text-gray-900">
@@ -132,16 +132,16 @@ export function CambiarEstado({
                     </p>
                   </div>
                   {cargando ? (
-                    <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
+                    <Loader2 className="w-5 h-5 animate-spin text-primary" />
                   ) : (
-                    <ChevronRight className="w-5 h-5 text-purple-600" />
+                    <ChevronRight className="w-5 h-5 text-primary" />
                   )}
                 </button>
               ))}
             </div>
           </div>
         ) : (
-          <div className="pt-4 border-t border-purple-200">
+          <div className="pt-4 border-t border-gray-200">
             <p className="text-sm text-gray-600 italic">
               No hay transiciones disponibles desde este estado
             </p>
@@ -149,7 +149,7 @@ export function CambiarEstado({
         )}
 
         {/* NOTA LEGAL */}
-        <div className="pt-4 border-t border-purple-200">
+        <div className="pt-4 border-t border-gray-200">
           <p className="text-xs text-gray-600">
             <span className="font-semibold">Nota:</span> Los cambios de estado quedan 
             registrados en la auditoría. Solo administradores pueden revertir cambios.

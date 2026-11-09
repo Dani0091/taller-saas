@@ -164,7 +164,7 @@ export function CalendarioCitas({ onNuevaCita, onEditarCita }: CalendarioCitasPr
                   type="button"
                   aria-pressed={vista === v}
                   onClick={() => setVista(v)}
-                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors capitalize
+                  className={`min-h-9 sm:min-h-0 px-3 py-1 text-xs font-medium rounded-md transition-colors capitalize
                     ${vista === v
                       ? 'bg-white text-blue-600 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'}`}
@@ -243,7 +243,7 @@ export function CalendarioCitas({ onNuevaCita, onEditarCita }: CalendarioCitasPr
             </div>
           ) : loading ? (
             <div className="flex justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-sky-600" />
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
           ) : /* Vista Día - Lista de citas */
           vista === 'dia' ? (

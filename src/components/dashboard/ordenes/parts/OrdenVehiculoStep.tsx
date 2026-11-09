@@ -192,14 +192,14 @@ export function OrdenVehiculoStep({
               {vehiculoSeleccionado.año ? ` (${vehiculoSeleccionado.año})` : ''}
             </p>
             {vehiculoSeleccionado.kilometros ? (
-              <p className="text-xs text-sky-600">{vehiculoSeleccionado.kilometros.toLocaleString()} km</p>
+              <p className="text-xs text-primary">{vehiculoSeleccionado.kilometros.toLocaleString()} km</p>
             ) : null}
           </div>
           <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={onToggleEditandoVehiculo}
-              className="text-sky-600 hover:text-sky-800 p-2"
+              className="text-primary hover:text-sky-800 p-2"
               title="Editar vehículo"
             >
               <Edit2 className="w-4 h-4" />
@@ -234,7 +234,7 @@ export function OrdenVehiculoStep({
           </div>
           <div>
             <Label className="text-xs text-gray-600 mb-1 block">Bastidor (VIN)</Label>
-            <Input value={vehiculoEditado.vin || ''} onChange={(e) => onVehiculoEditadoChange({ vin: e.target.value })} placeholder="WVWZZZ1KZBW123456" className="bg-white font-mono" />
+            <Input value={vehiculoEditado.vin || ''} onChange={(e) => onVehiculoEditadoChange({ vin: e.target.value })} placeholder="VSSZZZKJZLR012345" className="bg-white font-mono" />
           </div>
           <div className="flex gap-2">
             <Button type="button" variant="outline" size="xl" onClick={onToggleEditandoVehiculo} disabled={guardandoVehiculo} className="flex-1">Cancelar</Button>
@@ -258,8 +258,8 @@ export function OrdenVehiculoStep({
                 onKeyDown={handleInputKeyDown}
                 onBlur={handleInputBlur}
                 onFocus={handleInputFocus}
-                placeholder="Escribe la matrícula (ej: 1234ABC)"
-                className="flex-1 px-3 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white font-mono text-center text-lg tracking-widest uppercase shadow-sm"
+                placeholder="Escribe la matrícula (ej.: 1234 BCD)"
+                className="flex-1 px-3 py-3 border rounded-xl focus:ring-2 focus:ring-ring bg-white font-mono text-center text-lg tracking-widest uppercase shadow-sm"
                 autoFocus
                 autoComplete="off"
                 role="combobox"
@@ -270,7 +270,7 @@ export function OrdenVehiculoStep({
                 type="button"
                 onClick={onBuscarMatricula}
                 disabled={buscandoMatricula || !matriculaInput.trim()}
-                className="px-4 py-3 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white rounded-xl flex items-center gap-2 font-medium min-w-[56px] justify-center"
+                className="px-4 py-3 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white rounded-xl flex items-center gap-2 font-medium min-w-[56px] justify-center"
               >
                 {buscandoMatricula ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
               </button>
@@ -292,7 +292,7 @@ export function OrdenVehiculoStep({
                         e.preventDefault()
                         abrirFormVehiculo()
                       }}
-                      className="w-full text-left px-4 py-3 text-sm text-sky-600 hover:bg-sky-50 font-medium flex items-center gap-1.5 border-t"
+                      className="w-full text-left px-4 py-3 text-sm text-primary hover:bg-sky-50 font-medium flex items-center gap-1.5 border-t"
                     >
                       <Car className="w-4 h-4" /> Crear nuevo vehículo
                     </button>
@@ -334,7 +334,7 @@ export function OrdenVehiculoStep({
               <select
                 value=""
                 onChange={(e) => e.target.value && onVehiculoIdChange(e.target.value)}
-                className="w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white"
+                className="w-full px-3 py-3 border rounded-xl focus:ring-2 focus:ring-ring bg-white"
               >
                 <option value="">Seleccionar vehículo del cliente...</option>
                 {vehiculos.map(v => (
@@ -349,7 +349,7 @@ export function OrdenVehiculoStep({
           <button
             type="button"
             onClick={abrirFormVehiculo}
-            className="text-sm text-sky-600 hover:text-sky-700 font-medium flex items-center gap-1.5"
+            className="text-sm text-primary hover:text-sky-700 font-medium flex items-center gap-1.5"
           >
             <Car className="w-4 h-4" /> Crear nuevo vehículo
           </button>
@@ -372,7 +372,7 @@ export function OrdenVehiculoStep({
                 <Input
                   value={nuevoVehiculo.matricula}
                   onChange={(e) => onNuevoVehiculoChange({ matricula: e.target.value.toUpperCase() })}
-                  placeholder="1234ABC"
+                  placeholder="1234 BCD"
                   className="font-mono uppercase flex-1"
                   autoFocus
                 />
@@ -392,7 +392,7 @@ export function OrdenVehiculoStep({
             <div>
               <Label className="text-xs text-gray-600 mb-1 block">Bastidor (VIN) <span className="text-gray-400 font-normal">(opcional)</span></Label>
               <div className="flex gap-2">
-                <Input value={nuevoVehiculo.vin || ''} onChange={(e) => onNuevoVehiculoChange({ vin: e.target.value })} placeholder="WVWZZZ1KZBW123456" className="font-mono flex-1" />
+                <Input value={nuevoVehiculo.vin || ''} onChange={(e) => onNuevoVehiculoChange({ vin: e.target.value })} placeholder="VSSZZZKJZLR012345" className="font-mono flex-1" />
                 <InputScanner tipo="vin" onResult={(val) => onNuevoVehiculoChange({ vin: val })} />
               </div>
             </div>

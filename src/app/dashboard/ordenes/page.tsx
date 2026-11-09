@@ -34,6 +34,15 @@ export default function OrdenesPage() {
   const [ordenSeleccionada, setOrdenSeleccionada] = useState<string | null>(null)
   const [modoCrear, setModoCrear] = useState(false)
 
+  // Enlace directo a una orden (p. ej. desde una cita): /dashboard/ordenes?orden=<id>
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const id = params.get('orden')
+    if (id) setOrdenSeleccionada(id)
+    // Enlace "Nueva orden" del panel: abre el asistente
+    if (params.get('nueva') === '1') setModoCrear(true)
+  }, [])
+
   useEffect(() => {
     cargarOrdenes()
   }, [])
@@ -85,7 +94,7 @@ export default function OrdenesPage() {
           <div className="flex gap-2">
             <Button
               size="sm"
-              className="gap-2 bg-sky-600 hover:bg-sky-700"
+              className="gap-2 bg-primary hover:bg-primary/90"
               onClick={() => setModoCrear(true)}
             >
               <Plus className="w-4 h-4" />
@@ -111,9 +120,9 @@ export default function OrdenesPage() {
             <button
               key={filtro}
               onClick={() => setFiltroActivo(filtro)}
-              className={`shrink-0 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+              className={`shrink-0 min-h-9 sm:min-h-0 px-3 py-1 rounded-full text-xs font-medium transition-all ${
                 filtroActivo === filtro
-                  ? 'bg-sky-600 text-white'
+                  ? 'bg-primary text-white'
                   : 'bg-white text-gray-700 border border-gray-300'
               }`}
             >
@@ -136,7 +145,7 @@ export default function OrdenesPage() {
           </div>
         ) : loading ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-sky-600" />
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : ordenesFiltradas.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
@@ -158,8 +167,7 @@ export default function OrdenesPage() {
                 <Card
                   key={orden.id}
                   onClick={() => setOrdenSeleccionada(orden.id)}
-                  className="p-4 hover:shadow-md transition-shadow cursor-pointer border-l-4 active:bg-gray-100"
-                  style={{borderLeftColor: config.badge}}
+                  className="p-4 hover:shadow-md transition-shadow cursor-pointer active:bg-gray-100"
                 >
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="flex-1 min-w-0">
@@ -168,7 +176,7 @@ export default function OrdenesPage() {
                         Cliente: {orden.clienteNombre || 'Sin nombre'}
                       </div>
                     </div>
-                    <Badge className={config.color}>{config.icon}</Badge>
+                    <Badge className={`${config.color} shrink-0`}>{config.label}</Badge>
                   </div>
 
                   <div className="text-sm text-gray-700 mb-3">
@@ -179,11 +187,11 @@ export default function OrdenesPage() {
                   {/* STATS ROW */}
                   <div className="flex flex-wrap gap-4 text-xs text-gray-600">
                     {orden.total > 0 && (
-                      <div className="font-semibold text-green-600">{orden.totalFormateado}</div>
+                      <div className="font-semibold text-gray-900 tabular-nums">{orden.totalFormateado}</div>
                     )}
-                    <div className="text-gray-500">{orden.cantidadLineas} líneas</div>
+                    <div className="text-gray-500">{orden.cantidadLineas} {orden.cantidadLineas === 1 ? 'línea' : 'líneas'}</div>
                     {orden.isFacturada && (
-                      <div className="text-blue-600">✓ Facturada</div>
+                      <div className="text-blue-700">Facturada</div>
                     )}
                   </div>
                 </Card>
@@ -198,7 +206,11 @@ export default function OrdenesPage() {
         <DetalleOrdenSheet
           ordenId={ordenSeleccionada}
           isOpen={!!ordenSeleccionada}
-          onClose={() => setOrdenSeleccionada(null)}
+          onClose={() => {
+            setOrdenSeleccionada(null)
+            // Que recargar la página no vuelva a abrir la orden del enlace
+            if (window.location.search.includes('orden=')) window.history.replaceState(null, '', window.location.pathname)
+          }}
           onSuccess={cargarOrdenes}
         />
       )}
@@ -208,10 +220,14 @@ export default function OrdenesPage() {
         <DetalleOrdenSheet
           modoCrear
           isOpen={modoCrear}
-          onClose={() => setModoCrear(false)}
+          onClose={() => {
+            setModoCrear(false)
+            if (window.location.search.includes('nueva=')) window.history.replaceState(null, '', window.location.pathname)
+          }}
           onSuccess={cargarOrdenes}
           onOrdenCreada={(id) => {
             setModoCrear(false)
+            if (window.location.search.includes('nueva=')) window.history.replaceState(null, '', window.location.pathname)
             setOrdenSeleccionada(id)
           }}
         />

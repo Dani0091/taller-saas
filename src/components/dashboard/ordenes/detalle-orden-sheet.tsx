@@ -41,6 +41,7 @@ import { FotoUploader } from './foto-uploader'
 import { OrdenPDFViewer } from './orden-pdf-viewer'
 import { calcularTotalesOrdenAction } from '@/actions/ordenes/calcular-totales-orden.action'
 import { TotalesOrdenDTO } from '@/application/dtos/orden.dto'
+import { siguienteNumeroOrden } from '@/lib/ordenes/numero-orden'
 
 interface Orden {
   id?: string
@@ -527,14 +528,7 @@ export function DetalleOrdenSheet({
           .limit(1)
           .single()
 
-        let siguienteNumero = 1
-        if (ultimaOrden?.numero_orden) {
-          const match = ultimaOrden.numero_orden.match(/OR-(\d+)/)
-          if (match) {
-            siguienteNumero = parseInt(match[1]) + 1
-          }
-        }
-        setOrdenNumero(`OR-${siguienteNumero.toString().padStart(4, '0')}`)
+        setOrdenNumero(siguienteNumeroOrden(ultimaOrden?.numero_orden))
       }
     } catch (error: any) {
       console.error('Error inicializando:', error)
@@ -1687,7 +1681,7 @@ export function DetalleOrdenSheet({
     return (
       <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
         <div className="bg-white rounded-2xl p-8 text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-sky-600" />
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3 text-primary" />
           <p className="text-gray-600">Cargando orden...</p>
         </div>
       </div>
@@ -1721,7 +1715,7 @@ export function DetalleOrdenSheet({
                       s < stepCrear
                         ? 'bg-green-600 text-white'
                         : s === stepCrear
-                        ? 'bg-sky-600 text-white'
+                        ? 'bg-primary text-white'
                         : 'bg-gray-200 text-gray-400'
                     }`}
                   >
@@ -1730,7 +1724,7 @@ export function DetalleOrdenSheet({
                   {s < 4 && (
                     <div className="flex-1 h-1 mx-1 rounded-full bg-gray-200 overflow-hidden">
                       <div
-                        className={`h-full bg-sky-600 transition-all duration-300 ${s < stepCrear ? 'w-full' : 'w-0'}`}
+                        className={`h-full bg-primary transition-all duration-300 ${s < stepCrear ? 'w-full' : 'w-0'}`}
                       />
                     </div>
                   )}
@@ -1753,7 +1747,7 @@ export function DetalleOrdenSheet({
                 onClick={() => setTab(t.id as any)}
                 className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap px-2 ${
                   tab === t.id
-                    ? 'border-sky-600 text-sky-600 bg-sky-50'
+                    ? 'border-primary text-primary bg-sky-50'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
                 }`}>
                 <span className="mr-1">{t.icon}</span>
@@ -1985,7 +1979,7 @@ export function DetalleOrdenSheet({
             {stepCrear < 4 ? (
               <Button
                 size="xl"
-                className="flex-1 bg-sky-600 hover:bg-sky-700"
+                className="flex-1 bg-primary hover:bg-primary/90"
                 disabled={
                   (stepCrear === 1 && !formData.vehiculo_id) ||
                   (stepCrear === 2 && !formData.cliente_id)
@@ -2073,7 +2067,7 @@ export function DetalleOrdenSheet({
                   type="button"
                   size="xl"
                   onClick={continuarBorrador}
-                  className="w-full bg-sky-600 hover:bg-sky-700"
+                  className="w-full bg-primary hover:bg-primary/90"
                 >
                   Continuar con borrador
                 </Button>
