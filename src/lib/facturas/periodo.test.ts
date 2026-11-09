@@ -29,6 +29,13 @@ describe('rangoPeriodo', () => {
   })
 })
 
+describe('rangoPeriodo: trimestres fiscales', () => {
+  it('el trimestre filtra del primer al último día', () => {
+    expect(rangoPeriodo('2026-T4')).toEqual({ fechaDesde: '2026-10-01', fechaHasta: '2026-12-31' })
+    expect(rangoPeriodo('2024-T1')).toEqual({ fechaDesde: '2024-01-01', fechaHasta: '2024-03-31' })
+  })
+})
+
 describe('textoBusqueda (filtro .or() de PostgREST)', () => {
   it('conserva número, matrícula y NIF', () => {
     expect(textoBusqueda('FA-012')).toBe('FA-012')

@@ -182,24 +182,24 @@ export function OrdenVehiculoStep({
 
       {/* Vehículo seleccionado */}
       {vehiculoId && vehiculoSeleccionado && !editandoVehiculo && (
-        <div className="p-4 bg-sky-50 border border-sky-200 rounded-xl flex items-center justify-between shadow-sm">
+        <div className="p-4 bg-primary/5 border border-primary/30 rounded-xl flex items-center justify-between shadow-sm">
           <div>
-            <p className="font-bold text-sky-900 font-mono tracking-wider text-lg">
+            <p className="font-bold text-primary font-mono tracking-wider text-lg">
               {vehiculoSeleccionado.matricula}
             </p>
-            <p className="text-sm text-sky-700">
+            <p className="text-sm text-primary">
               {vehiculoSeleccionado.marca} {vehiculoSeleccionado.modelo}
               {vehiculoSeleccionado.año ? ` (${vehiculoSeleccionado.año})` : ''}
             </p>
             {vehiculoSeleccionado.kilometros ? (
-              <p className="text-xs text-primary">{vehiculoSeleccionado.kilometros.toLocaleString()} km</p>
+              <p className="text-xs text-primary">{vehiculoSeleccionado.kilometros.toLocaleString('es-ES')} km</p>
             ) : null}
           </div>
           <div className="flex items-center gap-1">
             <button
               type="button"
               onClick={onToggleEditandoVehiculo}
-              className="text-primary hover:text-sky-800 p-2"
+              className="text-primary hover:text-primary p-2"
               title="Editar vehículo"
             >
               <Edit2 className="w-4 h-4" />
@@ -207,7 +207,7 @@ export function OrdenVehiculoStep({
             <button
               type="button"
               onClick={() => onVehiculoIdChange('')}
-              className="text-gray-400 hover:text-red-500 p-2"
+              className="text-gray-400 hover:text-destructive p-2"
               title="Cambiar vehículo"
             >
               <X className="w-4 h-4" />
@@ -218,8 +218,8 @@ export function OrdenVehiculoStep({
 
       {/* Editar vehículo existente */}
       {vehiculoId && vehiculoSeleccionado && editandoVehiculo && (
-        <div className="space-y-3 p-4 bg-purple-50 rounded-xl border border-purple-200">
-          <h4 className="font-semibold text-purple-800 text-sm flex items-center gap-2">
+        <div className="space-y-3 p-4 bg-primary/5 rounded-xl border border-primary/30">
+          <h4 className="font-semibold text-primary text-sm flex items-center gap-2">
             <Edit2 className="w-4 h-4" /> Editar Vehículo
           </h4>
           <div className="grid grid-cols-2 gap-2">
@@ -238,7 +238,7 @@ export function OrdenVehiculoStep({
           </div>
           <div className="flex gap-2">
             <Button type="button" variant="outline" size="xl" onClick={onToggleEditandoVehiculo} disabled={guardandoVehiculo} className="flex-1">Cancelar</Button>
-            <Button type="button" size="xl" onClick={onGuardarVehiculo} disabled={guardandoVehiculo} className="flex-1 bg-purple-600 hover:bg-purple-700">
+            <Button type="button" size="xl" onClick={onGuardarVehiculo} disabled={guardandoVehiculo} className="flex-1 bg-primary hover:bg-primary/90">
               {guardandoVehiculo && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
               {guardandoVehiculo ? 'Guardando...' : 'Guardar'}
             </Button>
@@ -259,7 +259,7 @@ export function OrdenVehiculoStep({
                 onBlur={handleInputBlur}
                 onFocus={handleInputFocus}
                 placeholder="Escribe la matrícula (ej.: 1234 BCD)"
-                className="flex-1 px-3 py-3 border rounded-xl focus:ring-2 focus:ring-ring bg-white font-mono text-center text-lg tracking-widest uppercase shadow-sm"
+                className="flex-1 min-w-0 px-3 py-3 border rounded-xl focus:ring-2 focus:ring-ring bg-white font-mono text-center text-lg tracking-widest uppercase shadow-sm placeholder:font-sans placeholder:text-base placeholder:normal-case placeholder:tracking-normal"
                 autoFocus
                 autoComplete="off"
                 role="combobox"
@@ -292,7 +292,7 @@ export function OrdenVehiculoStep({
                         e.preventDefault()
                         abrirFormVehiculo()
                       }}
-                      className="w-full text-left px-4 py-3 text-sm text-primary hover:bg-sky-50 font-medium flex items-center gap-1.5 border-t"
+                      className="w-full text-left px-4 py-3 text-sm text-primary hover:bg-primary/5 font-medium flex items-center gap-1.5 border-t"
                     >
                       <Car className="w-4 h-4" /> Crear nuevo vehículo
                     </button>
@@ -308,7 +308,7 @@ export function OrdenVehiculoStep({
                       }}
                       onMouseEnter={() => setHighlightIndex(i)}
                       className={`w-full text-left px-4 py-3 text-sm ${
-                        i === highlightIndex ? 'bg-sky-100' : 'hover:bg-sky-50'
+                        i === highlightIndex ? 'bg-primary/10' : 'hover:bg-primary/5'
                       } ${i > 0 ? 'border-t border-gray-100' : ''}`}
                     >
                       <span className="font-mono font-semibold text-gray-900">{v.matricula}</span>
@@ -322,9 +322,9 @@ export function OrdenVehiculoStep({
 
           <p className="text-xs text-gray-400 text-center">Escribe para buscar, o pulsa Buscar / Enter</p>
           {matriculaNoEncontrada && (
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
-              <p className="text-sm text-amber-700 font-medium">Matrícula no encontrada</p>
-              <p className="text-xs text-amber-600 mt-1">Pulsa "Crear nuevo vehículo" para registrarlo</p>
+            <div className="p-3 bg-warning/5 border border-warning/30 rounded-xl">
+              <p className="text-sm text-warning font-medium">Matrícula no encontrada</p>
+              <p className="text-xs text-warning mt-1">Pulsa "Crear nuevo vehículo" para registrarlo</p>
             </div>
           )}
 
@@ -349,7 +349,7 @@ export function OrdenVehiculoStep({
           <button
             type="button"
             onClick={abrirFormVehiculo}
-            className="text-sm text-primary hover:text-sky-700 font-medium flex items-center gap-1.5"
+            className="text-sm text-primary hover:text-primary font-medium flex items-center gap-1.5"
           >
             <Car className="w-4 h-4" /> Crear nuevo vehículo
           </button>
@@ -360,7 +360,7 @@ export function OrdenVehiculoStep({
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Car className="w-5 h-5 text-green-600" />
+              <Car className="w-5 h-5 text-success" />
               Nuevo Vehículo
             </DialogTitle>
           </DialogHeader>
@@ -401,7 +401,7 @@ export function OrdenVehiculoStep({
               size="xl"
               onClick={onCrearVehiculo}
               disabled={creandoVehiculo || !nuevoVehiculo.matricula.trim()}
-              className="w-full gap-2 bg-green-600 hover:bg-green-700"
+              className="w-full gap-2 bg-success hover:bg-success/90"
             >
               {creandoVehiculo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Car className="w-4 h-4" />}
               {creandoVehiculo ? 'Creando...' : 'Crear Vehículo'}

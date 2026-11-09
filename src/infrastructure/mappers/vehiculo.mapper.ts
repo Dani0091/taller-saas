@@ -57,9 +57,12 @@ export class VehiculoMapper {
     try {
       matricula = Matricula.create(record.matricula)
     } catch (error) {
-      console.warn(`⚠️ Matrícula inválida (legacy) para vehículo ${record.id}: ${record.matricula}`, error)
-      // Usar matrícula placeholder para datos legacy
-      matricula = Matricula.create('0000XXX')
+      // Extranjeras, históricas o con otro formato: se conservan tal cual.
+      // Antes se sustituían por 0000-XXX, que se mostraba y, al editar el
+      // vehículo, se guardaba en lugar de la matrícula real.
+      matricula = record.matricula?.trim()
+        ? Matricula.createUnsafe(record.matricula)
+        : Matricula.create('0000XXX')
     }
 
     // Protección para datos legacy: kilometros

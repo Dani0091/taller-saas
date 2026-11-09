@@ -215,23 +215,23 @@ export function OrdenInfoTab({
 
         {/* Vehículo seleccionado */}
         {formData.vehiculo_id && vehiculoSeleccionado && !editandoVehiculo && (
-          <div className="p-3 bg-sky-50 border border-sky-200 rounded-xl flex items-center justify-between">
+          <div className="p-3 bg-primary/5 border border-primary/30 rounded-xl flex items-center justify-between">
             <div>
-              <p className="font-bold text-sky-900 font-mono tracking-wider text-lg">
+              <p className="font-bold text-primary font-mono tracking-wider text-lg">
                 {vehiculoSeleccionado.matricula}
               </p>
-              <p className="text-sm text-sky-700">
+              <p className="text-sm text-primary">
                 {vehiculoSeleccionado.marca} {vehiculoSeleccionado.modelo}
                 {vehiculoSeleccionado.año ? ` (${vehiculoSeleccionado.año})` : ''}
               </p>
               {vehiculoSeleccionado.kilometros ? (
-                <p className="text-xs text-primary">{vehiculoSeleccionado.kilometros.toLocaleString()} km</p>
+                <p className="text-xs text-primary">{vehiculoSeleccionado.kilometros.toLocaleString('es-ES')} km</p>
               ) : null}
             </div>
             <button
               type="button"
               onClick={() => onFormDataChange({ vehiculo_id: '', cliente_id: '' })}
-              className="text-gray-400 hover:text-red-500 p-1"
+              className="text-gray-400 hover:text-destructive p-1"
               title="Cambiar vehículo"
             >
               <X className="w-4 h-4" />
@@ -250,8 +250,8 @@ export function OrdenInfoTab({
 
         {/* Editar vehículo existente */}
         {formData.vehiculo_id && vehiculoSeleccionado && editandoVehiculo && (
-          <div className="space-y-3 p-3 bg-purple-50 rounded-xl border border-purple-200">
-            <h4 className="font-semibold text-purple-800 text-sm flex items-center gap-2">
+          <div className="space-y-3 p-3 bg-primary/5 rounded-xl border border-primary/30">
+            <h4 className="font-semibold text-primary text-sm flex items-center gap-2">
               <Edit2 className="w-4 h-4" /> Editar Vehículo
             </h4>
             <div className="grid grid-cols-2 gap-2">
@@ -270,7 +270,7 @@ export function OrdenInfoTab({
             </div>
             <div className="flex gap-2">
               <Button type="button" variant="outline" onClick={onToggleEditandoVehiculo} disabled={guardandoVehiculo} className="flex-1 py-3">Cancelar</Button>
-              <Button type="button" onClick={onGuardarVehiculo} disabled={guardandoVehiculo} className="flex-1 bg-purple-600 hover:bg-purple-700 py-3">
+              <Button type="button" onClick={onGuardarVehiculo} disabled={guardandoVehiculo} className="flex-1 bg-primary hover:bg-primary/90 py-3">
                 {guardandoVehiculo && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
                 {guardandoVehiculo ? 'Guardando...' : 'Guardar'}
               </Button>
@@ -302,9 +302,9 @@ export function OrdenInfoTab({
             </div>
             <p className="text-xs text-gray-400 text-center">Pulsa Buscar o Enter para buscar en el sistema</p>
             {matriculaNoEncontrada && (
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                <p className="text-sm text-amber-700 font-medium">Matrícula no encontrada</p>
-                <p className="text-xs text-amber-600 mt-1">Pulsa "Nuevo manual" para registrar este vehículo</p>
+              <div className="p-3 bg-warning/5 border border-warning/30 rounded-xl">
+                <p className="text-sm text-warning font-medium">Matrícula no encontrada</p>
+                <p className="text-xs text-warning mt-1">Pulsa "Nuevo manual" para registrar este vehículo</p>
               </div>
             )}
 
@@ -330,8 +330,8 @@ export function OrdenInfoTab({
 
         {/* Formulario de nuevo vehículo */}
         {!formData.vehiculo_id && mostrarFormVehiculo && (
-          <div className="space-y-3 p-3 bg-green-50 rounded-xl border border-green-200">
-            <h4 className="font-semibold text-green-800 text-sm flex items-center gap-2">
+          <div className="space-y-3 p-3 bg-success/5 rounded-xl border border-success/30">
+            <h4 className="font-semibold text-success text-sm flex items-center gap-2">
               <Car className="w-4 h-4" /> Nuevo Vehículo
             </h4>
             <div>
@@ -365,7 +365,7 @@ export function OrdenInfoTab({
               size="xl"
               onClick={onCrearVehiculo}
               disabled={creandoVehiculo || !nuevoVehiculo.matricula.trim()}
-              className="w-full gap-2 bg-green-600 hover:bg-green-700"
+              className="w-full gap-2 bg-success hover:bg-success/90"
             >
               {creandoVehiculo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Car className="w-4 h-4" />}
               {creandoVehiculo ? 'Creando...' : 'Crear Vehículo'}
@@ -437,8 +437,8 @@ export function OrdenInfoTab({
                         setBusquedaCliente('')
                         setComboAbierto(false)
                       }}
-                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-sky-50 transition-colors ${
-                        formData.cliente_id === c.id ? 'bg-sky-50 font-medium' : ''
+                      className={`w-full text-left px-4 py-2.5 text-sm hover:bg-primary/5 transition-colors ${
+                        formData.cliente_id === c.id ? 'bg-primary/5 font-medium' : ''
                       }`}
                     >
                       <span className="text-gray-900">
@@ -454,8 +454,8 @@ export function OrdenInfoTab({
             )}
           </div>
         ) : (
-          <div className="space-y-3 p-3 bg-blue-50 rounded-xl border border-blue-200">
-            <h4 className="font-semibold text-blue-800 text-sm flex items-center gap-2">
+          <div className="space-y-3 p-3 bg-primary/5 rounded-xl border border-primary/30">
+            <h4 className="font-semibold text-primary text-sm flex items-center gap-2">
               <UserPlus className="w-4 h-4" />
               Nuevo Cliente
             </h4>
@@ -562,7 +562,7 @@ export function OrdenInfoTab({
 
       {/* Datos de recepción */}
       <Card className="p-4">
-        <Label className="text-sm font-semibold mb-3 block">⛽ Recepción del vehículo</Label>
+        <Label className="text-sm font-semibold mb-3 block">Recepción del vehículo</Label>
 
         {/* Nivel de combustible */}
         <div className="mb-4">
@@ -575,8 +575,8 @@ export function OrdenInfoTab({
                 onClick={() => onFormDataChange({ nivel_combustible: nivel })}
                 className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg border-2 transition-all ${
                   formData.nivel_combustible === nivel
-                    ? 'bg-amber-500 border-amber-500 text-white'
-                    : 'bg-white border-gray-200 text-gray-600 hover:border-amber-300'
+                    ? 'bg-warning border-warning text-white'
+                    : 'bg-white border-gray-200 text-gray-600 hover:border-warning/30'
                 }`}
               >
                 {nivel}
@@ -661,7 +661,7 @@ export function OrdenInfoTab({
 
       {/* Autorizaciones legales */}
       <Card className="p-4">
-        <Label className="text-sm font-semibold mb-3 block">✍️ Autorizaciones del cliente</Label>
+        <Label className="text-sm font-semibold mb-3 block">Autorizaciones del cliente</Label>
 
         {/* Cliente autoriza reparación */}
         <label className="flex items-center gap-3 cursor-pointer mb-3 p-2 rounded-lg hover:bg-gray-50">
@@ -669,7 +669,7 @@ export function OrdenInfoTab({
             type="checkbox"
             checked={formData.presupuesto_aprobado_por_cliente || false}
             onChange={(e) => onFormDataChange({ presupuesto_aprobado_por_cliente: e.target.checked })}
-            className="w-5 h-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
+            className="w-5 h-5 rounded border-gray-300 text-success focus:ring-success"
           />
           <div>
             <span className="font-medium text-gray-900">Cliente autoriza reparación</span>
@@ -683,7 +683,7 @@ export function OrdenInfoTab({
             type="checkbox"
             checked={formData.renuncia_presupuesto || false}
             onChange={(e) => onFormDataChange({ renuncia_presupuesto: e.target.checked })}
-            className="w-5 h-5 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+            className="w-5 h-5 rounded border-gray-300 text-warning focus:ring-warning"
           />
           <div>
             <span className="font-medium text-gray-900">Renuncia a presupuesto previo</span>
@@ -697,7 +697,7 @@ export function OrdenInfoTab({
             type="checkbox"
             checked={formData.recoger_piezas || false}
             onChange={(e) => onFormDataChange({ recoger_piezas: e.target.checked })}
-            className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-ring"
           />
           <div>
             <span className="font-medium text-gray-900">Desea recoger piezas sustituidas</span>
@@ -714,22 +714,22 @@ export function OrdenInfoTab({
               onClick={() => onFormDataChange({ accion_imprevisto: 'avisar' })}
               className={`flex-1 py-2 px-4 text-sm font-medium rounded-lg border-2 transition-all ${
                 formData.accion_imprevisto === 'avisar'
-                  ? 'bg-blue-500 border-blue-500 text-white'
-                  : 'bg-white border-gray-200 text-gray-600 hover:border-blue-300'
+                  ? 'bg-primary border-primary text-white'
+                  : 'bg-white border-gray-200 text-gray-600 hover:border-primary/30'
               }`}
             >
-              📞 Avisar antes
+              Avisar antes
             </button>
             <button
               type="button"
               onClick={() => onFormDataChange({ accion_imprevisto: 'actuar' })}
               className={`flex-1 py-2 px-4 text-sm font-medium rounded-lg border-2 transition-all ${
                 formData.accion_imprevisto === 'actuar'
-                  ? 'bg-green-500 border-green-500 text-white'
-                  : 'bg-white border-gray-200 text-gray-600 hover:border-green-300'
+                  ? 'bg-success border-success text-white'
+                  : 'bg-white border-gray-200 text-gray-600 hover:border-success/30'
               }`}
             >
-              🔧 Actuar directamente
+              Actuar directamente
             </button>
           </div>
         </div>
@@ -737,7 +737,7 @@ export function OrdenInfoTab({
 
       {/* Daños en carrocería */}
       <Card className="p-4">
-        <Label className="text-sm font-semibold mb-2 block">🚗 Daños preexistentes en carrocería</Label>
+        <Label className="text-sm font-semibold mb-2 block">Daños preexistentes en carrocería</Label>
         <Textarea
           value={formData.danos_carroceria || ''}
           onChange={(e) => onFormDataChange({ danos_carroceria: e.target.value })}
@@ -761,7 +761,7 @@ export function OrdenInfoTab({
         {/* Upload de documentación adicional */}
         <div className="mt-3 pt-3 border-t">
           <Label className="text-xs font-semibold mb-2 block text-gray-600">
-            📄 Documentación adicional (Hoja de orden, notas escritas, etc.)
+            Documentación adicional (Hoja de orden, notas escritas, etc.)
           </Label>
           {!modoCrear && ordenSeleccionada ? (
             <div className="grid grid-cols-2 gap-2">

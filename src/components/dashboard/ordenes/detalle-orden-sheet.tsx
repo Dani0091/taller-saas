@@ -6,29 +6,15 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import { X, Save, Plus, Trash2, Loader2, FileText, ChevronDown, Check, Clock, Car, Printer, Share2, Link, Copy, UserPlus, Edit2 } from 'lucide-react'
+import { Loader2, ClipboardList, Camera, Wrench, Receipt } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { NumberInput, createNumberChangeHandler, handleScannerNumber } from '@/components/ui/number-input'
-import { InputScanner } from '@/components/ui/input-scanner'
-import type { 
-  VehiculoFormulario, 
-  VehiculoNuevoFormulario,
-  VehiculoEdicionFormulario 
-} from '@/types/formularios'
+import type { VehiculoNuevoFormulario, VehiculoEdicionFormulario } from '@/types/formularios'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
-import { Card } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { enlaceWhatsApp } from '@/lib/compartir/whatsapp'
 import { mensajePresupuesto } from '@/lib/ordenes/mensajes-whatsapp'
-import { fotosToString, getFotoUrl, setFotoUrl, getFotoByKey } from '@/lib/utils'
-import { ESTADOS_ORDEN, FRACCIONES_HORA, CANTIDADES, FOTOS_DIAGNOSTICO, FOTO_LABELS, type TipoFoto } from '@/lib/constants'
+import { fotosToString } from '@/lib/utils'
 import { OrdenHeader } from './parts/OrdenHeader'
-import { OrdenTotalSummary } from './parts/OrdenTotalSummary'
 import { OrdenTrabajoTab } from './parts/OrdenTrabajoTab'
 import { OrdenItemsTab } from './parts/OrdenItemsTab'
 import { OrdenFotosTab } from './parts/OrdenFotosTab'
@@ -37,11 +23,16 @@ import { OrdenClienteStep } from './parts/OrdenClienteStep'
 import { OrdenVehiculoStep, type VehiculoResultadoBusqueda } from './parts/OrdenVehiculoStep'
 import { OrdenDescripcionStep } from './parts/OrdenDescripcionStep'
 import { OrdenFooter } from './parts/OrdenFooter'
-import { FotoUploader } from './foto-uploader'
 import { OrdenPDFViewer } from './orden-pdf-viewer'
-import { calcularTotalesOrdenAction } from '@/actions/ordenes/calcular-totales-orden.action'
-import { TotalesOrdenDTO } from '@/application/dtos/orden.dto'
-import { siguienteNumeroOrden } from '@/lib/ordenes/numero-orden'
+import { datosOrdenFicha } from '@/lib/ordenes/ficha-datos'
+import { useLineasOrden } from './use-lineas-orden'
+import { useFacturarOrden } from './use-facturar-orden'
+import { useBorradorAsistente } from './use-borrador-asistente'
+import { PasosAsistente, ResumenAsistente, PieAsistente } from './parts/OrdenAsistente'
+import {
+  cargarContextoFicha, crearOrdenFicha, guardarOrdenFicha, vehiculosDeCliente, vehiculoPorId,
+  buscarVehiculos, crearVehiculoFicha, actualizarVehiculoFicha, crearClienteFicha,
+} from './ficha-api'
 
 interface Orden {
   id?: string
@@ -113,18 +104,6 @@ interface DetalleOrdenSheetProps {
   onOrdenCreada?: (ordenId: string) => void // Si se pasa, se llama tras crear en vez de onClose (para abrir la orden recién creada)
 }
 
-type TipoLinea = 'mano_obra' | 'pieza' | 'servicio' | 'suplido' | 'reembolso'
-
-interface Linea {
-  id: string
-  tipo: TipoLinea
-  descripcion: string
-  cantidad: number
-  precio_unitario: number
-  estado?: 'presupuestado' | 'confirmado' | 'recibido'
-  isNew?: boolean
-}
-
 
 export function DetalleOrdenSheet({
   ordenSeleccionada: ordenSeleccionadaProp,
@@ -138,15 +117,11 @@ export function DetalleOrdenSheet({
   // Soporte para alias de props (retrocompatibilidad)
   const ordenSeleccionada = ordenId || ordenSeleccionadaProp
   const onActualizar = onSuccess || onActualizarProp || (() => {})
-  const router = useRouter()
-  const supabase = createClient()
   const [cargando, setCargando] = useState(!modoCrear)
   const [guardando, setGuardando] = useState(false)
-  const [generandoFactura, setGenerandoFactura] = useState(false)
   const [tab, setTab] = useState<'info' | 'fotos' | 'trabajo' | 'items'>('info')
   // Wizard mobile-first, sólo activo en modoCrear — edición sigue usando las tabs libres de arriba
   const [stepCrear, setStepCrear] = useState<1 | 2 | 3 | 4>(1)
-  const [lineas, setLineas] = useState<Linea[]>([])
   const [clientes, setClientes] = useState<any[]>([])
   const [vehiculos, setVehiculos] = useState<any[]>([])
   const [tallerId, setTallerId] = useState<string>('')
@@ -159,40 +134,24 @@ export function DetalleOrdenSheet({
   const [mostrarPDF, setMostrarPDF] = useState(false)
   const [compartiendo, setCompartiendo] = useState(false)
   const [enlacePresupuesto, setEnlacePresupuesto] = useState<string | null>(null)
-  const [piezaRapida, setPiezaRapida] = useState({ tipo: 'pieza', descripcion: '', cantidad: 1, precio: 0 })
   const [guardadoAutomatico, setGuardadoAutomatico] = useState(false)
-  const [totales, setTotales] = useState<TotalesOrdenDTO>({
-    manoObra: 0,
-    piezas: 0,
-    servicios: 0,
-    subtotal: 0,
-    iva: 0,
-    total: 0,
-  })
-
   const [formData, setFormData] = useState<Orden>(FORM_DATA_INICIAL)
 
-  const [nuevaLinea, setNuevaLinea] = useState<{
-    tipo: TipoLinea
-    descripcion: string
-    cantidad: number
-    precio_unitario: number
-  }>({
-    tipo: 'mano_obra',
-    descripcion: '',
-    cantidad: 1,
-    precio_unitario: 0
+  // Una orden facturada (número asignado, VeriFACTU encadenado) queda bloqueada:
+  // ni el estado ni ningún dato de la orden se puede seguir editando desde aquí.
+  const ordenBloqueada = !modoCrear && formData.estado === 'facturado'
+
+  const {
+    lineas, setLineas, nuevaLinea, setNuevaLinea, piezaRapida, setPiezaRapida, totales,
+    agregarLinea, agregarPiezaRapida, eliminarLinea, actualizarLinea,
+  } = useLineasOrden({
+    ordenSeleccionada, modoCrear, ordenBloqueada, tarifaHora, ivaConfigTaller,
+    ivaPorcentajeOrden: formData.iva_porcentaje,
   })
 
-  // El tipo por defecto ya es 'mano_obra', así que el auto-relleno de precio del
-  // <select> (que solo dispara en su onChange) nunca se ejecuta para ese caso inicial.
-  // Sincronizamos aquí mientras el usuario no haya tocado el precio manualmente.
-  useEffect(() => {
-    if (nuevaLinea.tipo === 'mano_obra' && nuevaLinea.precio_unitario === 0) {
-      setNuevaLinea(prev => ({ ...prev, precio_unitario: tarifaHora }))
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tarifaHora])
+  const { generandoFactura, crearBorradorFactura, emitirFacturaDirecta, cobroRapido } = useFacturarOrden({
+    ordenSeleccionada, tallerId, formData, serieSeleccionada, setGuardando, onActualizar,
+  })
 
   // Estado para crear cliente nuevo
   const [mostrarFormCliente, setMostrarFormCliente] = useState(false)
@@ -268,81 +227,30 @@ export function DetalleOrdenSheet({
     inicializar()
   }, [])
 
-  // Persistencia del wizard de creación (localStorage) — solo en modoCrear, nunca al editar.
-  // En vez de restaurar en silencio, se pregunta explícitamente: un borrador solo guarda
-  // vehiculo_id (FK) sin el objeto vehículo cargado, así que restaurar sin más dejaba el
-  // paso 1 en blanco (sin tarjeta de vehículo ni formulario) — confuso y bloqueante.
-  const wizardRestauradoRef = useRef(false)
-  const [mostrarModalBorrador, setMostrarModalBorrador] = useState(false)
-  const borradorPendienteRef = useRef<{ formData: Partial<Orden>; stepCrear: 1 | 2 | 3 | 4 } | null>(null)
-
-  useEffect(() => {
-    if (!modoCrear) return
-    try {
-      const guardado = localStorage.getItem('orden_form_wizard')
-      if (guardado) {
-        const { formData: fd, stepCrear: sc } = JSON.parse(guardado)
-        const tieneContenido = fd && (fd.vehiculo_id || fd.cliente_id || (fd.descripcion_problema && fd.descripcion_problema.trim()))
-        if (tieneContenido) {
-          borradorPendienteRef.current = { formData: fd, stepCrear: sc || 1 }
-          setMostrarModalBorrador(true)
-        } else {
-          localStorage.removeItem('orden_form_wizard')
+  // Borrador del asistente (localStorage): se pregunta si continuar en vez de restaurar en silencio
+  const { mostrarModalBorrador, continuarBorrador, empezarDeNuevo } = useBorradorAsistente<Orden>({
+    activo: modoCrear,
+    formData,
+    paso: stepCrear,
+    onRestaurar: async (fd, sc) => {
+      setFormData(prev => ({ ...prev, ...fd }))
+      setStepCrear(sc)
+      // Sin esto, `vehiculoSeleccionado` (vehiculos.find) no encuentra nada y el paso 1
+      // se renderiza en blanco pese a tener vehiculo_id ya asignado.
+      if (fd.vehiculo_id) {
+        const data = await vehiculoPorId(fd.vehiculo_id).catch(() => null)
+        if (data) {
+          setVehiculos(prev => (prev.some((v: any) => v.id === data.id) ? prev : [...prev, data]))
         }
       }
-    } catch {
-      // Ignorar borradores corruptos
-    } finally {
-      wizardRestauradoRef.current = true
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modoCrear])
-
-  const continuarBorrador = async () => {
-    const borrador = borradorPendienteRef.current
-    setMostrarModalBorrador(false)
-    if (!borrador) return
-
-    const { formData: fd, stepCrear: sc } = borrador
-    setFormData(prev => ({ ...prev, ...fd }))
-    setStepCrear(sc)
-
-    // Sin esto, `vehiculoSeleccionado` (vehiculos.find) no encuentra nada y el paso 1
-    // se renderiza en blanco pese a tener vehiculo_id ya asignado.
-    if (fd.vehiculo_id) {
-      const { data } = await supabase
-        .from('vehiculos')
-        .select('id, matricula, marca, modelo, año, kilometros, vin')
-        .eq('id', fd.vehiculo_id)
-        .maybeSingle() as { data: any }
-      if (data) {
-        setVehiculos(prev => (prev.some((v: any) => v.id === data.id) ? prev : [...prev, data]))
-      }
-    }
-    toast.info('Borrador restaurado')
-  }
-
-  const empezarDeNuevo = () => {
-    localStorage.removeItem('orden_form_wizard')
-    borradorPendienteRef.current = null
-    setMostrarModalBorrador(false)
-    setFormData(FORM_DATA_INICIAL)
-    setStepCrear(1)
-    setVehiculos([])
-    setMostrarFormVehiculo(false)
-  }
-
-  useEffect(() => {
-    if (!modoCrear || !wizardRestauradoRef.current || mostrarModalBorrador) return
-    const t = setTimeout(() => {
-      try {
-        localStorage.setItem('orden_form_wizard', JSON.stringify({ formData, stepCrear }))
-      } catch {
-        // localStorage lleno o no disponible — no es crítico
-      }
-    }, 500)
-    return () => clearTimeout(t)
-  }, [modoCrear, formData, stepCrear, mostrarModalBorrador])
+    },
+    onDescartar: () => {
+      setFormData(FORM_DATA_INICIAL)
+      setStepCrear(1)
+      setVehiculos([])
+      setMostrarFormVehiculo(false)
+    },
+  })
 
   // Cargar vehículos cuando cambia el cliente (solo si no hay vehículo seleccionado por matrícula)
   useEffect(() => {
@@ -389,32 +297,11 @@ export function DetalleOrdenSheet({
 
   const inicializar = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        toast.error('No autenticado')
-        return
-      }
+      const contexto = await cargarContextoFicha(!modoCrear ? ordenSeleccionada : null)
+      setTallerId(contexto.tallerId)
 
-      const { data: usuario } = await supabase
-        .from('usuarios')
-        .select('taller_id')
-        .eq('email', user.email)
-        .single()
-
-      if (!usuario) {
-        toast.error('Usuario no encontrado')
-        return
-      }
-
-      setTallerId(usuario.taller_id)
-
-      // Cargar configuración del taller (para tarifa hora e IVA)
-      const { data: tallerConfig } = await supabase
-        .from('taller_config')
-        .select('tarifa_hora, porcentaje_iva, serie_factura')
-        .eq('taller_id', usuario.taller_id)
-        .single()
-
+      // Configuración del taller (tarifa hora e IVA)
+      const tallerConfig = contexto.config
       if (tallerConfig?.tarifa_hora) {
         setTarifaHora(tallerConfig.tarifa_hora)
       }
@@ -422,15 +309,10 @@ export function DetalleOrdenSheet({
         setIvaConfigTaller(tallerConfig.porcentaje_iva)
       }
 
-      // Cargar series de facturación configuradas (RS, SCR, ALP, FS...) para poder
+      // Series de facturación configuradas (RS, SCR, ALP, FS...) para poder
       // elegir cuál usar al generar la factura desde esta orden.
-      const { data: seriesData } = await supabase
-        .from('series_factura')
-        .select('id, nombre, prefijo, es_predeterminada')
-        .eq('taller_id', usuario.taller_id)
-        .order('nombre')
-
-      if (seriesData && seriesData.length > 0) {
+      const seriesData = contexto.series
+      if (seriesData.length > 0) {
         setSeriesDisponibles(seriesData)
         // Por defecto, la misma serie que usaba producción antes del selector:
         // taller_config.serie_factura. Si no está en la lista (o no hay), se deja
@@ -440,24 +322,12 @@ export function DetalleOrdenSheet({
         setSerieSeleccionada(configurada?.prefijo ?? '')
       }
 
-      // Cargar clientes
-      const { data: clientesData } = await supabase
-        .from('clientes')
-        .select('id, nombre, apellidos, nif, telefono')
-        .eq('taller_id', usuario.taller_id)
-        .order('nombre')
+      setClientes(contexto.clientes)
 
-      setClientes(clientesData || [])
-
-      // Si estamos editando, cargar orden completa
+      // Si estamos editando, la orden completa
       if (!modoCrear && ordenSeleccionada) {
-        const { data: ordenData, error } = await supabase
-          .from('ordenes_reparacion')
-          .select('*')
-          .eq('id', ordenSeleccionada)
-          .single()
-
-        if (error || !ordenData) {
+        const ordenData = contexto.orden
+        if (!ordenData) {
           toast.error('Orden no encontrada')
           onClose()
           return
@@ -496,42 +366,30 @@ export function DetalleOrdenSheet({
           iva_porcentaje: ordenData.iva_porcentaje ?? 21,
         })
 
-        // Cargar vehículos del cliente
+        // Vehículos del cliente
         if (ordenData.cliente_id) {
           cargarVehiculos(ordenData.cliente_id)
         }
 
-        // Cargar líneas de la orden
-        const { data: lineasData } = await supabase
-          .from('lineas_orden')
-          .select('*')
-          .eq('orden_id', ordenSeleccionada)
-          .order('created_at')
-
-        if (lineasData) {
-          setLineas(lineasData.map(l => ({
-            id: l.id,
-            tipo: l.tipo as any,
-            descripcion: l.descripcion,
-            cantidad: l.cantidad,
-            precio_unitario: l.precio_unitario,
-            isNew: false
-          })))
-        }
+        setLineas(contexto.lineas.map(l => ({
+          id: l.id,
+          tipo: l.tipo as any,
+          descripcion: l.descripcion,
+          cantidad: l.cantidad,
+          precio_unitario: l.precio_unitario,
+          isNew: false
+        })))
       } else {
-        // Generar número de orden para nueva
-        const { data: ultimaOrden } = await supabase
-          .from('ordenes_reparacion')
-          .select('numero_orden')
-          .eq('taller_id', usuario.taller_id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single()
-
-        setOrdenNumero(siguienteNumeroOrden(ultimaOrden?.numero_orden))
+        // Número orientativo; el definitivo lo asigna el servidor al crear
+        setOrdenNumero(contexto.siguienteNumero || '')
       }
     } catch (error: any) {
       console.error('Error inicializando:', error)
+      if (!modoCrear && /no encontrada/i.test(error?.message || '')) {
+        toast.error('Orden no encontrada')
+        onClose()
+        return
+      }
       toast.error('Error al cargar datos')
     } finally {
       setCargando(false)
@@ -539,11 +397,7 @@ export function DetalleOrdenSheet({
   }
 
   const cargarVehiculos = async (clienteId: string) => {
-    const { data } = await supabase
-      .from('vehiculos')
-      .select('id, marca, modelo, matricula, vin, bastidor_vin, año, color, kilometros, tipo_combustible')
-      .eq('cliente_id', clienteId)
-      .order('matricula')
+    const data = await vehiculosDeCliente(clienteId).catch(() => [])
 
     setVehiculos((prev: any[]) => {
       const lista: any[] = data || []
@@ -565,27 +419,16 @@ export function DetalleOrdenSheet({
 
     setBuscandoMatricula(true)
     try {
-      const { data, error } = await supabase
-        .from('vehiculos')
-        .select('id, matricula, marca, modelo, año, color, kilometros, tipo_combustible, vin, bastidor_vin, cliente_id, clientes(id, nombre, apellidos, nif, telefono)')
-        .eq('taller_id', tallerId)
-        .ilike('matricula', `%${query}%`)
-        .order('matricula')
-        .limit(8)
-
-      if (error) {
-        console.error('Error buscando vehículos:', error)
-        toast.error('Error al buscar el vehículo')
-        setResultadosMatricula([])
-        return
-      }
-
-      setResultadosMatricula((data || []) as unknown as VehiculoResultadoBusqueda[])
+      setResultadosMatricula(await buscarVehiculos(query))
       setDropdownMatriculaAbierto(true)
+    } catch (error) {
+      console.error('Error buscando vehículos:', error)
+      toast.error('Error al buscar el vehículo')
+      setResultadosMatricula([])
     } finally {
       setBuscandoMatricula(false)
     }
-  }, [tallerId, supabase])
+  }, [tallerId])
 
   // Input de matrícula: normaliza, dispara autocomplete debounced (300ms, mínimo 2 caracteres)
   const handleMatriculaInputChange = (valor: string) => {
@@ -651,38 +494,14 @@ export function DetalleOrdenSheet({
 
     try {
       // 1. Coincidencia exacta primero — inequívoca por definición.
-      const { data: exacto, error: errorExacto } = await supabase
-        .from('vehiculos')
-        .select('id, matricula, marca, modelo, año, color, kilometros, tipo_combustible, vin, bastidor_vin, cliente_id, clientes(id, nombre, apellidos, nif, telefono)')
-        .eq('taller_id', tallerId)
-        .ilike('matricula', matriculaNorm)
-        .maybeSingle()
-
-      if (errorExacto) {
-        console.error('Error buscando vehículo por matrícula:', errorExacto)
-        toast.error('Error al buscar el vehículo')
-        return
-      }
-
-      if (exacto) {
-        seleccionarVehiculoBusqueda(exacto as unknown as VehiculoResultadoBusqueda)
+      const exactos = await buscarVehiculos(matriculaNorm, true)
+      if (exactos.length === 1) {
+        seleccionarVehiculoBusqueda(exactos[0])
         return
       }
 
       // 2. Sin coincidencia exacta — buscar por coincidencia parcial (hasta 8).
-      const { data: parciales, error: errorParcial } = await supabase
-        .from('vehiculos')
-        .select('id, matricula, marca, modelo, año, color, kilometros, tipo_combustible, vin, bastidor_vin, cliente_id, clientes(id, nombre, apellidos, nif, telefono)')
-        .eq('taller_id', tallerId)
-        .ilike('matricula', `%${matriculaNorm}%`)
-        .order('matricula')
-        .limit(8)
-
-      if (errorParcial) {
-        console.error('Error buscando vehículo por matrícula:', errorParcial)
-        toast.error('Error al buscar el vehículo')
-        return
-      }
+      const parciales = await buscarVehiculos(matriculaNorm)
 
       if (!parciales || parciales.length === 0) {
         // No encontrado — pre-rellenar formulario de creación
@@ -692,12 +511,15 @@ export function DetalleOrdenSheet({
         setMostrarFormVehiculo(true)
       } else if (parciales.length === 1) {
         // Un único candidato posible — sin ambigüedad, seleccionar directamente.
-        seleccionarVehiculoBusqueda(parciales[0] as unknown as VehiculoResultadoBusqueda)
+        seleccionarVehiculoBusqueda(parciales[0])
       } else {
         // Varias coincidencias — nunca elegir por el usuario. Mostrar el dropdown.
-        setResultadosMatricula(parciales as unknown as VehiculoResultadoBusqueda[])
+        setResultadosMatricula(parciales)
         setDropdownMatriculaAbierto(true)
       }
+    } catch (error) {
+      console.error('Error buscando vehículo por matrícula:', error)
+      toast.error('Error al buscar el vehículo')
     } finally {
       setBuscandoMatricula(false)
     }
@@ -723,26 +545,20 @@ export function DetalleOrdenSheet({
         .join(' ')
         .trim()
 
-      const { data, error } = await supabase
-        .from('clientes')
-        .insert({
-          taller_id: tallerId,
-          nombre: nuevoCliente.nombre.trim(),
-          apellidos: apellidosCompletos || null,
-          nif: nuevoCliente.nif?.toUpperCase() || null,
-          telefono: nuevoCliente.telefono || null,
-          email: nuevoCliente.email || null,
-          estado: 'activo',
-          tipo_cliente: 'personal'
-        })
-        .select()
-        .single()
-
-      if (error) throw error
+      const data = await crearClienteFicha({
+        nombre: nuevoCliente.nombre.trim(),
+        apellidos: apellidosCompletos || null,
+        nif: nuevoCliente.nif?.toUpperCase() || null,
+        telefono: nuevoCliente.telefono || null,
+        email: nuevoCliente.email || null,
+        tipo_cliente: 'personal'
+      })
 
       // Añadir a la lista y seleccionar
       setClientes(prev => [...prev, data])
-      setFormData(prev => ({ ...prev, cliente_id: data.id, vehiculo_id: '' }))
+      // En el asistente el vehículo se elige antes (paso 1): se conserva.
+      // Al editar, el vehículo era del cliente anterior y se deja por elegir.
+      setFormData(prev => ({ ...prev, cliente_id: data.id, vehiculo_id: modoCrear ? prev.vehiculo_id : '' }))
 
       // Limpiar formulario
       setNuevoCliente({
@@ -777,10 +593,7 @@ export function DetalleOrdenSheet({
 
     setCreandoVehiculo(true)
     try {
-      const { data, error } = await supabase
-        .from('vehiculos')
-        .insert({
-          taller_id: tallerId,
+      const data = await crearVehiculoFicha({
           cliente_id: formData.cliente_id || null, // Client is optional in matricula-first flow
           matricula: nuevoVehiculo.matricula.toUpperCase().replace(/\s/g, ''),
           marca: nuevoVehiculo.marca || null,
@@ -791,10 +604,6 @@ export function DetalleOrdenSheet({
           tipo_combustible: nuevoVehiculo.tipo_combustible || null,
           vin: nuevoVehiculo.vin || null,
         })
-        .select()
-        .single()
-
-      if (error) throw error
 
       // Añadir a la lista y seleccionar
       setVehiculos(prev => [...prev, data])
@@ -845,28 +654,29 @@ export function DetalleOrdenSheet({
     setEditandoVehiculo(true)
   }
 
+  // Abrir el formulario con los datos del vehículo (antes se abría vacío y
+  // guardar dejaba el vehículo sin matrícula ni kilómetros) o cerrarlo
+  const alternarEdicionVehiculo = () => {
+    if (editandoVehiculo) setEditandoVehiculo(false)
+    else iniciarEdicionVehiculo()
+  }
+
   // Guardar edición de vehículo
   const guardarEdicionVehiculo = async () => {
     if (!formData.vehiculo_id) return
 
     setGuardandoVehiculo(true)
     try {
-      const { error } = await supabase
-        .from('vehiculos')
-        .update({
-          matricula: vehiculoEditado.matricula.toUpperCase().replace(/\s/g, ''),
-          marca: vehiculoEditado.marca || null,
-          modelo: vehiculoEditado.modelo || null,
-              año: vehiculoEditado.año || null,
-              color: vehiculoEditado.color || null,
-              kilometros: vehiculoEditado.kilometros || null,
-          tipo_combustible: vehiculoEditado.tipo_combustible || null,
-          vin: vehiculoEditado.vin || null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', formData.vehiculo_id)
-
-      if (error) throw error
+      await actualizarVehiculoFicha(formData.vehiculo_id, {
+        matricula: vehiculoEditado.matricula.toUpperCase().replace(/\s/g, ''),
+        marca: vehiculoEditado.marca || null,
+        modelo: vehiculoEditado.modelo || null,
+        año: vehiculoEditado.año || null,
+        color: vehiculoEditado.color || null,
+        kilometros: vehiculoEditado.kilometros || null,
+        tipo_combustible: vehiculoEditado.tipo_combustible || null,
+        vin: vehiculoEditado.vin || null,
+      })
 
       // Actualizar lista local de vehículos
       setVehiculos(prev => prev.map(v =>
@@ -907,24 +717,19 @@ export function DetalleOrdenSheet({
 
     // Solo actualizar si el nuevo KM es mayor que el actual
     if (vehiculo.kilometros && nuevoKM <= vehiculo.kilometros) {
-      toast.info(`KM detectados (${nuevoKM.toLocaleString()}) no son mayores que los actuales (${vehiculo.kilometros.toLocaleString()})`)
+      toast.info(`KM detectados (${nuevoKM.toLocaleString('es-ES')}) no son mayores que los actuales (${vehiculo.kilometros.toLocaleString('es-ES')})`)
       return
     }
 
     try {
-      const { error } = await supabase
-        .from('vehiculos')
-        .update({ kilometros: nuevoKM, updated_at: new Date().toISOString() })
-        .eq('id', formData.vehiculo_id)
-
-      if (error) throw error
+      await actualizarVehiculoFicha(formData.vehiculo_id, { kilometros: nuevoKM })
 
       // Actualizar el estado local
       setVehiculos(prev => prev.map(v =>
         v.id === formData.vehiculo_id ? { ...v, kilometros: nuevoKM } : v
       ))
 
-      toast.success(`✅ KM actualizados: ${nuevoKM.toLocaleString()}`)
+      toast.success(`KM actualizados: ${nuevoKM.toLocaleString('es-ES')}`)
     } catch (error: any) {
       console.error('Error actualizando KM:', error)
       toast.error('Error al actualizar KM')
@@ -938,12 +743,7 @@ export function DetalleOrdenSheet({
     }
 
     try {
-      const { error } = await supabase
-        .from('vehiculos')
-        .update({ vin: nuevoVin.toUpperCase(), updated_at: new Date().toISOString() })
-        .eq('id', formData.vehiculo_id)
-
-      if (error) throw error
+      await actualizarVehiculoFicha(formData.vehiculo_id, { vin: nuevoVin.toUpperCase() })
 
       setVehiculos(prev => prev.map(v =>
         v.id === formData.vehiculo_id ? { ...v, vin: nuevoVin.toUpperCase() } : v
@@ -953,234 +753,6 @@ export function DetalleOrdenSheet({
     } catch (error: any) {
       console.error('Error actualizando VIN:', error)
       toast.error('Error al actualizar el bastidor')
-    }
-  }
-
-  // Cargar totales calculados en el servidor
-  const cargarTotales = useCallback(async () => {
-    if (!ordenSeleccionada || modoCrear) {
-      // En modo crear, calcular totales localmente temporalmente
-      // hasta que se guarde la orden y tengamos un ID
-      // El % de IVA de la orden (toggle "Aplicar IVA") manda para todas las líneas,
-      // salvo los suplidos, que por normativa siempre van al 0% independientemente del toggle.
-      const ivaOrdenPct = formData.iva_porcentaje ?? ivaConfigTaller
-      const totalesTemp = lineas.reduce(
-        (acc, linea) => {
-          const subtotal = linea.cantidad * linea.precio_unitario
-          const ivaPctLinea = linea.tipo === 'suplido' ? 0 : ivaOrdenPct
-          const iva = subtotal * (ivaPctLinea / 100)
-          return {
-            manoObra: linea.tipo === 'mano_obra' ? acc.manoObra + subtotal : acc.manoObra,
-            piezas: linea.tipo === 'pieza' ? acc.piezas + subtotal : acc.piezas,
-            servicios: linea.tipo === 'servicio' ? acc.servicios + subtotal : acc.servicios,
-            subtotal: acc.subtotal + subtotal,
-            iva: acc.iva + iva,
-            total: acc.total + subtotal + iva
-          }
-        },
-        { manoObra: 0, piezas: 0, servicios: 0, subtotal: 0, iva: 0, total: 0 }
-      )
-      setTotales(totalesTemp)
-      return
-    }
-
-    try {
-      const resultado = await calcularTotalesOrdenAction(ordenSeleccionada)
-      if (resultado.success) {
-        setTotales(resultado.data)
-      } else {
-        toast.error(`Error al cargar totales: ${resultado.error}`)
-      }
-    } catch (error) {
-      console.error('Error cargando totales:', error)
-      toast.error('Error al cargar totales')
-    }
-  }, [ordenSeleccionada, modoCrear, lineas, ivaConfigTaller, formData.iva_porcentaje])
-
-  // Actualizar totales cuando cambien las líneas
-  useEffect(() => {
-    cargarTotales()
-  }, [cargarTotales])
-
-  const agregarLinea = async () => {
-    if (ordenBloqueada) {
-      toast.error('Orden facturada: ya no se puede modificar')
-      return
-    }
-    if (!nuevaLinea.descripcion) {
-      toast.error('Añade una descripción')
-      return
-    }
-
-    // En edición (orden ya existe), persistir la línea inmediatamente — igual que ya
-    // hace eliminarLinea — para que el Resumen Económico (que recalcula desde la BD)
-    // la vea de inmediato, en vez de quedar solo en estado local hasta el próximo
-    // "Guardar" general. Sin esto, líneas añadidas parecían no sumar al total.
-    if (!modoCrear && ordenSeleccionada) {
-      const importe_total = nuevaLinea.cantidad * nuevaLinea.precio_unitario
-      const { data, error } = await supabase
-        .from('lineas_orden')
-        .insert({
-          orden_id: ordenSeleccionada,
-          tipo: nuevaLinea.tipo,
-          descripcion: nuevaLinea.descripcion,
-          cantidad: nuevaLinea.cantidad,
-          precio_unitario: nuevaLinea.precio_unitario,
-          importe_total
-        })
-        .select('id')
-        .single()
-
-      if (error || !data) {
-        console.error('Error guardando línea:', error)
-        toast.error('Error al añadir la línea')
-        return
-      }
-
-      setLineas([...lineas, { id: data.id, ...nuevaLinea }])
-    } else {
-      setLineas([...lineas, {
-        id: `new-${Date.now()}`,
-        ...nuevaLinea,
-        isNew: true
-      }])
-    }
-
-    setNuevaLinea({ tipo: 'mano_obra', descripcion: '', cantidad: 1, precio_unitario: 0 })
-
-    if (nuevaLinea.precio_unitario === 0) {
-      toast.warning('⚠️ Línea añadida sin precio. Edítala después para añadir el precio.')
-    } else {
-      toast.success('Línea añadida')
-    }
-  }
-
-  const agregarPiezaRapida = async () => {
-    if (ordenBloqueada) {
-      toast.error('Orden facturada: ya no se puede modificar')
-      return
-    }
-    const desc = piezaRapida.descripcion?.trim()
-    const qty = piezaRapida.cantidad || 1
-    const precio = piezaRapida.precio || 0
-    const tipo = (piezaRapida.tipo || 'pieza') as TipoLinea
-
-    if (!desc) {
-      toast.error('Escribe una descripción')
-      return
-    }
-
-    // Mismo fix que agregarLinea: persistir de inmediato en edición para que el
-    // Resumen Económico (recalculado desde la BD) refleje la pieza al momento.
-    if (!modoCrear && ordenSeleccionada) {
-      const importe_total = qty * precio
-      const { data, error } = await supabase
-        .from('lineas_orden')
-        .insert({
-          orden_id: ordenSeleccionada,
-          tipo,
-          descripcion: desc,
-          cantidad: qty,
-          precio_unitario: precio,
-          importe_total
-          // "estado" (presupuestado/confirmado/recibido) es solo un concepto de UI para
-          // piezas — lineas_orden no tiene esa columna. Insertarlo aquí rompía SIEMPRE
-          // este insert con "column lineas_orden.estado does not exist".
-        })
-        .select('id')
-        .single()
-
-      if (error || !data) {
-        console.error('Error guardando pieza rápida:', error)
-        toast.error('Error al añadir el elemento')
-        return
-      }
-
-      setLineas(prev => [...prev, {
-        id: data.id,
-        tipo,
-        descripcion: desc,
-        cantidad: qty,
-        precio_unitario: precio,
-        estado: precio === 0 ? 'presupuestado' : 'confirmado'
-      }])
-    } else {
-      setLineas(prev => [...prev, {
-        id: `new-${Date.now()}`,
-        tipo,
-        descripcion: desc,
-        cantidad: qty,
-        precio_unitario: precio,
-        estado: precio === 0 ? 'presupuestado' : 'confirmado',
-        isNew: true
-      }])
-    }
-
-    setPiezaRapida({ tipo: 'pieza', descripcion: '', cantidad: 1, precio: 0 })
-    toast.success('Elemento añadido')
-  }
-
-  const eliminarLinea = async (id: string) => {
-    if (ordenBloqueada) {
-      toast.error('Orden facturada: ya no se puede modificar')
-      return
-    }
-    if (!id.startsWith('new-')) {
-      await supabase.from('lineas_orden').delete().eq('id', id)
-    }
-    setLineas(lineas.filter(l => l.id !== id))
-    toast.success('Línea eliminada')
-  }
-
-  const actualizarLinea = async (id: string, campo: 'cantidad' | 'precio_unitario' | 'estado', valor: number | string) => {
-    if (ordenBloqueada) {
-      toast.error('Orden facturada: ya no se puede modificar')
-      return
-    }
-    // Validaciones específicas
-    if (campo === 'cantidad' && typeof valor === 'number') {
-      // Validar rangos según tipo
-      const linea = lineas.find(l => l.id === id)
-      if (linea?.tipo === 'mano_obra' && valor > 24) {
-        toast.error('Las horas de mano de obra no pueden exceder 24 horas')
-        return
-      }
-      if (valor < 0) {
-        toast.error('La cantidad no puede ser negativa')
-        return
-      }
-    }
-
-    if (campo === 'precio_unitario' && typeof valor === 'number' && valor < 0) {
-      toast.error('El precio no puede ser negativo')
-      return
-    }
-
-    const lineasActualizadas = lineas.map(l =>
-      l.id === id ? { ...l, [campo]: valor } : l
-    )
-    setLineas(lineasActualizadas)
-
-    // Igual que en agregarLinea: si ya está persistida (no es un id temporal "new-"),
-    // guardar el cambio de inmediato para que el Resumen Económico quede sincronizado.
-    // "estado" es solo un concepto de UI para piezas (lineas_orden no tiene esa columna),
-    // así que ese campo se queda solo en estado local y nunca se manda a la BD.
-    if (!id.startsWith('new-') && campo !== 'estado') {
-      const linea = lineasActualizadas.find(l => l.id === id)
-      if (linea) {
-        const { error } = await supabase
-          .from('lineas_orden')
-          .update({
-            [campo]: valor,
-            importe_total: linea.cantidad * linea.precio_unitario
-          })
-          .eq('id', id)
-
-        if (error) {
-          console.error('Error actualizando línea:', error)
-          toast.error('Error al guardar el cambio')
-        }
-      }
     }
   }
 
@@ -1218,52 +790,16 @@ export function DetalleOrdenSheet({
   const [debounceTimer, setDebounceTimer] = useState<NodeJS.Timeout | null>(null)
 
   const autosaveOrden = async () => {
-    if (!ordenSeleccionada || modoCrear || guardadoAutomatico || ordenBloqueada) return
+    // El indicador «guardado» no bloquea: antes, un cambio hecho en los 2 s
+    // siguientes a un autoguardado se perdía.
+    if (!ordenSeleccionada || modoCrear || ordenBloqueada) return
 
     try {
-      const ordenData = {
-        estado: formData.estado,
-        cliente_id: formData.cliente_id || null,
-        vehiculo_id: formData.vehiculo_id || null,
-        descripcion_problema: formData.descripcion_problema,
-        observaciones_cliente: formData.observaciones_cliente || null,
-        diagnostico: formData.diagnostico,
-        trabajos_realizados: formData.trabajos_realizados,
-        notas: formData.notas,
-        presupuesto_aprobado_por_cliente: formData.presupuesto_aprobado_por_cliente,
-        tiempo_estimado_horas: formData.tiempo_estimado_horas,
-        tiempo_real_horas: formData.tiempo_real_horas,
-        subtotal_mano_obra: totales.manoObra,
-        subtotal_piezas: totales.piezas,
-        iva_amount: totales.iva,
-        total_con_iva: totales.total,
-        fotos_entrada: formData.fotos_entrada,
-        fotos_salida: formData.fotos_salida,
-        fotos_diagnostico: formData.fotos_diagnostico,
-        nivel_combustible: formData.nivel_combustible || null,
-        renuncia_presupuesto: formData.renuncia_presupuesto,
-        accion_imprevisto: formData.accion_imprevisto || 'avisar',
-        recoger_piezas: formData.recoger_piezas,
-        danos_carroceria: formData.danos_carroceria,
-        coste_diario_estancia: formData.coste_diario_estancia,
-        kilometros_entrada: formData.kilometros_entrada,
-        kilometros_salida: formData.kilometros_salida || null,
-        fecha_prevista_entrega: formData.fecha_prevista_entrega || null,
-        iva_porcentaje: formData.iva_porcentaje ?? 21,
-        updated_at: new Date().toISOString()
-      }
-
-      const { error } = await supabase
-        .from('ordenes_reparacion')
-        .update(ordenData)
-        .eq('id', ordenSeleccionada)
-
-      if (!error) {
-        setGuardadoAutomatico(true)
-        // Mostrar indicador sutil de guardado
-        setTimeout(() => setGuardadoAutomatico(false), 2000)
-        sincronizarCalendarioSiCambioEstado()
-      }
+      await guardarOrdenFicha(ordenSeleccionada, datosOrdenFicha(formData))
+      setGuardadoAutomatico(true)
+      // Mostrar indicador sutil de guardado
+      setTimeout(() => setGuardadoAutomatico(false), 2000)
+      sincronizarCalendarioSiCambioEstado()
     } catch (error) {
       // Silenciar errores de autosave para no interrumpir al usuario
       console.debug('Error en autosave:', error)
@@ -1281,15 +817,7 @@ export function DetalleOrdenSheet({
     }, 2000) // 2 segundos de debounce
 
     setDebounceTimer(timer)
-  }, [debounceTimer, ordenSeleccionada, modoCrear, totales, formData])
-
-  const mensajeAmigable = (error: any): string => {
-    const msg = String(error?.message || '')
-    if (/duplicate key|unique constraint/i.test(msg)) return 'Ya existe un registro con estos datos'
-    if (/foreign key|violates/i.test(msg)) return 'Datos relacionados no válidos, revisa cliente y vehículo'
-    if (!msg || /^[A-Za-z0-9]{5,}$/.test(msg)) return 'No se pudo guardar la orden. Inténtalo de nuevo'
-    return msg
-  }
+  }, [debounceTimer, ordenSeleccionada, modoCrear, formData])
 
   const handleGuardar = async () => {
     if (!tallerId) {
@@ -1314,97 +842,26 @@ export function DetalleOrdenSheet({
 
     setGuardando(true)
     try {
-      const ordenData = {
-        taller_id: tallerId,
-        numero_orden: ordenNumero,
-        estado: formData.estado,
-        cliente_id: formData.cliente_id || null,
-        vehiculo_id: formData.vehiculo_id || null,
-        descripcion_problema: formData.descripcion_problema,
-        observaciones_cliente: formData.observaciones_cliente || null,
-        diagnostico: formData.diagnostico,
-        trabajos_realizados: formData.trabajos_realizados,
-        notas: formData.notas,
-        presupuesto_aprobado_por_cliente: formData.presupuesto_aprobado_por_cliente,
-        tiempo_estimado_horas: formData.tiempo_estimado_horas,
-        tiempo_real_horas: formData.tiempo_real_horas,
-        subtotal_mano_obra: totales.manoObra,
-        subtotal_piezas: totales.piezas,
-        iva_amount: totales.iva,
-        total_con_iva: totales.total,
-        fotos_entrada: formData.fotos_entrada,
-        fotos_salida: formData.fotos_salida,
-        fotos_diagnostico: formData.fotos_diagnostico,
-        nivel_combustible: formData.nivel_combustible || null,
-        renuncia_presupuesto: formData.renuncia_presupuesto,
-        accion_imprevisto: formData.accion_imprevisto || 'avisar',
-        recoger_piezas: formData.recoger_piezas,
-        danos_carroceria: formData.danos_carroceria || null,
-        coste_diario_estancia: formData.coste_diario_estancia || null,
-        kilometros_entrada: formData.kilometros_entrada || null,
-        fecha_prevista_entrega: formData.fecha_prevista_entrega || null,
-        iva_porcentaje: formData.iva_porcentaje ?? 21,
-      }
-
       let ordenId = ordenSeleccionada
 
       if (modoCrear) {
-        const { data, error } = await supabase
-          .from('ordenes_reparacion')
-          .insert([ordenData])
-          .select('id')
-          .single()
-
-        if (error) throw error
-        ordenId = data.id
+        // Las líneas añadidas en el asistente se guardan con la orden
+        const lineasNuevas = lineas.filter(l => l.isNew).map(l => ({
+          tipo: l.tipo,
+          descripcion: l.descripcion,
+          cantidad: l.cantidad,
+          precio_unitario: l.precio_unitario,
+        }))
+        const { orden } = await crearOrdenFicha(datosOrdenFicha(formData), lineasNuevas)
+        ordenId = orden.id
         toast.success('Orden creada correctamente')
       } else {
-        const { error } = await supabase
-          .from('ordenes_reparacion')
-          .update({
-            ...ordenData,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', ordenSeleccionada)
-
-        if (error) throw error
+        // En edición las líneas ya están guardadas; se envían sus cantidades y precios
+        const lineasExistentes = lineas
+          .filter(l => !l.isNew && !l.id.startsWith('new-'))
+          .map(l => ({ id: l.id, cantidad: l.cantidad, precio_unitario: l.precio_unitario }))
+        await guardarOrdenFicha(ordenSeleccionada!, datosOrdenFicha(formData), lineasExistentes)
         toast.success('Orden actualizada')
-      }
-
-      // Guardar líneas nuevas
-      const lineasNuevas = lineas.filter(l => l.isNew)
-      if (lineasNuevas.length > 0 && ordenId) {
-        const { error: lineasError } = await supabase
-          .from('lineas_orden')
-          .insert(lineasNuevas.map(l => ({
-            orden_id: ordenId,
-            tipo: l.tipo,
-            descripcion: l.descripcion,
-            cantidad: l.cantidad,
-            precio_unitario: l.precio_unitario,
-            importe_total: l.cantidad * l.precio_unitario
-          })))
-
-        if (lineasError) {
-          console.error('Error guardando líneas nuevas:', lineasError)
-        }
-      }
-
-      // Actualizar líneas existentes
-      const lineasExistentes = lineas.filter(l => !l.isNew && !l.id.startsWith('new-'))
-      for (const linea of lineasExistentes) {
-        const { error: updateError } = await supabase
-          .from('lineas_orden')
-          .update({
-            cantidad: linea.cantidad,
-            precio_unitario: linea.precio_unitario,
-            importe_total: linea.cantidad * linea.precio_unitario
-          })
-          .eq('id', linea.id)
-
-        if (updateError) {
-          console.error('Error actualizando línea:', linea.id, updateError)
-        }
       }
 
       onActualizar()
@@ -1418,210 +875,9 @@ export function DetalleOrdenSheet({
       }
     } catch (error: any) {
       console.error('Error guardando:', error)
-      toast.error(mensajeAmigable(error))
+      toast.error(error?.message || 'No se pudo guardar la orden. Inténtalo de nuevo')
     } finally {
       setGuardando(false)
-    }
-  }
-
-  // Función auxiliar para guardar orden antes de facturar
-  const guardarOrdenAntesDeFacturar = async () => {
-    if (!ordenSeleccionada) return false
-
-    try {
-      const ordenData = {
-        estado: formData.estado,
-        cliente_id: formData.cliente_id || null,
-        vehiculo_id: formData.vehiculo_id || null,
-        descripcion_problema: formData.descripcion_problema,
-        observaciones_cliente: formData.observaciones_cliente || null,
-        diagnostico: formData.diagnostico,
-        trabajos_realizados: formData.trabajos_realizados,
-        notas: formData.notas,
-        presupuesto_aprobado_por_cliente: formData.presupuesto_aprobado_por_cliente,
-        tiempo_estimado_horas: formData.tiempo_estimado_horas,
-        tiempo_real_horas: formData.tiempo_real_horas,
-        subtotal_mano_obra: totales.manoObra,
-        subtotal_piezas: totales.piezas,
-        iva_amount: totales.iva,
-        total_con_iva: totales.total,
-        fotos_entrada: formData.fotos_entrada,
-        fotos_salida: formData.fotos_salida,
-        fotos_diagnostico: formData.fotos_diagnostico,
-        nivel_combustible: formData.nivel_combustible || null,
-        renuncia_presupuesto: formData.renuncia_presupuesto,
-        accion_imprevisto: formData.accion_imprevisto || 'avisar',
-        recoger_piezas: formData.recoger_piezas,
-        danos_carroceria: formData.danos_carroceria,
-        coste_diario_estancia: formData.coste_diario_estancia,
-        kilometros_entrada: formData.kilometros_entrada,
-        kilometros_salida: formData.kilometros_salida || null,
-        fecha_prevista_entrega: formData.fecha_prevista_entrega || null,
-        iva_porcentaje: formData.iva_porcentaje ?? 21,
-        updated_at: new Date().toISOString()
-      }
-
-      const { error } = await supabase
-        .from('ordenes_reparacion')
-        .update(ordenData)
-        .eq('id', ordenSeleccionada)
-
-      if (error) {
-        console.error('Error guardando orden:', error)
-        toast.error('Error al guardar la orden')
-        return false
-      }
-
-      return true
-    } catch (error) {
-      console.error('Error guardando orden:', error)
-      toast.error('Error al guardar la orden')
-      return false
-    }
-  }
-
-  // Crear borrador editable
-  const crearBorradorFactura = async () => {
-    if (!ordenSeleccionada || !tallerId) {
-      toast.error('Datos incompletos')
-      return
-    }
-
-    setGuardando(true)
-    const guardado = await guardarOrdenAntesDeFacturar()
-    setGuardando(false)
-
-    if (!guardado) return
-
-    setGenerandoFactura(true)
-    try {
-      toast.loading('Creando borrador editable...')
-      
-      const resCrear = await fetch('/api/facturas/desde-orden', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orden_id: ordenSeleccionada,
-          taller_id: tallerId,
-          serie: serieSeleccionada || undefined
-        })
-      })
-
-      const dataBorrador = await resCrear.json()
-      toast.dismiss()
-
-      if (!resCrear.ok) {
-        throw new Error(dataBorrador.error || 'Error al crear borrador')
-      }
-
-      toast.success('📝 Borrador creado. Ahora puedes editar los detalles.')
-      onActualizar()
-      router.push(`/dashboard/facturas/ver?id=${dataBorrador.id}&modo=editar`)
-    } catch (error: any) {
-      toast.error(error.message)
-    } finally {
-      setGenerandoFactura(false)
-    }
-  }
-
-  // Emitir factura directamente
-  const emitirFacturaDirecta = async () => {
-    if (!ordenSeleccionada || !tallerId) {
-      toast.error('Datos incompletos')
-      return
-    }
-
-    setGuardando(true)
-    const guardado = await guardarOrdenAntesDeFacturar()
-    setGuardando(false)
-
-    if (!guardado) return
-
-    setGenerandoFactura(true)
-    try {
-      // PASO 1: Crear borrador desde orden
-      toast.loading('Generando factura...')
-      const resCrear = await fetch('/api/facturas/desde-orden', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orden_id: ordenSeleccionada,
-          taller_id: tallerId,
-          serie: serieSeleccionada || undefined
-        })
-      })
-
-      const dataBorrador = await resCrear.json()
-
-      if (!resCrear.ok) {
-        throw new Error(dataBorrador.error || 'Error al generar factura')
-      }
-
-      // PASO 2: Emitir factura (asignar número)
-      const resEmitir = await fetch('/api/facturas/emitir', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          factura_id: dataBorrador.id,
-          estado_final: 'emitida' // Facturas desde órdenes se emiten como pendientes de pago
-        })
-      })
-
-      const dataEmitida = await resEmitir.json()
-
-      toast.dismiss()
-      if (!resEmitir.ok) {
-        // Si falla la emisión, aún así tenemos el borrador
-        toast.warning(`Borrador creado pero no se pudo emitir: ${dataEmitida.error}`)
-        onActualizar()
-        router.push(`/dashboard/facturas/ver?id=${dataBorrador.id}`)
-      } else {
-        toast.success(`⚡ Factura ${dataEmitida.numero_factura} emitida correctamente`)
-        onActualizar()
-        router.push(`/dashboard/facturas/ver?id=${dataBorrador.id}`)
-      }
-    } catch (error: any) {
-      toast.error(error.message)
-    } finally {
-      setGenerandoFactura(false)
-    }
-  }
-
-  // Cobro Rápido — Factura simplificada (< 3000€)
-  const cobroRapido = async () => {
-    if (!ordenSeleccionada || !tallerId) {
-      toast.error('Datos incompletos')
-      return
-    }
-
-    setGuardando(true)
-    const guardado = await guardarOrdenAntesDeFacturar()
-    setGuardando(false)
-    if (!guardado) return
-
-    setGenerandoFactura(true)
-    try {
-      toast.loading('Procesando cobro rápido...')
-      const res = await fetch('/api/facturas/cobro-rapido', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ orden_id: ordenSeleccionada, serie: serieSeleccionada || undefined }),
-      })
-      const data = await res.json()
-      toast.dismiss()
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Error en cobro rápido')
-      }
-
-      toast.success(`⚡ ${data.message || `Factura ${data.numero_factura} emitida y pagada`}`)
-      onActualizar()
-      router.push(`/dashboard/facturas?ref=${data.id}`)
-    } catch (error: any) {
-      toast.dismiss()
-      toast.error(error.message)
-    } finally {
-      setGenerandoFactura(false)
     }
   }
 
@@ -1666,10 +922,6 @@ export function DetalleOrdenSheet({
     window.open(enlaceWhatsApp(cliente?.telefono, mensaje), '_blank', 'noopener,noreferrer')
   }
 
-  // Una orden facturada (número asignado, VeriFACTU encadenado) queda bloqueada:
-  // ni el estado ni ningún dato de la orden se puede seguir editando desde aquí.
-  const ordenBloqueada = !modoCrear && formData.estado === 'facturado'
-
   const cambiarEstado = (nuevoEstado: string) => {
     if (ordenBloqueada) return
     setFormData(prev => ({ ...prev, estado: nuevoEstado }))
@@ -1689,8 +941,8 @@ export function DetalleOrdenSheet({
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50">
-      <div className="fixed inset-y-0 right-0 w-full max-w-lg bg-gray-50 shadow-xl flex flex-col">
+    <div className="fixed inset-0 z-50 bg-black/50 animate-in fade-in-0 duration-200">
+      <div role="dialog" aria-modal="true" aria-label={modoCrear ? 'Nueva orden' : `Orden ${ordenNumero}`} className="fixed inset-y-0 right-0 w-full max-w-lg bg-background shadow-xl flex flex-col animate-in slide-in-from-right-8 duration-200 ease-out">
         {/* Header con componente extraído */}
         <OrdenHeader
           modoCrear={modoCrear}
@@ -1706,52 +958,27 @@ export function DetalleOrdenSheet({
 
         {/* Tabs (edición) / Indicador de paso (creación) */}
         {modoCrear ? (
-          <div className="bg-white border-b shrink-0 px-4 py-4">
-            <div className="flex items-center mb-3">
-              {[1, 2, 3, 4].map(s => (
-                <div key={s} className="flex items-center flex-1 last:flex-none">
-                  <div
-                    className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
-                      s < stepCrear
-                        ? 'bg-green-600 text-white'
-                        : s === stepCrear
-                        ? 'bg-primary text-white'
-                        : 'bg-gray-200 text-gray-400'
-                    }`}
-                  >
-                    {s < stepCrear ? <Check className="w-4 h-4" /> : s}
-                  </div>
-                  {s < 4 && (
-                    <div className="flex-1 h-1 mx-1 rounded-full bg-gray-200 overflow-hidden">
-                      <div
-                        className={`h-full bg-primary transition-all duration-300 ${s < stepCrear ? 'w-full' : 'w-0'}`}
-                      />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-            <p className="text-lg font-bold text-gray-900">Paso {stepCrear} de 4</p>
-            <p className="text-sm text-gray-500">{['Selecciona Vehículo', 'Selecciona Cliente', 'Describe el Trabajo', 'Revisar Orden'][stepCrear - 1]}</p>
-          </div>
+          <PasosAsistente paso={stepCrear} />
         ) : (
-          <div className="bg-white border-b flex shrink-0 overflow-x-auto">
-            {[
-              { id: 'info', label: 'Info', icon: '📋' },
-              { id: 'fotos', label: 'Fotos', icon: '📸' },
-              { id: 'trabajo', label: 'Trabajo', icon: '🔧' },
-              { id: 'items', label: 'Elementos', icon: '💰' },
-            ].map(t => (
+          <div role="tablist" aria-label="Secciones de la orden" className="bg-card border-b flex shrink-0 overflow-x-auto">
+            {([
+              { id: 'info', label: 'Info', Icono: ClipboardList },
+              { id: 'fotos', label: 'Fotos', Icono: Camera },
+              { id: 'trabajo', label: 'Trabajo', Icono: Wrench },
+              { id: 'items', label: 'Elementos', Icono: Receipt },
+            ] as const).map(({ id, label, Icono }) => (
               <button
-                key={t.id}
-                onClick={() => setTab(t.id as any)}
-                className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap px-2 ${
-                  tab === t.id
-                    ? 'border-primary text-primary bg-sky-50'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                key={id}
+                role="tab"
+                aria-selected={tab === id}
+                onClick={() => setTab(id)}
+                className={`flex-1 inline-flex items-center justify-center gap-1.5 min-h-11 py-3 px-2 text-sm font-medium border-b-2 whitespace-nowrap transition-colors duration-150 focus-visible:outline-none focus-visible:bg-accent ${
+                  tab === id
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}>
-                <span className="mr-1">{t.icon}</span>
-                {t.label}
+                <Icono aria-hidden className="size-4" />
+                {label}
               </button>
             ))}
           </div>
@@ -1779,7 +1006,7 @@ export function DetalleOrdenSheet({
               dropdownAbierto={dropdownMatriculaAbierto}
               onVehiculoIdChange={(id) => setFormData(prev => ({ ...prev, vehiculo_id: id }))}
               onToggleFormVehiculo={() => setMostrarFormVehiculo(!mostrarFormVehiculo)}
-              onToggleEditandoVehiculo={() => setEditandoVehiculo(!editandoVehiculo)}
+              onToggleEditandoVehiculo={alternarEdicionVehiculo}
               onNuevoVehiculoChange={(data) => setNuevoVehiculo((prev: VehiculoNuevoFormulario) => ({ ...prev, ...data }))}
               onVehiculoEditadoChange={(data) => setVehiculoEditado((prev: VehiculoEdicionFormulario) => ({ ...prev, ...data }))}
               onCrearVehiculo={crearVehiculo}
@@ -1815,59 +1042,18 @@ export function DetalleOrdenSheet({
           )}
 
           {modoCrear && stepCrear === 4 && (
-            <div className="space-y-4">
-              <Card className="p-4 divide-y divide-gray-100">
-                <div className="pb-3">
-                  <h3 className="text-xs font-semibold text-gray-500 mb-1">🚗 Vehículo</h3>
-                  {vehiculoSeleccionado ? (
-                    <p className="text-sm text-gray-900">
-                      {vehiculoSeleccionado.marca} {vehiculoSeleccionado.modelo} · {vehiculoSeleccionado.matricula}
-                      {vehiculoSeleccionado.kilometros ? ` · ${vehiculoSeleccionado.kilometros.toLocaleString()} km` : ''}
-                    </p>
-                  ) : (
-                    <p className="text-sm text-gray-400">Sin vehículo seleccionado</p>
-                  )}
-                </div>
-
-                <div className="py-3">
-                  <h3 className="text-xs font-semibold text-gray-500 mb-1">👤 Cliente</h3>
-                  {(() => {
-                    const cliente = clientes.find(c => c.id === formData.cliente_id)
-                    return cliente ? (
-                      <p className="text-sm text-gray-900">
-                        {cliente.nombre} {cliente.primer_apellido || cliente.apellidos || ''}
-                        {cliente.telefono ? ` · ${cliente.telefono}` : ''}
-                      </p>
-                    ) : (
-                      <p className="text-sm text-gray-400">Sin cliente seleccionado</p>
-                    )
-                  })()}
-                </div>
-
-                <div className="pt-3">
-                  <h3 className="text-xs font-semibold text-gray-500 mb-1">🔧 Trabajo</h3>
-                  <p className="text-sm text-gray-900 whitespace-pre-wrap">
-                    {formData.descripcion_problema || 'Sin descripción del problema'}
-                  </p>
-                  {formData.observaciones_cliente && (
-                    <>
-                      <h3 className="text-xs font-semibold text-gray-500 mb-1 mt-3">📝 Observaciones</h3>
-                      <p className="text-sm text-gray-700 whitespace-pre-wrap">{formData.observaciones_cliente}</p>
-                    </>
-                  )}
-                </div>
-              </Card>
-
-              <p className="text-xs text-gray-400 text-center px-4">
-                Podrás añadir fotos, elementos y más detalles justo después de crear la orden.
-              </p>
-            </div>
+            <ResumenAsistente
+              vehiculo={vehiculoSeleccionado}
+              cliente={clientes.find(c => c.id === formData.cliente_id)}
+              descripcion={formData.descripcion_problema}
+              observaciones={formData.observaciones_cliente}
+            />
           )}
 
           {/* Edición — tabs libres, sin wizard */}
           {ordenBloqueada && (
             <div className="p-3 bg-gray-800 text-white rounded-xl flex items-center gap-2 text-sm font-medium">
-              🔒 Orden facturada — solo lectura. Los datos ya no se pueden modificar.
+              Orden facturada — solo lectura. Los datos ya no se pueden modificar.
             </div>
           )}
 
@@ -1891,7 +1077,7 @@ export function DetalleOrdenSheet({
               onFormDataChange={(data) => setFormData((prev: any) => ({ ...prev, ...data }))}
               onToggleFormCliente={() => setMostrarFormCliente(!mostrarFormCliente)}
               onToggleFormVehiculo={() => setMostrarFormVehiculo(!mostrarFormVehiculo)}
-              onToggleEditandoVehiculo={() => setEditandoVehiculo(!editandoVehiculo)}
+              onToggleEditandoVehiculo={alternarEdicionVehiculo}
               onNuevoClienteChange={(data) => setNuevoCliente((prev: any) => ({ ...prev, ...data }))}
               onNuevoVehiculoChange={(data) => setNuevoVehiculo((prev: VehiculoNuevoFormulario) => ({ ...prev, ...data }))}
               onVehiculoEditadoChange={(data) => setVehiculoEditado((prev: VehiculoEdicionFormulario) => ({ ...prev, ...data }))}
@@ -1965,54 +1151,20 @@ export function DetalleOrdenSheet({
 
         {/* Footer: navegación del wizard (creación) / acciones completas (edición) */}
         {modoCrear ? (
-          <div className="bg-white border-t shrink-0 p-3 flex gap-2">
-            {stepCrear > 1 && (
-              <Button
-                variant="outline"
-                size="xl"
-                className="flex-1"
-                onClick={() => setStepCrear(prev => (prev - 1) as 1 | 2 | 3 | 4)}
-              >
-                Atrás
-              </Button>
-            )}
-            {stepCrear < 4 ? (
-              <Button
-                size="xl"
-                className="flex-1 bg-primary hover:bg-primary/90"
-                disabled={
-                  (stepCrear === 1 && !formData.vehiculo_id) ||
-                  (stepCrear === 2 && !formData.cliente_id)
-                }
-                onClick={() => {
-                  if (stepCrear === 3 && !formData.descripcion_problema?.trim()) {
-                    toast.error('Describe el problema antes de continuar')
-                    return
-                  }
-                  setStepCrear(prev => (prev + 1) as 1 | 2 | 3 | 4)
-                }}
-              >
-                Siguiente
-              </Button>
-            ) : (
-              <Button
-                size="xl"
-                className="flex-1 bg-green-600 hover:bg-green-700 gap-2"
-                disabled={guardando}
-                onClick={handleGuardar}
-              >
-                {guardando ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> Guardando...
-                  </>
-                ) : (
-                  <>
-                    <Check className="w-5 h-5" /> Guardar Orden
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
+          <PieAsistente
+            paso={stepCrear}
+            puedeAvanzar={!((stepCrear === 1 && !formData.vehiculo_id) || (stepCrear === 2 && !formData.cliente_id))}
+            guardando={guardando}
+            onAtras={() => setStepCrear(prev => (prev - 1) as 1 | 2 | 3 | 4)}
+            onSiguiente={() => {
+              if (stepCrear === 3 && !formData.descripcion_problema?.trim()) {
+                toast.error('Describe el problema antes de continuar')
+                return
+              }
+              setStepCrear(prev => (prev + 1) as 1 | 2 | 3 | 4)
+            }}
+            onGuardar={handleGuardar}
+          />
         ) : (
         <OrdenFooter
           modoCrear={modoCrear}

@@ -22,9 +22,9 @@ interface CambiarEstadoProps {
 
 const estadoColores: Record<string, string> = {
   'borrador': 'bg-gray-100 text-gray-800',
-  'emitida': 'bg-blue-100 text-blue-800',
-  'pagada': 'bg-green-100 text-green-800',
-  'anulada': 'bg-red-100 text-red-800',
+  'emitida': 'bg-primary/10 text-primary',
+  'pagada': 'bg-success/10 text-success',
+  'anulada': 'bg-destructive/10 text-destructive',
 }
 
 const flujoEstados: Record<string, string[]> = {

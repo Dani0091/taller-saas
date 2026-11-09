@@ -45,11 +45,7 @@ export default function CitasPage() {
   }
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Citas y Avisos</h1>
-        <p className="text-gray-600">Gestiona las citas, recordatorios e ITVs de tus clientes</p>
-      </div>
+    <div>
 
       <CalendarioCitas
         key={key}

@@ -68,7 +68,7 @@ export function OrdenHeader({
           {/* Solo se muestra justo tras un guardado exitoso — en reposo no se muestra nada,
               para no sugerir que hay un guardado en curso cuando no lo hay */}
           {!modoCrear && guardadoAutomatico && (
-            <div className="flex items-center gap-1 text-green-600">
+            <div className="flex items-center gap-1 text-success">
               <Check className="w-3 h-3" />
               <span className="text-xs">Guardado</span>
             </div>
@@ -83,19 +83,23 @@ export function OrdenHeader({
       <div className="bg-white border-b px-4 py-3 shrink-0">
         <Label className="text-xs text-gray-500 mb-2 block">Estado de la orden</Label>
         <div className="relative">
+          {/* Botón neutro con un punto de color: el blanco sobre amarillo, cian o verde
+              no se leía (contraste por debajo de 2,5:1) */}
           <button
             onClick={() => !bloqueado && onToggleEstados(!mostrarEstados)}
             disabled={bloqueado}
-            className={`w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl border-2 transition-all ${estadoActual.color} text-white ${bloqueado ? 'opacity-90 cursor-not-allowed' : ''}`}
+            aria-haspopup="listbox"
+            aria-expanded={mostrarEstados}
+            className={`w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl border bg-card text-foreground shadow-xs transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 ${bloqueado ? 'cursor-not-allowed bg-muted hover:bg-muted' : ''}`}
           >
-            <span className="flex items-center gap-2 font-medium">
-              <span>{estadoActual.icon}</span>
+            <span className="flex items-center gap-2.5 font-medium">
+              <span aria-hidden className={`size-2.5 rounded-full ${estadoActual.color}`} />
               {estadoActual.label}
             </span>
             {bloqueado ? (
-              <Lock className="w-4 h-4" />
+              <Lock className="w-4 h-4 text-muted-foreground" />
             ) : (
-              <ChevronDown className={`w-5 h-5 transition-transform ${mostrarEstados ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${mostrarEstados ? 'rotate-180' : ''}`} />
             )}
           </button>
 
@@ -106,19 +110,21 @@ export function OrdenHeader({
           )}
 
           {!bloqueado && mostrarEstados && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border z-10 overflow-hidden max-h-64 overflow-y-auto">
+            <div role="listbox" aria-label="Estado de la orden" className="absolute top-full left-0 right-0 mt-2 bg-popover rounded-xl shadow-lg border z-10 overflow-hidden max-h-64 overflow-y-auto animate-in fade-in-0 slide-in-from-top-1 duration-150">
               {ESTADOS_ORDEN.map(estado => (
                 <button
                   key={estado.value}
+                  role="option"
+                  aria-selected={estadoValue === estado.value}
                   onClick={() => cambiarEstado(estado.value)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors ${
-                    estadoValue === estado.value ? 'bg-gray-100' : ''
+                  className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-accent transition-colors ${
+                    estadoValue === estado.value ? 'bg-muted' : ''
                   }`}
                 >
-                  <span className={`w-3 h-3 rounded-full ${estado.color}`} />
+                  <span aria-hidden className={`size-2.5 rounded-full ${estado.color}`} />
                   <span className="flex-1 text-left font-medium">{estado.label}</span>
                   {estadoValue === estado.value && (
-                    <Check className="w-4 h-4 text-green-600" />
+                    <Check className="w-4 h-4 text-primary" />
                   )}
                 </button>
               ))}

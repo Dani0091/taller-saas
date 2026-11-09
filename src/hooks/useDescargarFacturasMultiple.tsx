@@ -13,11 +13,11 @@ interface FacturaDescargable {
   numeroFactura: string
 }
 
-function sanitizarNombreArchivo(nombre: string): string {
+export function sanitizarNombreArchivo(nombre: string): string {
   return nombre.replace(/[\\/:*?"<>|]/g, '-')
 }
 
-function triggerDownload(blob: Blob, filename: string) {
+export function triggerDownload(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url

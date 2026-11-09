@@ -7,9 +7,9 @@ import { NumberInput } from '@/components/ui/number-input'
 import { Card } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Loader2, Settings, Upload, X, Image as ImageIcon, FileText, CreditCard, Palette, Users, Save, Plus, Trash2, Edit2, List, Star } from 'lucide-react'
+import { Loader2, Upload, X, Image as ImageIcon, FileText, CreditCard, Palette, Users, Save, Plus, Trash2, Edit2, List, Star } from 'lucide-react'
 import { toast } from 'sonner'
-import { createClient } from '@/lib/supabase/client'
+import { AccionesPagina } from '@/components/dashboard/acciones-pagina'
 import { GoogleCalendarConnection } from '@/components/dashboard/configuracion/google-calendar-connection'
 import { masterConverter } from '@/lib/utils/master-converter'
 import { useTaller } from '@/contexts/TallerContext'
@@ -411,22 +411,13 @@ export default function ConfiguracionPage() {
   }
 
   return (
-    <div className="container mx-auto py-8 px-4 max-w-6xl space-y-8">
-      <div className="flex items-center justify-between border-b pb-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-sky-100 rounded-lg">
-            <Settings className="w-6 h-6 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Configuración</h1>
-            <p className="text-sm text-gray-500">Gestiona los datos de tu taller y preferencias</p>
-          </div>
-        </div>
-        <Button onClick={handleSubmit} disabled={saving} className="bg-primary hover:bg-primary/90">
-          {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-          Guardar cambios
+    <div className="mx-auto max-w-6xl space-y-6">
+      <AccionesPagina>
+        <Button size="sm" onClick={handleSubmit} disabled={saving} className="gap-1.5">
+          {saving ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Save className="size-4" aria-hidden />}
+          Guardar<span className="hidden sm:inline"> cambios</span>
         </Button>
-      </div>
+      </AccionesPagina>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
@@ -523,7 +514,7 @@ export default function ConfiguracionPage() {
                         setFormData(prev => prev ? { ...prev, logo_url: null } : null)
                       }}
                       aria-label="Quitar logo"
-                      className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+                      className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -557,10 +548,9 @@ export default function ConfiguracionPage() {
                 const isEditing = tarifaEditando === tipo.value
 
                 return (
-                  <div key={tipo.value} className="p-4 border rounded-xl hover:border-sky-200 transition-colors bg-white">
+                  <div key={tipo.value} className="p-4 border rounded-xl hover:border-primary/30 transition-colors bg-white">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <span className="text-xl">{tipo.icon}</span>
                         <div>
                           <p className="font-medium text-gray-900">{tipo.label}</p>
                           <p className="text-xs text-gray-500">{tipo.desc}</p>
@@ -589,7 +579,7 @@ export default function ConfiguracionPage() {
                             }}
                           />
                         ) : (
-                          <p className="text-sm font-semibold text-sky-700">{formatCurrency(tarifa.tarifa_hora)}/h</p>
+                          <p className="text-sm font-semibold text-primary">{formatCurrency(tarifa.tarifa_hora)}/h</p>
                         )}
                       </div>
                       <div className="bg-gray-50 p-2 rounded-lg">
@@ -609,7 +599,7 @@ export default function ConfiguracionPage() {
                             }}
                           />
                         ) : (
-                          <p className="text-sm font-semibold text-emerald-600">{tarifa.descuento_piezas_porcentaje}%</p>
+                          <p className="text-sm font-semibold text-success">{tarifa.descuento_piezas_porcentaje}%</p>
                         )}
                       </div>
                     </div>
@@ -737,24 +727,24 @@ export default function ConfiguracionPage() {
 
             <div className="space-y-3">
               {series.map(serie => (
-                <div key={serie.id} className={`p-3 border rounded-lg flex items-center justify-between bg-white group ${serie.es_predeterminada ? 'border-sky-400 bg-sky-50' : ''}`}>
+                <div key={serie.id} className={`p-3 border rounded-lg flex items-center justify-between bg-white group ${serie.es_predeterminada ? 'border-primary bg-primary/5' : ''}`}>
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="font-medium text-sm text-gray-900">{serie.nombre}</p>
                       {serie.es_predeterminada && (
-                        <span className="text-[10px] font-bold text-sky-700 bg-sky-100 px-1.5 py-0.5 rounded">PREDETERMINADA</span>
+                        <span className="text-[10px] font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">PREDETERMINADA</span>
                       )}
                     </div>
                     <p className="text-xs text-gray-500">
                       Prefijo: <span className="font-mono font-bold text-primary">{serie.prefijo}</span>
                       {' | '}Último Nº: <span className="font-mono font-bold">{serie.ultimo_numero}</span>
-                      {' → '}Siguiente: <span className="font-mono font-bold text-emerald-600">{serie.prefijo}{serie.ultimo_numero + 1}</span>
+                      {' → '}Siguiente: <span className="font-mono font-bold text-success">{serie.prefijo}{serie.ultimo_numero + 1}</span>
                     </p>
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     {!serie.es_predeterminada && (
                       <Button variant="ghost" size="sm" title="Establecer como predeterminada" aria-label={`Establecer la serie ${serie.prefijo} como predeterminada`} onClick={() => handleSetPredeterminada(serie)}>
-                        <Star className="w-3 h-3 text-amber-400" />
+                        <Star className="w-3 h-3 text-warning" />
                       </Button>
                     )}
                     <Button aria-label={`Editar serie ${serie.prefijo}`} variant="ghost" size="sm" onClick={() => { setSerieEditando(serie); setFormSerie(serie); setMostrarFormSerie(true); }}>

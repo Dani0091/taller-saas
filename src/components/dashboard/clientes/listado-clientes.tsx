@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, Edit, Phone, Mail, MapPin, Trash2, Plus } from 'lucide-react'
+import { Edit, Mail, MapPin, Phone, Plus, Search, Trash2, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { AccionesPagina } from '@/components/dashboard/acciones-pagina'
 import { Input } from '@/components/ui/input'
-import { Card } from '@/components/ui/card'
 import { toast } from 'sonner'
 import type { ClienteListadoDTO } from '@/application/dtos'
 import { EditarClienteSheet } from './editar-cliente-sheet'
@@ -19,6 +19,11 @@ interface ListadoClientesProps {
 
 export function ListadoClientes({ clientes, onActualizar, sortBy = 'recientes', onSortByChange }: ListadoClientesProps) {
   const [searchTerm, setSearchTerm] = useState('')
+  // ?q= desde el buscador global: el listado se abre ya filtrado (tras navegar, la URL ya está puesta)
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get('q')
+    if (q) setSearchTerm(q)
+  }, [])
   const [clienteEditando, setClienteEditando] = useState<string | null>(null)
   const [mostrarFormulario, setMostrarFormulario] = useState(false)
   const [cargando, setCargando] = useState(false)
@@ -56,116 +61,121 @@ export function ListadoClientes({ clientes, onActualizar, sortBy = 'recientes', 
 
   return (
     <div className="space-y-4">
+      <AccionesPagina>
+        <Button size="sm" onClick={() => setMostrarFormulario(true)} className="gap-1.5">
+          <Plus className="size-4" aria-hidden />
+          Nuevo<span className="hidden sm:inline"> cliente</span>
+        </Button>
+      </AccionesPagina>
+
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <Input
-            placeholder="Buscar por nombre, NIF o teléfono..."
+            type="search"
+            aria-label="Buscar clientes"
+            placeholder="Buscar por nombre, NIF o teléfono"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="bg-card pl-9"
           />
         </div>
         <select
+          aria-label="Ordenar clientes"
           value={sortBy}
           onChange={(e) => onSortByChange?.(e.target.value as 'recientes' | 'antiguos' | 'alfabetico')}
-          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-sm"
+          className="min-h-11 rounded-md border bg-card px-3 text-sm focus:outline-none focus:ring-[3px] focus:ring-ring/50"
         >
           <option value="recientes">Más recientes</option>
           <option value="antiguos">Más antiguos</option>
           <option value="alfabetico">Alfabético A-Z</option>
         </select>
-        <Button
-          onClick={() => setMostrarFormulario(true)}
-          className="gap-2 bg-primary hover:bg-primary/90"
-        >
-          <Plus className="w-4 h-4" />
-          Nuevo cliente
-        </Button>
       </div>
 
+      <p className="text-sm text-muted-foreground" aria-live="polite">
+        {clientesFiltrados.length} cliente{clientesFiltrados.length === 1 ? '' : 's'}
+        {searchTerm && clientes.length !== clientesFiltrados.length ? ` de ${clientes.length}` : ''}
+      </p>
+
       {clientesFiltrados.length === 0 ? (
-        <Card className="p-8 text-center text-gray-500">
-          {clientes.length === 0 ? 'No hay clientes' : 'No se encontraron resultados'}
-        </Card>
+        <div className="rounded-xl border bg-card px-4 py-12 text-center">
+          <Users className="mx-auto mb-3 size-10 text-muted-foreground" aria-hidden />
+          <p className="font-medium text-foreground">{clientes.length === 0 ? 'Aún no hay clientes' : 'Ningún cliente coincide'}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {clientes.length === 0 ? 'Puedes crearlos aquí o al hacer una orden o una factura.' : 'Prueba con el nombre, el NIF o el teléfono.'}
+          </p>
+        </div>
       ) : (
-        <div className="space-y-2">
+        <ul className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
           {clientesFiltrados.map(cliente => (
-            <Card
-              key={cliente.id}
-              className="p-4 hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => setClienteEditando(cliente.id)}
-            >
-              <div className="flex justify-between items-start gap-4">
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-lg truncate">{cliente.nombre}</h3>
-                  <div className="grid grid-cols-2 gap-2 mt-2 text-sm text-gray-600">
-                    {cliente.nif && (
-                      <div className="flex items-center gap-1">
-                        <span className="text-xs font-semibold text-gray-400">NIF</span>
-                        <span className="tabular-nums">{cliente.nif}</span>
-                      </div>
-                    )}
+            <li key={cliente.id}>
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setClienteEditando(cliente.id)}
+                onKeyDown={(e) => { if (e.key === 'Enter') setClienteEditando(cliente.id) }}
+                className="flex h-full cursor-pointer gap-3 rounded-xl border bg-card p-4 shadow-xs transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+              >
+                <span aria-hidden className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
+                  {cliente.nombre.trim().charAt(0).toUpperCase()}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h3 className="truncate font-semibold text-foreground">{cliente.nombre}</h3>
+                  {cliente.nif && (
+                    <p className="text-sm text-muted-foreground">
+                      <span className="text-xs font-semibold">NIF</span> <span className="tabular-nums">{cliente.nif}</span>
+                    </p>
+                  )}
+                  <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm">
                     {cliente.telefono && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          window.location.href = `tel:${cliente.telefono}`
-                        }}
-                        className="flex items-center gap-1 min-h-9 sm:min-h-0 text-blue-600 hover:underline"
+                      <a
+                        href={`tel:${cliente.telefono}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex min-h-9 items-center gap-1 text-primary hover:underline sm:min-h-0"
                       >
-                        <Phone className="w-4 h-4" /> {cliente.telefono}
-                      </button>
+                        <Phone className="size-4" aria-hidden /> {cliente.telefono}
+                      </a>
                     )}
                     {cliente.email && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          window.location.href = `mailto:${cliente.email}`
-                        }}
-                        className="flex items-center gap-1 min-h-9 sm:min-h-0 text-blue-600 hover:underline col-span-2"
+                      <a
+                        href={`mailto:${cliente.email}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex min-h-9 min-w-0 items-center gap-1 text-primary hover:underline sm:min-h-0"
                       >
-                        <Mail className="w-4 h-4" /> {cliente.email}
-                      </button>
-                    )}
-                    {cliente.direccion && (
-                      <div className="flex items-center gap-1 col-span-2">
-                        <MapPin className="w-4 h-4" /> {cliente.direccion}
-                      </div>
+                        <Mail className="size-4 shrink-0" aria-hidden /> <span className="truncate">{cliente.email}</span>
+                      </a>
                     )}
                   </div>
+                  {cliente.direccion && (
+                    <p className="mt-1 flex items-center gap-1 truncate text-sm text-muted-foreground">
+                      <MapPin className="size-4 shrink-0" aria-hidden /> {cliente.direccion}
+                    </p>
+                  )}
                 </div>
-
-                <div className="flex gap-2">
+                <div className="flex shrink-0 flex-col gap-2">
                   <Button
-                    size="sm"
+                    size="icon-sm"
                     variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setClienteEditando(cliente.id)
-                    }}
+                    onClick={(e) => { e.stopPropagation(); setClienteEditando(cliente.id) }}
                     aria-label={`Editar cliente ${cliente.nombre}`}
                   >
-                    <Edit className="w-4 h-4" aria-hidden />
+                    <Edit className="size-4" aria-hidden />
                   </Button>
                   <Button
-                    size="sm"
+                    size="icon-sm"
                     variant="outline"
-                    className="text-red-600 hover:text-red-700"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleEliminar(cliente.id)
-                    }}
+                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    onClick={(e) => { e.stopPropagation(); handleEliminar(cliente.id) }}
                     disabled={cargando}
                     aria-label={`Eliminar cliente ${cliente.nombre}`}
                   >
-                    <Trash2 className="w-4 h-4" aria-hidden />
+                    <Trash2 className="size-4" aria-hidden />
                   </Button>
                 </div>
               </div>
-            </Card>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
 
       {mostrarFormulario && (

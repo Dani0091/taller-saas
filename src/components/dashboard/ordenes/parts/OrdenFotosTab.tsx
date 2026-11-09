@@ -88,9 +88,9 @@ export function OrdenFotosTab({
       const matriculaVehiculo = vehiculoSeleccionado.matricula.replace(/[\s-]/g, '').toUpperCase()
 
       if (matriculaLimpia === matriculaVehiculo) {
-        toast.success(`✅ Matrícula coincide: ${data.matricula}`)
+        toast.success(`Matrícula coincide: ${data.matricula}`)
       } else {
-        toast.warning(`⚠️ Matrícula detectada (${data.matricula}) no coincide con el vehículo (${vehiculoSeleccionado.matricula})`)
+        toast.warning(`Matrícula detectada (${data.matricula}) no coincide con el vehículo (${vehiculoSeleccionado.matricula})`)
       }
     } else if (data.matricula) {
       toast.info(`Matrícula detectada: ${data.matricula}`)
@@ -100,15 +100,15 @@ export function OrdenFotosTab({
     if (data.km && vehiculoId) {
       onActualizarKMVehiculo(data.km)
     } else if (data.km) {
-      toast.info(`KM detectados: ${data.km.toLocaleString()} (selecciona un vehículo para guardar)`)
+      toast.info(`KM detectados: ${data.km.toLocaleString('es-ES')} (selecciona un vehículo para guardar)`)
     }
   }
 
   if (modoCrear) {
     return (
-      <Card className="p-4 bg-amber-50 border-amber-200">
-        <p className="text-sm text-amber-800">
-          💡 Guarda la orden primero para poder subir fotos
+      <Card className="p-4 bg-warning/5 border-warning/30">
+        <p className="text-sm text-warning">
+          Guarda la orden primero para poder subir fotos
         </p>
       </Card>
     )
@@ -118,7 +118,7 @@ export function OrdenFotosTab({
     <fieldset disabled={readOnly} className="contents">
       {/* Fotos de entrada */}
       <Card className="p-4">
-        <Label className="text-sm font-semibold mb-3 block">📸 Fotos de Entrada</Label>
+        <Label className="text-sm font-semibold mb-3 block">Fotos de Entrada</Label>
         <p className="text-xs text-gray-500 mb-4">
           Documenta el estado del vehículo al llegar al taller
         </p>
@@ -164,7 +164,7 @@ export function OrdenFotosTab({
           editable, sincronizado con el vehículo */}
       {onFotosDiagnosticoChange && (
         <Card className="p-4">
-          <Label className="text-sm font-semibold mb-3 block">🔩 Bastidor (VIN)</Label>
+          <Label className="text-sm font-semibold mb-3 block">Bastidor (VIN)</Label>
 
           {onActualizarVin && (
             <div className="mb-4">
@@ -211,7 +211,7 @@ export function OrdenFotosTab({
 
       {/* Fotos de salida */}
       <Card className="p-4">
-        <Label className="text-sm font-semibold mb-3 block">✅ Fotos de Salida</Label>
+        <Label className="text-sm font-semibold mb-3 block">Fotos de Salida</Label>
         <p className="text-xs text-gray-500 mb-4">
           Documenta el estado del vehículo al entregar
         </p>

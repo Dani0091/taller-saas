@@ -210,7 +210,7 @@ export function OrdenPDFViewer({ ordenId, onClose }: OrdenPDFViewerProps) {
                 </div>
               </div>
               <div className="text-right">
-                <h2 className="text-2xl font-bold text-sky-700">ORDEN DE TRABAJO</h2>
+                <h2 className="text-2xl font-bold text-primary">ORDEN DE TRABAJO</h2>
                 <p className="text-xl font-mono font-bold">{datos.orden.numero}</p>
                 <p className="text-sm text-gray-600 mt-2">
                   Fecha: {formatFecha(datos.orden.fechaEntrada)}
@@ -245,7 +245,7 @@ export function OrdenPDFViewer({ ordenId, onClose }: OrdenPDFViewerProps) {
                   <p><strong>Matrícula:</strong> <span className="font-mono font-bold">{datos.vehiculo.matricula}</span></p>
                   <p><strong>Año:</strong> {datos.vehiculo.año || '—'}</p>
                   <p><strong>Color:</strong> {datos.vehiculo.color || '—'}</p>
-                  <p><strong>Kilómetros:</strong> {datos.vehiculo.kilometros?.toLocaleString() || '—'} km</p>
+                  <p><strong>Kilómetros:</strong> {datos.vehiculo.kilometros?.toLocaleString('es-ES') || '—'} km</p>
                   <p><strong>Combustible:</strong> {datos.vehiculo.tipoCombustible || '—'}</p>
                   <p><strong>VIN:</strong> <span className="font-mono text-xs">{datos.vehiculo.vin || '—'}</span></p>
                 </div>
@@ -266,7 +266,7 @@ export function OrdenPDFViewer({ ordenId, onClose }: OrdenPDFViewerProps) {
                         key={nivel}
                         className={`px-2 py-1 rounded border text-xs ${
                           datos.legal.nivelCombustible === nivel
-                            ? 'bg-amber-500 text-white border-amber-500'
+                            ? 'bg-warning text-white border-warning'
                             : 'border-gray-300'
                         }`}
                       >
@@ -278,7 +278,7 @@ export function OrdenPDFViewer({ ordenId, onClose }: OrdenPDFViewerProps) {
                 <div>
                   <strong>KM entrada:</strong>
                   <p className="font-mono mt-1">
-                    {datos.legal.kilometrosEntrada?.toLocaleString() || datos.vehiculo.kilometros?.toLocaleString() || '—'} km
+                    {datos.legal.kilometrosEntrada?.toLocaleString('es-ES') || datos.vehiculo.kilometros?.toLocaleString('es-ES') || '—'} km
                   </p>
                 </div>
                 <div>
@@ -298,7 +298,7 @@ export function OrdenPDFViewer({ ordenId, onClose }: OrdenPDFViewerProps) {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="flex items-center gap-2">
                   <span className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
-                    datos.legal.presupuestoAprobado ? 'bg-green-500 border-green-500 text-white' : 'border-gray-400'
+                    datos.legal.presupuestoAprobado ? 'bg-success border-success text-white' : 'border-gray-400'
                   }`}>
                     {datos.legal.presupuestoAprobado && '✓'}
                   </span>
@@ -306,7 +306,7 @@ export function OrdenPDFViewer({ ordenId, onClose }: OrdenPDFViewerProps) {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
-                    datos.legal.renunciaPresupuesto ? 'bg-orange-500 border-orange-500 text-white' : 'border-gray-400'
+                    datos.legal.renunciaPresupuesto ? 'bg-warning border-warning text-white' : 'border-gray-400'
                   }`}>
                     {datos.legal.renunciaPresupuesto && '✓'}
                   </span>
@@ -314,7 +314,7 @@ export function OrdenPDFViewer({ ordenId, onClose }: OrdenPDFViewerProps) {
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
-                    datos.legal.recogerPiezas ? 'bg-blue-500 border-blue-500 text-white' : 'border-gray-400'
+                    datos.legal.recogerPiezas ? 'bg-primary border-primary text-white' : 'border-gray-400'
                   }`}>
                     {datos.legal.recogerPiezas && '✓'}
                   </span>
@@ -324,8 +324,8 @@ export function OrdenPDFViewer({ ordenId, onClose }: OrdenPDFViewerProps) {
                   <strong>En caso de imprevistos:</strong>
                   <span className={`ml-2 px-2 py-0.5 rounded text-xs ${
                     datos.legal.accionImprevisto === 'avisar'
-                      ? 'bg-blue-100 text-blue-800'
-                      : 'bg-green-100 text-green-800'
+                      ? 'bg-primary/10 text-primary'
+                      : 'bg-success/10 text-success'
                   }`}>
                     {datos.legal.accionImprevisto === 'avisar' ? '📞 Avisar' : '🔧 Actuar'}
                   </span>

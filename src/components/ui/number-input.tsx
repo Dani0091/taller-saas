@@ -27,6 +27,8 @@ interface NumberInputProps {
   prefix?: string
   suffix?: string
   required?: boolean
+  /** Nombre accesible cuando no hay <label> asociado */
+  'aria-label'?: string
 }
 
 /**
@@ -50,6 +52,7 @@ export function NumberInput({
   prefix,
   suffix,
   required = false,
+  'aria-label': ariaLabel,
 }: NumberInputProps) {
   // Estado interno para manejar el input del usuario
   const [displayValue, setDisplayValue] = useState<string>('')
@@ -69,10 +72,11 @@ export function NumberInput({
 
   // Formatear número para mostrar
   const formatNumber = (num: number): string => {
+    // Coma decimal, como se escribe en España (al leer se aceptan coma y punto)
     if (step && step < 1) {
-      return num.toFixed(getDecimalPlaces(step))
+      return num.toFixed(getDecimalPlaces(step)).replace('.', ',')
     }
-    return num.toString()
+    return num.toString().replace('.', ',')
   }
 
   // Obtener número de decimales del step
@@ -157,13 +161,14 @@ export function NumberInput({
         placeholder={placeholder}
         className={cn(
           'w-full',
-          isFocused && 'ring-2 ring-sky-500',
+          isFocused && 'ring-2 ring-ring',
           className
         )}
         disabled={disabled}
         id={id}
         name={name}
         required={required}
+        aria-label={ariaLabel}
       />
       
       {suffix && (

@@ -136,7 +136,7 @@ export function EditarClienteSheet({ clienteId, onClose, onActualizar }: EditarC
 
         <div className="p-4 space-y-4">
           {/* DATOS BÁSICOS */}
-          <Card className="p-4 border-l-4 border-l-blue-600">
+          <Card className="p-4">
             <h3 className="font-bold mb-3">👤 Datos Básicos</h3>
             <div className="space-y-3">
               <div>
@@ -160,7 +160,7 @@ export function EditarClienteSheet({ clienteId, onClose, onActualizar }: EditarC
                 <select
                   value={formData.tipo_cliente || 'personal'}
                   onChange={(e) => setFormData(prev => ({ ...prev, tipo_cliente: e.target.value as any }))}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring"
                 >
                   <option value="personal">Particular</option>
                   <option value="empresa">Empresa</option>
@@ -170,7 +170,7 @@ export function EditarClienteSheet({ clienteId, onClose, onActualizar }: EditarC
           </Card>
 
           {/* CONTACTO */}
-          <Card className="p-4 border-l-4 border-l-green-600">
+          <Card className="p-4">
             <h3 className="font-bold mb-3">📞 Contacto</h3>
             <div className="space-y-3">
               <div>
@@ -194,7 +194,7 @@ export function EditarClienteSheet({ clienteId, onClose, onActualizar }: EditarC
           </Card>
 
           {/* DIRECCIÓN - VERIFACTU */}
-          <Card className="p-4 border-l-4 border-l-orange-600">
+          <Card className="p-4">
             <h3 className="font-bold mb-3">📍 Dirección Fiscal</h3>
             <div className="space-y-3">
               <div>
@@ -228,7 +228,7 @@ export function EditarClienteSheet({ clienteId, onClose, onActualizar }: EditarC
                 <select
                   value={formData.provincia || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, provincia: e.target.value }))}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring"
                 >
                   <option value="">Selecciona provincia...</option>
                   {PROVINCIAS_ES.map(p => (
@@ -240,7 +240,7 @@ export function EditarClienteSheet({ clienteId, onClose, onActualizar }: EditarC
           </Card>
 
           {/* PAGO Y IBAN */}
-          <Card className="p-4 border-l-4 border-l-purple-600">
+          <Card className="p-4">
             <h3 className="font-bold mb-3">💳 Pago e IBAN</h3>
             <div className="space-y-3">
               <div>
@@ -248,7 +248,7 @@ export function EditarClienteSheet({ clienteId, onClose, onActualizar }: EditarC
                 <select
                   value={formData.forma_pago || 'transferencia'}
                   onChange={(e) => setFormData(prev => ({ ...prev, forma_pago: e.target.value as any }))}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-ring"
                 >
                   {FORMAS_PAGO.map(f => (
                     <option key={f.value} value={f.value}>{f.label}</option>
@@ -267,7 +267,7 @@ export function EditarClienteSheet({ clienteId, onClose, onActualizar }: EditarC
           </Card>
 
           {/* NOTAS */}
-          <Card className="p-4 border-l-4 border-l-red-600">
+          <Card className="p-4">
             <h3 className="font-bold mb-3">📝 Notas</h3>
             <Textarea
               placeholder="Ej.: Prefiere que le llamen por la tarde"

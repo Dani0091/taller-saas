@@ -48,7 +48,7 @@ test('pagina en el servidor: 30 facturas de la serie → 25 + 5, sin las del otr
   await page.getByLabel('Serie').selectOption(serie)
   await expect(contador(page)).toHaveText('30 facturas · mostrando 1–25')
   await expect(page.locator('tbody tr')).toHaveCount(25)
-  await expect(page.getByText(`${serie}-999`)).toHaveCount(0)
+  await expect(page.getByRole('table').getByText(`${serie}-999`)).toHaveCount(0)
 
   await page.getByRole('button', { name: 'Siguiente' }).click()
   await expect(page.getByText('Página 2 de 2')).toBeVisible()
@@ -59,12 +59,12 @@ test('pagina en el servidor: 30 facturas de la serie → 25 + 5, sin las del otr
   // Cambiar un filtro vuelve a la página 1
   await page.getByLabel('Estado').selectOption('anulada')
   await expect(contador(page)).toHaveText('1 factura')
-  await expect(page.getByText(`${serie}-002`)).toBeVisible()
+  await expect(page.getByRole('table').getByText(`${serie}-002`)).toBeVisible()
 })
 
 test('búsqueda por número, matrícula escrita a mano, nombre y NIF del cliente', async ({ page }) => {
   await page.goto('/dashboard/facturas')
-  const buscar = page.getByLabel('Buscar')
+  const buscar = page.getByLabel('Buscar', { exact: true })
 
   await buscar.fill(`${serie}-030`)
   await expect(contador(page)).toHaveText('1 factura')
@@ -75,7 +75,7 @@ test('búsqueda por número, matrícula escrita a mano, nombre y NIF del cliente
 
   await buscar.fill(`Listado ${serie}`)
   await expect(contador(page)).toHaveText('1 factura')
-  await expect(page.getByText(`${serie}-001`)).toBeVisible()
+  await expect(page.getByRole('table').getByText(`${serie}-001`)).toBeVisible()
 
   await buscar.fill(nif)
   await expect(contador(page)).toHaveText('1 factura')
@@ -99,12 +99,12 @@ test('periodo "Este año" deja fuera la de 2020; fecha personalizada la encuentr
   await page.getByLabel('Desde').fill('2020-01-01')
   await page.getByLabel('Hasta').fill('2020-01-31')
   await expect(contador(page)).toHaveText('1 factura')
-  await expect(page.getByText(`${serie}-030`)).toBeVisible()
+  await expect(page.getByRole('table').getByText(`${serie}-030`)).toBeVisible()
 })
 
 test('acciones con nombre accesible', async ({ page }) => {
   await page.goto('/dashboard/facturas')
-  await page.getByLabel('Buscar').fill(`${serie}-003`)
+  await page.getByLabel('Buscar', { exact: true }).fill(`${serie}-003`)
   await expect(contador(page)).toHaveText('1 factura')
   await expect(page.getByRole('link', { name: `Ver factura ${serie}-003` })).toBeVisible()
   await expect(page.getByRole('button', { name: `Anular factura ${serie}-003` })).toBeVisible()

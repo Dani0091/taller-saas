@@ -19,7 +19,7 @@ export function WhatsAppCita({ telefono, cita, datos }: WhatsAppCitaProps) {
     <Button
       type="button"
       onClick={() => window.open(enlaceWhatsAppCita(telefono, cita, datos), '_blank', 'noopener,noreferrer')}
-      className="gap-2 bg-green-500 hover:bg-green-600"
+      className="gap-2 bg-success hover:bg-success/90"
     >
       <MessageCircle className="w-4 h-4" aria-hidden="true" />
       Enviar por WhatsApp

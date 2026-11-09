@@ -9,14 +9,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
-import { siguienteNumeroOrden } from '@/lib/ordenes/numero-orden'
+import { insertarOrdenNumerada } from '@/lib/ordenes/ficha-servidor'
 import { validarVinculosTaller } from '@/lib/ordenes/validar-orden'
 
 interface RouteParams {
   params: Promise<{ id: string }>
 }
-
-const INTENTOS_NUMERO = 5
 
 export async function POST(_request: NextRequest, { params }: RouteParams) {
   try {
@@ -65,37 +63,13 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
 
     const descripcion = [cita.titulo, cita.descripcion].filter(Boolean).join('. ')
 
-    // Número OR-NNNN a partir de la última orden (como el asistente). Si ya
-    // existe (otra orden creada a la vez, o una antigua con ese número), el
-    // UNIQUE (taller_id, numero_orden) lo rechaza y se prueba el siguiente.
-    const { data: ultima } = await supabase
-      .from('ordenes_reparacion')
-      .select('numero_orden')
-      .eq('taller_id', tallerId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-
-    let numero = siguienteNumeroOrden(ultima?.numero_orden)
-    let orden: { id: string; numero_orden: string } | null = null
-    for (let intento = 0; intento < INTENTOS_NUMERO && !orden; intento++) {
-      if (intento > 0) numero = siguienteNumeroOrden(numero)
-      const { data, error } = await supabase
-        .from('ordenes_reparacion')
-        .insert({
-          taller_id: tallerId,
-          numero_orden: numero,
-          cliente_id: cita.cliente_id,
-          vehiculo_id: cita.vehiculo_id,
-          estado: 'recibido',
-          descripcion_problema: descripcion || null,
-        })
-        .select('id, numero_orden')
-        .single()
-
-      if (data) orden = data
-      else if (error?.code !== '23505') throw error
-    }
+    // Número OR-NNNN como el asistente; si ya existe, el siguiente
+    const orden = await insertarOrdenNumerada(supabase, tallerId, {
+      cliente_id: cita.cliente_id,
+      vehiculo_id: cita.vehiculo_id,
+      estado: 'recibido',
+      descripcion_problema: descripcion || null,
+    })
 
     if (!orden) {
       return NextResponse.json({ error: 'No se pudo asignar número de orden; inténtalo de nuevo' }, { status: 409 })

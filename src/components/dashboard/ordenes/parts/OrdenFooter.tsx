@@ -106,7 +106,7 @@ export function OrdenFooter({
               onClick={onCompartirPresupuesto}
               disabled={compartiendo}
               variant="outline"
-              className="w-full gap-2 py-3 border-purple-300 text-purple-700 hover:bg-purple-50"
+              className="w-full gap-2 py-3 border-primary/30 text-primary hover:bg-primary/5"
             >
               {compartiendo ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -116,8 +116,8 @@ export function OrdenFooter({
               {compartiendo ? 'Generando enlace...' : 'Enviar Presupuesto al Cliente'}
             </Button>
           ) : (
-            <div className="bg-purple-50 border border-purple-200 rounded-xl p-3 space-y-2">
-              <p className="text-xs text-purple-700 font-medium">Enlace del presupuesto:</p>
+            <div className="bg-primary/5 border border-primary/30 rounded-xl p-3 space-y-2">
+              <p className="text-xs text-primary font-medium">Enlace del presupuesto:</p>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -133,7 +133,7 @@ export function OrdenFooter({
                 <Button
                   size="sm"
                   onClick={onEnviarWhatsApp}
-                  className="flex-1 gap-1 bg-green-600 hover:bg-green-700"
+                  className="flex-1 gap-1 bg-success hover:bg-success/90"
                 >
                   <Share2 className="w-3 h-3" />
                   WhatsApp
@@ -203,7 +203,7 @@ export function OrdenFooter({
         <Button
           onClick={onCobroRapido}
           disabled={generandoFactura || guardando}
-          className="w-full gap-3 bg-violet-600 hover:bg-violet-700 active:bg-violet-800 py-5 text-lg font-bold min-h-[56px] shadow-md"
+          className="w-full gap-3 bg-primary hover:bg-primary/90 active:bg-primary/90 py-5 text-lg font-bold min-h-[56px] shadow-md"
         >
           {generandoFactura ? (
             <Loader2 className="w-5 h-5 animate-spin" />
@@ -220,7 +220,7 @@ export function OrdenFooter({
           <DropdownMenuTrigger asChild>
             <Button
               disabled={generandoFactura || guardando}
-              className="w-full gap-2 bg-green-600 hover:bg-green-700 py-3"
+              className="w-full gap-2 bg-success hover:bg-success/90 py-3"
             >
               {generandoFactura ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -233,11 +233,11 @@ export function OrdenFooter({
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-48">
             <DropdownMenuItem onClick={onCrearBorradorFactura} className="gap-2">
-              📝 Crear Borrador Editable
+              Crear Borrador Editable
               <span className="text-xs text-gray-500 ml-auto">Modificar antes de emitir</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onEmitirFacturaDirecta} className="gap-2">
-              ⚡ Emitir Factura Directa
+              Emitir Factura Directa
               <span className="text-xs text-gray-500 ml-auto">Sin opción de edición</span>
             </DropdownMenuItem>
           </DropdownMenuContent>

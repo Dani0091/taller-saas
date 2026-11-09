@@ -61,16 +61,12 @@ export default function ClientesPage() {
   if (!mounted) return null
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Clientes</h1>
-        <p className="text-gray-600 mt-1">Gestiona todos tus clientes</p>
-      </div>
+    <div className="space-y-4">
 
       {error ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
-          <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
-          <p className="text-red-600 font-medium mb-2">Error al cargar datos</p>
+          <AlertCircle className="w-12 h-12 text-destructive mb-4" />
+          <p className="text-destructive font-medium mb-2">Error al cargar datos</p>
           <p className="text-gray-500 text-sm mb-4">{error}</p>
           <Button onClick={() => { setError(null); cargarClientes(); }}>
             Reintentar

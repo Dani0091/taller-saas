@@ -71,14 +71,6 @@ export default function DashboardLayout({
       <ErrorBoundary usuarioId={user?.id}>
         <TallerProvider>
           <div className="flex h-screen bg-gray-50">
-            {/* Overlay para cerrar sidebar en móvil */}
-            {sidebarOpen && (
-              <div
-                className="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden"
-                onClick={() => setSidebarOpen(false)}
-              />
-            )}
-
             {/* Sidebar */}
             <Sidebar
               user={user}

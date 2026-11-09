@@ -30,11 +30,14 @@ export function cn(...inputs: ClassValue[]) {
  */
 export function formatCurrency(amount: number | null | undefined, showSymbol = true): string {
   const value = amount ?? 0
+  // «1.383,95 €»: separador de miles también con 4 cifras (es-ES lo omite
+  // por defecto) y espacio irrompible antes del símbolo
   const formatted = value.toLocaleString('es-ES', {
     minimumFractionDigits: 2,
-    maximumFractionDigits: 2
+    maximumFractionDigits: 2,
+    useGrouping: 'always',
   })
-  return showSymbol ? `${formatted}€` : formatted
+  return showSymbol ? `${formatted}\u00a0€` : formatted
 }
 
 /**
@@ -45,7 +48,7 @@ export function formatCurrency(amount: number | null | undefined, showSymbol = t
  */
 export function formatKilometers(km: number | null | undefined): string {
   if (km == null) return '—'
-  return `${km.toLocaleString('es-ES')} km`
+  return `${km.toLocaleString('es-ES', { useGrouping: 'always' })}\u00a0km`
 }
 
 // =============================================================================

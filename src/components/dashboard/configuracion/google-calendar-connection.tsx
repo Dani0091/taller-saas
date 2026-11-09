@@ -121,12 +121,12 @@ export function GoogleCalendarConnection({ tallerId }: Props) {
 
       {!status?.configured ? (
         <div className="space-y-4">
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <div className="bg-warning/5 border border-warning/30 rounded-lg p-4">
             <div className="flex gap-3">
-              <AlertCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+              <AlertCircle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-amber-800">Configuración requerida</p>
-                <p className="text-sm text-amber-700 mt-1">
+                <p className="text-sm font-medium text-warning">Configuración requerida</p>
+                <p className="text-sm text-warning mt-1">
                   Para usar Google Calendar, configura tus propias credenciales de Google.
                   Esto te permite usar el tier gratuito de Google Calendar API.
                 </p>
@@ -158,13 +158,13 @@ export function GoogleCalendarConnection({ tallerId }: Props) {
       ) : status.connected ? (
         <div className="space-y-4">
           {/* Estado conectado */}
-          <div className="flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-              <Check className="w-5 h-5 text-green-600" />
+          <div className="flex items-center gap-3 p-4 bg-success/5 border border-success/30 rounded-lg">
+            <div className="w-8 h-8 bg-success/10 rounded-full flex items-center justify-center">
+              <Check className="w-5 h-5 text-success" />
             </div>
             <div className="flex-1">
-              <p className="font-medium text-green-800">Conectado</p>
-              <p className="text-sm text-green-600">{status.google_email}</p>
+              <p className="font-medium text-success">Conectado</p>
+              <p className="text-sm text-success">{status.google_email}</p>
             </div>
           </div>
 
@@ -190,15 +190,15 @@ export function GoogleCalendarConnection({ tallerId }: Props) {
             <p className="text-sm font-medium text-gray-700 mb-2">Con Google Calendar conectado puedes:</p>
             <ul className="text-sm text-gray-600 space-y-1">
               <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-500" />
+                <Check className="w-4 h-4 text-success" />
                 Añadir órdenes de trabajo a tu calendario
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-500" />
+                <Check className="w-4 h-4 text-success" />
                 Sincronizar citas automáticamente
               </li>
               <li className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-green-500" />
+                <Check className="w-4 h-4 text-success" />
                 Recibir recordatorios en tu móvil
               </li>
             </ul>
@@ -209,7 +209,7 @@ export function GoogleCalendarConnection({ tallerId }: Props) {
             variant="outline"
             onClick={handleDisconnect}
             disabled={disconnecting}
-            className="w-full gap-2 text-red-600 hover:bg-red-50 border-red-200"
+            className="w-full gap-2 text-destructive hover:bg-destructive/5 border-destructive/30"
           >
             {disconnecting ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -233,11 +233,11 @@ export function GoogleCalendarConnection({ tallerId }: Props) {
           </div>
 
           {/* Beneficios */}
-          <div className="bg-blue-50 rounded-lg p-4">
-            <p className="text-sm font-medium text-blue-800 mb-2">
+          <div className="bg-primary/5 rounded-lg p-4">
+            <p className="text-sm font-medium text-primary mb-2">
               Conecta Google Calendar para:
             </p>
-            <ul className="text-sm text-blue-700 space-y-1">
+            <ul className="text-sm text-primary space-y-1">
               <li>• Ver órdenes y citas en tu calendario</li>
               <li>• Recibir notificaciones automáticas</li>
               <li>• Sincronizar con tu móvil</li>

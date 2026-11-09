@@ -166,7 +166,7 @@ export function FormularioCita({ cita, fechaInicial, onClose, onSave }: Formular
     e.preventDefault()
     const id = await guardarCita()
     if (!id) return
-    toast.success(cita ? '✅ Cita actualizada' : '✅ Cita creada')
+    toast.success(cita ? 'Cita actualizada' : 'Cita creada')
     onSave()
   }
 
@@ -366,7 +366,7 @@ export function FormularioCita({ cita, fechaInicial, onClose, onSave }: Formular
           </div>
 
           {finAnteriorAInicio(horaLocalAInstante(formData.fecha_inicio), horaLocalAInstante(formData.fecha_fin)) && (
-            <p id="fecha_fin_error" role="alert" className="-mt-2 text-sm text-red-600">{ERROR_FIN_ANTERIOR}</p>
+            <p id="fecha_fin_error" role="alert" className="-mt-2 text-sm text-destructive">{ERROR_FIN_ANTERIOR}</p>
           )}
 
           {/* Todo el día */}
@@ -423,7 +423,7 @@ export function FormularioCita({ cita, fechaInicial, onClose, onSave }: Formular
             )}
 
             {nuevoVehiculo && (
-              <div className="mt-2 space-y-3 rounded-lg border border-sky-200 bg-sky-50 p-3">
+              <div className="mt-2 space-y-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <div>
                     <Label htmlFor="nuevo_matricula">Matrícula *</Label>

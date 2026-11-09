@@ -111,21 +111,21 @@ export function GoogleCalendarConfig({ tallerId, onConfigured }: Props) {
       </div>
 
       {showHelp && (
-        <Card className="p-4 bg-blue-50 border-blue-200">
-          <h5 className="font-medium text-blue-800 mb-2 text-sm">Como obtener las credenciales:</h5>
-          <ol className="text-xs text-blue-700 space-y-1 list-decimal list-inside">
+        <Card className="p-4 bg-primary/5 border-primary/30">
+          <h5 className="font-medium text-primary mb-2 text-sm">Como obtener las credenciales:</h5>
+          <ol className="text-xs text-primary space-y-1 list-decimal list-inside">
             <li>Ve a <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="underline">Google Cloud Console</a></li>
             <li>Crea un nuevo proyecto o selecciona uno existente</li>
             <li>Habilita la API de Google Calendar</li>
             <li>Crea credenciales OAuth 2.0 (tipo "Aplicación web")</li>
-            <li>Añade como URI de redirección: <code className="bg-blue-100 px-1 rounded text-xs">{typeof window !== 'undefined' ? window.location.origin : ''}/api/calendar/google/callback</code></li>
+            <li>Añade como URI de redirección: <code className="bg-primary/10 px-1 rounded text-xs">{typeof window !== 'undefined' ? window.location.origin : ''}/api/calendar/google/callback</code></li>
             <li>Copia el Client ID y Client Secret aquí</li>
           </ol>
           <a
             href="https://console.cloud.google.com/apis/credentials"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 mt-2 text-xs text-blue-600 hover:underline"
+            className="inline-flex items-center gap-1 mt-2 text-xs text-primary hover:underline"
           >
             Abrir Google Cloud Console
             <ExternalLink className="w-3 h-3" />
@@ -167,7 +167,7 @@ export function GoogleCalendarConfig({ tallerId, onConfigured }: Props) {
         <Button
           onClick={handleSave}
           disabled={saving}
-          className="w-full gap-2 bg-green-600 hover:bg-green-700"
+          className="w-full gap-2 bg-success hover:bg-success/90"
         >
           {saving ? (
             <Loader2 className="w-4 h-4 animate-spin" />

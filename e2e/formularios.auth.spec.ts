@@ -90,7 +90,7 @@ test('cabecera con el título de cada sección y versión real en el menú', asy
   ]
   for (const [ruta, titulo] of casos) {
     await page.goto(ruta)
-    await expect(page.locator('header h2'), ruta).toHaveText(titulo)
+    await expect(page.locator('header h1'), ruta).toHaveText(titulo)
   }
   const version = (await import('../package.json', { with: { type: 'json' } })).default.version
   // El menú móvil (oculto en escritorio) también la contiene: debe verse una vez.

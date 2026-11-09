@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { Drawer } from 'vaul'
 import { Home, Wrench, Users, FileText, Settings, X, Gauge, Car, CalendarDays, Zap } from 'lucide-react'
 
 const links = [
@@ -50,10 +51,10 @@ export function Sidebar({ user, isOpen = false, onClose }: SidebarProps) {
 
   const SidebarContent = ({ isMobile = false }: { isMobile?: boolean }) => (
     <>
-      {/* Logo con estilo motorsport */}
+      {/* Logo */}
       <div className={`${isMobile ? 'flex items-center justify-between' : ''} mb-8`}>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-sky-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-sky-500/30">
+          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
             <Gauge className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -78,10 +79,7 @@ export function Sidebar({ user, isOpen = false, onClose }: SidebarProps) {
         )}
       </div>
 
-      {/* Accent stripe */}
-      <div className="h-1 bg-gradient-to-r from-sky-500 via-cyan-400 to-teal-500 rounded-full mb-6 opacity-80" />
-
-      <nav className="flex-1 space-y-1">
+      <nav aria-label="Secciones" className="flex-1 space-y-1">
         {links.map((link) => {
           const Icon = link.icon
           const isActive = pathname === link.href
@@ -91,31 +89,30 @@ export function Sidebar({ user, isOpen = false, onClose }: SidebarProps) {
               key={link.href}
               href={link.href}
               onClick={isMobile ? onClose : undefined}
+              aria-current={isActive ? 'page' : undefined}
               className={`
-                flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200
+                flex items-center gap-3 px-4 py-3 rounded-xl transition-colors duration-150
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring
                 ${isActive
-                  ? 'bg-gradient-to-r from-sky-500 to-cyan-500 text-white shadow-lg shadow-sky-500/30 scale-[1.02]'
-                  : 'text-gray-400 hover:text-white hover:bg-gray-800/60'
+                  ? 'bg-sidebar-accent text-white'
+                  : 'text-gray-400 hover:text-white hover:bg-sidebar-accent/60'
                 }
               `}
             >
-              <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-gray-500'}`} />
+              <Icon className={`w-5 h-5 ${isActive ? 'text-sidebar-primary' : 'text-gray-500'}`} />
               <span className="font-medium">{link.label}</span>
-              {isActive && (
-                <div className="ml-auto w-2 h-2 bg-cyan-300 rounded-full animate-pulse" />
-              )}
             </Link>
           )
         })}
       </nav>
 
-      {/* Footer con estilo motorsport */}
+      {/* Usuario, versión y plan */}
       <div className="border-t border-gray-700/50 pt-4 mt-4">
         <div className="p-3 bg-gray-800/50 rounded-xl">
           {user?.email ? (
             <>
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 bg-gradient-to-br from-sky-400 to-cyan-500 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-sm">
                     {user.email.charAt(0).toUpperCase()}
                   </span>
@@ -146,20 +143,23 @@ export function Sidebar({ user, isOpen = false, onClose }: SidebarProps) {
   return (
     <>
       {/* Sidebar para desktop (siempre visible en lg+) */}
-      <aside className="hidden lg:flex w-64 bg-gradient-to-b from-gray-900 via-gray-900 to-gray-950 text-white p-5 flex-col border-r border-gray-800">
+      <aside className="hidden lg:flex w-64 bg-sidebar text-white p-5 flex-col border-r border-gray-800">
         <SidebarContent />
       </aside>
 
-      {/* Sidebar móvil (slide-over) */}
-      <aside
-        className={`
-          fixed inset-y-0 left-0 z-40 w-72 bg-gradient-to-b from-gray-900 via-gray-900 to-gray-950 text-white p-5 flex flex-col
-          transform transition-transform duration-300 ease-in-out lg:hidden shadow-2xl
-          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-        `}
-      >
-        <SidebarContent isMobile />
-      </aside>
+      {/* Menú móvil: hoja lateral que se cierra arrastrando o tocando fuera (vaul) */}
+      <Drawer.Root open={isOpen} onOpenChange={(abierto) => { if (!abierto) onClose?.() }} direction="left">
+        <Drawer.Portal>
+          <Drawer.Overlay className="fixed inset-0 z-40 bg-black/50 lg:hidden" />
+          <Drawer.Content
+            aria-describedby={undefined}
+            className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col bg-sidebar p-5 text-white shadow-2xl outline-none lg:hidden"
+          >
+            <Drawer.Title className="sr-only">Menú</Drawer.Title>
+            <SidebarContent isMobile />
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
     </>
   )
 }

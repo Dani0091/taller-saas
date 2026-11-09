@@ -5,6 +5,7 @@ import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInte
 import { es } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Clock, User, Car, Download, List, Loader2, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { AccionesPagina } from '@/components/dashboard/acciones-pagina'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { listarCitasAction } from '@/actions/citas'
@@ -166,7 +167,7 @@ export function CalendarioCitas({ onNuevaCita, onEditarCita }: CalendarioCitasPr
                   onClick={() => setVista(v)}
                   className={`min-h-9 sm:min-h-0 px-3 py-1 text-xs font-medium rounded-md transition-colors capitalize
                     ${vista === v
-                      ? 'bg-white text-blue-600 shadow-sm'
+                      ? 'bg-white text-primary shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'}`}
                 >
                   {v === 'mes' ? 'Mes' : v === 'semana' ? 'Semana' : 'Día'}
@@ -221,11 +222,13 @@ export function CalendarioCitas({ onNuevaCita, onEditarCita }: CalendarioCitasPr
                   <Download className="w-3 h-3" />
                 </Button>
               )}
-              {/* Único botón de alta: siempre visible, también si falla la carga */}
+              {/* Único botón de alta, en la cabecera: siempre visible, también si falla la carga; usa el día elegido */}
               {onNuevaCita && (
-                <Button size="sm" className="ml-1 h-8" onClick={() => onNuevaCita(fechaParaNuevaCita)}>
-                  <Plus className="w-4 h-4 mr-1" />Nueva cita
-                </Button>
+                <AccionesPagina>
+                  <Button size="sm" className="gap-1.5" onClick={() => onNuevaCita(fechaParaNuevaCita)}>
+                    <Plus className="size-4" aria-hidden />Nueva cita
+                  </Button>
+                </AccionesPagina>
               )}
             </div>
           </div>
@@ -234,8 +237,8 @@ export function CalendarioCitas({ onNuevaCita, onEditarCita }: CalendarioCitasPr
           {/* Error State */}
           {error ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
-              <p className="text-red-600 font-medium mb-2">Error al cargar citas</p>
+              <AlertCircle className="w-12 h-12 text-destructive mb-4" />
+              <p className="text-destructive font-medium mb-2">Error al cargar citas</p>
               <p className="text-gray-500 text-sm mb-4">{error}</p>
               <Button onClick={() => { setError(null); cargarCitas(); }}>
                 Reintentar
@@ -293,12 +296,12 @@ export function CalendarioCitas({ onNuevaCita, onEditarCita }: CalendarioCitasPr
                       className={`
                         aspect-square p-0.5 sm:p-1 rounded-md sm:rounded-lg text-xs sm:text-sm relative
                         hover:bg-gray-100 transition-colors
-                        ${esHoy ? 'bg-blue-50 font-bold' : ''}
-                        ${esSeleccionado ? 'ring-2 ring-blue-500 bg-blue-100' : ''}
+                        ${esHoy ? 'bg-primary/5 font-bold' : ''}
+                        ${esSeleccionado ? 'ring-2 ring-ring bg-primary/10' : ''}
                         ${vista === 'mes' && !isSameMonth(dia, mesActual) ? 'text-gray-300' : ''}
                       `}
                     >
-                      <span className={esHoy ? 'text-blue-600' : ''}>
+                      <span className={esHoy ? 'text-primary' : ''}>
                         {format(dia, 'd')}
                       </span>
 
