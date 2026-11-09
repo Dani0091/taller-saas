@@ -153,7 +153,7 @@ export function FotoUploader(props: FotoUploaderProps) {
               >
                 <Camera className="w-5 h-5" />
               </button>
-              <button
+              <button aria-label="Eliminar foto"
                 onClick={handleEliminar}
                 className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 active:scale-95 transition-transform"
                 disabled={disabled}

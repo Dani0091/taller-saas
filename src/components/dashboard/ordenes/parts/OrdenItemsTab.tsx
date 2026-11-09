@@ -206,7 +206,7 @@ export function OrdenItemsTab({
                   precio_unitario: nuevoTipo === 'mano_obra' ? tarifaHora : 0
                 })
               }}
-              className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white"
+              className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-ring bg-white"
             >
               <option value="mano_obra">🔧 Mano de obra</option>
               <option value="pieza">⚙️ Recambio / Pieza</option>
@@ -232,7 +232,7 @@ export function OrdenItemsTab({
               <Input
                 value={nuevaLinea.descripcion}
                 onChange={(e) => onNuevaLineaChange({ ...nuevaLinea, descripcion: e.target.value })}
-                placeholder="Ej: Cambio de aceite y filtro"
+                placeholder="Ej.: Cambio de aceite y filtro"
                 className="flex-1"
               />
               <button
@@ -242,7 +242,7 @@ export function OrdenItemsTab({
                 className={`shrink-0 h-10 w-10 flex items-center justify-center rounded-lg border transition-all ${
                   escuchando
                     ? 'bg-red-500 border-red-500 text-white animate-pulse'
-                    : 'bg-white border-gray-300 text-gray-500 hover:border-sky-400 hover:text-sky-600'
+                    : 'bg-white border-gray-300 text-gray-500 hover:border-sky-400 hover:text-primary'
                 }`}
               >
                 {escuchando ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
@@ -268,7 +268,7 @@ export function OrdenItemsTab({
                 <select
                   value={nuevaLinea.cantidad}
                   onChange={(e) => onNuevaLineaChange({ ...nuevaLinea, cantidad: parseFloat(e.target.value) })}
-                  className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white text-center"
+                  className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-ring bg-white text-center"
                 >
                   {FRACCIONES_HORA.map(f => (
                     <option key={f.value} value={f.value}>{f.label}</option>
@@ -278,7 +278,7 @@ export function OrdenItemsTab({
                 <select
                   value={nuevaLinea.cantidad}
                   onChange={(e) => onNuevaLineaChange({ ...nuevaLinea, cantidad: parseFloat(e.target.value) })}
-                  className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white text-center"
+                  className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-ring bg-white text-center"
                 >
                   {CANTIDADES.map(c => (
                     <option key={c.value} value={c.value}>{c.label}</option>
@@ -299,7 +299,7 @@ export function OrdenItemsTab({
                 }}
                 min={0}
                 step={0.01}
-                placeholder="0.00"
+                placeholder="45,00"
                 className="text-right"
               />
             </div>
@@ -314,7 +314,7 @@ export function OrdenItemsTab({
             </div>
           )}
 
-          <Button onClick={onAgregarLinea} className="w-full gap-2 bg-sky-600 hover:bg-sky-700">
+          <Button onClick={onAgregarLinea} className="w-full gap-2 bg-primary hover:bg-primary/90">
             <Plus className="w-4 h-4" />
             Añadir línea
           </Button>
@@ -380,7 +380,7 @@ export function OrdenItemsTab({
                                 value={linea.precio_unitario}
                                 onChange={(value) => onActualizarLinea(linea.id, 'precio_unitario', value ?? 0)}
                                 className="w-20 px-2 py-2 text-sm border border-gray-300 rounded text-center"
-                                placeholder="0.00"
+                                placeholder="45,00"
                                 min={0}
                                 step={0.01}
                               />
@@ -437,7 +437,8 @@ export function OrdenItemsTab({
               </select>
               <input
                 type="text"
-                placeholder="Descripción..."
+                placeholder="Ej.: Filtro de aceite"
+                aria-label="Descripción de la pieza"
                 value={piezaRapida.descripcion}
                 onChange={(e) => onPiezaRapidaChange({ ...piezaRapida, descripcion: e.target.value })}
                 className="flex-1 px-3 py-2.5 text-sm border border-gray-300 rounded-lg bg-white"
@@ -447,7 +448,8 @@ export function OrdenItemsTab({
               <NumberInput
                 value={piezaRapida.cantidad}
                 onChange={(value) => onPiezaRapidaChange({ ...piezaRapida, cantidad: value ?? 1 })}
-                placeholder="Cant"
+                placeholder="1"
+                aria-label="Cantidad"
                 className="text-sm py-2.5"
                 min={1}
                 step={piezaRapida.tipo === 'mano_obra' ? 0.25 : 1}
@@ -455,14 +457,15 @@ export function OrdenItemsTab({
               <NumberInput
                 value={piezaRapida.precio || 0}
                 onChange={(value) => onPiezaRapidaChange({ ...piezaRapida, precio: value ?? 0 })}
-                placeholder="Precio"
+                placeholder="45,00"
+                aria-label="Precio unitario"
                 className="text-sm py-2.5"
                 min={0}
                 step={0.01}
               />
               <Button
                 onClick={onAgregarPiezaRapida}
-                className="gap-1 bg-sky-600 hover:bg-sky-700"
+                className="gap-1 bg-primary hover:bg-primary/90"
               >
                 <Plus className="w-4 h-4" /> Añadir
               </Button>

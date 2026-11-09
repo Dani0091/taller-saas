@@ -386,7 +386,7 @@ export default function FacturaRapidaPage() {
       {/* Header */}
       <div className="flex items-center gap-3">
         <Link href="/dashboard/facturas">
-          <Button variant="outline" size="icon">
+          <Button aria-label="Volver" variant="outline" size="icon">
             <ArrowLeft className="w-4 h-4" />
           </Button>
         </Link>
@@ -443,7 +443,7 @@ export default function FacturaRapidaPage() {
               <div className="col-span-3">
                 <Label className="text-xs">Concepto *</Label>
                 <Input
-                  placeholder="Ej: Diagnóstico"
+                  placeholder="Ej.: Diagnóstico con máquina"
                   value={lineaManual.concepto}
                   onChange={e => setLineaManual(p => ({ ...p, concepto: e.target.value }))}
                   className="h-8 text-sm"
@@ -542,7 +542,7 @@ export default function FacturaRapidaPage() {
       {/* ── BLOQUE 3: Datos del cobro ─────────────────────────────────────── */}
       <Card className="p-4 space-y-4">
         <h2 className="font-semibold text-gray-700 flex items-center gap-2">
-          <Car className="w-4 h-4 text-sky-500" />
+          <Car className="w-4 h-4 text-primary" />
           Datos del cobro
         </h2>
 
@@ -553,7 +553,7 @@ export default function FacturaRapidaPage() {
             <Input
               value={matriculaInput}
               onChange={handleMatriculaChange}
-              placeholder="1234ABC"
+              placeholder="1234 BCD"
               className="font-mono text-lg tracking-widest uppercase pr-8"
               autoComplete="off"
             />
@@ -574,7 +574,7 @@ export default function FacturaRapidaPage() {
                   onClick={() => seleccionarVehiculo(v)}
                   className="w-full text-left px-4 py-2.5 hover:bg-sky-50 border-b border-gray-100 last:border-0 flex items-center gap-3"
                 >
-                  <Car className="w-4 h-4 text-sky-500 flex-shrink-0" />
+                  <Car className="w-4 h-4 text-primary flex-shrink-0" />
                   <div>
                     <p className="font-mono font-bold text-gray-900 text-sm">{v.matricula}</p>
                     {(v.marca || v.modelo) && (
@@ -585,7 +585,7 @@ export default function FacturaRapidaPage() {
               ))}
               <button
                 onClick={() => { setSugerenciasVehiculo([]); setMostrarModal(true) }}
-                className="w-full text-left px-4 py-2.5 text-sky-600 text-sm font-medium hover:bg-sky-50 flex items-center gap-2"
+                className="w-full text-left px-4 py-2.5 text-primary text-sm font-medium hover:bg-sky-50 flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 Dar de alta como nuevo vehículo
@@ -605,7 +605,7 @@ export default function FacturaRapidaPage() {
           {matriculaInput.length >= 4 && !vehiculoSeleccionado && sugerenciasVehiculo.length === 0 && !buscandoVehiculo && (
             <button
               onClick={() => setMostrarModal(true)}
-              className="mt-1 text-xs text-sky-600 underline flex items-center gap-1"
+              className="mt-1 text-xs text-primary underline flex items-center gap-1"
             >
               <Plus className="w-3 h-3" />
               Dar de alta como nuevo vehículo

@@ -128,7 +128,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
             {/* Opción 1: Limpiar caché y recargar (versión estable) */}
             <button
               onClick={this.handleLimpiarYRecargar}
-              className="w-full flex items-center justify-center gap-2 bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors"
+              className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white font-semibold py-3 px-6 rounded-xl transition-colors"
             >
               <RotateCcw className="w-5 h-5" />
               Limpiar caché y cargar versión estable

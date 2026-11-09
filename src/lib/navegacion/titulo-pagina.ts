@@ -11,7 +11,7 @@ export interface TituloPagina {
 }
 
 const TITULOS: Record<string, TituloPagina> = {
-  '/dashboard': { title: 'Dashboard', subtitle: 'Vista general del taller' },
+  '/dashboard': { title: 'Inicio', subtitle: 'Vista general del taller' },
   '/dashboard/ordenes': { title: 'Órdenes', subtitle: 'Gestión de reparaciones' },
   '/dashboard/citas': { title: 'Citas', subtitle: 'Citas, recordatorios e ITV' },
   '/dashboard/clientes': { title: 'Clientes', subtitle: 'Base de datos de clientes' },

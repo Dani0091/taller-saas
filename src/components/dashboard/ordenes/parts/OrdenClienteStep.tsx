@@ -85,7 +85,7 @@ export function OrdenClienteStep({
       <h1 className="text-2xl font-bold text-gray-900 mb-4">Selecciona Cliente</h1>
 
       <div ref={comboRef} className="relative">
-        <div className="flex items-center gap-2 px-3 py-3 border rounded-xl bg-white focus-within:ring-2 focus-within:ring-sky-500 shadow-sm">
+        <div className="flex items-center gap-2 px-3 py-3 border rounded-xl bg-white focus-within:ring-2 focus-within:ring-ring shadow-sm">
           <Search className="w-5 h-5 text-gray-400 shrink-0" />
           <input
             type="text"
@@ -151,7 +151,7 @@ export function OrdenClienteStep({
               {clienteActual.nombre} {clienteActual.primer_apellido || clienteActual.apellidos || ''}
             </p>
             {(clienteActual.nif || clienteActual.telefono) && (
-              <p className="text-xs text-sky-600 mt-0.5">
+              <p className="text-xs text-primary mt-0.5">
                 {[clienteActual.nif, clienteActual.telefono].filter(Boolean).join(' · ')}
               </p>
             )}
@@ -162,7 +162,7 @@ export function OrdenClienteStep({
       <button
         type="button"
         onClick={onToggleFormCliente}
-        className="mt-4 text-sm text-sky-600 hover:text-sky-700 font-medium flex items-center gap-1.5"
+        className="mt-4 text-sm text-primary hover:text-sky-700 font-medium flex items-center gap-1.5"
       >
         <UserPlus className="w-4 h-4" /> Crear nuevo cliente
       </button>
@@ -182,7 +182,7 @@ export function OrdenClienteStep({
               <Input
                 value={nuevoCliente.nombre}
                 onChange={(e) => onNuevoClienteChange({ nombre: e.target.value })}
-                placeholder="Nombre"
+                placeholder="Ej.: Juan"
                 autoFocus
               />
             </div>
@@ -192,7 +192,7 @@ export function OrdenClienteStep({
               <Input
                 value={nuevoCliente.telefono}
                 onChange={(e) => onNuevoClienteChange({ telefono: e.target.value })}
-                placeholder="666 123 456"
+                placeholder="600 123 456"
               />
             </div>
 
@@ -212,7 +212,7 @@ export function OrdenClienteStep({
                     <Input
                       value={nuevoCliente.primer_apellido}
                       onChange={(e) => onNuevoClienteChange({ primer_apellido: e.target.value })}
-                      placeholder="Primer apellido"
+                      placeholder="Ej.: García"
                     />
                   </div>
                   <div>
@@ -220,7 +220,7 @@ export function OrdenClienteStep({
                     <Input
                       value={nuevoCliente.segundo_apellido}
                       onChange={(e) => onNuevoClienteChange({ segundo_apellido: e.target.value })}
-                      placeholder="Segundo apellido"
+                      placeholder="Ej.: López"
                     />
                   </div>
                 </div>
@@ -230,7 +230,7 @@ export function OrdenClienteStep({
                   <Input
                     value={nuevoCliente.nif}
                     onChange={(e) => onNuevoClienteChange({ nif: e.target.value.toUpperCase() })}
-                    placeholder="12345678A"
+                    placeholder="12345678Z"
                     className="font-mono"
                   />
                 </div>
@@ -241,7 +241,7 @@ export function OrdenClienteStep({
                     type="email"
                     value={nuevoCliente.email}
                     onChange={(e) => onNuevoClienteChange({ email: e.target.value })}
-                    placeholder="cliente@email.com"
+                    placeholder="cliente@ejemplo.es"
                   />
                 </div>
               </>
@@ -252,7 +252,7 @@ export function OrdenClienteStep({
               size="xl"
               onClick={onCrearCliente}
               disabled={creandoCliente || !nuevoCliente.nombre.trim()}
-              className="w-full gap-2 bg-blue-600 hover:bg-blue-700"
+              className="w-full gap-2 bg-primary hover:bg-primary/90"
             >
               {creandoCliente ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

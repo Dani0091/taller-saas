@@ -84,7 +84,7 @@ export function SystemStatusWrapper({ children }: Props) {
   if (status === 'checking') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="w-8 h-8 animate-spin text-sky-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -95,7 +95,7 @@ export function SystemStatusWrapper({ children }: Props) {
       <div className="min-h-screen bg-gradient-to-br from-sky-50 to-blue-100 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-10 text-center">
           <div className="w-16 h-16 bg-sky-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Wrench className="w-8 h-8 text-sky-600" />
+            <Wrench className="w-8 h-8 text-primary" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-3">
             Mantenimiento Programado
@@ -158,7 +158,7 @@ export function SystemStatusWrapper({ children }: Props) {
             </div>
             <button
               onClick={handleActualizar}
-              className="w-full flex items-center justify-center gap-2 bg-sky-600 hover:bg-sky-700 text-white font-bold py-3 px-6 rounded-xl transition-colors"
+              className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white font-bold py-3 px-6 rounded-xl transition-colors"
             >
               <RefreshCw className="w-5 h-5" />
               Actualizar ahora (limpiar caché)

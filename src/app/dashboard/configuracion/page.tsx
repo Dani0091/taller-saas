@@ -405,7 +405,7 @@ export default function ConfiguracionPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 animate-spin text-sky-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -415,14 +415,14 @@ export default function ConfiguracionPage() {
       <div className="flex items-center justify-between border-b pb-4">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-sky-100 rounded-lg">
-            <Settings className="w-6 h-6 text-sky-600" />
+            <Settings className="w-6 h-6 text-primary" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Configuración</h1>
             <p className="text-sm text-gray-500">Gestiona los datos de tu taller y preferencias</p>
           </div>
         </div>
-        <Button onClick={handleSubmit} disabled={saving} className="bg-sky-600 hover:bg-sky-700">
+        <Button onClick={handleSubmit} disabled={saving} className="bg-primary hover:bg-primary/90">
           {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
           Guardar cambios
         </Button>
@@ -433,7 +433,7 @@ export default function ConfiguracionPage() {
           {/* Datos Generales */}
           <Card className="p-6">
             <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
-              <ImageIcon className="w-5 h-5 text-sky-500" />
+              <ImageIcon className="w-5 h-5 text-primary" />
               Identidad del Taller
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -474,7 +474,7 @@ export default function ConfiguracionPage() {
                     name="direccion"
                     value={formData?.direccion ?? ''}
                     onChange={handleChange}
-                    placeholder="C/ Ejemplo, 123"
+                    placeholder="Ej.: C/ Mayor, 12"
                   />
                 </div>
                 <div className="grid grid-cols-3 gap-2">
@@ -522,7 +522,8 @@ export default function ConfiguracionPage() {
                         setLogoPreview(null)
                         setFormData(prev => prev ? { ...prev, logo_url: null } : null)
                       }}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      aria-label="Quitar logo"
+                      className="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 sm:opacity-0 sm:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -546,7 +547,7 @@ export default function ConfiguracionPage() {
           <Card className="p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-semibold flex items-center gap-2">
-                <Users className="w-5 h-5 text-sky-500" />
+                <Users className="w-5 h-5 text-primary" />
                 Tarifas por Tipo de Cliente
               </h2>
             </div>
@@ -565,7 +566,7 @@ export default function ConfiguracionPage() {
                           <p className="text-xs text-gray-500">{tipo.desc}</p>
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm" onClick={() => setTarifaEditando(isEditing ? null : tipo.value)}>
+                      <Button variant="ghost" size="sm" onClick={() => setTarifaEditando(isEditing ? null : tipo.value)} aria-label={isEditing ? `Cerrar tarifa ${tipo.label}` : `Editar tarifa ${tipo.label}`}>
                         {isEditing ? <X className="w-4 h-4" /> : <Edit2 className="w-4 h-4 text-gray-400" />}
                       </Button>
                     </div>
@@ -614,7 +615,7 @@ export default function ConfiguracionPage() {
                     </div>
                     {isEditing && (
                       <Button
-                        className="w-full mt-3 h-8 bg-sky-600"
+                        className="w-full mt-3 h-8 bg-primary"
                         size="sm"
                         disabled={guardandoTarifa === (tarifa.id || 'nueva')}
                         onClick={() => handleGuardarTarifa(tarifa)}
@@ -631,7 +632,7 @@ export default function ConfiguracionPage() {
           {/* Personalización de Facturas */}
           <Card className="p-6">
             <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
-              <FileText className="w-5 h-5 text-sky-500" />
+              <FileText className="w-5 h-5 text-primary" />
               Personalización de Facturas
             </h2>
             <div className="space-y-4">
@@ -726,10 +727,10 @@ export default function ConfiguracionPage() {
           <Card className="p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-semibold flex items-center gap-2">
-                <FileText className="w-5 h-5 text-sky-500" />
+                <FileText className="w-5 h-5 text-primary" />
                 Series
               </h2>
-              <Button size="sm" variant="outline" onClick={() => { setMostrarFormSerie(true); setSerieEditando(null); setFormSerie(SERIE_DEFAULTS); }}>
+              <Button aria-label="Nueva serie" size="sm" variant="outline" onClick={() => { setMostrarFormSerie(true); setSerieEditando(null); setFormSerie(SERIE_DEFAULTS); }}>
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
@@ -745,18 +746,18 @@ export default function ConfiguracionPage() {
                       )}
                     </div>
                     <p className="text-xs text-gray-500">
-                      Prefijo: <span className="font-mono font-bold text-sky-600">{serie.prefijo}</span>
+                      Prefijo: <span className="font-mono font-bold text-primary">{serie.prefijo}</span>
                       {' | '}Último Nº: <span className="font-mono font-bold">{serie.ultimo_numero}</span>
                       {' → '}Siguiente: <span className="font-mono font-bold text-emerald-600">{serie.prefijo}{serie.ultimo_numero + 1}</span>
                     </p>
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     {!serie.es_predeterminada && (
-                      <Button variant="ghost" size="sm" title="Establecer como predeterminada" onClick={() => handleSetPredeterminada(serie)}>
+                      <Button variant="ghost" size="sm" title="Establecer como predeterminada" aria-label={`Establecer la serie ${serie.prefijo} como predeterminada`} onClick={() => handleSetPredeterminada(serie)}>
                         <Star className="w-3 h-3 text-amber-400" />
                       </Button>
                     )}
-                    <Button variant="ghost" size="sm" onClick={() => { setSerieEditando(serie); setFormSerie(serie); setMostrarFormSerie(true); }}>
+                    <Button aria-label={`Editar serie ${serie.prefijo}`} variant="ghost" size="sm" onClick={() => { setSerieEditando(serie); setFormSerie(serie); setMostrarFormSerie(true); }}>
                       <Edit2 className="w-3 h-3" />
                     </Button>
                   </div>
@@ -768,12 +769,12 @@ export default function ConfiguracionPage() {
               <form onSubmit={handleGuardarSerie} className="mt-4 p-4 border rounded-lg bg-gray-50 space-y-3">
                 <div className="space-y-2">
                   <Label className="text-xs">Nombre de Serie</Label>
-                  <Input value={formSerie.nombre} onChange={e => setFormSerie({...formSerie, nombre: e.target.value})} placeholder="Ej: Facturas Ordinarias" className="h-8 text-sm" />
+                  <Input value={formSerie.nombre} onChange={e => setFormSerie({...formSerie, nombre: e.target.value})} placeholder="Ej.: Facturas ordinarias" className="h-8 text-sm" />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-2">
                     <Label className="text-xs">Prefijo</Label>
-                    <Input value={formSerie.prefijo} onChange={e => setFormSerie({...formSerie, prefijo: e.target.value})} placeholder="F" className="h-8 text-sm uppercase" />
+                    <Input value={formSerie.prefijo} onChange={e => setFormSerie({...formSerie, prefijo: e.target.value})} placeholder="Ej.: FA" className="h-8 text-sm uppercase" />
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs">Último Nº</Label>
@@ -782,7 +783,7 @@ export default function ConfiguracionPage() {
                 </div>
                 <div className="flex gap-2 pt-2">
                   <Button type="button" size="sm" variant="outline" className="flex-1" onClick={() => setMostrarFormSerie(false)}>Cancelar</Button>
-                  <Button type="submit" size="sm" className="flex-1 bg-sky-600">
+                  <Button type="submit" size="sm" className="flex-1 bg-primary">
                     {serieEditando ? 'Actualizar' : 'Crear'} Serie
                   </Button>
                 </div>

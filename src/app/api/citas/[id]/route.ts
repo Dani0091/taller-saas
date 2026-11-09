@@ -9,7 +9,8 @@
 import { NextRequest, NextResponse, after } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
-import { fechaFinParaGuardar } from '@/lib/citas/fecha-fin'
+import { fechaFinParaGuardar, finAnteriorAInicio, ERROR_FIN_ANTERIOR } from '@/lib/citas/fecha-fin'
+import { validarVinculosCita } from '@/lib/citas/validar-vinculos'
 import { leerJson } from '@/lib/api/leer-json'
 import { sincronizarCitaEnGoogle, borrarCitaDeGoogle } from '@/lib/google/sincronizar-cita'
 
@@ -75,7 +76,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // Verificar que la cita pertenece al taller
     const { data: citaExistente } = await supabase
       .from('citas')
-      .select('id')
+      .select('id, fecha_inicio, fecha_fin')
       .eq('id', id)
       .eq('taller_id', tallerId)
       .maybeSingle()
@@ -98,6 +99,18 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       if (body[campo] !== undefined) {
         updateData[campo] = body[campo]
       }
+    }
+
+    // Inicio y fin finales (lo que llega o lo que ya había)
+    const inicioFinal = 'fecha_inicio' in updateData ? updateData.fecha_inicio : citaExistente.fecha_inicio
+    const finFinal = 'fecha_fin' in updateData ? updateData.fecha_fin : citaExistente.fecha_fin
+    if (finAnteriorAInicio(inicioFinal, finFinal)) {
+      return NextResponse.json({ error: ERROR_FIN_ANTERIOR }, { status: 400 })
+    }
+
+    const errorVinculo = await validarVinculosCita(supabase, tallerId, updateData)
+    if (errorVinculo) {
+      return NextResponse.json({ error: errorVinculo }, { status: 400 })
     }
 
     // Si se fija el inicio sin fin en una cita con horario, dura 1 hora.

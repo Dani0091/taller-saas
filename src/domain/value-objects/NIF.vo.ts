@@ -13,6 +13,12 @@
 
 import { ValidationError } from '@/domain/errors'
 
+/**
+ * Valor interno para clientes sin NIF (la entidad exige uno). No es un NIF
+ * real: no se muestra ni se guarda; fuera del dominio se ve como vacío.
+ */
+export const NIF_SIN_INFORMAR = '00000000T'
+
 export class NIF {
   private readonly value: string
 

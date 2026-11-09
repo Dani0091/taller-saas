@@ -88,6 +88,19 @@ test('todas las páginas, enlaces y botones', async ({ page, baseURL }) => {
     await page.waitForLoadState('networkidle')
     expect(page.url(), `${ruta} redirige al login`).not.toContain('/auth/login')
 
+    // Responsive: la página no debe ser más ancha que la pantalla
+    const ancho = await page.evaluate(() => ({ pagina: document.documentElement.scrollWidth, pantalla: window.innerWidth }))
+    if (ancho.pagina > ancho.pantalla + 1) {
+      errores.push({ pagina: nombre, tipo: 'desborde horizontal', detalle: `${ancho.pagina}px en pantalla de ${ancho.pantalla}px` })
+    }
+    // En móvil, objetivos táctiles de al menos 32 px
+    if (ancho.pantalla < 768) {
+      const pequenos = await page.locator('button:visible, a[href]:visible, select:visible, input:visible').evaluateAll((els) =>
+        els.filter((el) => { const r = el.getBoundingClientRect(); return r.width > 0 && (r.width < 32 || r.height < 32) && (el as HTMLInputElement).type !== 'checkbox' })
+          .map((el) => ((el.getAttribute('aria-label') || el.textContent || el.getAttribute('placeholder') || el.tagName).replace(/\s+/g, ' ').trim()).slice(0, 40)))
+      for (const p of pequenos) avisos.push({ pagina: nombre, tipo: 'objetivo táctil < 32px', detalle: `"${p}"` })
+    }
+
     for (const href of await page.locator('a[href^="/"]').evaluateAll((as) => as.map((a) => a.getAttribute('href')!))) {
       enlacesVistos.add(href.split('#')[0])
     }
@@ -135,17 +148,18 @@ test('todas las páginas, enlaces y botones', async ({ page, baseURL }) => {
   await publico.dispose()
 })
 
-test.afterAll(() => {
+test.afterAll(({}, testInfo) => {
   mkdirSync('test-results', { recursive: true })
+  const sufijo = testInfo.project.name === 'recorrido' ? '' : `-${testInfo.project.name.replace(/^recorrido-/, '')}`
   const md = [
-    '# Recorrido de interfaz (local, QA A)', '',
+    `# Recorrido de interfaz (local, QA A, ${testInfo.project.name})`, '',
     '| Página | Botones visibles | Pulsados | Enlaces acumulados |', '|---|---|---|---|',
     ...resumen.map((r) => `| ${r.pagina} | ${r.botones} | ${r.pulsados} | ${r.enlaces} |`), '',
     `## Errores (${errores.length})`, ...errores.map((e) => `- **${e.pagina}** · ${e.tipo} · ${e.detalle}`), '',
     `## Para revisar (${avisos.length})`, ...avisos.map((a) => `- **${a.pagina}** · ${a.tipo} · ${a.detalle}`),
   ].join('\n')
-  writeFileSync('test-results/recorrido.md', md)
-  writeFileSync('test-results/recorrido.json', JSON.stringify({ resumen, errores, avisos }, null, 2))
+  writeFileSync(`test-results/recorrido${sufijo}.md`, md)
+  writeFileSync(`test-results/recorrido${sufijo}.json`, JSON.stringify({ resumen, errores, avisos }, null, 2))
 })
 
 test('sin errores en el recorrido', () => {

@@ -85,10 +85,13 @@ export const FiltrosFacturaSchema = z.object({
   clienteId: z.string().uuid().optional(),
   ordenId: z.string().uuid().optional(),
   estadoVerifactu: z.nativeEnum(EstadoVerifactu).optional(),
-  fechaDesde: z.string().datetime().optional(),
-  fechaHasta: z.string().datetime().optional(),
+  // Día (AAAA-MM-DD, fecha_emision es DATE) o instante ISO
+  fechaDesde: z.union([z.string().date(), z.string().datetime()]).optional(),
+  fechaHasta: z.union([z.string().date(), z.string().datetime()]).optional(),
   vencidas: z.boolean().optional(),
-  busqueda: z.string().optional(),
+  busqueda: z.string().max(100).optional(),
+  /** Prefijo de la serie (FA, FS, RS…): numero_factura empieza por "PREFIJO-" */
+  serie: z.string().regex(/^[A-Za-z0-9]{1,10}$/).optional(),
   sortBy: z.enum(['recientes', 'antiguos', 'fecha_emision']).default('recientes'),
   page: z.number().int().positive().default(1),
   pageSize: z.number().int().positive().max(100).default(20)
@@ -148,6 +151,11 @@ export interface LineaFacturaResponseDTO {
 /**
  * DTO con los datos mínimos del vehículo asociado a una factura
  */
+export interface ClienteInfoDTO {
+  nombre: string
+  nif?: string
+}
+
 export interface VehiculoInfoDTO {
   id: string
   matricula: string
@@ -169,6 +177,9 @@ export interface FacturaResponseDTO {
   clienteNIF?: string
   vehiculoId?: string
   vehiculo?: VehiculoInfoDTO
+  /** Matrícula a mostrar: la del vehículo o la escrita a mano */
+  matricula?: string
+  cliente?: ClienteInfoDTO
   fechaEmision: string
   fechaVencimiento?: string
   lineas: LineaFacturaResponseDTO[]
@@ -205,6 +216,8 @@ export interface FacturaListadoDTO {
   clienteNIF?: string
   vehiculoId?: string
   vehiculo?: VehiculoInfoDTO
+  matricula?: string
+  cliente?: ClienteInfoDTO
   fechaEmision: string
   fechaVencimiento?: string
   total: number

@@ -173,7 +173,7 @@ export function OrdenFotosTab({
                 <Input
                   value={vinInput}
                   onChange={(e) => setVinInput(e.target.value.toUpperCase().slice(0, 17))}
-                  placeholder="WVWZZZ1KZBW123456"
+                  placeholder="VSSZZZKJZLR012345"
                   maxLength={17}
                   className="font-mono uppercase flex-1"
                 />
@@ -183,7 +183,7 @@ export function OrdenFotosTab({
                     size="sm"
                     onClick={handleGuardarVin}
                     disabled={guardandoVin}
-                    className="bg-sky-600 hover:bg-sky-700 shrink-0"
+                    className="bg-primary hover:bg-primary/90 shrink-0"
                   >
                     {guardandoVin ? 'Guardando...' : 'Guardar'}
                   </Button>

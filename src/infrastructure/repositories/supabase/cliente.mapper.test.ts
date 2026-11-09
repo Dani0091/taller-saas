@@ -46,4 +46,18 @@ describe('ClienteMapper.toDomain — NIF', () => {
     expect(ClienteMapper.toDomain(base(undefined)).toPlainObject().nif).toBe('00000000T')
     expect(ClienteMapper.toDomain(base('   ')).toPlainObject().nif).toBe('00000000T')
   })
+
+  it('cliente sin NIF: no se muestra un NIF inventado ni se guarda 00000000T', () => {
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const c = ClienteMapper.toDomain(base(undefined))
+    expect(c.toDTO().nif).toBe('')
+    expect(c.toDTO().nifMasked).toBe('')
+    expect(ClienteMapper.toPersistence(c).nif).toBeUndefined()
+  })
+
+  it('cliente con NIF real: igual que siempre', () => {
+    const c = ClienteMapper.toDomain(base('12345678Z'))
+    expect(c.toDTO().nif).toBe('12345678Z')
+    expect(ClienteMapper.toPersistence(c).nif).toBe('12345678Z')
+  })
 })

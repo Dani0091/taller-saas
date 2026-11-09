@@ -51,21 +51,23 @@
   --card-foreground: #0f172a;
   --popover: #ffffff;
   --popover-foreground: #0f172a;
-  /* Primary - Professional Blue */
-  --primary: #0ea5e9;
+  /* Primary - azul de la marca con contraste AA sobre blanco (5,9:1).
+     Antes #0ea5e9: 2,8:1 con texto blanco. */
+  --primary: #0369a1;
   --primary-foreground: #ffffff;
   /* Secondary - Deep Navy */
   --secondary: #0f172a;
   --secondary-foreground: #ffffff;
   --muted: #f1f5f9;
   --muted-foreground: #64748b;
-  /* Accent - Teal/Cyan */
-  --accent: #14b8a6;
-  --accent-foreground: #ffffff;
+  /* Accent - superficie neutra de hover/selección (botones outline y ghost,
+     menús). Antes teal con texto blanco: 2,5:1. */
+  --accent: #f1f5f9;
+  --accent-foreground: #0f172a;
   --destructive: #dc2626;
   --border: #e2e8f0;
   --input: #e2e8f0;
-  --ring: #0ea5e9;
+  --ring: #0284c7;
   /* Chart colors - Cool tones */
   --chart-1: #0ea5e9;
   --chart-2: #14b8a6;

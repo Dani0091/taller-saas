@@ -8,7 +8,8 @@
 import { NextRequest, NextResponse, after } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getAuthenticatedUser, isAuthError, authErrorResponse } from '@/lib/auth/middleware'
-import { fechaFinParaGuardar } from '@/lib/citas/fecha-fin'
+import { fechaFinParaGuardar, finAnteriorAInicio, ERROR_FIN_ANTERIOR } from '@/lib/citas/fecha-fin'
+import { validarVinculosCita } from '@/lib/citas/validar-vinculos'
 import { leerJson } from '@/lib/api/leer-json'
 import { sincronizarCitaEnGoogle } from '@/lib/google/sincronizar-cita'
 
@@ -94,6 +95,15 @@ export async function POST(request: NextRequest) {
         { error: 'Título y fecha de inicio son requeridos' },
         { status: 400 }
       )
+    }
+
+    if (finAnteriorAInicio(body.fecha_inicio, body.fecha_fin)) {
+      return NextResponse.json({ error: ERROR_FIN_ANTERIOR }, { status: 400 })
+    }
+
+    const errorVinculo = await validarVinculosCita(supabase, tallerId, body)
+    if (errorVinculo) {
+      return NextResponse.json({ error: errorVinculo }, { status: 400 })
     }
 
     // Obtener usuario_id

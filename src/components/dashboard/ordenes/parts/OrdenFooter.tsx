@@ -125,7 +125,7 @@ export function OrdenFooter({
                   readOnly
                   className="flex-1 text-xs bg-white border rounded-lg px-2 py-1.5 font-mono truncate"
                 />
-                <Button size="sm" variant="outline" onClick={onCopiarEnlace} className="gap-1">
+                <Button aria-label="Copiar enlace del presupuesto" size="sm" variant="outline" onClick={onCopiarEnlace} className="gap-1">
                   <Copy className="w-3 h-3" />
                 </Button>
               </div>
@@ -186,7 +186,7 @@ export function OrdenFooter({
           <select
             value={serieSeleccionada || ''}
             onChange={(e) => onSerieChange?.(e.target.value)}
-            className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-sky-500 bg-white text-sm"
+            className="w-full px-3 py-2.5 border rounded-xl focus:ring-2 focus:ring-ring bg-white text-sm"
           >
             {!serieSeleccionada && <option value="">Serie configurada del taller</option>}
             {seriesDisponibles.map(s => (
@@ -256,7 +256,7 @@ export function OrdenFooter({
         <Button
           onClick={onGuardar}
           disabled={guardando || !clienteId || estado === 'facturado'}
-          className="flex-1 gap-2 py-3 bg-sky-600 hover:bg-sky-700"
+          className="flex-1 gap-2 py-3 bg-primary hover:bg-primary/90"
         >
           {guardando ? (
             <Loader2 className="w-4 h-4 animate-spin" />

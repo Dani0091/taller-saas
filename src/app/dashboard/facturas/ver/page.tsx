@@ -187,7 +187,7 @@ export default function VerFacturaPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-sky-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -207,7 +207,7 @@ export default function VerFacturaPage() {
         <div className="flex items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-3">
             <Link href="/dashboard/facturas">
-              <Button variant="ghost" size="icon">
+              <Button aria-label="Volver" variant="ghost" size="icon">
                 <ArrowLeft className="w-5 h-5" />
               </Button>
             </Link>
@@ -276,7 +276,7 @@ export default function VerFacturaPage() {
         <Card className="p-6 md:p-8 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
             {/* Cliente */}
-            <div className="border-l-4 border-sky-600 pl-4">
+            <div className="border-l-4 border-primary pl-4">
               <h3 className="font-semibold text-gray-700 mb-2 text-sm uppercase">Facturado a:</h3>
               <p className="font-semibold text-gray-900 text-lg">{factura.cliente?.nombre}</p>
               <p className="text-gray-600 font-mono">{factura.cliente?.nif}</p>
@@ -296,7 +296,7 @@ export default function VerFacturaPage() {
                 <h3 className="font-semibold text-gray-700 mb-2 text-sm uppercase">
                   🚗 Vehículo
                 </h3>
-                <p className="font-mono font-bold text-sky-600 text-xl tracking-wider">
+                <p className="font-mono font-bold text-primary text-xl tracking-wider">
                   {factura.vehiculo.matricula}
                 </p>
                 {(factura.vehiculo.marca || factura.vehiculo.modelo) && (
@@ -391,7 +391,7 @@ export default function VerFacturaPage() {
 
           {/* NOTAS */}
           {factura.notas_internas && (
-            <div className="mt-4 p-3 bg-yellow-50 rounded border-l-4 border-yellow-400">
+            <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
               <p className="text-xs text-gray-600 uppercase font-semibold mb-1">Notas Internas:</p>
               <p className="text-sm text-gray-700">{factura.notas_internas}</p>
             </div>

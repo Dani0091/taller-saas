@@ -69,7 +69,7 @@ export function ListadoClientes({ clientes, onActualizar, sortBy = 'recientes', 
         <select
           value={sortBy}
           onChange={(e) => onSortByChange?.(e.target.value as 'recientes' | 'antiguos' | 'alfabetico')}
-          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent text-sm"
+          className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-sm"
         >
           <option value="recientes">Más recientes</option>
           <option value="antiguos">Más antiguos</option>
@@ -77,7 +77,7 @@ export function ListadoClientes({ clientes, onActualizar, sortBy = 'recientes', 
         </select>
         <Button
           onClick={() => setMostrarFormulario(true)}
-          className="gap-2 bg-blue-600 hover:bg-blue-700"
+          className="gap-2 bg-primary hover:bg-primary/90"
         >
           <Plus className="w-4 h-4" />
           Nuevo cliente
@@ -100,14 +100,19 @@ export function ListadoClientes({ clientes, onActualizar, sortBy = 'recientes', 
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-lg truncate">{cliente.nombre}</h3>
                   <div className="grid grid-cols-2 gap-2 mt-2 text-sm text-gray-600">
-                    {cliente.nif && <div>📌 {cliente.nif}</div>}
+                    {cliente.nif && (
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-semibold text-gray-400">NIF</span>
+                        <span className="tabular-nums">{cliente.nif}</span>
+                      </div>
+                    )}
                     {cliente.telefono && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
                           window.location.href = `tel:${cliente.telefono}`
                         }}
-                        className="flex items-center gap-1 text-blue-600 hover:underline"
+                        className="flex items-center gap-1 min-h-9 sm:min-h-0 text-blue-600 hover:underline"
                       >
                         <Phone className="w-4 h-4" /> {cliente.telefono}
                       </button>
@@ -118,7 +123,7 @@ export function ListadoClientes({ clientes, onActualizar, sortBy = 'recientes', 
                           e.stopPropagation()
                           window.location.href = `mailto:${cliente.email}`
                         }}
-                        className="flex items-center gap-1 text-blue-600 hover:underline col-span-2"
+                        className="flex items-center gap-1 min-h-9 sm:min-h-0 text-blue-600 hover:underline col-span-2"
                       >
                         <Mail className="w-4 h-4" /> {cliente.email}
                       </button>
@@ -139,8 +144,9 @@ export function ListadoClientes({ clientes, onActualizar, sortBy = 'recientes', 
                       e.stopPropagation()
                       setClienteEditando(cliente.id)
                     }}
+                    aria-label={`Editar cliente ${cliente.nombre}`}
                   >
-                    <Edit className="w-4 h-4" />
+                    <Edit className="w-4 h-4" aria-hidden />
                   </Button>
                   <Button
                     size="sm"
@@ -151,8 +157,9 @@ export function ListadoClientes({ clientes, onActualizar, sortBy = 'recientes', 
                       handleEliminar(cliente.id)
                     }}
                     disabled={cargando}
+                    aria-label={`Eliminar cliente ${cliente.nombre}`}
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4" aria-hidden />
                   </Button>
                 </div>
               </div>

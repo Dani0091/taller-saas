@@ -3,8 +3,8 @@ import { tituloDePagina } from './titulo-pagina'
 
 describe('tituloDePagina', () => {
   it.each([
-    ['/dashboard', 'Dashboard'],
-    ['/dashboard/', 'Dashboard'],
+    ['/dashboard', 'Inicio'],
+    ['/dashboard/', 'Inicio'],
     ['/dashboard/citas', 'Citas'],
     ['/dashboard/clientes', 'Clientes'],
     ['/dashboard/clientes/nuevo', 'Nuevo cliente'],
@@ -18,11 +18,11 @@ describe('tituloDePagina', () => {
   })
 
   it('no confunde prefijos parciales (/dashboard/facturasx)', () => {
-    expect(tituloDePagina('/dashboard/facturasx').title).toBe('Dashboard')
+    expect(tituloDePagina('/dashboard/facturasx').title).toBe('Inicio')
   })
 
-  it('ruta nula o desconocida → Dashboard', () => {
-    expect(tituloDePagina(null).title).toBe('Dashboard')
-    expect(tituloDePagina('/otra').title).toBe('Dashboard')
+  it('ruta nula o desconocida → Inicio', () => {
+    expect(tituloDePagina(null).title).toBe('Inicio')
+    expect(tituloDePagina('/otra').title).toBe('Inicio')
   })
 })

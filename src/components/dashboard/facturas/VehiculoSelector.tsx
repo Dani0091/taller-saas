@@ -106,7 +106,7 @@ export function VehiculoSelector({ value, onChange, clienteId, label = 'Vehícul
           <Search className="absolute right-2 top-2.5 w-4 h-4 text-gray-300" />
         )}
         {value && (
-          <button
+          <button aria-label="Quitar vehículo"
             type="button"
             onClick={limpiar}
             className="absolute right-2 top-2.5 text-gray-400 hover:text-red-500"
@@ -126,7 +126,7 @@ export function VehiculoSelector({ value, onChange, clienteId, label = 'Vehícul
               onClick={() => seleccionar(v)}
               className="w-full text-left px-4 py-2.5 hover:bg-sky-50 border-b border-gray-100 last:border-0 flex items-center gap-3"
             >
-              <Car className="w-4 h-4 text-sky-500 flex-shrink-0" />
+              <Car className="w-4 h-4 text-primary flex-shrink-0" />
               <div>
                 <p className="font-mono font-bold text-gray-900 text-sm">{v.matricula}</p>
                 {(v.marca || v.modelo) && (
@@ -138,7 +138,7 @@ export function VehiculoSelector({ value, onChange, clienteId, label = 'Vehícul
           <button
             type="button"
             onClick={() => { setSugerencias([]); setMostrarModal(true) }}
-            className="w-full text-left px-4 py-2.5 text-sky-600 text-sm font-medium hover:bg-sky-50 flex items-center gap-2"
+            className="w-full text-left px-4 py-2.5 text-primary text-sm font-medium hover:bg-sky-50 flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
             Dar de alta como nuevo vehículo
@@ -161,7 +161,7 @@ export function VehiculoSelector({ value, onChange, clienteId, label = 'Vehícul
         <button
           type="button"
           onClick={() => setMostrarModal(true)}
-          className="mt-1 text-xs text-sky-600 underline flex items-center gap-1"
+          className="mt-1 text-xs text-primary underline flex items-center gap-1"
         >
           <Plus className="w-3 h-3" />
           Dar de alta como nuevo vehículo

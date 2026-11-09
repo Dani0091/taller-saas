@@ -9,6 +9,7 @@
 import { ClienteEntity } from '@/domain/entities'
 import { NIF, Email, Telefono, IBAN } from '@/domain/value-objects'
 import { EstadoCliente, TipoCliente, FormaPago } from '@/domain/types'
+import { NIF_SIN_INFORMAR } from '@/domain/value-objects/NIF.vo'
 
 /**
  * Tipo de registro de cliente desde Supabase (ESQUEMA REAL)
@@ -71,14 +72,14 @@ export class ClienteMapper {
     // Procesar Value Objects (con protección para datos legacy)
     let nif: NIF
     try {
-      nif = NIF.create(record.nif || '00000000T')
+      nif = NIF.create(record.nif || NIF_SIN_INFORMAR)
     } catch {
       // NIF histórico que no supera la validación (p. ej. una matrícula o un
       // teléfono en el campo). Se conserva tal cual: antes se sustituía por
       // 00000000T, que el listado mostraba y toPersistence habría guardado.
       // El log no incluye el valor (dato personal) ni la traza.
       console.warn(`⚠️ NIF no válido en cliente ${record.id}: se conserva el valor original`)
-      nif = record.nif?.trim() ? NIF.createUnsafe(record.nif) : NIF.create('00000000T')
+      nif = record.nif?.trim() ? NIF.createUnsafe(record.nif) : NIF.create(NIF_SIN_INFORMAR)
     }
 
     let email: Email | undefined
@@ -138,7 +139,8 @@ export class ClienteMapper {
       taller_id: plain.taller_id,
       nombre: plain.nombre,
       apellidos: plain.apellidos,
-      nif: plain.nif,
+      // Sin NIF se guarda vacío, nunca el valor interno
+      nif: plain.nif === NIF_SIN_INFORMAR ? undefined : plain.nif,
       email: plain.email,
       telefono: plain.telefono,
       direccion: plain.direccion,

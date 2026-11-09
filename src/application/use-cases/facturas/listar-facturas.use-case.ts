@@ -43,6 +43,7 @@ export class ListarFacturasUseCase {
         : undefined,
       vencidas: filtrosValidados.vencidas,
       busqueda: filtrosValidados.busqueda,
+      serie: filtrosValidados.serie,
       sortBy: filtrosValidados.sortBy
     }
 
@@ -66,6 +67,8 @@ export class ListarFacturasUseCase {
         clienteNIF: dto.clienteNIF,
         vehiculoId: dto.vehiculoId,
         vehiculo: dto.vehiculo,
+        matricula: dto.matricula,
+        cliente: dto.cliente,
         fechaEmision: dto.fechaEmision,
         fechaVencimiento: dto.fechaVencimiento,
         total: dto.total,

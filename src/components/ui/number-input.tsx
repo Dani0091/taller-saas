@@ -41,7 +41,7 @@ export function NumberInput({
   min,
   max,
   step = 1,
-  placeholder = '0.00',
+  placeholder = '',
   className,
   disabled = false,
   allowEmpty = true,

@@ -103,7 +103,7 @@ export default function VehiculosPage() {
             <Link href="/dashboard/vehiculos/nuevo">
               <Button
                 size="sm"
-                className="gap-2 bg-sky-600 hover:bg-sky-700"
+                className="gap-2 bg-primary hover:bg-primary/90"
               >
                 <Plus className="w-4 h-4" />
                 <span className="hidden sm:inline">Nuevo</span>
@@ -113,6 +113,8 @@ export default function VehiculosPage() {
               size="sm"
               variant="ghost"
               onClick={() => setMostrarMenu(!mostrarMenu)}
+              aria-label="Filtrar por combustible"
+              aria-expanded={mostrarMenu}
             >
               <Menu className="w-4 h-4" />
             </Button>
@@ -133,7 +135,7 @@ export default function VehiculosPage() {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as 'recientes' | 'antiguos')}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-transparent text-sm"
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent text-sm"
           >
             <option value="recientes">Más recientes</option>
             <option value="antiguos">Más antiguos</option>
@@ -154,7 +156,7 @@ export default function VehiculosPage() {
                   }}
                   className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
                     filtroActivo === filtro
-                      ? 'bg-sky-600 text-white'
+                      ? 'bg-primary text-white'
                       : 'bg-white text-gray-700 border border-gray-300'
                   }`}
                 >
@@ -179,7 +181,7 @@ export default function VehiculosPage() {
           </div>
         ) : loading ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-sky-600" />
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : vehiculosFiltrados.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
@@ -202,7 +204,7 @@ export default function VehiculosPage() {
                 <Card
                   key={vehiculo.id}
                   onClick={() => setVehiculoSeleccionado(vehiculo.id)}
-                  className="p-4 hover:shadow-md transition-shadow cursor-pointer border-l-4 active:bg-gray-100 border-l-sky-500"
+                  className="p-4 hover:shadow-md transition-shadow cursor-pointer active:bg-gray-100"
                 >
                   <div className="flex items-start justify-between gap-3 mb-2">
                     <div className="flex-1 min-w-0">

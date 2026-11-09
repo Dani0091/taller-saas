@@ -32,7 +32,7 @@ export function DecimalInput({
   min = 0,
   max,
   step = 0.01,
-  placeholder = '0.00',
+  placeholder = '',
   className,
   disabled = false,
   prefix,

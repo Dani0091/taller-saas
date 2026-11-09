@@ -84,7 +84,7 @@ export default function NuevaPasswordPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-500 to-sky-700 p-4">
         <Card className="w-full max-w-md p-8 text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-sky-600" />
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
           <p className="text-gray-600">Verificando enlace...</p>
         </Card>
       </div>
@@ -118,7 +118,7 @@ export default function NuevaPasswordPage() {
       <Card className="w-full max-w-md p-8">
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-sky-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Lock className="w-8 h-8 text-sky-600" />
+            <Lock className="w-8 h-8 text-primary" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
             Nueva contraseña
@@ -173,7 +173,7 @@ export default function NuevaPasswordPage() {
           <Button
             type="submit"
             disabled={loading}
-            className="w-full bg-sky-600 hover:bg-sky-700"
+            className="w-full bg-primary hover:bg-primary/90"
           >
             {loading ? (
               <>

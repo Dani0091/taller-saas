@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { porcentajeIva } from '@/lib/facturas/iva'
 
 /**
  * Traduce códigos de método de pago a texto completo
@@ -177,13 +178,13 @@ export async function GET(request: NextRequest) {
         cantidad: l.cantidad,
         precioUnitario: l.precio_unitario,
         baseImponible: l.base_imponible || (l.cantidad * l.precio_unitario),
-        ivaPercentaje: l.iva_porcentaje || 21,
+        ivaPercentaje: porcentajeIva(l.iva_porcentaje),
         ivaImporte: l.iva_importe || 0,
         total: l.total_linea || l.importe_total || (l.cantidad * l.precio_unitario),
         tipoLinea: l.tipo_linea || 'servicio',
       })),
       baseImponible: factura.base_imponible,
-      ivaPercentaje: factura.iva_porcentaje || 21,
+      ivaPercentaje: porcentajeIva(factura.iva_porcentaje),
       cuotaIVA: factura.iva,
       descuento: factura.descuento_global || 0,
       envio: 0,

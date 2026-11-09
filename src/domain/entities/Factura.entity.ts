@@ -27,6 +27,12 @@ export interface VehiculoInfo {
   modelo?: string
 }
 
+/** Datos del cliente para listados (join a clientes) */
+export interface ClienteInfo {
+  nombre: string
+  nif?: string
+}
+
 export interface FacturaProps {
   id: string
   tallerId: string
@@ -38,6 +44,9 @@ export interface FacturaProps {
   clienteNIF?: NIF
   vehiculoId?: string
   vehiculo?: VehiculoInfo
+  /** Matrícula escrita a mano en la factura (sin vehículo registrado) */
+  matricula?: string
+  cliente?: ClienteInfo
   fechaEmision: Date
   fechaVencimiento?: Date
   lineas: LineaFacturaEntity[]
@@ -68,6 +77,8 @@ export class FacturaEntity {
   private readonly clienteNIF?: NIF
   private readonly vehiculoId?: string
   private readonly vehiculo?: VehiculoInfo
+  private readonly matricula?: string
+  private readonly cliente?: ClienteInfo
   private readonly fechaEmision: Date
   private readonly fechaVencimiento?: Date
   private readonly lineas: LineaFacturaEntity[]
@@ -97,6 +108,8 @@ export class FacturaEntity {
     this.clienteNIF = props.clienteNIF
     this.vehiculoId = props.vehiculoId
     this.vehiculo = props.vehiculo
+    this.matricula = props.matricula
+    this.cliente = props.cliente
     this.fechaEmision = props.fechaEmision
     this.fechaVencimiento = props.fechaVencimiento
     this.lineas = props.lineas
@@ -386,6 +399,8 @@ export class FacturaEntity {
       clienteNIF: this.clienteNIF?.toString(),
       vehiculoId: this.vehiculoId,
       vehiculo: this.vehiculo,
+      matricula: this.vehiculo?.matricula || this.matricula,
+      cliente: this.cliente,
       fechaEmision: this.fechaEmision.toISOString(),
       fechaVencimiento: this.fechaVencimiento?.toISOString(),
       lineas: this.lineas.map(l => l.toDTO()),

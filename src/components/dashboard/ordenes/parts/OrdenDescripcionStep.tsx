@@ -30,7 +30,7 @@ export function OrdenDescripcionStep({
         <Textarea
           value={descripcionProblema}
           onChange={(e) => onDescripcionChange(e.target.value)}
-          placeholder="Describe el problema que presenta el vehículo..."
+          placeholder="Ej.: Ruido metálico al frenar desde hace una semana"
           rows={4}
           className="resize-none text-base"
           autoFocus
@@ -44,7 +44,7 @@ export function OrdenDescripcionStep({
         <Textarea
           value={observaciones}
           onChange={(e) => onObservacionesChange(e.target.value)}
-          placeholder="Cualquier detalle adicional del cliente o del vehículo..."
+          placeholder="Ej.: El cliente necesita el coche antes del viernes"
           rows={3}
           className="resize-none text-base"
         />
