@@ -90,13 +90,13 @@ export function VehiculoSelector({ value, onChange, clienteId, label = 'Vehícul
 
   return (
     <div className="relative">
-      <Label>{label}</Label>
+      <Label className="block text-sm font-semibold mb-2">{label}</Label>
       <div className="relative">
         <Input
           value={matriculaInput}
           onChange={handleChange}
           placeholder={placeholder}
-          className="font-mono tracking-widest uppercase pr-8"
+          className="font-mono tracking-widest uppercase pr-8 placeholder:font-sans placeholder:tracking-normal placeholder:normal-case"
           autoComplete="off"
         />
         {buscando && (

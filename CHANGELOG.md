@@ -2,6 +2,29 @@
 
 Todos los cambios importantes de este proyecto serán documentados aquí.
 
+## [0.75.7] - 2026-11-10 · pre-alpha
+
+Pantallas que se descuadraban en móvil, tablet o con nombres largos. Sin
+cambios de base de datos.
+
+### Corregido
+- **Nueva factura:** un cliente con nombre largo ensanchaba el desplegable y
+  empujaba el botón «Nuevo» fuera de la tarjeta. Los desplegables tienen
+  ahora la misma altura y estilo que los campos de texto, y «Matrícula» queda
+  alineada con el resto de la fila.
+- **Clientes, órdenes y vehículos en móvil:** con un cliente de nombre largo,
+  las tarjetas se salían de la pantalla y los botones Editar/Eliminar
+  quedaban cortados.
+- **Facturas en tablet:** la tabla necesitaba scroll lateral y escondía la
+  columna «Acciones». Hasta 1024 px se muestran tarjetas (dos columnas en
+  tablet). «4T 2026» ya no se parte en dos líneas.
+
+### Pruebas
+- Nuevo test de disposición: recorre 14 pantallas en móvil, tablet y
+  escritorio y falla si algo se sale de su tarjeta o de la pantalla, si una
+  tabla esconde columnas, si los campos de una fila no están alineados o si
+  dos botones se pisan.
+
 ## [0.75.6] - 2026-11-10 · pre-alpha
 
 Actualización de seguridad. Sin cambios visibles ni de base de datos.

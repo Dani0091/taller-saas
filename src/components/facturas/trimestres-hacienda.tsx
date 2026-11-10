@@ -72,7 +72,7 @@ export function TrimestresHacienda({ seleccionado, onSeleccionar }: Props) {
               }`}
             >
               <span className="flex items-center justify-between gap-2">
-                <span className={`font-semibold tabular-nums ${activo ? 'text-primary' : 'text-foreground'}`}>{etiquetaTrimestre(t, false)}</span>
+                <span className={`whitespace-nowrap font-semibold tabular-nums ${activo ? 'text-primary' : 'text-foreground'}`}>{etiquetaTrimestre(t, false)}</span>
                 {clave === aPresentar && (
                   <span className="rounded-full bg-warning/10 px-2 py-0.5 text-[11px] font-medium text-warning">Toca</span>
                 )}

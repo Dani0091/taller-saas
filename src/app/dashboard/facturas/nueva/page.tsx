@@ -39,6 +39,11 @@ interface SerieFactura {
   nombre: string
 }
 
+// Mismo aspecto que <Input>. min-w-0: sin él, un nombre de cliente largo
+// ensancha el desplegable y empuja el botón «Nuevo» fuera de la tarjeta.
+const CLASE_SELECT =
+  'min-h-11 w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-base md:text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]'
+
 export default function NuevaFacturaPage() {
   const router = useRouter()
   const { tallerId, loading: loadingAuth } = useTaller()
@@ -407,7 +412,7 @@ export default function NuevaFacturaPage() {
                 <select
                   value={formData.serie}
                   onChange={(e) => setFormData({ ...formData, serie: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ring"
+                  className={CLASE_SELECT}
                 >
                   {seriesDisponibles.map((s) => (
                     <option key={s.id} value={s.codigo}>
@@ -431,7 +436,7 @@ export default function NuevaFacturaPage() {
                       aria-label="Cliente"
                       value={formData.cliente_id}
                       onChange={(e) => handleClienteChange(e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ring"
+                      className={CLASE_SELECT}
                     >
                       <option value="">Selecciona cliente</option>
                       {clientes.map((c) => (
@@ -506,7 +511,7 @@ export default function NuevaFacturaPage() {
                 <select
                   value={formData.metodo_pago}
                   onChange={(e) => setFormData({ ...formData, metodo_pago: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  className={CLASE_SELECT}
                 >
                   <option value="T">Transferencia</option>
                   <option value="E">Efectivo</option>
@@ -559,7 +564,7 @@ export default function NuevaFacturaPage() {
                     <select
                       value={plazoPago}
                       onChange={(e) => setPlazoPago(Number(e.target.value))}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-ring"
+                      className={CLASE_SELECT}
                     >
                       <option value={15}>15 días</option>
                       <option value={30}>30 días</option>

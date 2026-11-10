@@ -106,7 +106,7 @@ export function ListadoClientes({ clientes, onActualizar, sortBy = 'recientes', 
           </p>
         </div>
       ) : (
-        <ul className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3">
           {clientesFiltrados.map(cliente => (
             <li key={cliente.id}>
               <div
