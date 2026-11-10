@@ -27,6 +27,9 @@ const nextConfig: NextConfig = {
 
   // Configuración de imágenes
   images: {
+    // La app no usa next/image: sin el optimizador no queda expuesto
+    // /_next/image (GHSA-2464-fhr4-w9xw, ejecución remota con SVG)
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',

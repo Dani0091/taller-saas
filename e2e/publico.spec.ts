@@ -39,3 +39,8 @@ test('sin sesión, el dashboard no muestra datos de un taller', async ({ page })
     await expect(page.locator('table tbody tr')).toHaveCount(0)
   }
 })
+
+test('el optimizador de imágenes de Next está desactivado (GHSA-2464-fhr4-w9xw)', async ({ request }) => {
+  const r = await request.get('/_next/image?url=%2Ficon-192x192.png&w=64&q=75')
+  expect(r.status()).toBeGreaterThanOrEqual(400)
+})
