@@ -2,6 +2,20 @@
 
 Todos los cambios importantes de este proyecto serán documentados aquí.
 
+## [0.75.6] - 2026-11-10 · pre-alpha
+
+Actualización de seguridad. Sin cambios visibles ni de base de datos.
+
+### Seguridad
+- **Next.js 16.3.8 → 16.4.6**: corrige dos fallos críticos de ejecución
+  remota de código (GHSA-2464-fhr4-w9xw en la optimización de imágenes con
+  SVG, GHSA-673q-mjm6-r5xr en funciones `use cache`) y uno alto de caída del
+  servicio en Server Actions (GHSA-p3m5-59mp-jv5r).
+- Optimizador de imágenes de Next desactivado: la app no lo usa y así
+  `/_next/image` deja de estar expuesto.
+- `ws` 8.22.2 y `source-map-js` 1.2.2 (dependencias indirectas con avisos altos).
+- Pendiente: `zod`, cuya corrección exige pasar a zod 4 (cambio de API).
+
 ## [0.75.5] - 2026-11-09 · pre-alpha
 
 Inicio con color y gráficos, trimestres de Hacienda con exportación, buscador
