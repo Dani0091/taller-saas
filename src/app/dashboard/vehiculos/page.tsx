@@ -170,7 +170,7 @@ export default function VehiculosPage() {
           <Button onClick={() => { setError(null); cargarVehiculos(); }}>Reintentar</Button>
         </div>
       ) : loading ? (
-        <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3" role="status" aria-label="Cargando vehículos">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3" role="status" aria-label="Cargando vehículos">
           {Array.from({ length: 6 }, (_, i) => <div key={i} className="h-28 animate-pulse rounded-xl border bg-card" />)}
         </div>
       ) : vehiculosFiltrados.length === 0 ? (
@@ -187,7 +187,7 @@ export default function VehiculosPage() {
           )}
         </div>
       ) : (
-        <ul className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3">
           {vehiculosFiltrados.map(vehiculo => {
             const combustible = COMBUSTIBLE_CONFIG[vehiculo.tipoCombustible || ''] || COMBUSTIBLE_CONFIG[vehiculo.tipoCombustible?.toLowerCase() || '']
             const muestra = vehiculo.color ? MUESTRA_COLOR[vehiculo.color.toLowerCase()] : undefined

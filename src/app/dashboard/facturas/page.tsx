@@ -381,8 +381,9 @@ export default function FacturasPage() {
               </button>
             )}
           </div>
-          {/* Móvil: tarjetas (la tabla no cabe sin desplazarse) */}
-          <ul className={`space-y-2 md:hidden transition-opacity ${loading ? 'opacity-60' : ''}`} aria-busy={loading}>
+          {/* Móvil y tablet: tarjetas (por debajo de 1024 px la tabla no cabe
+              sin desplazarse y esconde la columna «Acciones») */}
+          <ul className={`grid grid-cols-1 gap-2 md:grid-cols-2 lg:hidden transition-opacity ${loading ? 'opacity-60' : ''}`} aria-busy={loading}>
             {facturas.map((factura) => (
               <li key={factura.id} className={`flex items-start gap-3 rounded-xl border bg-card p-3 shadow-xs ${seleccionadas.has(factura.id) ? 'border-primary/40 bg-primary/5' : ''}`}>
                 <input
@@ -413,7 +414,7 @@ export default function FacturasPage() {
             ))}
           </ul>
 
-          <Card className={`hidden md:block overflow-hidden transition-opacity ${loading ? 'opacity-60' : ''}`} aria-busy={loading}>
+          <Card className={`hidden lg:block overflow-hidden transition-opacity ${loading ? 'opacity-60' : ''}`} aria-busy={loading}>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 border-b">

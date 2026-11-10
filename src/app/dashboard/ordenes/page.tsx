@@ -132,7 +132,7 @@ export default function OrdenesPage() {
           <Button onClick={() => { setError(null); cargarOrdenes(); }}>Reintentar</Button>
         </div>
       ) : loading ? (
-        <div className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3" role="status" aria-label="Cargando órdenes">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3" role="status" aria-label="Cargando órdenes">
           {Array.from({ length: 6 }, (_, i) => (
             <div key={i} className="h-32 animate-pulse rounded-xl border bg-card" />
           ))}
@@ -152,7 +152,7 @@ export default function OrdenesPage() {
           </Button>
         </div>
       ) : (
-        <ul className="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
+        <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3">
           {ordenesFiltradas.map(orden => {
             const config = ESTADO_CONFIG[orden.estado] || ESTADO_CONFIG.recibido
             return (
